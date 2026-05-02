@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const { conectarDB } = require('./config/db');
+const { iniciarListener } = require('./services/emailService');
+const Usuario = require('./models/Usuario');
 
 // Importar rutas
 const authRoutes = require('./routes/authRoutes');
@@ -20,8 +22,17 @@ const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 // Inicializar app
 const app = express();
 
-// Conectar a la base de datos
-conectarDB();
+// Conectar a la base de datos e iniciar listener
+conectarDB().then(async () => {
+  try {
+    const usuario = await Usuario.findOne();
+    if (usuario) {
+      iniciarListener(usuario._id);
+    }
+  } catch (error) {
+    console.error('Error al iniciar listener IMAP:', error.message);
+  }
+});
 
 // Middlewares de seguridad
 app.use(helmet());
