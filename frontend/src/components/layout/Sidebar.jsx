@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
@@ -23,7 +23,7 @@ export default function Sidebar() {
 
       <aside className={`sidebar ${abierto ? 'sidebar--abierto' : ''}`}>
         <div className="sidebar-header">
-          <span className="sidebar-logo">🐄</span>
+          <span className="sidebar-logo"><Tractor size={28} color="var(--color-primario-claro)" /></span>
           <div>
             <h2 className="sidebar-title">ContadorGanadero</h2>
             <span className="sidebar-badge">REA</span>

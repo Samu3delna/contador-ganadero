@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Tractor } from 'lucide-react';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -35,7 +36,7 @@ export default function LoginPage() {
     <div className="login-container">
       <div className="login-card glass-card animate-slide-up">
         <div className="login-header">
-          <span className="login-logo">🐄</span>
+          <span className="login-logo"><Tractor size={48} color="var(--color-primario-claro)" /></span>
           <h1 className="login-title">ContadorGanadero</h1>
           <p className="login-subtitle">Régimen Especial Agropecuario</p>
         </div>
