@@ -52,7 +52,7 @@ const usuarioSchema = new mongoose.Schema({
 });
 
 // Hash de contraseña antes de guardar
-usuarioSchema.pre('save', async function (next) {
+usuarioSchema.pre('save', async function () {
   if (this.isModified('password')) {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -60,7 +60,6 @@ usuarioSchema.pre('save', async function (next) {
   if (this.configEmail?.password && this.isModified('configEmail.password')) {
     this.configEmail.password = encrypt(this.configEmail.password);
   }
-  next();
 });
 
 usuarioSchema.methods.getEmailPassword = function () {
