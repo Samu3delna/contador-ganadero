@@ -6,8 +6,8 @@ import './Sidebar.css';
 
 const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/facturas', label: 'Facturas XML', icon: FileText },
-  { path: '/gastos', label: 'Gastos Manuales', icon: CreditCard },
+  { path: '/facturas', label: 'Facturas', icon: FileText },
+  { path: '/gastos', label: 'Gastos por Categoría', icon: CreditCard },
   { path: '/ingresos', label: 'Ingresos', icon: DollarSign },
   { path: '/impuestos', label: 'Impuestos', icon: Calculator },
   { path: '/calendario', label: 'Calendario', icon: Calendar },
