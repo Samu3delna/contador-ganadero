@@ -37,6 +37,18 @@
   padding: 0.75rem;
   background-color: var(--color-fondo);
   border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.desglose-item:hover {
+  border-color: var(--color-primario);
+}
+
+.desglose-item.activo {
+  border-color: var(--color-primario);
+  background-color: rgba(34, 197, 94, 0.05);
 }
 
 .desglose-info {
@@ -59,4 +71,77 @@
 .desglose-monto {
   font-weight: 700;
   color: var(--color-texto);
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+.facturas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.factura-mini-card {
+  background-color: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.factura-mini-card:hover {
+  border-color: var(--color-primario);
+  transform: translateY(-2px);
+}
+
+.factura-mini-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.factura-mini-header strong {
+  color: var(--color-texto);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+.factura-mini-fecha {
+  color: var(--color-texto-mutado);
+  font-size: 0.8rem;
+}
+
+.factura-mini-monto {
+  color: var(--color-primario-claro);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.detalle-factura-modal {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
 }

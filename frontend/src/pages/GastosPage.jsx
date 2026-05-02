@@ -6,6 +6,8 @@ import './GastosPage.css';
 export default function GastosPage() {
   const [gastos, setGastos] = useState([]);
   const [cargando, setCargando] = useState(false);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
+  const [facturaSeleccionada, setFacturaSeleccionada] = useState(null);
 
   useEffect(() => {
     cargarGastos();
@@ -32,8 +34,13 @@ export default function GastosPage() {
 
   const datosGrafico = Object.keys(gastosPorCategoria).map(key => ({
     name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    id: key,
     value: gastosPorCategoria[key]
   })).sort((a, b) => b.value - a.value);
+
+  const facturasFiltradas = categoriaSeleccionada 
+    ? gastos.filter(g => (g.categoriaIA || 'otros') === categoriaSeleccionada)
+    : [];
 
   const COLORES = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
 
@@ -82,11 +89,18 @@ export default function GastosPage() {
 
         <div className="card desglose-card">
           <div className="card-header">
-            <h2 className="card-title">Desglose Total</h2>
+            <h2 className="card-title">Desglose Total (Clic para ver facturas)</h2>
           </div>
           <div className="desglose-lista">
             {datosGrafico.map((item, index) => (
-              <div key={index} className="desglose-item">
+              <div 
+                key={index} 
+                className={`desglose-item ${categoriaSeleccionada === item.id ? 'activo' : ''}`}
+                onClick={() => {
+                  setCategoriaSeleccionada(item.id === categoriaSeleccionada ? null : item.id);
+                  setFacturaSeleccionada(null);
+                }}
+              >
                 <div className="desglose-info">
                   <div className="desglose-color" style={{ backgroundColor: COLORES[index % COLORES.length] }}></div>
                   <span className="desglose-nombre">{item.name}</span>
@@ -97,6 +111,68 @@ export default function GastosPage() {
           </div>
         </div>
       </div>
+
+      {categoriaSeleccionada && (
+        <div className="card detalle-categoria-card animate-slide-up mt-4">
+          <div className="card-header">
+            <h2 className="card-title">Facturas en {datosGrafico.find(d => d.id === categoriaSeleccionada)?.name}</h2>
+          </div>
+          
+          <div className="facturas-grid">
+            {facturasFiltradas.map(f => (
+              <div key={f._id} className="factura-mini-card" onClick={() => setFacturaSeleccionada(f)}>
+                <div className="factura-mini-header">
+                  <strong>{f.emisor?.nombre || 'Desconocido'}</strong>
+                  <span className="factura-mini-fecha">{new Date(f.fechaEmision).toLocaleDateString()}</span>
+                </div>
+                <div className="factura-mini-body">
+                  <span className="factura-mini-monto">₡{f.resumenFactura?.totalComprobante?.toLocaleString() || 0}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {facturaSeleccionada && (
+        <div className="modal-overlay" onClick={() => setFacturaSeleccionada(null)}>
+          <div className="card detalle-factura-modal animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="detalle-header">
+              <h3>Detalle del Gasto</h3>
+              <button className="btn-icon" onClick={() => setFacturaSeleccionada(null)}>✕</button>
+            </div>
+            <div className="detalle-body">
+              <p className="detalle-emisor">{facturaSeleccionada.emisor?.nombre}</p>
+              <p className="detalle-fecha">{new Date(facturaSeleccionada.fechaEmision).toLocaleDateString()}</p>
+              
+              <div className="detalle-monto">
+                <span className="monto-label">Total:</span>
+                <span className="monto-valor">₡{facturaSeleccionada.resumenFactura?.totalComprobante?.toLocaleString() || 0}</span>
+              </div>
+              
+              <div className="detalle-info">
+                <p><strong>Categoría IA:</strong> <span className="badge badge-primary">{facturaSeleccionada.categoriaIA}</span></p>
+                <p><strong>Clave XML:</strong> {facturaSeleccionada.claveNumerica || 'N/A'}</p>
+                <p><strong>IVA Pagado:</strong> ₡{facturaSeleccionada.resumenFactura?.totalImpuesto?.toLocaleString() || 0}</p>
+              </div>
+
+              {facturaSeleccionada.lineaDetalle && facturaSeleccionada.lineaDetalle.length > 0 && (
+                <div className="detalle-lineas">
+                  <h4>Conceptos Facturados</h4>
+                  <ul>
+                    {facturaSeleccionada.lineaDetalle.map((linea, idx) => (
+                      <li key={idx}>
+                        <span>{linea.cantidad}x {linea.descripcion}</span>
+                        <span>₡{linea.montoTotal.toLocaleString()}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
