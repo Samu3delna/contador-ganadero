@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Config y secretos
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencias
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Archivos de subida y temporales
+backend/uploads/
+*.pdf
+*.xml
+
+# Builds
+dist/
+frontend/dist/
+build/
+frontend/build/
+
+# IDEs y OS
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db

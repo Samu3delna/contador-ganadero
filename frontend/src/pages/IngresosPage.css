@@ -1,0 +1,23 @@
+.form-ingreso { margin-bottom: var(--espacio-xl); }
+.form-ingreso h3 { margin-bottom: var(--espacio-lg); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--espacio-md); }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 0.8rem; color: var(--color-texto-sec); font-weight: 500; }
+.form-resumen {
+  grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px;
+  padding: var(--espacio-md) !important; margin-top: var(--espacio-sm);
+}
+.form-resumen > div { display: flex; justify-content: space-between; font-size: 0.9rem; }
+.form-resumen-total { font-weight: 700; font-size: 1.1rem !important; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+.form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: var(--espacio-md); margin-top: var(--espacio-sm); }
+
+.tabla-responsive { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; }
+.tabla th { text-align: left; padding: 0.8rem; font-size: 0.8rem; color: var(--color-texto-sec); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.tabla td { padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.9rem; }
+.tabla tr:hover { background: rgba(255,255,255,0.02); }
+
+.btn-icon { background: none; border: none; color: var(--color-texto-sec); cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; }
+.btn-icon:hover { color: var(--color-error); background: rgba(255,82,82,0.1); }
+
+@media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }

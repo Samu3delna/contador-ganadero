@@ -1,0 +1,52 @@
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.page-content {
+  flex: 1;
+  padding: var(--espacio-xl);
+  overflow-y: auto;
+  /* Scrollbar styling for a cleaner look */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-superficie-2) transparent;
+}
+
+.page-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.page-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-content::-webkit-scrollbar-thumb {
+  background-color: var(--color-superficie-2);
+  border-radius: 10px;
+}
+
+.page-header {
+  margin-bottom: var(--espacio-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.page-title {
+  font-size: 2rem;
+  margin-bottom: var(--espacio-xs);
+}
+
+.page-subtitle {
+  color: var(--color-texto-sec);
+  font-size: 1rem;
+}

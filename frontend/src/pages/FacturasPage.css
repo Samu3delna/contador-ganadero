@@ -1,0 +1,14 @@
+.email-status {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--espacio-lg); padding: var(--espacio-md) var(--espacio-lg) !important;
+}
+.email-status-indicator { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.status-green { color: var(--color-exito); }
+.status-red { color: var(--color-error); }
+.email-status-detail { font-size: 0.8rem; color: var(--color-texto-sec); }
+
+.spin { animation: spin 1s linear infinite; }
+
+@media (max-width: 768px) {
+  .email-status { flex-direction: column; gap: 8px; align-items: flex-start; }
+}
