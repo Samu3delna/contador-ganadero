@@ -27,12 +27,16 @@ conectarDB();
 app.use(helmet());
 app.use(morgan('dev'));
 
-// CORS — permitir frontend local y producción (Vercel)
+// CORS — configuración dinámica para evitar bloqueos
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    process.env.FRONTEND_URL,
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    // Permitir si no hay origen (postman, mobile, etc), localhost o el dominio de vercel
+    if (!origin || origin.includes('localhost') || origin.includes('contador-ganadero.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 };
 app.use(cors(corsOptions));
