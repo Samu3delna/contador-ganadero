@@ -63,11 +63,46 @@ const forzarSincronizacion = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const crearGastoManual = async (req, res, next) => {
+  try {
+    const { fechaEmision, emisorNombre, categoriaManual, totalVenta, totalImpuesto, descripcion } = req.body;
+    
+    if (!fechaEmision || !emisorNombre || !totalVenta) {
+      res.status(400);
+      throw new Error('Faltan campos requeridos');
+    }
+
+    const fecha = new Date(fechaEmision);
+    
+    const nuevaFactura = await Factura.create({
+      fechaEmision: fecha,
+      emisor: { nombre: emisorNombre },
+      resumenFactura: {
+        totalVenta: Number(totalVenta),
+        totalImpuesto: Number(totalImpuesto || 0),
+        totalComprobante: Number(totalVenta) + Number(totalImpuesto || 0),
+      },
+      lineaDetalle: [{ descripcion, precioUnitario: Number(totalVenta), cantidad: 1, subtotal: Number(totalVenta), montoTotal: Number(totalVenta) + Number(totalImpuesto || 0) }],
+      categoriaIA: categoriaManual || 'otros',
+      categoriaManual: categoriaManual || 'otros',
+      confianzaIA: 1,
+      estado: 'procesada',
+      cuatrimestre: obtenerCuatrimestre(fecha.getMonth() + 1),
+      periodoFiscal: fecha.getFullYear(),
+      usuario: req.usuario._id,
+      esDeducible: true
+    });
+
+    res.status(201).json(nuevaFactura);
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   obtenerFacturas,
   obtenerFacturaPorId,
   actualizarCategoriaFactura,
   eliminarFactura,
+  crearGastoManual,
   estadoEmail,
   forzarSincronizacion,
 };

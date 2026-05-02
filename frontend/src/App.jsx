@@ -6,6 +6,8 @@ import DashboardPage from './pages/DashboardPage';
 import FacturasPage from './pages/FacturasPage';
 import IngresosPage from './pages/IngresosPage';
 import ImpuestosPage from './pages/ImpuestosPage';
+import CalendarioPage from './pages/CalendarioPage';
+import GastosPage from './pages/GastosPage';
 import './App.css';
 
 function RutaProtegida({ children }) {
@@ -22,8 +24,10 @@ function AppLayout() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/facturas" element={<FacturasPage />} />
+          <Route path="/gastos" element={<GastosPage />} />
           <Route path="/ingresos" element={<IngresosPage />} />
           <Route path="/impuestos" element={<ImpuestosPage />} />
+          <Route path="/calendario" element={<CalendarioPage />} />
         </Routes>
       </div>
     </div>

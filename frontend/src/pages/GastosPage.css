@@ -1,0 +1,77 @@
+.gastos-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .gastos-layout {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.form-card {
+  padding: 1.5rem;
+}
+
+.gasto-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.historial-card {
+  padding: 1.5rem;
+}
+
+.historial-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gasto-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.gasto-item:hover {
+  border-color: var(--color-primario);
+}
+
+.gasto-item-info h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--color-texto);
+}
+
+.gasto-item-info p {
+  font-size: 0.85rem;
+  color: var(--color-texto-mutado);
+}
+
+.gasto-item-monto {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primario-claro);
+}

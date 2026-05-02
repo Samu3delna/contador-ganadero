@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor } from 'lucide-react';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
@@ -6,9 +6,11 @@ import './Sidebar.css';
 
 const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/facturas', label: 'Facturas', icon: FileText },
+  { path: '/facturas', label: 'Facturas XML', icon: FileText },
+  { path: '/gastos', label: 'Gastos Manuales', icon: CreditCard },
   { path: '/ingresos', label: 'Ingresos', icon: DollarSign },
   { path: '/impuestos', label: 'Impuestos', icon: Calculator },
+  { path: '/calendario', label: 'Calendario', icon: Calendar },
 ];
 
 export default function Sidebar() {

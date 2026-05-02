@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { encrypt, decrypt } = require('../utils/crypto');
 
 const usuarioSchema = new mongoose.Schema({
   nombre: {
@@ -17,7 +18,7 @@ const usuarioSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'La contraseña es obligatoria'],
-    minlength: [6, 'La contraseña debe tener al menos 6 caracteres'],
+    minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
     select: false, // No incluir en consultas por defecto
   },
   cedula: {
@@ -43,7 +44,7 @@ const usuarioSchema = new mongoose.Schema({
     host: String,
     puerto: Number,
     usuario: String,
-    password: String, // TODO: Encriptar este campo
+    password: String, // Encriptada con AES-256-CBC via utils/crypto.js
     tls: { type: Boolean, default: true },
   },
 }, {
@@ -52,11 +53,20 @@ const usuarioSchema = new mongoose.Schema({
 
 // Hash de contraseña antes de guardar
 usuarioSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password, salt);
+  if (this.isModified('password')) {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+  if (this.configEmail?.password && this.isModified('configEmail.password')) {
+    this.configEmail.password = encrypt(this.configEmail.password);
+  }
   next();
 });
+
+usuarioSchema.methods.getEmailPassword = function () {
+  if (!this.configEmail || !this.configEmail.password) return null;
+  return decrypt(this.configEmail.password);
+};
 
 // Método para comparar contraseñas
 usuarioSchema.methods.compararPassword = async function (passwordIngresada) {

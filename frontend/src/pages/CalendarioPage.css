@@ -1,0 +1,209 @@
+.calendario-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .calendario-layout {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.calendario-card {
+  padding: 1.5rem;
+}
+
+.calendario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.calendario-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.calendario-nav {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.calendario-dia-header {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-texto-mutado);
+  padding-bottom: 0.5rem;
+}
+
+.calendario-celda {
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  min-height: 80px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s;
+}
+
+.calendario-celda:not(.vacia):hover {
+  border-color: var(--color-primario);
+}
+
+.calendario-celda.vacia {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.calendario-celda.hoy {
+  border-color: var(--color-primario);
+  background-color: rgba(34, 197, 94, 0.05);
+}
+
+.calendario-celda.hoy .numero-dia {
+  background-color: var(--color-primario);
+  color: white;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.numero-dia {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-texto-mutado);
+  margin-bottom: 0.5rem;
+}
+
+.facturas-dia-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.factura-pill {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  text-align: center;
+}
+
+.factura-pill.xml {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.factura-pill.manual {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.factura-pill:hover {
+  filter: brightness(1.2);
+}
+
+.detalle-factura-card {
+  padding: 1.5rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.detalle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-borde);
+  padding-bottom: 0.5rem;
+}
+
+.detalle-emisor {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.detalle-fecha {
+  font-size: 0.85rem;
+  color: var(--color-texto-mutado);
+  margin-bottom: 1rem;
+}
+
+.detalle-monto {
+  background-color: var(--color-fondo);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.monto-label {
+  color: var(--color-texto-mutado);
+  font-weight: 500;
+}
+
+.monto-valor {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primario-claro);
+}
+
+.detalle-info p {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-texto-mutado);
+}
+
+.detalle-info strong {
+  color: var(--color-texto);
+}
+
+.detalle-lineas {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--color-borde);
+  padding-top: 1rem;
+}
+
+.detalle-lineas h4 {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-texto);
+}
+
+.detalle-lineas ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.detalle-lineas li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-texto-mutado);
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed var(--color-borde);
+}
