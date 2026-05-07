@@ -1,6 +1,13 @@
 /**
  * Servicio de Email IMAP — Escucha y descarga de facturas electrónicas
  * Usa ImapFlow (moderno, async/await, soporte IDLE nativo)
+ *
+ * Funcionalidades:
+ *  - Busca adjuntos .xml en INBOX y en la carpeta de Spam/Junk
+ *  - Descarga y guarda los archivos XML y PDF en disco
+ *  - Parsea facturas con validación de CodigoTarifa
+ *  - Categoriza automáticamente con IA
+ *  - Genera alertas si el CodigoTarifa no corresponde al beneficio agropecuario
  */
 
 const { ImapFlow } = require('imapflow');
@@ -16,17 +23,90 @@ const Factura = require('../models/Factura');
 let conexionActiva = false;
 let ultimaSincronizacion = null;
 let clienteIMAP = null;
+let estadisticas = {
+  emailsProcesados: 0,
+  xmlsDescargados: 0,
+  facturasCreadas: 0,
+  alertasTarifa: 0,
+  errores: 0,
+};
 
 // Directorio para guardar archivos adjuntos
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+const XML_DIR = path.join(UPLOADS_DIR, 'xml');
+const PDF_DIR = path.join(UPLOADS_DIR, 'pdf');
 
 /**
- * Asegurar que existe el directorio de uploads
+ * Carpetas IMAP donde buscar facturas electrónicas
+ * Se busca en INBOX y en las variantes comunes de Spam/Junk
  */
-function asegurarDirectorioUploads() {
-  if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+const CARPETAS_BUSQUEDA = [
+  'INBOX',
+  '[Gmail]/Spam',           // Gmail
+  '[Gmail]/Correo no deseado', // Gmail en español
+  'Junk',                   // Genérico
+  'Spam',                   // Genérico
+  'Junk E-mail',            // Outlook
+  'Bulk Mail',              // Yahoo
+];
+
+/**
+ * Asegurar que existen los directorios de uploads
+ */
+function asegurarDirectoriosUploads() {
+  for (const dir of [UPLOADS_DIR, XML_DIR, PDF_DIR]) {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
+}
+
+/**
+ * Obtener las carpetas disponibles en el servidor IMAP
+ */
+async function obtenerCarpetasDisponibles() {
+  const carpetasDisponibles = [];
+
+  try {
+    const listaMailboxes = await clienteIMAP.list();
+    for (const mailbox of listaMailboxes) {
+      carpetasDisponibles.push(mailbox.path);
+    }
+  } catch (err) {
+    console.error('⚠️  Error listando carpetas IMAP:', err.message);
+    // Fallback: solo INBOX
+    carpetasDisponibles.push('INBOX');
+  }
+
+  return carpetasDisponibles;
+}
+
+/**
+ * Determinar qué carpetas realmente existen para buscar
+ */
+async function carpetasParaBuscar() {
+  const disponibles = await obtenerCarpetasDisponibles();
+  const carpetasValidas = [];
+
+  for (const carpeta of CARPETAS_BUSQUEDA) {
+    // Buscar match exacto o match parcial (case insensitive)
+    const encontrada = disponibles.find(d =>
+      d === carpeta ||
+      d.toLowerCase() === carpeta.toLowerCase() ||
+      d.toLowerCase().endsWith(carpeta.toLowerCase())
+    );
+    if (encontrada && !carpetasValidas.includes(encontrada)) {
+      carpetasValidas.push(encontrada);
+    }
+  }
+
+  // Siempre incluir INBOX si no está
+  if (!carpetasValidas.includes('INBOX')) {
+    carpetasValidas.unshift('INBOX');
+  }
+
+  console.log(`📂 Carpetas IMAP a monitorear: ${carpetasValidas.join(', ')}`);
+  return carpetasValidas;
 }
 
 /**
@@ -41,7 +121,7 @@ async function iniciarListener(usuarioId) {
     return;
   }
 
-  asegurarDirectorioUploads();
+  asegurarDirectoriosUploads();
 
   try {
     clienteIMAP = new ImapFlow(config);
@@ -65,10 +145,10 @@ async function iniciarListener(usuarioId) {
     conexionActiva = true;
     console.log('📧 Conectado al servidor IMAP exitosamente');
 
-    // Procesar emails existentes no leídos al arrancar
-    await procesarEmailsNoLeidos(usuarioId);
+    // Procesar emails existentes no leídos al arrancar (en todas las carpetas)
+    await procesarTodasLasCarpetas(usuarioId);
 
-    // Iniciar modo IDLE para escucha en tiempo real
+    // Iniciar modo IDLE para escucha en tiempo real (solo INBOX, IDLE no funciona en otras carpetas)
     await escucharNuevosEmails(usuarioId);
   } catch (error) {
     console.error('❌ Error iniciando listener IMAP:', error.message);
@@ -77,46 +157,67 @@ async function iniciarListener(usuarioId) {
 }
 
 /**
- * Procesar todos los emails no leídos del INBOX
+ * Procesar emails no leídos en TODAS las carpetas configuradas
  */
-async function procesarEmailsNoLeidos(usuarioId) {
-  try {
-    const lock = await clienteIMAP.getMailboxLock('INBOX');
+async function procesarTodasLasCarpetas(usuarioId) {
+  const carpetas = await carpetasParaBuscar();
 
+  for (const carpeta of carpetas) {
     try {
-      // Buscar mensajes no leídos
-      const mensajes = clienteIMAP.fetch({ seen: false }, {
-        source: true,
-        uid: true,
-        envelope: true,
-      });
-
-      let procesados = 0;
-
-      for await (const msg of mensajes) {
-        try {
-          await procesarMensaje(msg, usuarioId);
-          procesados++;
-        } catch (err) {
-          console.error(`❌ Error procesando email UID ${msg.uid}:`, err.message);
-        }
-      }
-
-      if (procesados > 0) {
-        console.log(`✅ ${procesados} email(s) procesado(s) en sincronización`);
-      }
-
-      ultimaSincronizacion = new Date();
-    } finally {
-      lock.release();
+      await procesarEmailsEnCarpeta(carpeta, usuarioId);
+    } catch (err) {
+      console.error(`⚠️  Error procesando carpeta "${carpeta}": ${err.message}`);
     }
-  } catch (error) {
-    console.error('❌ Error procesando emails no leídos:', error.message);
+  }
+
+  ultimaSincronizacion = new Date();
+}
+
+/**
+ * Procesar todos los emails no leídos de una carpeta específica
+ */
+async function procesarEmailsEnCarpeta(carpeta, usuarioId) {
+  let lock;
+  try {
+    lock = await clienteIMAP.getMailboxLock(carpeta);
+  } catch (err) {
+    // La carpeta no existe o no se puede abrir
+    console.log(`  ⏩ Carpeta "${carpeta}" no accesible, omitiendo.`);
+    return;
+  }
+
+  try {
+    console.log(`📂 Procesando carpeta: ${carpeta}`);
+
+    // Buscar mensajes no leídos
+    const mensajes = clienteIMAP.fetch({ seen: false }, {
+      source: true,
+      uid: true,
+      envelope: true,
+    });
+
+    let procesados = 0;
+
+    for await (const msg of mensajes) {
+      try {
+        await procesarMensaje(msg, usuarioId, carpeta);
+        procesados++;
+      } catch (err) {
+        console.error(`❌ Error procesando email UID ${msg.uid} en ${carpeta}:`, err.message);
+        estadisticas.errores++;
+      }
+    }
+
+    if (procesados > 0) {
+      console.log(`  ✅ ${procesados} email(s) procesado(s) en "${carpeta}"`);
+    }
+  } finally {
+    lock.release();
   }
 }
 
 /**
- * Escuchar nuevos emails en tiempo real usando IDLE
+ * Escuchar nuevos emails en tiempo real usando IDLE (solo INBOX)
  */
 async function escucharNuevosEmails(usuarioId) {
   try {
@@ -135,7 +236,7 @@ async function escucharNuevosEmails(usuarioId) {
           });
 
           for await (const msg of mensajes) {
-            await procesarMensaje(msg, usuarioId);
+            await procesarMensaje(msg, usuarioId, 'INBOX');
           }
         } catch (err) {
           console.error('❌ Error procesando nuevo email:', err.message);
@@ -154,9 +255,12 @@ async function escucharNuevosEmails(usuarioId) {
 
 /**
  * Procesar un mensaje individual
+ * @param {object} msg - Mensaje IMAP
+ * @param {string} usuarioId - ID del usuario
+ * @param {string} carpeta - Nombre de la carpeta IMAP de origen
  */
-async function procesarMensaje(msg, usuarioId) {
-  const uid = String(msg.uid);
+async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
+  const uid = `${carpeta}_${String(msg.uid)}`;
 
   // Verificar idempotencia: ¿ya procesamos este email?
   const yaExiste = await Factura.findOne({ emailUID: uid, usuario: usuarioId });
@@ -166,32 +270,50 @@ async function procesarMensaje(msg, usuarioId) {
 
   // Parsear el email completo
   const parsed = await simpleParser(msg.source);
-  console.log(`📨 Procesando: "${parsed.subject}" de ${parsed.from?.text || 'desconocido'}`);
+  console.log(`📨 Procesando: "${parsed.subject}" de ${parsed.from?.text || 'desconocido'} [${carpeta}]`);
 
-  // Buscar adjuntos XML y PDF
+  estadisticas.emailsProcesados++;
+
+  // ====================================================
+  // BUSCAR ADJUNTOS XML ESPECÍFICAMENTE
+  // ====================================================
   const adjuntos = parsed.attachments || [];
-  let xmlEncontrado = null;
-  let pdfGuardado = null;
+  let xmlsEncontrados = [];
+  let pdfsGuardados = [];
 
   for (const adjunto of adjuntos) {
     const nombre = (adjunto.filename || '').toLowerCase();
     const tipo = (adjunto.contentType || '').toLowerCase();
 
-    if (nombre.endsWith('.xml') || tipo.includes('xml')) {
-      xmlEncontrado = adjunto;
+    // Buscar archivos .xml explícitamente
+    if (nombre.endsWith('.xml') || tipo.includes('xml') || tipo.includes('text/xml') || tipo.includes('application/xml')) {
+      xmlsEncontrados.push(adjunto);
     }
 
+    // Guardar PDFs
     if (nombre.endsWith('.pdf') || tipo.includes('pdf')) {
-      // Guardar PDF en disco
-      const nombreArchivo = `${uid}_${adjunto.filename || 'factura.pdf'}`;
-      const rutaPDF = path.join(UPLOADS_DIR, nombreArchivo);
+      const nombreArchivo = `${Date.now()}_${adjunto.filename || 'factura.pdf'}`;
+      const rutaPDF = path.join(PDF_DIR, nombreArchivo);
       fs.writeFileSync(rutaPDF, adjunto.content);
-      pdfGuardado = rutaPDF;
+      pdfsGuardados.push(rutaPDF);
+    }
+  }
+
+  // Si no hay XML en adjuntos, buscar en el cuerpo del email (algunos proveedores embeden XML)
+  if (xmlsEncontrados.length === 0 && parsed.html) {
+    // Intentar extraer XML del body si viene como attachment inline
+    const xmlRegex = /<\?xml[\s\S]*?<\/(?:FacturaElectronica|NotaCreditoElectronica|TiqueteElectronico)>/gi;
+    const xmlMatch = parsed.html.match(xmlRegex);
+    if (xmlMatch) {
+      xmlsEncontrados.push({
+        filename: 'factura_embebida.xml',
+        content: Buffer.from(xmlMatch[0], 'utf-8'),
+      });
     }
   }
 
   // Si no hay XML, no podemos procesar como factura electrónica
-  if (!xmlEncontrado) {
+  if (xmlsEncontrados.length === 0) {
     console.log(`  ⏩ Email sin XML de factura, omitiendo.`);
     // Marcar como leído igualmente
     try {
@@ -200,58 +322,97 @@ async function procesarMensaje(msg, usuarioId) {
     return;
   }
 
-  // Parsear el XML
-  const xmlString = xmlEncontrado.content.toString('utf-8');
-  let datosFactura;
+  // ====================================================
+  // PROCESAR CADA XML ENCONTRADO
+  // ====================================================
+  for (const xmlAdjunto of xmlsEncontrados) {
+    const xmlString = xmlAdjunto.content.toString('utf-8');
+    let datosFactura;
 
-  try {
-    datosFactura = parsearFacturaXML(xmlString);
-  } catch (error) {
-    console.error(`  ❌ Error parseando XML: ${error.message}`);
-    // Guardar factura con estado error
-    await Factura.create({
-      fechaEmision: new Date(),
-      emisor: { nombre: parsed.from?.text || 'Error de parsing' },
-      resumenFactura: {},
-      estado: 'error',
+    try {
+      datosFactura = parsearFacturaXML(xmlString);
+    } catch (error) {
+      console.error(`  ❌ Error parseando XML "${xmlAdjunto.filename}": ${error.message}`);
+      estadisticas.errores++;
+      // Guardar factura con estado error
+      await Factura.create({
+        fechaEmision: new Date(),
+        emisor: { nombre: parsed.from?.text || 'Error de parsing' },
+        resumenFactura: {},
+        estado: 'error',
+        emailUID: uid,
+        carpetaOrigen: carpeta,
+        usuario: usuarioId,
+      });
+      continue;
+    }
+
+    // Verificar si ya existe por clave numérica (evitar duplicados de XML diferentes)
+    if (datosFactura.claveNumerica) {
+      const existePorClave = await Factura.findOne({
+        claveNumerica: datosFactura.claveNumerica,
+        usuario: usuarioId,
+      });
+      if (existePorClave) {
+        console.log(`  ⏩ Factura ${datosFactura.claveNumerica} ya existe, omitiendo.`);
+        continue;
+      }
+    }
+
+    // Guardar XML en disco
+    const nombreXML = `${Date.now()}_${xmlAdjunto.filename || 'factura.xml'}`;
+    const rutaXML = path.join(XML_DIR, nombreXML);
+    fs.writeFileSync(rutaXML, xmlAdjunto.content);
+    estadisticas.xmlsDescargados++;
+
+    console.log(`  💾 XML guardado: ${rutaXML}`);
+
+    // ====================================================
+    // MOSTRAR ALERTAS DE TARIFA EN CONSOLA
+    // ====================================================
+    if (datosFactura.alertasTarifa && datosFactura.alertasTarifa.length > 0) {
+      console.log(`  🚨 ALERTAS DE TARIFA (${datosFactura.alertasTarifa.length}):`);
+      for (const alerta of datosFactura.alertasTarifa) {
+        console.log(`     ${alerta.mensaje}`);
+        estadisticas.alertasTarifa++;
+      }
+      if (datosFactura.resumenValidacionTarifa.ahorrosPerdidos > 0) {
+        console.log(`     💸 Ahorros perdidos estimados: ₡${datosFactura.resumenValidacionTarifa.ahorrosPerdidos.toLocaleString('es-CR')}`);
+      }
+    }
+
+    // Categorizar con IA
+    let categorizacion;
+    try {
+      categorizacion = await categorizarFactura(datosFactura);
+    } catch (error) {
+      console.error(`  ⚠️ Error en categorización IA: ${error.message}`);
+      categorizacion = {
+        categoriaIA: 'sin_clasificar',
+        subcategoriaIA: 'Error en categorización',
+        esDeducible: true,
+        justificacionIA: '',
+        confianzaIA: 0,
+      };
+    }
+
+    // Crear factura en la base de datos
+    const factura = await Factura.create({
+      ...datosFactura,
+      ...categorizacion,
+      archivoXML: rutaXML,
+      archivoPDF: pdfsGuardados[0] || '',
       emailUID: uid,
+      carpetaOrigen: carpeta,
+      estado: datosFactura.alertasTarifa?.some(a => a.severidad === 'error') ? 'revision' : 'procesada',
       usuario: usuarioId,
     });
-    return;
+
+    estadisticas.facturasCreadas++;
+
+    const estadoLabel = factura.estado === 'revision' ? '⚠️ REVISIÓN' : '✅ OK';
+    console.log(`  ${estadoLabel} Factura procesada: ${datosFactura.emisor?.nombre} — ₡${datosFactura.resumenFactura?.totalComprobante} [${categorizacion.categoriaIA}]`);
   }
-
-  // Guardar XML en disco
-  const nombreXML = `${uid}_${xmlEncontrado.filename || 'factura.xml'}`;
-  const rutaXML = path.join(UPLOADS_DIR, nombreXML);
-  fs.writeFileSync(rutaXML, xmlEncontrado.content);
-
-  // Categorizar con IA
-  let categorizacion;
-  try {
-    categorizacion = await categorizarFactura(datosFactura);
-  } catch (error) {
-    console.error(`  ⚠️ Error en categorización IA: ${error.message}`);
-    categorizacion = {
-      categoriaIA: 'sin_clasificar',
-      subcategoriaIA: 'Error en categorización',
-      esDeducible: true,
-      justificacionIA: '',
-      confianzaIA: 0,
-    };
-  }
-
-  // Crear factura en la base de datos
-  const factura = await Factura.create({
-    ...datosFactura,
-    ...categorizacion,
-    archivoXML: rutaXML,
-    archivoPDF: pdfGuardado || '',
-    emailUID: uid,
-    estado: 'procesada',
-    usuario: usuarioId,
-  });
-
-  console.log(`  ✅ Factura procesada: ${datosFactura.emisor?.nombre} — ₡${datosFactura.resumenFactura?.totalComprobante} [${categorizacion.categoriaIA}]`);
 
   // Marcar email como leído
   try {
@@ -260,14 +421,18 @@ async function procesarMensaje(msg, usuarioId) {
 }
 
 /**
- * Forzar sincronización manual
+ * Forzar sincronización manual (busca en todas las carpetas)
  */
 async function sincronizarManual(usuarioId) {
   if (!clienteIMAP || !conexionActiva) {
     throw new Error('El servicio de email no está conectado');
   }
-  await procesarEmailsNoLeidos(usuarioId);
-  return { mensaje: 'Sincronización completada', fecha: new Date() };
+  await procesarTodasLasCarpetas(usuarioId);
+  return {
+    mensaje: 'Sincronización completada',
+    fecha: new Date(),
+    estadisticas: { ...estadisticas },
+  };
 }
 
 /**
@@ -281,6 +446,8 @@ function obtenerEstado() {
     usuario: process.env.IMAP_USER
       ? process.env.IMAP_USER.replace(/(.{3}).*(@.*)/, '$1***$2')
       : 'No configurado',
+    carpetasMonitoreadas: CARPETAS_BUSQUEDA.slice(0, 3),
+    estadisticas: { ...estadisticas },
   };
 }
 

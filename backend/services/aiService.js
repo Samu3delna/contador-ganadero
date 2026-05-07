@@ -28,8 +28,8 @@ function inicializarCliente() {
   console.log(`🤖 Servicio de IA inicializado (modelo: ${modeloIA})`);
 }
 
-// Prompt del sistema para categorización
-const SYSTEM_PROMPT = `Eres un asistente contable especializado en el sector ganadero de Costa Rica.
+// Prompt del sistema base para categorización
+const SYSTEM_PROMPT_BASE = `Eres un asistente contable especializado en el sector ganadero de Costa Rica.
 Tu trabajo es analizar facturas electrónicas y clasificar los gastos.
 
 CONTEXTO:
@@ -60,6 +60,20 @@ RESPONDE SIEMPRE en JSON válido con esta estructura exacta:
   "justificacion": "explicación corta de por qué esta categoría",
   "confianza": 0.95
 }`;
+
+let INSUMOS_OFICIALES_TEXTO = "";
+try {
+  const fs = require('fs');
+  const path = require('path');
+  const insumosOficiales = JSON.parse(fs.readFileSync(path.join(__dirname, '../insumos_oficiales.json'), 'utf8'));
+  INSUMOS_OFICIALES_TEXTO = `\n\nLISTA OFICIAL DE INSUMOS AGROPECUARIOS (Anexo del Ministerio de Hacienda):\nPara ayudarte a diferenciar los objetos en las facturas, aquí tienes la lista oficial de insumos que gozan de beneficios fiscales. Úsala como referencia para clasificar correctamente los gastos:\n` + insumosOficiales.map(i => `- ${i}`).join('\n');
+} catch (error) {
+  console.warn("⚠️ No se pudo cargar insumos_oficiales.json para el prompt de la IA:", error.message);
+}
+
+function getSystemPrompt() {
+  return SYSTEM_PROMPT_BASE + INSUMOS_OFICIALES_TEXTO;
+}
 
 /**
  * Categorizar una factura usando IA
@@ -95,7 +109,7 @@ ${resumenLineas || '  (sin detalle)'}`;
     const respuesta = await clienteIA.chat.completions.create({
       model: modeloIA,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: getSystemPrompt() },
         { role: 'user', content: promptUsuario },
       ],
       temperature: 0.3,

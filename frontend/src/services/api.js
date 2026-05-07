@@ -46,6 +46,13 @@ export const eliminarFacturaAPI = (id) => api.delete(`/facturas/${id}`);
 export const estadoEmailAPI = () => api.get('/facturas/email/estado');
 export const sincronizarEmailAPI = () => api.post('/facturas/email/sincronizar');
 
+// === Descarga de archivos XML / PDF ===
+export const descargarXML_API = (id) => api.get(`/facturas/${id}/xml`, { responseType: 'blob' });
+export const descargarPDF_API = (id) => api.get(`/facturas/${id}/pdf`, { responseType: 'blob' });
+
+// === Alertas de tarifa agropecuaria ===
+export const obtenerAlertasTarifaAPI = () => api.get('/facturas/alertas-tarifa');
+
 // === Impuestos ===
 export const calcularIVA_API = (cuatrimestre, anio) => api.get(`/impuestos/iva/${cuatrimestre}/${anio}`);
 export const calcularRentaAPI = (anio) => api.get(`/impuestos/renta/${anio}`);
