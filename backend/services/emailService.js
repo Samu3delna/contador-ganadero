@@ -42,8 +42,6 @@ const PDF_DIR = path.join(UPLOADS_DIR, 'pdf');
  */
 const CARPETAS_BUSQUEDA = [
   'INBOX',
-  '[Gmail]/Todos los mensajes',
-  '[Gmail]/All Mail',
   '[Gmail]/Spam',           // Gmail
   '[Gmail]/Correo no deseado', // Gmail en español
   'Junk',                   // Genérico
@@ -291,7 +289,12 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
 
     // Buscar archivos .xml explícitamente
     if (nombre.endsWith('.xml') || tipo.includes('xml') || tipo.includes('text/xml') || tipo.includes('application/xml')) {
-      xmlsEncontrados.push(adjunto);
+      // Filtrar XMLs que NO son facturas (confirmaciones de Hacienda, respuestas, etc.)
+      if (!nombre.startsWith('confirmacion') && !nombre.includes('mensajehacienda') && !nombre.includes('respuesta')) {
+        xmlsEncontrados.push(adjunto);
+      } else {
+        console.log(`  ⏩ Adjunto "${adjunto.filename}" es confirmación de Hacienda, omitiendo.`);
+      }
     }
 
     // Guardar PDFs

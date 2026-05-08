@@ -47,8 +47,26 @@ export const estadoEmailAPI = () => api.get('/facturas/email/estado');
 export const sincronizarEmailAPI = () => api.post('/facturas/email/sincronizar');
 
 // === Descarga de archivos XML / PDF ===
-export const descargarXML_API = (id) => api.get(`/facturas/${id}/xml`, { responseType: 'blob' });
-export const descargarPDF_API = (id) => api.get(`/facturas/${id}/pdf`, { responseType: 'blob' });
+// Usamos una función helper que maneja correctamente los errores con responseType: 'blob'
+async function descargarArchivo(url) {
+  try {
+    const res = await api.get(url, { responseType: 'blob' });
+    return res;
+  } catch (err) {
+    // Cuando responseType es 'blob', los errores JSON del servidor llegan como Blob
+    if (err.response?.data instanceof Blob) {
+      const texto = await err.response.data.text();
+      try {
+        const json = JSON.parse(texto);
+        err.response.data = json;
+      } catch (_) { /* no era JSON */ }
+    }
+    throw err;
+  }
+}
+
+export const descargarXML_API = (id) => descargarArchivo(`/facturas/${id}/xml`);
+export const descargarPDF_API = (id) => descargarArchivo(`/facturas/${id}/pdf`);
 
 // === Alertas de tarifa agropecuaria ===
 export const obtenerAlertasTarifaAPI = () => api.get('/facturas/alertas-tarifa');

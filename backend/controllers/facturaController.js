@@ -66,32 +66,47 @@ const eliminarFactura = async (req, res, next) => {
 const descargarXML = async (req, res, next) => {
   try {
     const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
-    if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
-    if (!factura.archivoXML || !fs.existsSync(factura.archivoXML)) {
-      res.status(404);
-      throw new Error('Archivo XML no encontrado en disco');
+    if (!factura) {
+      return res.status(404).json({ error: 'Factura no encontrada' });
     }
-    const nombreArchivo = path.basename(factura.archivoXML);
-    res.setHeader('Content-Type', 'application/xml');
-    res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
-    const stream = fs.createReadStream(factura.archivoXML);
-    stream.pipe(res);
+    if (!factura.archivoXML) {
+      return res.status(404).json({ error: 'Esta factura no tiene archivo XML asociado' });
+    }
+    // Normalizar ruta para el OS
+    const rutaXML = path.resolve(factura.archivoXML);
+    if (!fs.existsSync(rutaXML)) {
+      return res.status(404).json({ error: `Archivo XML no encontrado en disco: ${rutaXML}` });
+    }
+    const nombreArchivo = path.basename(rutaXML);
+    return res.download(rutaXML, nombreArchivo, (err) => {
+      if (err && !res.headersSent) {
+        console.error('Error descargando XML:', err.message);
+        return res.status(500).json({ error: 'Error al descargar el archivo XML' });
+      }
+    });
   } catch (error) { next(error); }
 };
 
 const descargarPDF = async (req, res, next) => {
   try {
     const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
-    if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
-    if (!factura.archivoPDF || !fs.existsSync(factura.archivoPDF)) {
-      res.status(404);
-      throw new Error('Archivo PDF no encontrado en disco');
+    if (!factura) {
+      return res.status(404).json({ error: 'Factura no encontrada' });
     }
-    const nombreArchivo = path.basename(factura.archivoPDF);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
-    const stream = fs.createReadStream(factura.archivoPDF);
-    stream.pipe(res);
+    if (!factura.archivoPDF) {
+      return res.status(404).json({ error: 'Esta factura no tiene archivo PDF asociado' });
+    }
+    const rutaPDF = path.resolve(factura.archivoPDF);
+    if (!fs.existsSync(rutaPDF)) {
+      return res.status(404).json({ error: `Archivo PDF no encontrado en disco: ${rutaPDF}` });
+    }
+    const nombreArchivo = path.basename(rutaPDF);
+    return res.download(rutaPDF, nombreArchivo, (err) => {
+      if (err && !res.headersSent) {
+        console.error('Error descargando PDF:', err.message);
+        return res.status(500).json({ error: 'Error al descargar el archivo PDF' });
+      }
+    });
   } catch (error) { next(error); }
 };
 

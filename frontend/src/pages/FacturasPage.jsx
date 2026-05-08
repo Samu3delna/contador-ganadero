@@ -70,7 +70,7 @@ export default function FacturasPage() {
       a.download = `factura_${facturaId}.xml`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch(err) { alert('No se pudo descargar el XML'); }
+    } catch(err) { alert('No se pudo descargar el XML: ' + (err.response?.data?.error || err.message)); }
     finally { setDescargando(null); }
   }
 
@@ -86,7 +86,7 @@ export default function FacturasPage() {
       a.download = `factura_${facturaId}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch(err) { alert('No se pudo descargar el PDF'); }
+    } catch(err) { alert('No se pudo descargar el PDF: ' + (err.response?.data?.error || err.message)); }
     finally { setDescargando(null); }
   }
 
