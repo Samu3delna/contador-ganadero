@@ -302,7 +302,8 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
       const nombreArchivo = `${Date.now()}_${adjunto.filename || 'factura.pdf'}`;
       const rutaPDF = path.join(PDF_DIR, nombreArchivo);
       fs.writeFileSync(rutaPDF, adjunto.content);
-      pdfsGuardados.push(rutaPDF);
+      // Guardar ruta RELATIVA para que funcione en cualquier entorno
+      pdfsGuardados.push(path.join('uploads', 'pdf', nombreArchivo));
     }
   }
 
@@ -336,10 +337,12 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
     const xmlString = xmlAdjunto.content.toString('utf-8');
     // Guardar XML en disco ANTES de parsear
     const nombreXML = `${Date.now()}_${xmlAdjunto.filename || 'factura.xml'}`;
-    const rutaXML = path.join(XML_DIR, nombreXML);
-    fs.writeFileSync(rutaXML, xmlAdjunto.content);
+    const rutaAbsolutaXML = path.join(XML_DIR, nombreXML);
+    fs.writeFileSync(rutaAbsolutaXML, xmlAdjunto.content);
+    // Guardar ruta RELATIVA para que funcione en cualquier entorno
+    const rutaXML = path.join('uploads', 'xml', nombreXML);
     estadisticas.xmlsDescargados++;
-    console.log(`  💾 XML guardado: ${rutaXML}`);
+    console.log(`  💾 XML guardado: ${rutaAbsolutaXML}`);
 
     let datosFactura;
 
@@ -429,11 +432,36 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
 
 /**
  * Forzar sincronización manual (busca en todas las carpetas)
+ * Si no hay conexión activa, intenta reconectar automáticamente
  */
 async function sincronizarManual(usuarioId) {
+  // Si no hay conexión, intentar reconectar
   if (!clienteIMAP || !conexionActiva) {
-    throw new Error('El servicio de email no está conectado');
+    console.log('🔄 Reconectando IMAP para sincronización manual...');
+    const config = configurarIMAP();
+    if (!config.auth.user || !config.auth.pass) {
+      throw new Error('Credenciales IMAP no configuradas');
+    }
+    try {
+      // Cerrar conexión anterior si existe
+      if (clienteIMAP) {
+        try { await clienteIMAP.logout(); } catch (_) {}
+      }
+      clienteIMAP = new ImapFlow(config);
+      clienteIMAP.on('error', (err) => {
+        console.error('❌ Error IMAP:', err.message);
+        conexionActiva = false;
+      });
+      await clienteIMAP.connect();
+      conexionActiva = true;
+      asegurarDirectoriosUploads();
+      console.log('📧 Reconectado a IMAP exitosamente');
+    } catch (err) {
+      conexionActiva = false;
+      throw new Error(`No se pudo conectar al servidor IMAP: ${err.message}`);
+    }
   }
+
   await procesarTodasLasCarpetas(usuarioId);
   return {
     mensaje: 'Sincronización completada',

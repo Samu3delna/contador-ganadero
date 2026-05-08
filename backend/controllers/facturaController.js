@@ -63,6 +63,15 @@ const eliminarFactura = async (req, res, next) => {
 
 // --- Descarga de archivos XML ---
 
+// Helper: resolver ruta de archivo (soporta rutas relativas y absolutas legacy)
+function resolverRutaArchivo(rutaDB) {
+  if (!rutaDB) return null;
+  // Si ya es ruta absoluta (legacy), usarla directamente
+  if (path.isAbsolute(rutaDB)) return rutaDB;
+  // Si es relativa (nueva: "uploads/xml/..."), resolverla desde el dir del backend
+  return path.join(__dirname, '..', rutaDB);
+}
+
 const descargarXML = async (req, res, next) => {
   try {
     const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
@@ -72,10 +81,9 @@ const descargarXML = async (req, res, next) => {
     if (!factura.archivoXML) {
       return res.status(404).json({ error: 'Esta factura no tiene archivo XML asociado' });
     }
-    // Normalizar ruta para el OS
-    const rutaXML = path.resolve(factura.archivoXML);
+    const rutaXML = resolverRutaArchivo(factura.archivoXML);
     if (!fs.existsSync(rutaXML)) {
-      return res.status(404).json({ error: `Archivo XML no encontrado en disco: ${rutaXML}` });
+      return res.status(404).json({ error: 'Archivo XML no encontrado en el servidor' });
     }
     const nombreArchivo = path.basename(rutaXML);
     return res.download(rutaXML, nombreArchivo, (err) => {
@@ -96,9 +104,9 @@ const descargarPDF = async (req, res, next) => {
     if (!factura.archivoPDF) {
       return res.status(404).json({ error: 'Esta factura no tiene archivo PDF asociado' });
     }
-    const rutaPDF = path.resolve(factura.archivoPDF);
+    const rutaPDF = resolverRutaArchivo(factura.archivoPDF);
     if (!fs.existsSync(rutaPDF)) {
-      return res.status(404).json({ error: `Archivo PDF no encontrado en disco: ${rutaPDF}` });
+      return res.status(404).json({ error: 'Archivo PDF no encontrado en el servidor' });
     }
     const nombreArchivo = path.basename(rutaPDF);
     return res.download(rutaPDF, nombreArchivo, (err) => {
