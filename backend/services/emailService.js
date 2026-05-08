@@ -42,6 +42,8 @@ const PDF_DIR = path.join(UPLOADS_DIR, 'pdf');
  */
 const CARPETAS_BUSQUEDA = [
   'INBOX',
+  '[Gmail]/Todos los mensajes',
+  '[Gmail]/All Mail',
   '[Gmail]/Spam',           // Gmail
   '[Gmail]/Correo no deseado', // Gmail en español
   'Junk',                   // Genérico
@@ -189,8 +191,10 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId) {
   try {
     console.log(`📂 Procesando carpeta: ${carpeta}`);
 
-    // Buscar mensajes no leídos
-    const mensajes = clienteIMAP.fetch({ seen: false }, {
+    // Buscar mensajes de hoy en adelante
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const mensajes = clienteIMAP.fetch({ since: hoy }, {
       source: true,
       uid: true,
       envelope: true,
@@ -327,6 +331,13 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
   // ====================================================
   for (const xmlAdjunto of xmlsEncontrados) {
     const xmlString = xmlAdjunto.content.toString('utf-8');
+    // Guardar XML en disco ANTES de parsear
+    const nombreXML = `${Date.now()}_${xmlAdjunto.filename || 'factura.xml'}`;
+    const rutaXML = path.join(XML_DIR, nombreXML);
+    fs.writeFileSync(rutaXML, xmlAdjunto.content);
+    estadisticas.xmlsDescargados++;
+    console.log(`  💾 XML guardado: ${rutaXML}`);
+
     let datosFactura;
 
     try {
@@ -342,6 +353,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
         estado: 'error',
         emailUID: uid,
         carpetaOrigen: carpeta,
+        archivoXML: rutaXML,
         usuario: usuarioId,
       });
       continue;
@@ -358,14 +370,6 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
         continue;
       }
     }
-
-    // Guardar XML en disco
-    const nombreXML = `${Date.now()}_${xmlAdjunto.filename || 'factura.xml'}`;
-    const rutaXML = path.join(XML_DIR, nombreXML);
-    fs.writeFileSync(rutaXML, xmlAdjunto.content);
-    estadisticas.xmlsDescargados++;
-
-    console.log(`  💾 XML guardado: ${rutaXML}`);
 
     // ====================================================
     // MOSTRAR ALERTAS DE TARIFA EN CONSOLA
