@@ -6,10 +6,10 @@ async function checkMailbox() {
   const clienteIMAP = new ImapFlow({
     host: process.env.IMAP_HOST,
     port: parseInt(process.env.IMAP_PORT || '993', 10),
-    secure: process.env.IMAP_SECURE === 'true',
+    secure: process.env.IMAP_TLS === 'true',
     auth: {
       user: process.env.IMAP_USER,
-      pass: process.env.IMAP_PASS,
+      pass: process.env.IMAP_PASSWORD,
     },
     logger: false
   });

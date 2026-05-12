@@ -31,8 +31,8 @@ export default function DetalleFacturaModal({ facturaSeleccionada, setFacturaSel
               <ul>
                 {facturaSeleccionada.lineaDetalle.map((linea, idx) => (
                   <li key={idx}>
-                    <span>{linea.cantidad}x {linea.descripcion}</span>
-                    <span>₡{linea.montoTotal.toLocaleString()}</span>
+                    <span>{linea.cantidad || 1}x {linea.descripcion || 'Sin descripción'}</span>
+                    <span>₡{(linea.montoTotal || 0).toLocaleString()}</span>
                   </li>
                 ))}
               </ul>

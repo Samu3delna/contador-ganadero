@@ -1,8 +1,9 @@
 /**
  * Script de inicialización de la base de datos
- * Crea las categorías predeterminadas y un usuario de prueba
+ * Crea las categorías predeterminadas y opcionalmente un usuario de prueba
  * 
- * Ejecutar: node utils/seed.js
+ * Para crear también el usuario demo, ejecutar con:
+ *   CREATE_DEMO_USER=true node utils/seed.js
  */
 
 require('dotenv').config({ path: '../.env' });
@@ -35,27 +36,33 @@ async function seed() {
     const cats = await Categoria.insertMany(categoriasSeed);
     console.log(`🏷️  ${cats.length} categorías creadas`);
 
-    // Crear usuario de prueba
-    const existeUsuario = await Usuario.findOne({ email: 'ganadero@demo.com' });
-    if (!existeUsuario) {
-      const bcrypt = require('bcryptjs');
-      const salt = await bcrypt.genSalt(12);
-      const hashedPassword = await bcrypt.hash('demo123456', salt);
+    // Crear usuario de prueba solo si se solicita explícitamente
+    if (process.env.CREATE_DEMO_USER === 'true') {
+      const existeUsuario = await Usuario.findOne({ email: 'ganadero@demo.com' });
+      if (!existeUsuario) {
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(12);
+        // En producción/despliegue, cambiar esta contraseña o eliminar el usuario demo
+        const hashedPassword = await bcrypt.hash('DemoSeguro2026!', salt);
 
-      await Usuario.collection.insertOne({
-        nombre: 'Ganadero Demo',
-        email: 'ganadero@demo.com',
-        password: hashedPassword,
-        nombreFinca: 'Finca La Esperanza',
-        cedula: { tipo: 'fisica', numero: '123456789' },
-        cantidadHijos: 2,
-        tieneConyuge: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      console.log('👤 Usuario de prueba creado: ganadero@demo.com / demo123456');
+        await Usuario.collection.insertOne({
+          nombre: 'Ganadero Demo',
+          email: 'ganadero@demo.com',
+          password: hashedPassword,
+          nombreFinca: 'Finca La Esperanza',
+          cedula: { tipo: 'fisica', numero: '123456789' },
+          cantidadHijos: 2,
+          tieneConyuge: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        console.log('👤 Usuario de prueba creado: ganadero@demo.com / DemoSeguro2026!');
+        console.log('   ⚠️  IMPORTANTE: Elimina este usuario antes de pasar a producción.');
+      } else {
+        console.log('👤 Usuario de prueba ya existe');
+      }
     } else {
-      console.log('👤 Usuario de prueba ya existe');
+      console.log('   ℹ️  Saltando creación de usuario demo. Usa CREATE_DEMO_USER=true para crearlo.');
     }
 
     // Listar colecciones creadas

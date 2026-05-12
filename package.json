@@ -1,16 +1,12 @@
 {
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.4.1",
-    "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.6.1",
-    "morgan": "^1.10.1"
+  "name": "contador-ganadero",
+  "version": "1.0.0",
+  "description": "Aplicación MERN para contabilidad ganadera en Costa Rica",
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "concurrently": "^9.0.0"
   }
 }

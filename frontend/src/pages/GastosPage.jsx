@@ -30,7 +30,7 @@ export default function GastosPage() {
 
   // Agrupar gastos por categoría
   const gastosPorCategoria = gastos.reduce((acc, gasto) => {
-    const cat = gasto.categoriaIA || 'otros';
+    const cat = gasto.categoriaIA || 'sin_clasificar';
     acc[cat] = (acc[cat] || 0) + (gasto.resumenFactura?.totalComprobante || 0);
     return acc;
   }, {});
@@ -42,7 +42,7 @@ export default function GastosPage() {
   })).sort((a, b) => b.value - a.value);
 
   const facturasFiltradas = categoriaSeleccionada 
-    ? gastos.filter(g => (g.categoriaIA || 'otros') === categoriaSeleccionada)
+    ? gastos.filter(g => (g.categoriaIA || 'sin_clasificar') === categoriaSeleccionada)
     : [];
 
   const COLORES = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];

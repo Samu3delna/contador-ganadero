@@ -31,7 +31,7 @@ const crearIngreso = async (req, res, next) => {
     const fechaObj = new Date(fecha);
     const ingreso = await Ingreso.create({
       fecha: fechaObj, descripcion, tipoGanado, cantidadCabezas, precioUnitario,
-      montoTotal: cantidadCabezas * precioUnitario, tasaIVA: tasaIVA || 0,
+      tasaIVA: tasaIVA || 0,
       comprador, facturaAsociada,
       cuatrimestre: obtenerCuatrimestre(fechaObj), periodoFiscal: fechaObj.getFullYear(),
       usuario: req.usuario._id,

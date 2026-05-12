@@ -23,7 +23,6 @@ async function testEmail() {
     await new Promise(resolve => setTimeout(resolve, 10000));
     console.log('Resultado: Revisa los logs arriba.');
     process.exit(0);
-    process.exit(0);
   } catch (error) {
     console.error('Error durante test:', error);
     process.exit(1);

@@ -173,9 +173,21 @@ const crearGastoManual = async (req, res, next) => {
   try {
     const { fechaEmision, emisorNombre, categoriaManual, totalVenta, totalImpuesto, descripcion } = req.body;
     
-    if (!fechaEmision || !emisorNombre || !totalVenta) {
+    if (!fechaEmision || !emisorNombre || totalVenta === undefined || totalVenta === null) {
       res.status(400);
-      throw new Error('Faltan campos requeridos');
+      throw new Error('Faltan campos requeridos: fechaEmision, emisorNombre, totalVenta');
+    }
+
+    const totalVentaNum = Number(totalVenta);
+    const totalImpuestoNum = Number(totalImpuesto || 0);
+
+    if (isNaN(totalVentaNum) || totalVentaNum < 0) {
+      res.status(400);
+      throw new Error('totalVenta debe ser un número válido mayor o igual a 0');
+    }
+    if (isNaN(totalImpuestoNum) || totalImpuestoNum < 0) {
+      res.status(400);
+      throw new Error('totalImpuesto debe ser un número válido mayor o igual a 0');
     }
 
     const fecha = new Date(fechaEmision);
@@ -184,7 +196,7 @@ const crearGastoManual = async (req, res, next) => {
     let alertasTarifa = [];
     let resumenValidacionTarifa = { totalLineas: 0, alertasError: 0, alertasAdvertencia: 0, lineasOk: 0, ahorrosPerdidos: 0 };
     if (descripcion) {
-      const lineasTemp = [{ descripcion, subtotal: Number(totalVenta), impuesto: { codigoTarifa: '08', tarifa: 13 } }];
+      const lineasTemp = [{ descripcion, subtotal: totalVentaNum, impuesto: { codigoTarifa: '08', tarifa: 13 } }];
       const validacion = validarTarifasFactura(lineasTemp);
       alertasTarifa = validacion.alertas;
       resumenValidacionTarifa = validacion.resumenValidacion;
@@ -194,13 +206,13 @@ const crearGastoManual = async (req, res, next) => {
       fechaEmision: fecha,
       emisor: { nombre: emisorNombre },
       resumenFactura: {
-        totalVenta: Number(totalVenta),
-        totalImpuesto: Number(totalImpuesto || 0),
-        totalComprobante: Number(totalVenta) + Number(totalImpuesto || 0),
+        totalVenta: totalVentaNum,
+        totalImpuesto: totalImpuestoNum,
+        totalComprobante: totalVentaNum + totalImpuestoNum,
       },
-      lineaDetalle: [{ descripcion, precioUnitario: Number(totalVenta), cantidad: 1, subtotal: Number(totalVenta), montoTotal: Number(totalVenta) + Number(totalImpuesto || 0) }],
-      categoriaIA: categoriaManual || 'otros',
-      categoriaManual: categoriaManual || 'otros',
+      lineaDetalle: [{ descripcion, precioUnitario: totalVentaNum, cantidad: 1, subtotal: totalVentaNum, montoTotal: totalVentaNum + totalImpuestoNum }],
+      categoriaIA: categoriaManual || 'sin_clasificar',
+      categoriaManual: categoriaManual || 'sin_clasificar',
       confianzaIA: 1,
       estado: alertasTarifa.length > 0 ? 'revision' : 'procesada',
       cuatrimestre: obtenerCuatrimestre(fecha),

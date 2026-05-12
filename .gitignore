@@ -7,10 +7,11 @@ yarn-error.log*
 
 # Config y secretos
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
 
 # Dependencias
 node_modules/
@@ -38,3 +39,17 @@ frontend/build/
 *.sw?
 .DS_Store
 Thumbs.db
+
+# Archivos de configuración local de agentes/IDEs
+.claude/
+.opencode/
+
+# Archivos temporales de desarrollo
+backend/parsed.txt
+backend/*.tmp
+backend/*.temp
+
+# Archivos de lock del sistema (si se generan)
+package-lock.json
+backend/package-lock.json
+frontend/package-lock.json
