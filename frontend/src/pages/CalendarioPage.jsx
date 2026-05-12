@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import DetalleFacturaModal from '../components/common/DetalleFacturaModal';
 import './CalendarioPage.css';
 
 export default function CalendarioPage() {
@@ -102,7 +103,7 @@ export default function CalendarioPage() {
                         className={`factura-pill ${f.categoriaManual ? 'manual' : 'xml'}`}
                         onClick={() => setFacturaSeleccionada(f)}
                       >
-                        ₡{f.resumenFactura.totalComprobante.toLocaleString()}
+                        ₡{f.resumenFactura?.totalComprobante?.toLocaleString() || 0}
                       </div>
                     ))}
                   </div>
@@ -112,43 +113,10 @@ export default function CalendarioPage() {
           </div>
         </div>
 
-        {facturaSeleccionada && (
-          <div className="card detalle-factura-card animate-slide-up">
-            <div className="detalle-header">
-              <h3>Detalle del Gasto</h3>
-              <button className="btn-icon" onClick={() => setFacturaSeleccionada(null)}>✕</button>
-            </div>
-            <div className="detalle-body">
-              <p className="detalle-emisor">{facturaSeleccionada.emisor.nombre}</p>
-              <p className="detalle-fecha">{new Date(facturaSeleccionada.fechaEmision).toLocaleDateString()}</p>
-              
-              <div className="detalle-monto">
-                <span className="monto-label">Total:</span>
-                <span className="monto-valor">₡{facturaSeleccionada.resumenFactura.totalComprobante.toLocaleString()}</span>
-              </div>
-              
-              <div className="detalle-info">
-                <p><strong>Categoría:</strong> <span className="badge badge-primary">{facturaSeleccionada.categoriaIA}</span></p>
-                <p><strong>Origen:</strong> {facturaSeleccionada.claveNumerica ? 'Factura Electrónica (XML)' : 'Ingreso Manual'}</p>
-                <p><strong>IVA:</strong> ₡{facturaSeleccionada.resumenFactura.totalImpuesto.toLocaleString()}</p>
-              </div>
-
-              {facturaSeleccionada.lineaDetalle && facturaSeleccionada.lineaDetalle.length > 0 && (
-                <div className="detalle-lineas">
-                  <h4>Conceptos</h4>
-                  <ul>
-                    {facturaSeleccionada.lineaDetalle.map((linea, idx) => (
-                      <li key={idx}>
-                        <span>{linea.cantidad}x {linea.descripcion}</span>
-                        <span>₡{linea.montoTotal.toLocaleString()}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <DetalleFacturaModal 
+          facturaSeleccionada={facturaSeleccionada} 
+          setFacturaSeleccionada={setFacturaSeleccionada} 
+        />
       </div>
     </div>
   );

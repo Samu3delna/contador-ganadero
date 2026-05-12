@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Tractor } from 'lucide-react';
+import LoginHeader from '../components/login/LoginHeader';
+import LoginForm from '../components/login/LoginForm';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -30,37 +31,19 @@ export default function LoginPage() {
     }
   };
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
   return (
     <div className="login-container">
       <div className="login-card glass-card animate-slide-up">
-        <div className="login-header">
-          <span className="login-logo"><Tractor size={48} color="var(--color-primario-claro)" /></span>
-          <h1 className="login-title">ContadorGanadero</h1>
-          <p className="login-subtitle">Régimen Especial Agropecuario</p>
-        </div>
+        <LoginHeader />
 
-        <form onSubmit={handleSubmit} className="login-form">
-          {esRegistro && (
-            <>
-              <input className="input" name="nombre" placeholder="Nombre completo"
-                value={form.nombre} onChange={handleChange} required />
-              <input className="input" name="nombreFinca" placeholder="Nombre de la finca (opcional)"
-                value={form.nombreFinca} onChange={handleChange} />
-            </>
-          )}
-          <input className="input" name="email" type="email" placeholder="Correo electrónico"
-            value={form.email} onChange={handleChange} required />
-          <input className="input" name="password" type="password" placeholder="Contraseña"
-            value={form.password} onChange={handleChange} required minLength={6} />
-
-          {error && <div className="login-error">{error}</div>}
-
-          <button className="btn btn-primary login-btn" type="submit" disabled={cargando}>
-            {cargando ? 'Procesando...' : esRegistro ? 'Crear Cuenta' : 'Iniciar Sesión'}
-          </button>
-        </form>
+        <LoginForm 
+          form={form} 
+          setForm={setForm} 
+          handleSubmit={handleSubmit} 
+          error={error} 
+          cargando={cargando} 
+          esRegistro={esRegistro} 
+        />
 
         <p className="login-switch">
           {esRegistro ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}

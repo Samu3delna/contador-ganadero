@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { calcularIVA_API, calcularRentaAPI } from '../services/api';
+import PanelIVA from '../components/impuestos/PanelIVA';
+import PanelRenta from '../components/impuestos/PanelRenta';
 import './ImpuestosPage.css';
 
-const formatCRC = (n) => `₡${(n||0).toLocaleString('es-CR')}`;
 const CUATRIMESTRE_LABEL = { 1:'1er Cuatrimestre (Ene-Abr)', 2:'2do Cuatrimestre (May-Ago)', 3:'3er Cuatrimestre (Sep-Dic)' };
 
 export default function ImpuestosPage() {
@@ -38,7 +39,6 @@ export default function ImpuestosPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="impuesto-tabs">
         <button className={`impuesto-tab ${tab==='iva'?'impuesto-tab--activo':''}`} onClick={()=>setTab('iva')}>
           IVA Cuatrimestral (D-135-1)
@@ -48,7 +48,6 @@ export default function ImpuestosPage() {
         </button>
       </div>
 
-      {/* Controles */}
       <div className="impuesto-controls glass-card">
         <div className="form-group">
           <label>Año Fiscal</label>
@@ -68,68 +67,20 @@ export default function ImpuestosPage() {
 
       {cargando ? <div className="loader-center"><div className="loader" /></div> : (
         <>
-          {/* Panel IVA */}
           {tab === 'iva' && iva && (
-            <div className="glass-card impuesto-resultado animate-slide-up">
-              <h3>Resultado IVA — {CUATRIMESTRE_LABEL[cuatrimestre]} {anio}</h3>
-              <div className="impuesto-grid">
-                <div className="impuesto-item">
-                  <span className="impuesto-label">IVA Cobrado (Ventas)</span>
-                  <span className="impuesto-valor text-mono" style={{color:'var(--color-exito)'}}>{formatCRC(iva.ivaCobrado)}</span>
-                </div>
-                <div className="impuesto-item">
-                  <span className="impuesto-label">IVA Pagado (Compras)</span>
-                  <span className="impuesto-valor text-mono" style={{color:'var(--color-error)'}}>{formatCRC(iva.ivaPagado)}</span>
-                </div>
-                <div className="impuesto-item impuesto-item--resultado">
-                  <span className="impuesto-label">{iva.aPagar ? 'A Pagar a Hacienda' : 'Crédito Fiscal a Favor'}</span>
-                  <span className={`impuesto-valor-grande text-mono ${iva.aPagar?'text-error':'text-success'}`}>
-                    {formatCRC(Math.abs(iva.ivaResultante))}
-                  </span>
-                </div>
-              </div>
-              {iva.detalleIVAPorTasa?.length > 0 && (
-                <div className="impuesto-detalle">
-                  <h4>Desglose por Tasa de IVA</h4>
-                  <table className="tabla"><thead><tr><th>Tasa</th><th>Base Pagada</th><th>IVA Pagado</th><th>Base Cobrada</th><th>IVA Cobrado</th></tr></thead>
-                    <tbody>{iva.detalleIVAPorTasa.map((d,i)=>(
-                      <tr key={i}><td>{d.tasa}%</td><td className="text-mono">{formatCRC(d.basePagada)}</td><td className="text-mono">{formatCRC(d.ivaPagado)}</td><td className="text-mono">{formatCRC(d.baseCobrada)}</td><td className="text-mono">{formatCRC(d.ivaCobrado)}</td></tr>
-                    ))}</tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <PanelIVA 
+              iva={iva} 
+              CUATRIMESTRE_LABEL={CUATRIMESTRE_LABEL} 
+              cuatrimestre={cuatrimestre} 
+              anio={anio} 
+            />
           )}
 
-          {/* Panel Renta */}
           {tab === 'renta' && renta && (
-            <div className="glass-card impuesto-resultado animate-slide-up">
-              <h3>Impuesto sobre la Renta — Año {anio}</h3>
-              <div className="impuesto-grid">
-                <div className="impuesto-item"><span className="impuesto-label">Ingresos Brutos</span><span className="impuesto-valor text-mono">{formatCRC(renta.ingresosBrutos)}</span></div>
-                <div className="impuesto-item"><span className="impuesto-label">Gastos Deducibles</span><span className="impuesto-valor text-mono">{formatCRC(renta.gastosDeducibles)}</span></div>
-                <div className="impuesto-item"><span className="impuesto-label">Utilidad Neta</span><span className="impuesto-valor text-mono" style={{fontWeight:700}}>{formatCRC(renta.utilidadNeta)}</span></div>
-                <div className="impuesto-item"><span className="impuesto-label">Monto Exento</span><span className="impuesto-valor text-mono">{formatCRC(renta.montoExento)}</span></div>
-              </div>
-              {renta.detalleTramos?.length > 0 && (
-                <div className="impuesto-detalle">
-                  <h4>Desglose por Tramos</h4>
-                  <table className="tabla"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
-                    <tbody>{renta.detalleTramos.map((t,i)=>(
-                      <tr key={i}><td className="text-mono">{formatCRC(t.desde)}</td><td className="text-mono">{formatCRC(t.hasta)}</td><td>{t.tasa}%</td><td className="text-mono">{formatCRC(t.impuesto)}</td></tr>
-                    ))}</tbody>
-                  </table>
-                </div>
-              )}
-              <div className="impuesto-grid" style={{marginTop:'var(--espacio-lg)'}}>
-                <div className="impuesto-item"><span className="impuesto-label">Créditos Fiscales</span><span className="impuesto-valor text-mono">{formatCRC(renta.creditosFiscales?.total)}</span></div>
-                <div className="impuesto-item impuesto-item--resultado">
-                  <span className="impuesto-label">Impuesto Final a Pagar</span>
-                  <span className={`impuesto-valor-grande text-mono ${renta.impuestoFinal > 0 ? 'text-error':'text-success'}`}>{formatCRC(renta.impuestoFinal)}</span>
-                  {renta.impuestoFinal === 0 && <span className="badge badge-exito">Exento</span>}
-                </div>
-              </div>
-            </div>
+            <PanelRenta 
+              renta={renta} 
+              anio={anio} 
+            />
           )}
         </>
       )}
