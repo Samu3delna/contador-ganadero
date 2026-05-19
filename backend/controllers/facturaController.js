@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const Factura = require('../models/Factura');
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
+const { sincronizarManual, obtenerEstado } = require('../services/emailService');
 const { validarTarifasFactura } = require('../utils/insumosAgropecuarios');
 
 const obtenerFacturas = async (req, res, next) => {

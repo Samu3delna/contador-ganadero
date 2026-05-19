@@ -14,7 +14,7 @@ import {
   actualizarDeducibilidadAPI,
   crearIngresoAPI,
   crearGastoManualAPI,
-} from '../../services/api';
+} from '../services/api';
 import './DeclaracionesPage.css';
 
 const TABS = [

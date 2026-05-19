@@ -73,13 +73,6 @@ async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null) {
       esDeducible: 'N/A',
       motivoNoDeducible: '',
       tasaIVA: i.tasaIVA || 0,
-      // Campos adicionales
-      cantidadCabezas: i.cantidadCabezas || '',
-      pesoTotal: i.pesoTotal || '',
-      precioPorKilo: i.precioPorKilo || '',
-      litrosVendidos: i.litrosVendidos || '',
-      industriaCompradora: i.industriaCompradora || '',
-      detalleOtros: i.detalleOtros || '',
     };
   });
 
@@ -92,12 +85,23 @@ async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null) {
 function generarCSV(datos) {
   if (datos.length === 0) return '';
 
-  const encabezados = [
-    'Tipo', 'Fecha', 'Proveedor/Comprador', 'Cedula', 'Descripcion', 'Categoria',
-    'Subtotal', 'IVA', 'Total', 'NumComprobante', 'EsDeducible', 'MotivoNoDeducible',
-    'TasaIVA', 'CantidadCabezas', 'PesoTotal', 'PrecioPorKilo', 'LitrosVendidos',
-    'IndustriaCompradora', 'DetalleOtros'
+  const COLUMNAS = [
+    { header: 'Tipo', key: 'tipo' },
+    { header: 'Fecha', key: 'fecha' },
+    { header: 'Proveedor/Comprador', key: 'proveedor' },
+    { header: 'Cedula', key: 'cedulaProveedor' },
+    { header: 'Descripcion', key: 'descripcion' },
+    { header: 'Categoria', key: 'categoria' },
+    { header: 'Subtotal', key: 'subtotal' },
+    { header: 'IVA', key: 'iva' },
+    { header: 'Total', key: 'total' },
+    { header: 'NumComprobante', key: 'numComprobante' },
+    { header: 'EsDeducible', key: 'esDeducible' },
+    { header: 'MotivoNoDeducible', key: 'motivoNoDeducible' },
+    { header: 'TasaIVA', key: 'tasaIVA' },
   ];
+
+  const encabezados = COLUMNAS.map(c => c.header);
 
   const escapeCsv = (val) => {
     if (val === null || val === undefined) return '';
@@ -108,10 +112,7 @@ function generarCSV(datos) {
     return str;
   };
 
-  const filas = datos.map(d => encabezados.map(h => {
-    const key = h.charAt(0).toLowerCase() + h.slice(1);
-    return escapeCsv(d[key]);
-  }).join(','));
+  const filas = datos.map(d => COLUMNAS.map(c => escapeCsv(d[c.key])).join(','));
 
   return [encabezados.join(','), ...filas].join('\n');
 }
