@@ -158,10 +158,10 @@ async function calcularRentaAnual(usuarioId, anio) {
 /**
  * Proyección fiscal en tiempo real
  */
-async function calcularProyeccion(usuarioId) {
+async function calcularProyeccion(usuarioId, anioQuery) {
   const ahora = new Date();
-  const anioActual = ahora.getFullYear();
-  const cuatrimestreActual = obtenerCuatrimestre(ahora);
+  const anioActual = anioQuery || ahora.getFullYear();
+  const cuatrimestreActual = (anioQuery && anioQuery !== ahora.getFullYear()) ? 3 : obtenerCuatrimestre(ahora);
 
   const [iva, renta] = await Promise.all([
     calcularIVACuatrimestral(usuarioId, cuatrimestreActual, anioActual),

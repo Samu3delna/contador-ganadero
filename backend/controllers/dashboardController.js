@@ -1,21 +1,28 @@
 const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
 const { calcularProyeccion } = require('../services/impuestoService');
+const mongoose = require('mongoose');
 
 const resumen = async (req, res, next) => {
   try {
-    const proyeccion = await calcularProyeccion(req.usuario._id);
+    let anio = Number(req.query.anio);
+    if (!anio) {
+      const ultima = await Factura.findOne({ usuario: req.usuario._id }).sort({ fechaEmision: -1 });
+      anio = ultima ? ultima.periodoFiscal : new Date().getFullYear();
+    }
+    const proyeccion = await calcularProyeccion(req.usuario._id, anio);
     res.json(proyeccion);
   } catch (error) { next(error); }
 };
 
 const gastosPorCategoria = async (req, res, next) => {
   try {
-    const { anio } = req.query;
-    const filtro = { usuario: req.usuario._id, estado: { $ne: 'error' } };
-    if (anio) {
-      filtro.periodoFiscal = Number(anio);
+    let anio = Number(req.query.anio);
+    if (!anio) {
+      const ultima = await Factura.findOne({ usuario: req.usuario._id }).sort({ fechaEmision: -1 });
+      anio = ultima ? ultima.periodoFiscal : new Date().getFullYear();
     }
+    const filtro = { usuario: new mongoose.Types.ObjectId(req.usuario._id), estado: { $ne: 'error' }, periodoFiscal: anio };
     const resultado = await Factura.aggregate([
       { $match: filtro },
       {
@@ -40,15 +47,19 @@ const gastosPorCategoria = async (req, res, next) => {
 
 const tendenciaMensual = async (req, res, next) => {
   try {
-    const anio = Number(req.query.anio) || new Date().getFullYear();
+    let anio = Number(req.query.anio);
+    if (!anio) {
+      const ultima = await Factura.findOne({ usuario: req.usuario._id }).sort({ fechaEmision: -1 });
+      anio = ultima ? ultima.periodoFiscal : new Date().getFullYear();
+    }
     const [gastosMensuales, ingresosMensuales] = await Promise.all([
       Factura.aggregate([
-        { $match: { usuario: req.usuario._id, periodoFiscal: anio, estado: { $ne: 'error' } } },
+        { $match: { usuario: new mongoose.Types.ObjectId(req.usuario._id), periodoFiscal: anio, estado: { $ne: 'error' } } },
         { $group: { _id: { $month: '$fechaEmision' }, total: { $sum: '$resumenFactura.totalComprobante' } } },
         { $sort: { '_id': 1 } },
       ]),
       Ingreso.aggregate([
-        { $match: { usuario: req.usuario._id, periodoFiscal: anio } },
+        { $match: { usuario: new mongoose.Types.ObjectId(req.usuario._id), periodoFiscal: anio } },
         { $group: { _id: { $month: '$fecha' }, total: { $sum: '$montoTotal' } } },
         { $sort: { '_id': 1 } },
       ]),
