@@ -47,6 +47,32 @@ const usuarioSchema = new mongoose.Schema({
     password: String, // Encriptada con AES-256-CBC via utils/crypto.js
     tls: { type: Boolean, default: true },
   },
+  // Configuración fiscal para declaraciones
+  configuracionFiscal: {
+    actividadEconomica: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    regimenTributario: {
+      type: String,
+      enum: ['Régimen Tradicional', 'Régimen Especial Agropecuario (REA)'],
+      default: 'Régimen Especial Agropecuario (REA)',
+    },
+    frecuenciaIVA: {
+      type: String,
+      enum: ['mensual', 'cuatrimestral', 'anual'],
+      default: 'cuatrimestral',
+    },
+    depreciacionActivos: [{
+      descripcion: { type: String, trim: true },
+      valorOriginal: { type: Number, default: 0 },
+      vidaUtilAnios: { type: Number, default: 5 },
+      anioAdquisicion: { type: Number },
+      depreciacionAnual: { type: Number, default: 0 },
+      activo: { type: Boolean, default: true },
+    }],
+  },
 }, {
   timestamps: true,
 });

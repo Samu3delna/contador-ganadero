@@ -71,10 +71,24 @@ export const descargarPDF_API = (id) => descargarArchivo(`/facturas/${id}/pdf`);
 // === Alertas de tarifa agropecuaria ===
 export const obtenerAlertasTarifaAPI = () => api.get('/facturas/alertas-tarifa');
 
+// === Gastos Manuales ===
+export const crearGastoManualAPI = (datos) => api.post('/facturas/manual', datos);
+
 // === Impuestos ===
 export const calcularIVA_API = (cuatrimestre, anio) => api.get(`/impuestos/iva/${cuatrimestre}/${anio}`);
 export const calcularRentaAPI = (anio) => api.get(`/impuestos/renta/${anio}`);
 export const proyeccionAPI = () => api.get('/impuestos/proyeccion');
+
+// === Declaraciones ===
+export const obtenerConfigFiscalAPI = () => api.get('/declaraciones/configuracion');
+export const actualizarConfigFiscalAPI = (datos) => api.put('/declaraciones/configuracion', datos);
+export const obtenerResumenDeclaracionAPI = (params) => api.get('/declaraciones/resumen', { params });
+export const obtenerGastosDeduciblesAPI = (params) => api.get('/declaraciones/gastos', { params });
+export const obtenerIngresosDeclaracionAPI = (params) => api.get('/declaraciones/ingresos', { params });
+export const exportarDatosAPI = (params) => api.get('/declaraciones/exportar', { params, responseType: 'blob' });
+
+// === Deducibilidad ===
+export const actualizarDeducibilidadAPI = (id, datos) => api.put(`/facturas/${id}/deducibilidad`, datos);
 
 // === Dashboard ===
 export const resumenDashboardAPI = () => api.get('/dashboard/resumen');

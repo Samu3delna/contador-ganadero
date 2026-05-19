@@ -111,16 +111,19 @@ async function calcularRentaAnual(usuarioId, anio) {
     return sum + (i.cantidadCabezas * i.precioUnitario);
   }, 0);
 
-  // Gastos deducibles del año (facturas marcadas como deducibles)
-  const facturas = await Factura.find({
+  // Facturas del año
+  const todasFacturas = await Factura.find({
     usuario: usuarioId,
     fechaEmision: { $gte: inicioAnio, $lte: finAnio },
     estado: { $ne: 'error' },
-    esDeducible: true,
   });
 
-  const gastosDeducibles = facturas.reduce((sum, f) => {
-    return sum + (f.resumenFactura?.totalVenta || 0);
+  const gastosBrutos = todasFacturas.reduce((sum, f) => {
+    return sum + (f.resumenFactura?.totalComprobante || 0);
+  }, 0);
+
+  const gastosDeducibles = todasFacturas.filter(f => f.esDeducible).reduce((sum, f) => {
+    return sum + (f.resumenFactura?.totalVenta || f.resumenFactura?.totalComprobante || 0);
   }, 0);
 
   // Utilidad neta
@@ -142,6 +145,7 @@ async function calcularRentaAnual(usuarioId, anio) {
   return {
     periodoFiscal: anio,
     ingresosBrutos: Math.round(ingresosBrutos),
+    gastosBrutos: Math.round(gastosBrutos),
     gastosDeducibles: Math.round(gastosDeducibles),
     utilidadNeta: Math.round(utilidadNeta),
     montoExento: MONTO_EXENTO_RENTA_2026,
@@ -150,7 +154,7 @@ async function calcularRentaAnual(usuarioId, anio) {
     creditosFiscales: creditos,
     detalleTramos,
     impuestoFinal,
-    totalFacturasDeducibles: facturas.length,
+    totalFacturasDeducibles: todasFacturas.filter(f => f.esDeducible).length,
     totalRegistrosIngresos: ingresos.length,
   };
 }
@@ -175,7 +179,7 @@ async function calcularProyeccion(usuarioId, anioQuery) {
     rentaProyectada: renta,
     resumen: {
       totalIngresos: renta.ingresosBrutos,
-      totalGastos: renta.gastosDeducibles,
+      totalGastos: renta.gastosBrutos,
       utilidadNeta: renta.utilidadNeta,
       ivaAPagar: iva.ivaResultante > 0 ? iva.ivaResultante : 0,
       ivaCredito: iva.ivaResultante < 0 ? Math.abs(iva.ivaResultante) : 0,

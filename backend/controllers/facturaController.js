@@ -2,17 +2,17 @@ const path = require('path');
 const fs = require('fs');
 const Factura = require('../models/Factura');
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
-const { sincronizarManual, obtenerEstado } = require('../services/emailService');
 const { validarTarifasFactura } = require('../utils/insumosAgropecuarios');
 
 const obtenerFacturas = async (req, res, next) => {
   try {
-    const { periodoFiscal, cuatrimestre, categoriaIA, estado, soloAlertas, page = 1, limit = 20 } = req.query;
+    const { periodoFiscal, cuatrimestre, categoriaIA, estado, soloAlertas, deducible, page = 1, limit = 20 } = req.query;
     const filtro = { usuario: req.usuario._id };
     if (periodoFiscal) filtro.periodoFiscal = Number(periodoFiscal);
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);
     if (categoriaIA) filtro.categoriaIA = categoriaIA;
     if (estado) filtro.estado = estado;
+    if (deducible !== undefined) filtro.esDeducible = deducible === 'true';
     // Filtro especial: solo facturas con alertas de tarifa
     if (soloAlertas === 'true') {
       filtro['resumenValidacionTarifa.alertasError'] = { $gt: 0 };
@@ -36,11 +36,28 @@ const obtenerFacturaPorId = async (req, res, next) => {
 
 const actualizarCategoriaFactura = async (req, res, next) => {
   try {
-    const { categoriaManual, esDeducible } = req.body;
+    const { categoriaManual, esDeducible, motivoNoDeducible } = req.body;
     const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (categoriaManual) factura.categoriaManual = categoriaManual;
     if (esDeducible !== undefined) factura.esDeducible = esDeducible;
+    if (motivoNoDeducible !== undefined) factura.motivoNoDeducible = motivoNoDeducible;
+    const actualizada = await factura.save();
+    res.json(actualizada);
+  } catch (error) { next(error); }
+};
+
+const actualizarDeducibilidad = async (req, res, next) => {
+  try {
+    const { esDeducible, motivoNoDeducible } = req.body;
+    const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
+    factura.esDeducible = esDeducible;
+    if (!esDeducible) {
+      factura.motivoNoDeducible = motivoNoDeducible || 'Gasto no relacionado con la actividad agropecuaria';
+    } else {
+      factura.motivoNoDeducible = undefined;
+    }
     const actualizada = await factura.save();
     res.json(actualizada);
   } catch (error) { next(error); }
@@ -171,7 +188,7 @@ const forzarSincronizacion = async (req, res, next) => {
 
 const crearGastoManual = async (req, res, next) => {
   try {
-    const { fechaEmision, emisorNombre, categoriaManual, totalVenta, totalImpuesto, descripcion } = req.body;
+    const { fechaEmision, emisorNombre, categoriaManual, totalVenta, totalImpuesto, descripcion, numComprobante } = req.body;
     
     if (!fechaEmision || !emisorNombre || totalVenta === undefined || totalVenta === null) {
       res.status(400);
@@ -221,6 +238,7 @@ const crearGastoManual = async (req, res, next) => {
       esDeducible: true,
       alertasTarifa,
       resumenValidacionTarifa,
+      consecutivo: numComprobante,
     });
 
     res.status(201).json(nuevaFactura);
@@ -231,6 +249,7 @@ module.exports = {
   obtenerFacturas,
   obtenerFacturaPorId,
   actualizarCategoriaFactura,
+  actualizarDeducibilidad,
   eliminarFactura,
   crearGastoManual,
   estadoEmail,

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  obtenerFacturas, obtenerFacturaPorId, actualizarCategoriaFactura,
+  obtenerFacturas, obtenerFacturaPorId, actualizarCategoriaFactura, actualizarDeducibilidad,
   eliminarFactura, estadoEmail, forzarSincronizacion, crearGastoManual,
   descargarXML, descargarPDF, obtenerAlertasTarifa
 } = require('../controllers/facturaController');
@@ -24,5 +24,6 @@ router.get('/:id/pdf', descargarPDF);
 
 router.route('/:id').get(obtenerFacturaPorId).delete(eliminarFactura);
 router.put('/:id/categoria', actualizarCategoriaFactura);
+router.put('/:id/deducibilidad', actualizarDeducibilidad);
 
 module.exports = router;

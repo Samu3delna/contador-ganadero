@@ -158,6 +158,10 @@ const facturaSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  motivoNoDeducible: {
+    type: String,
+    trim: true,
+  },
 
   // === Validación de tarifas agropecuarias ===
   alertasTarifa: [alertaTarifaSchema],
