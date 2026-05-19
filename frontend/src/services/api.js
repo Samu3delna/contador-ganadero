@@ -87,6 +87,13 @@ export const obtenerGastosDeduciblesAPI = (params) => api.get('/declaraciones/ga
 export const obtenerIngresosDeclaracionAPI = (params) => api.get('/declaraciones/ingresos', { params });
 export const exportarDatosAPI = (params) => api.get('/declaraciones/exportar', { params, responseType: 'blob' });
 
+// CRUD declaraciones guardadas
+export const listarDeclaracionesAPI = (params) => api.get('/declaraciones', { params });
+export const generarDeclaracionAPI = (datos) => api.post('/declaraciones', datos);
+export const obtenerDeclaracionAPI = (id) => api.get(`/declaraciones/${id}`);
+export const actualizarEstadoDeclaracionAPI = (id, datos) => api.put(`/declaraciones/${id}/estado`, datos);
+export const eliminarDeclaracionAPI = (id) => api.delete(`/declaraciones/${id}`);
+
 // === Deducibilidad ===
 export const actualizarDeducibilidadAPI = (id, datos) => api.put(`/facturas/${id}/deducibilidad`, datos);
 

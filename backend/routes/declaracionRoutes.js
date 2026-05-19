@@ -4,6 +4,11 @@ const {
   obtenerConfiguracionFiscal,
   actualizarConfiguracionFiscal,
   obtenerResumenDeclaracion,
+  generarDeclaracion,
+  listarDeclaraciones,
+  obtenerDeclaracion,
+  actualizarEstadoDeclaracion,
+  eliminarDeclaracion,
   exportarDatos,
   obtenerGastosDeducibles,
   obtenerIngresosDeclaracion,
@@ -19,5 +24,16 @@ router.get('/resumen', obtenerResumenDeclaracion);
 router.get('/gastos', obtenerGastosDeducibles);
 router.get('/ingresos', obtenerIngresosDeclaracion);
 router.get('/exportar', exportarDatos);
+
+// CRUD de declaraciones guardadas
+router.route('/')
+  .get(listarDeclaraciones)
+  .post(generarDeclaracion);
+
+router.route('/:id')
+  .get(obtenerDeclaracion)
+  .delete(eliminarDeclaracion);
+
+router.put('/:id/estado', actualizarEstadoDeclaracion);
 
 module.exports = router;

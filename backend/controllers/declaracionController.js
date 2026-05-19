@@ -1,6 +1,7 @@
 const Usuario = require('../models/Usuario');
 const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
+const Declaracion = require('../models/Declaracion');
 const { generarDatosExportacion, generarCSV } = require('../services/declaracionService');
 const { calcularIVACuatrimestral, calcularRentaAnual } = require('../services/impuestoService');
 
@@ -71,6 +72,182 @@ const obtenerResumenDeclaracion = async (req, res, next) => {
       renta: { ...renta, depreciacionTotal: Math.round(depreciacionTotal) },
       periodo: { anio: anioNum, cuatrimestre: cuatNum },
     });
+  } catch (error) { next(error); }
+};
+
+// === GENERAR Y GUARDAR DECLARACIÓN ===
+
+const generarDeclaracion = async (req, res, next) => {
+  try {
+    const { tipo, periodoFiscal, cuatrimestre } = req.body;
+    if (!tipo || !periodoFiscal) {
+      res.status(400);
+      throw new Error('tipo y periodoFiscal son requeridos');
+    }
+
+    const anioNum = Number(periodoFiscal);
+
+    if (tipo === 'D-135-1') {
+      if (!cuatrimestre) { res.status(400); throw new Error('cuatrimestre es requerido para IVA'); }
+      const cuatNum = Number(cuatrimestre);
+      const iva = await calcularIVACuatrimestral(req.usuario._id, cuatNum, anioNum);
+
+      // Upsert: si ya existe una borrador/calculada para este periodo, actualizarla
+      const existente = await Declaracion.findOneAndUpdate(
+        { usuario: req.usuario._id, tipo: 'D-135-1', periodoFiscal: anioNum, cuatrimestre: cuatNum, estado: { $in: ['borrador', 'calculada'] } },
+        {
+          ivaCobrado: iva.ivaCobrado,
+          ivaPagado: iva.ivaPagado,
+          ivaResultante: iva.ivaResultante,
+          detalleIVAPorTasa: iva.detalleIVAPorTasa,
+          estado: 'calculada',
+        },
+        { new: true }
+      );
+
+      if (existente) {
+        return res.json({ mensaje: 'Declaración IVA actualizada', declaracion: existente });
+      }
+
+      const nueva = await Declaracion.create({
+        tipo: 'D-135-1',
+        periodoFiscal: anioNum,
+        cuatrimestre: cuatNum,
+        ivaCobrado: iva.ivaCobrado,
+        ivaPagado: iva.ivaPagado,
+        ivaResultante: iva.ivaResultante,
+        detalleIVAPorTasa: iva.detalleIVAPorTasa,
+        estado: 'calculada',
+        usuario: req.usuario._id,
+      });
+
+      return res.status(201).json({ mensaje: 'Declaración IVA creada', declaracion: nueva });
+    }
+
+    if (tipo === 'D-101') {
+      const renta = await calcularRentaAnual(req.usuario._id, anioNum);
+
+      // Calcular depreciación de activos
+      const usuario = await Usuario.findById(req.usuario._id).select('configuracionFiscal');
+      let depreciacionTotal = 0;
+      if (usuario.configuracionFiscal?.depreciacionActivos?.length > 0) {
+        depreciacionTotal = usuario.configuracionFiscal.depreciacionActivos.reduce((sum, act) => {
+          if (act.activo && act.valorOriginal > 0 && act.vidaUtilAnios > 0) {
+            return sum + (act.valorOriginal / act.vidaUtilAnios);
+          }
+          return sum;
+        }, 0);
+      }
+
+      const existente = await Declaracion.findOneAndUpdate(
+        { usuario: req.usuario._id, tipo: 'D-101', periodoFiscal: anioNum, estado: { $in: ['borrador', 'calculada'] } },
+        {
+          ingresosBrutos: renta.ingresosBrutos,
+          gastosDeducibles: renta.gastosDeducibles,
+          utilidadNeta: renta.utilidadNeta,
+          montoExento: renta.montoExento,
+          rentaImponible: renta.rentaImponible,
+          impuestoCalculado: renta.impuestoCalculado,
+          creditosFiscales: renta.creditosFiscales,
+          detalleTramos: renta.detalleTramos,
+          impuestoFinal: renta.impuestoFinal,
+          estado: 'calculada',
+        },
+        { new: true }
+      );
+
+      if (existente) {
+        return res.json({ mensaje: 'Declaración Renta actualizada', declaracion: { ...existente.toObject(), depreciacionTotal: Math.round(depreciacionTotal) } });
+      }
+
+      const nueva = await Declaracion.create({
+        tipo: 'D-101',
+        periodoFiscal: anioNum,
+        ingresosBrutos: renta.ingresosBrutos,
+        gastosDeducibles: renta.gastosDeducibles,
+        utilidadNeta: renta.utilidadNeta,
+        montoExento: renta.montoExento,
+        rentaImponible: renta.rentaImponible,
+        impuestoCalculado: renta.impuestoCalculado,
+        creditosFiscales: renta.creditosFiscales,
+        detalleTramos: renta.detalleTramos,
+        impuestoFinal: renta.impuestoFinal,
+        estado: 'calculada',
+        usuario: req.usuario._id,
+      });
+
+      return res.status(201).json({ mensaje: 'Declaración Renta creada', declaracion: { ...nueva.toObject(), depreciacionTotal: Math.round(depreciacionTotal) } });
+    }
+
+    res.status(400);
+    throw new Error('Tipo de declaración no válido');
+  } catch (error) { next(error); }
+};
+
+// === LISTAR DECLARACIONES ===
+
+const listarDeclaraciones = async (req, res, next) => {
+  try {
+    const { tipo, anio, page = 1, limit = 20 } = req.query;
+    const filtro = { usuario: req.usuario._id };
+    if (tipo) filtro.tipo = tipo;
+    if (anio) filtro.periodoFiscal = Number(anio);
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const [declaraciones, total] = await Promise.all([
+      Declaracion.find(filtro).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).lean(),
+      Declaracion.countDocuments(filtro),
+    ]);
+
+    res.json({ declaraciones, total, pagina: Number(page), totalPaginas: Math.ceil(total / Number(limit)) });
+  } catch (error) { next(error); }
+};
+
+// === OBTENER DECLARACIÓN POR ID ===
+
+const obtenerDeclaracion = async (req, res, next) => {
+  try {
+    const declaracion = await Declaracion.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    if (!declaracion) { res.status(404); throw new Error('Declaración no encontrada'); }
+
+    // Si es Renta, calcular depreciación al vuelo para mostrarla
+    let depreciacionTotal = 0;
+    if (declaracion.tipo === 'D-101') {
+      const usuario = await Usuario.findById(req.usuario._id).select('configuracionFiscal');
+      if (usuario.configuracionFiscal?.depreciacionActivos?.length > 0) {
+        depreciacionTotal = usuario.configuracionFiscal.depreciacionActivos.reduce((sum, act) => {
+          if (act.activo && act.valorOriginal > 0 && act.vidaUtilAnios > 0) {
+            return sum + (act.valorOriginal / act.vidaUtilAnios);
+          }
+          return sum;
+        }, 0);
+      }
+    }
+
+    res.json({ ...declaracion.toObject(), depreciacionTotal: Math.round(depreciacionTotal) });
+  } catch (error) { next(error); }
+};
+
+// === ACTUALIZAR ESTADO ===
+
+const actualizarEstadoDeclaracion = async (req, res, next) => {
+  try {
+    const { estado } = req.body;
+    const declaracion = await Declaracion.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    if (!declaracion) { res.status(404); throw new Error('Declaración no encontrada'); }
+    declaracion.estado = estado;
+    await declaracion.save();
+    res.json({ mensaje: `Estado actualizado a ${estado}`, declaracion });
+  } catch (error) { next(error); }
+};
+
+// === ELIMINAR DECLARACIÓN ===
+
+const eliminarDeclaracion = async (req, res, next) => {
+  try {
+    const declaracion = await Declaracion.findOneAndDelete({ _id: req.params.id, usuario: req.usuario._id });
+    if (!declaracion) { res.status(404); throw new Error('Declaración no encontrada'); }
+    res.json({ mensaje: 'Declaración eliminada' });
   } catch (error) { next(error); }
 };
 
@@ -181,6 +358,11 @@ module.exports = {
   obtenerConfiguracionFiscal,
   actualizarConfiguracionFiscal,
   obtenerResumenDeclaracion,
+  generarDeclaracion,
+  listarDeclaraciones,
+  obtenerDeclaracion,
+  actualizarEstadoDeclaracion,
+  eliminarDeclaracion,
   exportarDatos,
   obtenerGastosDeducibles,
   obtenerIngresosDeclaracion,
