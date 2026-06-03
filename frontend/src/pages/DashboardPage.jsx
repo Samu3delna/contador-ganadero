@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { resumenDashboardAPI, tendenciaMensualAPI, gastosPorCategoriaAPI } from '../services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { RefreshCw } from 'lucide-react';
+import { resumenDashboardAPI, tendenciaMensualAPI, gastosPorCategoriaAPI, sincronizarEmailAPI } from '../services/api';
 import ResumenCards from '../components/dashboard/ResumenCards';
 import TendenciaChart from '../components/dashboard/TendenciaChart';
 import GastosCategoriaList from '../components/dashboard/GastosCategoriaList';
@@ -11,21 +12,37 @@ export default function DashboardPage() {
   const [tendencia, setTendencia] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [sincronizando, setSincronizando] = useState(false);
+
+  const cargar = useCallback(async (mostrarLoader = true) => {
+    if (mostrarLoader) setCargando(true);
+    try {
+      const [res, tend, cat] = await Promise.all([
+        resumenDashboardAPI(), tendenciaMensualAPI(), gastosPorCategoriaAPI()
+      ]);
+      setResumen(res.data);
+      setTendencia(tend.data);
+      setCategorias(cat.data);
+    } catch (err) { console.error(err); }
+    finally { setCargando(false); }
+  }, []);
 
   useEffect(() => {
-    async function cargar() {
-      try {
-        const [res, tend, cat] = await Promise.all([
-          resumenDashboardAPI(), tendenciaMensualAPI(), gastosPorCategoriaAPI()
-        ]);
-        setResumen(res.data);
-        setTendencia(tend.data);
-        setCategorias(cat.data);
-      } catch (err) { console.error(err); }
-      finally { setCargando(false); }
+    cargar(true);
+  }, [cargar]);
+
+  async function handleSincronizar() {
+    setSincronizando(true);
+    try {
+      await sincronizarEmailAPI();
+      await cargar(false);
+    } catch (err) {
+      console.error(err);
+      alert('Error al sincronizar correos');
+    } finally {
+      setSincronizando(false);
     }
-    cargar();
-  }, []);
+  }
 
   if (cargando) return <div className="page-content"><div className="loader-center"><div className="loader" /></div></div>;
 
@@ -35,6 +52,17 @@ export default function DashboardPage() {
         <div>
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">Resumen financiero — Período {resumen?.periodoFiscal || new Date().getFullYear()}</p>
+        </div>
+        <div>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleSincronizar} 
+            disabled={sincronizando} 
+            id="btn-sincronizar-dashboard"
+          >
+            <RefreshCw size={18} className={sincronizando ? 'spin' : ''} />
+            {sincronizando ? 'Leyendo Correos...' : 'Leer Correos'}
+          </button>
         </div>
       </div>
 

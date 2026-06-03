@@ -189,14 +189,19 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId) {
   try {
     console.log(`📂 Procesando carpeta: ${carpeta}`);
 
-    // Buscar mensajes de hoy en adelante
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const mensajes = clienteIMAP.fetch({ since: hoy }, {
-      source: true,
-      uid: true,
-      envelope: true,
-    });
+    // Buscar mensajes de los últimos 60 días o no leídos
+    const hace60Dias = new Date();
+    hace60Dias.setDate(hace60Dias.getDate() - 60);
+    hace60Dias.setHours(0, 0, 0, 0);
+
+    const mensajes = clienteIMAP.fetch(
+      { or: [{ since: hace60Dias }, { seen: false }] },
+      {
+        source: true,
+        uid: true,
+        envelope: true,
+      }
+    );
 
     let procesados = 0;
 
