@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import {
   obtenerFacturasAPI, estadoEmailAPI, sincronizarEmailAPI,
@@ -19,9 +19,7 @@ export default function FacturasPage() {
   const [detalleExpandido, setDetalleExpandido] = useState(null);
   const [descargando, setDescargando] = useState(null);
 
-  useEffect(() => { cargar(); }, []);
-
-  async function cargar() {
+  const cargar = useCallback(async () => {
     try {
       const params = { limit: 50 };
       if (filtroAlertas) params.soloAlertas = 'true';
@@ -36,16 +34,20 @@ export default function FacturasPage() {
       if (aRes) setAlertasTarifa(aRes.data);
     } catch(err) { console.error(err); }
     finally { setCargando(false); }
-  }
+  }, [filtroAlertas]);
 
   useEffect(() => {
-    setCargando(true);
-    cargar();
-  }, [filtroAlertas]);
+    const run = async () => {
+      await Promise.resolve();
+      setCargando(true);
+      cargar();
+    };
+    run();
+  }, [cargar]);
 
   async function handleSincronizar() {
     setSincronizando(true);
-    try { await sincronizarEmailAPI(); await cargar(); } catch(err) { alert('Error al sincronizar'); }
+    try { await sincronizarEmailAPI(); await cargar(); } catch(err) { console.error(err); alert('Error al sincronizar'); }
     finally { setSincronizando(false); }
   }
 
@@ -61,7 +63,7 @@ export default function FacturasPage() {
       a.download = `factura_${facturaId}.xml`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch(err) { alert('No se pudo descargar el XML: ' + (err.response?.data?.error || err.message)); }
+    } catch(err) { console.error(err); alert('No se pudo descargar el XML: ' + (err.response?.data?.error || err.message)); }
     finally { setDescargando(null); }
   }
 
@@ -77,7 +79,7 @@ export default function FacturasPage() {
       a.download = `factura_${facturaId}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch(err) { alert('No se pudo descargar el PDF: ' + (err.response?.data?.error || err.message)); }
+    } catch(err) { console.error(err); alert('No se pudo descargar el PDF: ' + (err.response?.data?.error || err.message)); }
     finally { setDescargando(null); }
   }
 

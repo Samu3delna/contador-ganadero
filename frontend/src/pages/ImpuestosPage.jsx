@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { calcularIVA_API, calcularRentaAPI } from '../services/api';
 import PanelIVA from '../components/impuestos/PanelIVA';
 import PanelRenta from '../components/impuestos/PanelRenta';
@@ -14,9 +14,7 @@ export default function ImpuestosPage() {
   const [renta, setRenta] = useState(null);
   const [cargando, setCargando] = useState(false);
 
-  useEffect(() => { calcular(); }, [tab, anio, cuatrimestre]);
-
-  async function calcular() {
+  const calcular = useCallback(async () => {
     setCargando(true);
     try {
       if (tab === 'iva') {
@@ -28,7 +26,16 @@ export default function ImpuestosPage() {
       }
     } catch(err) { console.error(err); }
     finally { setCargando(false); }
-  }
+  }, [tab, anio, cuatrimestre]);
+
+  useEffect(() => {
+    const run = async () => {
+      await Promise.resolve();
+      setCargando(true);
+      calcular();
+    };
+    run();
+  }, [calcular]);
 
   return (
     <div className="page-content">

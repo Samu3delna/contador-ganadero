@@ -59,7 +59,7 @@ async function descargarArchivo(url) {
       try {
         const json = JSON.parse(texto);
         err.response.data = json;
-      } catch (_) { /* no era JSON */ }
+      } catch { /* no era JSON */ }
     }
     throw err;
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import DetalleFacturaModal from '../components/common/DetalleFacturaModal';
@@ -10,11 +10,7 @@ export default function CalendarioPage() {
   const [cargando, setCargando] = useState(true);
   const [facturaSeleccionada, setFacturaSeleccionada] = useState(null);
 
-  useEffect(() => {
-    cargarFacturasMes();
-  }, [fechaActual]);
-
-  const cargarFacturasMes = async () => {
+  const cargarFacturasMes = useCallback(async () => {
     setCargando(true);
     try {
       // Obtenemos un límite alto para poder pintar el mes
@@ -30,7 +26,15 @@ export default function CalendarioPage() {
     } finally {
       setCargando(false);
     }
-  };
+  }, [fechaActual]);
+
+  useEffect(() => {
+    const run = async () => {
+      await Promise.resolve();
+      cargarFacturasMes();
+    };
+    run();
+  }, [cargarFacturasMes]);
 
   const mesAnterior = () => setFechaActual(new Date(fechaActual.getFullYear(), fechaActual.getMonth() - 1, 1));
   const mesSiguiente = () => setFechaActual(new Date(fechaActual.getFullYear(), fechaActual.getMonth() + 1, 1));
@@ -71,53 +75,57 @@ export default function CalendarioPage() {
         </div>
       </div>
 
-      <div className="calendario-layout">
-        <div className="card calendario-card">
-          <div className="calendario-header">
-            <h2>{meses[fechaActual.getMonth()]} {fechaActual.getFullYear()}</h2>
-            <div className="calendario-nav">
-              <button className="btn-icon" onClick={mesAnterior}><ChevronLeft /></button>
-              <button className="btn btn-outline" onClick={() => setFechaActual(new Date())}>Hoy</button>
-              <button className="btn-icon" onClick={mesSiguiente}><ChevronRight /></button>
+      {cargando ? (
+        <div className="loader-center"><div className="loader" /></div>
+      ) : (
+        <div className="calendario-layout">
+          <div className="card calendario-card">
+            <div className="calendario-header">
+              <h2>{meses[fechaActual.getMonth()]} {fechaActual.getFullYear()}</h2>
+              <div className="calendario-nav">
+                <button className="btn-icon" onClick={mesAnterior}><ChevronLeft /></button>
+                <button className="btn btn-outline" onClick={() => setFechaActual(new Date())}>Hoy</button>
+                <button className="btn-icon" onClick={mesSiguiente}><ChevronRight /></button>
+              </div>
+            </div>
+
+            <div className="calendario-grid">
+              {diasSemana.map(dia => (
+                <div key={dia} className="calendario-dia-header">{dia}</div>
+              ))}
+              
+              {dias.map((dia, index) => {
+                if (!dia) return <div key={`empty-${index}`} className="calendario-celda vacia"></div>;
+                
+                const facturasDelDia = facturas.filter(f => new Date(f.fechaEmision).getDate() === dia.getDate());
+                const esHoy = new Date().toDateString() === dia.toDateString();
+
+                return (
+                  <div key={dia.toISOString()} className={`calendario-celda ${esHoy ? 'hoy' : ''}`}>
+                    <span className="numero-dia">{dia.getDate()}</span>
+                    <div className="facturas-dia-lista">
+                      {facturasDelDia.map(f => (
+                        <div 
+                          key={f._id} 
+                          className={`factura-pill ${f.categoriaManual ? 'manual' : 'xml'}`}
+                          onClick={() => setFacturaSeleccionada(f)}
+                        >
+                          ₡{f.resumenFactura?.totalComprobante?.toLocaleString() || 0}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="calendario-grid">
-            {diasSemana.map(dia => (
-              <div key={dia} className="calendario-dia-header">{dia}</div>
-            ))}
-            
-            {dias.map((dia, index) => {
-              if (!dia) return <div key={`empty-${index}`} className="calendario-celda vacia"></div>;
-              
-              const facturasDelDia = facturas.filter(f => new Date(f.fechaEmision).getDate() === dia.getDate());
-              const esHoy = new Date().toDateString() === dia.toDateString();
-
-              return (
-                <div key={dia.toISOString()} className={`calendario-celda ${esHoy ? 'hoy' : ''}`}>
-                  <span className="numero-dia">{dia.getDate()}</span>
-                  <div className="facturas-dia-lista">
-                    {facturasDelDia.map(f => (
-                      <div 
-                        key={f._id} 
-                        className={`factura-pill ${f.categoriaManual ? 'manual' : 'xml'}`}
-                        onClick={() => setFacturaSeleccionada(f)}
-                      >
-                        ₡{f.resumenFactura?.totalComprobante?.toLocaleString() || 0}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <DetalleFacturaModal 
+            facturaSeleccionada={facturaSeleccionada} 
+            setFacturaSeleccionada={setFacturaSeleccionada} 
+          />
         </div>
-
-        <DetalleFacturaModal 
-          facturaSeleccionada={facturaSeleccionada} 
-          setFacturaSeleccionada={setFacturaSeleccionada} 
-        />
-      </div>
+      )}
     </div>
   );
 }

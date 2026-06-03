@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import DistribucionGastos from '../components/gastos/DistribucionGastos';
 import DesgloseGastos from '../components/gastos/DesgloseGastos';
@@ -8,15 +8,11 @@ import './GastosPage.css';
 
 export default function GastosPage() {
   const [gastos, setGastos] = useState([]);
-  const [cargando, setCargando] = useState(false);
+  const [cargando, setCargando] = useState(true);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [facturaSeleccionada, setFacturaSeleccionada] = useState(null);
 
-  useEffect(() => {
-    cargarGastos();
-  }, []);
-
-  const cargarGastos = async () => {
+  const cargarGastos = useCallback(async () => {
     setCargando(true);
     try {
       const res = await api.get('/facturas?limit=500');
@@ -26,7 +22,15 @@ export default function GastosPage() {
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const run = async () => {
+      await Promise.resolve();
+      cargarGastos();
+    };
+    run();
+  }, [cargarGastos]);
 
   // Agrupar gastos por categoría
   const gastosPorCategoria = gastos.reduce((acc, gasto) => {

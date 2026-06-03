@@ -109,7 +109,13 @@ export default function DeclaracionesPage() {
     numComprobante: '',
   });
 
+  const mostrarMensaje = useCallback((tipo, texto) => {
+    setMensaje({ tipo, texto });
+    setTimeout(() => setMensaje(null), 4000);
+  }, []);
+
   const cargarDatos = useCallback(async () => {
+    await Promise.resolve();
     setCargando(true);
     try {
       const [cfg, res, gst, ing, dec] = await Promise.all([
@@ -130,16 +136,15 @@ export default function DeclaracionesPage() {
     } finally {
       setCargando(false);
     }
-  }, [anio, cuatrimestre, filtroHistorial.anio, filtroHistorial.tipo]);
+  }, [anio, cuatrimestre, filtroHistorial.anio, filtroHistorial.tipo, mostrarMensaje]);
 
   useEffect(() => {
-    cargarDatos();
+    const run = async () => {
+      await Promise.resolve();
+      cargarDatos();
+    };
+    run();
   }, [cargarDatos]);
-
-  const mostrarMensaje = (tipo, texto) => {
-    setMensaje({ tipo, texto });
-    setTimeout(() => setMensaje(null), 4000);
-  };
 
   const guardarConfig = async () => {
     try {
@@ -151,6 +156,7 @@ export default function DeclaracionesPage() {
       });
       mostrarMensaje('exito', 'Configuración guardada correctamente');
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error guardando configuración');
     }
   };
@@ -164,6 +170,7 @@ export default function DeclaracionesPage() {
       await cargarDatos();
       mostrarMensaje('exito', actual ? 'Gasto marcado como NO deducible' : 'Gasto marcado como deducible');
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error actualizando deducibilidad');
     }
   };
@@ -219,6 +226,7 @@ export default function DeclaracionesPage() {
       });
       await cargarDatos();
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error guardando ingreso');
     }
   };
@@ -246,6 +254,7 @@ export default function DeclaracionesPage() {
       });
       await cargarDatos();
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error guardando gasto');
     }
   };
@@ -264,6 +273,7 @@ export default function DeclaracionesPage() {
       document.body.removeChild(a);
       mostrarMensaje('exito', 'Archivo descargado');
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error exportando datos');
     }
   };
@@ -302,6 +312,7 @@ export default function DeclaracionesPage() {
       await cargarDatos();
       setTab('historial');
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error generando declaración IVA');
     } finally {
       setCargando(false);
@@ -316,6 +327,7 @@ export default function DeclaracionesPage() {
       await cargarDatos();
       setTab('historial');
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error generando declaración Renta');
     } finally {
       setCargando(false);
@@ -328,6 +340,7 @@ export default function DeclaracionesPage() {
       mostrarMensaje('exito', 'Declaración marcada como Presentada');
       await cargarDatos();
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error actualizando estado');
     }
   };
@@ -338,6 +351,7 @@ export default function DeclaracionesPage() {
       mostrarMensaje('exito', 'Declaración revertida a Calculada');
       await cargarDatos();
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error actualizando estado');
     }
   };
@@ -350,6 +364,7 @@ export default function DeclaracionesPage() {
       await cargarDatos();
       if (declaracionActiva?._id === id) setDeclaracionActiva(null);
     } catch (err) {
+      console.error(err);
       mostrarMensaje('error', 'Error eliminando declaración');
     }
   };
