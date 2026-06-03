@@ -104,7 +104,7 @@ const ingresoSchema = new mongoose.Schema({
 });
 
 // Calcular monto total e IVA antes de la validación
-ingresoSchema.pre('validate', function (next) {
+ingresoSchema.pre('validate', function () {
   if (this.isNew || this.isModified('montoSubtotal') || this.isModified('tasaIVA') || this.isModified('cantidadCabezas') || this.isModified('precioUnitario') || this.isModified('pesoTotal') || this.isModified('precioPorKilo')) {
     let subtotal = this.montoSubtotal || 0;
     
@@ -125,7 +125,6 @@ ingresoSchema.pre('validate', function (next) {
     this.ivaVenta = Math.round(subtotal * (this.tasaIVA / 100) * 100) / 100;
     this.montoTotal = this.montoSubtotal + this.ivaVenta;
   }
-  next();
 });
 
 // Índice compuesto

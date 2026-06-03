@@ -31,6 +31,30 @@ let estadisticas = {
   errores: 0,
 };
 
+let lockIdle = null;
+let pausandoIdle = false;
+
+async function liberarLockIdle() {
+  if (lockIdle) {
+    console.log('🔓 Liberando lock de IDLE temporalmente...');
+    try {
+      await lockIdle.release();
+    } catch (_) {}
+    lockIdle = null;
+  }
+}
+
+async function restablecerLockIdle() {
+  if (conexionActiva && clienteIMAP && !lockIdle && !pausandoIdle) {
+    console.log('🔒 Restableciendo lock de IDLE...');
+    try {
+      lockIdle = await clienteIMAP.getMailboxLock('INBOX');
+    } catch (e) {
+      console.error('⚠️ No se pudo restablecer el lock de INBOX:', e.message);
+    }
+  }
+}
+
 // Directorio para guardar archivos adjuntos
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 const XML_DIR = path.join(UPLOADS_DIR, 'xml');
@@ -228,35 +252,40 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId) {
  */
 async function escucharNuevosEmails(usuarioId) {
   try {
-    const lock = await clienteIMAP.getMailboxLock('INBOX');
+    pausandoIdle = false;
+    lockIdle = await clienteIMAP.getMailboxLock('INBOX');
+    console.log('👂 Escuchando nuevos emails en modo IDLE (INBOX)...');
 
-    try {
-      // Escuchar evento de nuevo email
-      clienteIMAP.on('exists', async (data) => {
-        console.log('📬 Nuevo email detectado!');
-        try {
-          // Buscar el último email no leído
-          const mensajes = clienteIMAP.fetch({ seen: false }, {
-            source: true,
-            uid: true,
-            envelope: true,
-          });
+    // Escuchar evento de nuevo email
+    clienteIMAP.on('exists', async (data) => {
+      console.log(`📬 Nuevo email detectado en INBOX! Mensajes totales: ${data.count}`);
+      
+      // Pausamos IDLE liberando el lock para permitir operaciones de fetch
+      pausandoIdle = true;
+      try {
+        await liberarLockIdle();
+        // Esperamos un segundo para asegurar que el correo esté disponible
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Procesamos los correos de la bandeja
+        await procesarEmailsEnCarpeta('INBOX', usuarioId);
+      } catch (err) {
+        console.error('❌ Error procesando nuevo email en IDLE:', err.message);
+      } finally {
+        pausandoIdle = false;
+        await restablecerLockIdle();
+      }
+    });
 
-          for await (const msg of mensajes) {
-            await procesarMensaje(msg, usuarioId, 'INBOX');
-          }
-        } catch (err) {
-          console.error('❌ Error procesando nuevo email:', err.message);
-        }
-      });
+    // Mantener la función activa escuchando indefinidamente
+    await new Promise((resolve, reject) => {
+      clienteIMAP.on('close', () => resolve());
+      clienteIMAP.on('error', (err) => reject(err));
+    });
 
-      // Mantener la conexión IDLE
-      console.log('👂 Escuchando nuevos emails en modo IDLE...');
-    } finally {
-      lock.release();
-    }
   } catch (error) {
-    console.error('❌ Error en modo IDLE:', error.message);
+    console.error('❌ Error en listener de modo IDLE:', error.message);
+  } finally {
+    await liberarLockIdle();
   }
 }
 
@@ -467,7 +496,17 @@ async function sincronizarManual(usuarioId) {
     }
   }
 
-  await procesarTodasLasCarpetas(usuarioId);
+  // Pausar IDLE para evitar colisiones de locks en INBOX
+  pausandoIdle = true;
+  await liberarLockIdle();
+
+  try {
+    await procesarTodasLasCarpetas(usuarioId);
+  } finally {
+    pausandoIdle = false;
+    await restablecerLockIdle();
+  }
+
   return {
     mensaje: 'Sincronización completada',
     fecha: new Date(),
