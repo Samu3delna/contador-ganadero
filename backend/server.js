@@ -16,6 +16,9 @@ const facturaRoutes = require('./routes/facturaRoutes');
 const impuestoRoutes = require('./routes/impuestoRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const declaracionRoutes = require('./routes/declaracionRoutes');
+const inventarioRoutes = require('./routes/inventarioRoutes');
+const costoRoutes = require('./routes/costoRoutes');
+const facturaEmisionRoutes = require('./routes/facturaEmisionRoutes');
 
 // Importar middleware de errores
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
@@ -89,6 +92,9 @@ app.use('/api/facturas', facturaRoutes);
 app.use('/api/impuestos', impuestoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/declaraciones', declaracionRoutes);
+app.use('/api/inventario', inventarioRoutes);
+app.use('/api/costos', costoRoutes);
+app.use('/api/facturacion', facturaEmisionRoutes);
 
 // Middleware para rutas no encontradas
 app.use(notFound);

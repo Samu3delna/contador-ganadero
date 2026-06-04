@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark } from 'lucide-react';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
@@ -9,6 +9,9 @@ const menuItems = [
   { path: '/facturas', label: 'Facturas', icon: FileText },
   { path: '/gastos', label: 'Gastos por Categoría', icon: CreditCard },
   { path: '/ingresos', label: 'Ingresos', icon: DollarSign },
+  { path: '/inventario', label: 'Inventario', icon: Warehouse },
+  { path: '/costos', label: 'Costos de Producción', icon: TrendingUp },
+  { path: '/facturacion', label: 'Facturación REA', icon: Receipt },
   { path: '/declaraciones', label: 'Declaraciones Hacienda', icon: Landmark },
   { path: '/impuestos', label: 'Impuestos', icon: Calculator },
   { path: '/calendario', label: 'Calendario', icon: Calendar },

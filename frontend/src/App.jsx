@@ -9,6 +9,9 @@ import ImpuestosPage from './pages/ImpuestosPage';
 import CalendarioPage from './pages/CalendarioPage';
 import GastosPage from './pages/GastosPage';
 import DeclaracionesPage from './pages/DeclaracionesPage';
+import InventarioPage from './pages/InventarioPage';
+import CostosPage from './pages/CostosPage';
+import FacturacionPage from './pages/FacturacionPage';
 import './App.css';
 
 function RutaProtegida({ children }) {
@@ -29,6 +32,9 @@ function AppLayout() {
           <Route path="/ingresos" element={<IngresosPage />} />
           <Route path="/impuestos" element={<ImpuestosPage />} />
           <Route path="/declaraciones" element={<DeclaracionesPage />} />
+          <Route path="/inventario" element={<InventarioPage />} />
+          <Route path="/costos" element={<CostosPage />} />
+          <Route path="/facturacion" element={<FacturacionPage />} />
           <Route path="/calendario" element={<CalendarioPage />} />
         </Routes>
       </div>

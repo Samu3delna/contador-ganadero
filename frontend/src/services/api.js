@@ -102,4 +102,33 @@ export const resumenDashboardAPI = () => api.get('/dashboard/resumen');
 export const gastosPorCategoriaAPI = (anio) => api.get('/dashboard/gastos-por-categoria', { params: { anio } });
 export const tendenciaMensualAPI = (anio) => api.get('/dashboard/tendencia-mensual', { params: { anio } });
 
+// === Inventario ===
+export const obtenerInventarioAPI = () => api.get('/inventario');
+export const obtenerResumenInventarioAPI = () => api.get('/inventario/resumen');
+export const agregarBovinoAPI = (datos) => api.post('/inventario/bovinos', datos);
+export const actualizarBovinoAPI = (id, datos) => api.put(`/inventario/bovinos/${id}`, datos);
+export const eliminarBovinoAPI = (id) => api.delete(`/inventario/bovinos/${id}`);
+export const agregarLoteAvesAPI = (datos) => api.post('/inventario/aves', datos);
+export const actualizarLoteAvesAPI = (id, datos) => api.put(`/inventario/aves/${id}`, datos);
+export const agregarEstanqueAPI = (datos) => api.post('/inventario/peces', datos);
+export const actualizarEstanqueAPI = (id, datos) => api.put(`/inventario/peces/${id}`, datos);
+export const agregarColmenaAPI = (datos) => api.post('/inventario/colmenas', datos);
+export const actualizarColmenaAPI = (id, datos) => api.put(`/inventario/colmenas/${id}`, datos);
+
+// === Costos de Producción ===
+export const obtenerCostosAPI = (params) => api.get('/costos', { params });
+export const obtenerResumenCostosAPI = (params) => api.get('/costos/resumen', { params });
+export const crearCentroCostoAPI = (datos) => api.post('/costos/centros', datos);
+export const agregarConsumoAPI = (refId, datos) => api.post(`/costos/centros/${refId}/consumo`, datos);
+export const agregarProduccionAPI = (refId, datos) => api.post(`/costos/centros/${refId}/produccion`, datos);
+export const cerrarCentroCostoAPI = (refId) => api.put(`/costos/centros/${refId}/cerrar`);
+
+// === Facturación Electrónica REA ===
+export const obtenerFacturasEmisionAPI = (params) => api.get('/facturacion', { params });
+export const obtenerFacturaEmisionAPI = (id) => api.get(`/facturacion/${id}`);
+export const crearFacturaEmisionAPI = (datos) => api.post('/facturacion', datos);
+export const actualizarEstadoFacturaAPI = (id, datos) => api.put(`/facturacion/${id}/estado`, datos);
+export const anularFacturaAPI = (id) => api.put(`/facturacion/${id}/anular`);
+export const obtenerResumenEmisionAPI = (params) => api.get('/facturacion/resumen', { params });
+
 export default api;
