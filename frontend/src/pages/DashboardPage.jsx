@@ -7,6 +7,17 @@ import GastosCategoriaList from '../components/dashboard/GastosCategoriaList';
 import ProyeccionFiscal from '../components/dashboard/ProyeccionFiscal';
 import './DashboardPage.css';
 
+async function cargarData() {
+  const [res, tend, cat] = await Promise.all([
+    resumenDashboardAPI(), tendenciaMensualAPI(), gastosPorCategoriaAPI()
+  ]);
+  return {
+    resumen: res.data,
+    tendencia: tend.data,
+    categorias: cat.data,
+  };
+}
+
 export default function DashboardPage() {
   const [resumen, setResumen] = useState(null);
   const [tendencia, setTendencia] = useState([]);
@@ -14,28 +25,35 @@ export default function DashboardPage() {
   const [cargando, setCargando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
 
-  const cargar = useCallback(async (mostrarLoader = true) => {
-    if (mostrarLoader) setCargando(true);
-    try {
-      const [res, tend, cat] = await Promise.all([
-        resumenDashboardAPI(), tendenciaMensualAPI(), gastosPorCategoriaAPI()
-      ]);
-      setResumen(res.data);
-      setTendencia(tend.data);
-      setCategorias(cat.data);
-    } catch (err) { console.error(err); }
-    finally { setCargando(false); }
-  }, []);
-
   useEffect(() => {
-    cargar(true);
-  }, [cargar]);
+    let activo = true;
+    cargarData()
+      .then((data) => {
+        if (activo) {
+          setResumen(data.resumen);
+          setTendencia(data.tendencia);
+          setCategorias(data.categorias);
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally(() => {
+        if (activo) {
+          setCargando(false);
+        }
+      });
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   async function handleSincronizar() {
     setSincronizando(true);
     try {
       await sincronizarEmailAPI();
-      await cargar(false);
+      const data = await cargarData();
+      setResumen(data.resumen);
+      setTendencia(data.tendencia);
+      setCategorias(data.categorias);
     } catch (err) {
       console.error(err);
       alert('Error al sincronizar correos');
