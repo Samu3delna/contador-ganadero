@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { resumenDashboardAPI, tendenciaMensualAPI, gastosPorCategoriaAPI, sincronizarEmailAPI } from '../services/api';
 import ResumenCards from '../components/dashboard/ResumenCards';
