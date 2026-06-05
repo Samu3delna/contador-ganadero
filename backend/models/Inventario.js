@@ -61,7 +61,7 @@ const bovinoSchema = new mongoose.Schema({
   },
   observaciones: { type: String, trim: true },
   activo: { type: Boolean, default: true },
-}, { _id: true, timestamps: true });
+}, { _id: true });
 
 // ============ AVES (POSTURA) ============
 const cicloPosturaSchema = new mongoose.Schema({
@@ -85,7 +85,7 @@ const cicloPosturaSchema = new mongoose.Schema({
     enum: ['pre_puesta', 'pico_postura', 'produccion_estable', 'declive', 'fin_ciclo'],
     default: 'pre_puesta',
   },
-}, { _id: true, timestamps: false });
+}, { _id: true });
 
 const loteAvesSchema = new mongoose.Schema({
   loteId: {

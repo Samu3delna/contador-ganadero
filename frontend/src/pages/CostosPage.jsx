@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
-import { obtenerCostosAPI, obtenerResumenCostosAPI } from '../services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { obtenerResumenCostosAPI } from '../services/api';
+import './CostosPage.css';
 
 export default function CostosPage() {
   const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
     try {
       setCargando(true);
       const resumenRes = await obtenerResumenCostosAPI();
@@ -16,47 +17,65 @@ export default function CostosPage() {
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     cargarDatos();
-  }, []);
+  }, [cargarDatos]);
 
   if (cargando) return <div className="loader-center"><div className="loader" /></div>;
   if (error) return <div className="error-message">{error}</div>;
 
+  const margen = resumen?.resumenGlobal?.margenOperativoGlobal || 0;
+
   return (
-    <div className="page-container">
-      <h1 className="page-title">Control de Costos de Producción</h1>
+    <div className="page-content">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Control de Costos de Producción</h1>
+          <p className="page-subtitle">KPIs por centro de costo y rentabilidad</p>
+        </div>
+      </div>
 
       {/* Resumen Global */}
-      <div className="cards-grid">
-        <div className="card">
-          <h3>Costo Total Insumos</h3>
-          <p className="big-number">₡{resumen?.resumenGlobal?.costoTotalInsumos?.toLocaleString() || 0}</p>
+      <div className="dashboard-cards">
+        <div className="glass-card dash-card">
+          <div className="dash-card-icon dash-card-icon--red"><span>💰</span></div>
+          <div className="dash-card-info">
+            <span className="dash-card-label">Costo Total Insumos</span>
+            <span className="dash-card-value">₡{resumen?.resumenGlobal?.costoTotalInsumos?.toLocaleString() || 0}</span>
+          </div>
         </div>
-        <div className="card">
-          <h3>Ingreso Total Ventas</h3>
-          <p className="big-number">₡{resumen?.resumenGlobal?.ingresoTotalVentas?.toLocaleString() || 0}</p>
+        <div className="glass-card dash-card">
+          <div className="dash-card-icon dash-card-icon--green"><span>💵</span></div>
+          <div className="dash-card-info">
+            <span className="dash-card-label">Ingreso Total Ventas</span>
+            <span className="dash-card-value">₡{resumen?.resumenGlobal?.ingresoTotalVentas?.toLocaleString() || 0}</span>
+          </div>
         </div>
-        <div className="card">
-          <h3>Margen Operativo</h3>
-          <p className={`big-number ${(resumen?.resumenGlobal?.margenOperativoGlobal || 0) >= 0 ? 'positivo' : 'negativo'}`}>
-            ₡{resumen?.resumenGlobal?.margenOperativoGlobal?.toLocaleString() || 0}
-          </p>
+        <div className="glass-card dash-card">
+          <div className={`dash-card-icon ${margen >= 0 ? 'dash-card-icon--green' : 'dash-card-icon--red'}`}><span>📊</span></div>
+          <div className="dash-card-info">
+            <span className="dash-card-label">Margen Operativo</span>
+            <span className="dash-card-value">₡{margen.toLocaleString()}</span>
+          </div>
         </div>
-        <div className="card">
-          <h3>Costo Promedio / kg</h3>
-          <p className="big-number">₡{resumen?.resumenGlobal?.costoPromedioPorKg?.toLocaleString() || 0}</p>
+        <div className="glass-card dash-card">
+          <div className="dash-card-icon dash-card-icon--blue"><span>⚖️</span></div>
+          <div className="dash-card-info">
+            <span className="dash-card-label">Costo Promedio / kg</span>
+            <span className="dash-card-value">₡{resumen?.resumenGlobal?.costoPromedioPorKg?.toLocaleString() || 0}</span>
+          </div>
         </div>
       </div>
 
       {/* Centros de Costo */}
-      <h2 className="section-title">Centros de Costo</h2>
+      <h2 className="chart-title">Centros de Costo</h2>
       {resumen?.centrosCosto?.length === 0 ? (
-        <p>No hay centros de costo registrados.</p>
+        <p className="text-muted">No hay centros de costo registrados.</p>
       ) : (
-        <div className="table-container">
+        <div className="table-responsive">
           <table className="data-table">
             <thead>
               <tr>
@@ -76,11 +95,11 @@ export default function CostosPage() {
                   <td>{c.referenciaId}</td>
                   <td>{c.tipoActividad}</td>
                   <td>{c.nombreLote || '-'}</td>
-                  <td>{c.activo ? 'Activo' : 'Cerrado'}</td>
+                  <td><span className={`badge badge-${c.activo ? 'exito' : 'advertencia'}`}>{c.activo ? 'Activo' : 'Cerrado'}</span></td>
                   <td>₡{c.indicadores?.costoProduccionPorKg?.toLocaleString() || 0}</td>
                   <td>{c.indicadores?.factorConversionAlimenticia?.toFixed(2) || '-'}</td>
                   <td>₡{c.indicadores?.ingresoTotalVentas?.toLocaleString() || 0}</td>
-                  <td className={c.indicadores?.margenRentaOperativa >= 0 ? 'positivo' : 'negativo'}>
+                  <td className={c.indicadores?.margenRentaOperativa >= 0 ? 'text-exito' : 'text-error'}>
                     ₡{c.indicadores?.margenRentaOperativa?.toLocaleString() || 0}
                   </td>
                 </tr>

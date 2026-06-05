@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { obtenerFacturasEmisionAPI, obtenerResumenEmisionAPI } from '../services/api';
+import './FacturacionPage.css';
 
 export default function FacturacionPage() {
   const [facturas, setFacturas] = useState([]);
@@ -7,7 +8,7 @@ export default function FacturacionPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
     try {
       setCargando(true);
       const [facturasRes, resumenRes] = await Promise.all([
@@ -21,58 +22,76 @@ export default function FacturacionPage() {
     } finally {
       setCargando(false);
     }
-  };
-
-  useEffect(() => {
-    cargarDatos();
   }, []);
 
-  const estadoColor = (estado) => {
-    const colores = {
-      borrador: 'gray',
-      generada: 'blue',
-      firmada: 'purple',
-      enviada_hacienda: 'orange',
-      aceptada: 'green',
-      rechazada: 'red',
-      anulada: 'darkgray',
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarDatos();
+  }, [cargarDatos]);
+
+  const estadoBadge = (estado) => {
+    const map = {
+      borrador: 'badge-advertencia',
+      generada: 'badge-info',
+      firmada: 'badge-primario',
+      enviada_hacienda: 'badge-advertencia',
+      aceptada: 'badge-exito',
+      rechazada: 'badge-error',
+      anulada: 'badge-secundario',
     };
-    return colores[estado] || 'gray';
+    return map[estado] || 'badge-advertencia';
   };
 
   if (cargando) return <div className="loader-center"><div className="loader" /></div>;
   if (error) return <div className="error-message">{error}</div>;
 
   return (
-    <div className="page-container">
-      <h1 className="page-title">Facturación Electrónica REA</h1>
+    <div className="page-content">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Facturación Electrónica REA</h1>
+          <p className="page-subtitle">Emisión de facturas con tarifa reducida del 1% de IVA</p>
+        </div>
+      </div>
 
       {/* Resumen */}
-      <div className="cards-grid">
-        <div className="card">
-          <h3>Total Facturas</h3>
-          <p className="big-number">{resumen?.totalFacturas || 0}</p>
+      <div className="dashboard-cards">
+        <div className="glass-card dash-card">
+          <div className="dash-card-icon dash-card-icon--blue"><span>📄</span></div>
+          <div className="dash-card-info">
+            <span className="dash-card-label">Total Facturas</span>
+            <span className="dash-card-value">{resumen?.totalFacturas || 0}</span>
+          </div>
         </div>
-        <div className="card">
-          <h3>Total Emitido</h3>
-          <p className="big-number">₡{resumen?.totalEmitido?.toLocaleString() || 0}</p>
+        <div className="glass-card dash-card">
+          <div className="dash-card-icon dash-card-icon--green"><span>💵</span></div>
+          <div className="dash-card-info">
+            <span className="dash-card-label">Total Emitido</span>
+            <span className="dash-card-value">₡{resumen?.totalEmitido?.toLocaleString() || 0}</span>
+          </div>
         </div>
-        <div className="card">
-          <h3>IVA Recaudado (1%)</h3>
-          <p className="big-number">₡{resumen?.totalIVARecaudado?.toLocaleString() || 0}</p>
+        <div className="glass-card dash-card">
+          <div className="dash-card-icon dash-card-icon--amber"><span>📉</span></div>
+          <div className="dash-card-info">
+            <span className="dash-card-label">IVA Recaudado (1%)</span>
+            <span className="dash-card-value">₡{resumen?.totalIVARecaudado?.toLocaleString() || 0}</span>
+          </div>
         </div>
-        <div className="card">
-          <h3>Aceptadas</h3>
-          <p className="big-number">{resumen?.porEstado?.aceptada || 0}</p>
+        <div className="glass-card dash-card">
+          <div className="dash-card-icon dash-card-icon--green"><span>✅</span></div>
+          <div className="dash-card-info">
+            <span className="dash-card-label">Aceptadas</span>
+            <span className="dash-card-value">{resumen?.porEstado?.aceptada || 0}</span>
+          </div>
         </div>
       </div>
 
       {/* Lista de facturas */}
-      <h2 className="section-title">Facturas Emitidas</h2>
+      <h2 className="chart-title">Facturas Emitidas</h2>
       {facturas.length === 0 ? (
-        <p>No hay facturas emitidas.</p>
+        <p className="text-muted">No hay facturas emitidas.</p>
       ) : (
-        <div className="table-container">
+        <div className="table-responsive">
           <table className="data-table">
             <thead>
               <tr>
@@ -95,7 +114,7 @@ export default function FacturacionPage() {
                   <td>₡{f.resumenFactura?.totalComprobante?.toLocaleString()}</td>
                   <td>₡{f.resumenFactura?.totalImpuesto?.toLocaleString()}</td>
                   <td>
-                    <span className={`badge badge--${estadoColor(f.estado)}`}>
+                    <span className={`badge ${estadoBadge(f.estado)}`}>
                       {f.estado}
                     </span>
                   </td>
