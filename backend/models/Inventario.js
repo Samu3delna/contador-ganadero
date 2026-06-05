@@ -229,7 +229,6 @@ const inventarioSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
     required: true,
-    index: true,
   },
   // Inventarios por especie
   bovinos: [bovinoSchema],

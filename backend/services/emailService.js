@@ -183,12 +183,12 @@ async function iniciarListener(usuarioId) {
 /**
  * Procesar emails no leídos en TODAS las carpetas configuradas
  */
-async function procesarTodasLasCarpetas(usuarioId) {
+async function procesarTodasLasCarpetas(usuarioId, buscarTodos = false) {
   const carpetas = await carpetasParaBuscar();
 
   for (const carpeta of carpetas) {
     try {
-      await procesarEmailsEnCarpeta(carpeta, usuarioId);
+      await procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos);
     } catch (err) {
       console.error(`⚠️  Error procesando carpeta "${carpeta}": ${err.message}`);
     }
@@ -200,7 +200,7 @@ async function procesarTodasLasCarpetas(usuarioId) {
 /**
  * Procesar todos los emails no leídos de una carpeta específica
  */
-async function procesarEmailsEnCarpeta(carpeta, usuarioId) {
+async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false) {
   let lock;
   try {
     lock = await clienteIMAP.getMailboxLock(carpeta);
@@ -211,31 +211,78 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId) {
   }
 
   try {
-    console.log(`📂 Procesando carpeta: ${carpeta}`);
+    console.log(`📂 Procesando carpeta: ${carpeta} (buscarTodos: ${buscarTodos})`);
 
     // Buscar mensajes de los últimos 60 días o no leídos
     const hace60Dias = new Date();
     hace60Dias.setDate(hace60Dias.getDate() - 60);
     hace60Dias.setHours(0, 0, 0, 0);
 
-    const mensajes = clienteIMAP.fetch(
-      { or: [{ since: hace60Dias }, { seen: false }] },
-      {
-        source: true,
-        uid: true,
-        envelope: true,
+    const filtro = buscarTodos
+      ? { all: true }
+      : { or: [{ since: hace60Dias }, { seen: false }] };
+
+    // Paso 1: Obtener solo UIDs de los mensajes candidatos (consulta ligera)
+    const mensajesInfo = clienteIMAP.fetch(filtro, { uid: true });
+    const uidsCandidatos = [];
+    for await (const msg of mensajesInfo) {
+      if (msg.uid) {
+        uidsCandidatos.push(msg.uid);
       }
+    }
+
+    if (uidsCandidatos.length === 0) {
+      console.log(`  ℹ️  No hay correos en "${carpeta}" que coincidan con el filtro.`);
+      return;
+    }
+
+    // Paso 2: Filtrar contra la base de datos para omitir correos ya procesados
+    const emailUIDsCandidatos = uidsCandidatos.map(uid => `${carpeta}_${uid}`);
+    const facturasExistentes = await Factura.find({
+      usuario: usuarioId,
+      emailUID: { $in: emailUIDsCandidatos }
+    }).distinct('emailUID');
+
+    const setUidsExistentes = new Set(
+      facturasExistentes.map(emailUidStr => {
+        const parts = emailUidStr.split('_');
+        return parseInt(parts[parts.length - 1], 10);
+      })
     );
 
+    const uidsAProcesar = uidsCandidatos.filter(uid => !setUidsExistentes.has(uid));
+
+    if (uidsAProcesar.length === 0) {
+      console.log(`  ℹ️  No hay nuevos correos para procesar en "${carpeta}" (de ${uidsCandidatos.length} analizados)`);
+      return;
+    }
+
+    console.log(`  📨 Descargando y procesando ${uidsAProcesar.length} nuevo(s) correo(s) en "${carpeta}"...`);
+
+    // Paso 3: Descargar y procesar en lotes (batching) de 50 para evitar sobrecarga
+    const TAMANO_LOTE = 50;
     let procesados = 0;
 
-    for await (const msg of mensajes) {
-      try {
-        await procesarMensaje(msg, usuarioId, carpeta);
-        procesados++;
-      } catch (err) {
-        console.error(`❌ Error procesando email UID ${msg.uid} en ${carpeta}:`, err.message);
-        estadisticas.errores++;
+    for (let i = 0; i < uidsAProcesar.length; i += TAMANO_LOTE) {
+      const loteUids = uidsAProcesar.slice(i, i + TAMANO_LOTE);
+      
+      const mensajes = clienteIMAP.fetch(
+        { uid: loteUids },
+        {
+          source: true,
+          uid: true,
+          envelope: true,
+        }
+      );
+
+      for await (const msg of mensajes) {
+        try {
+          await procesarMensaje(msg, usuarioId, carpeta);
+          procesados++;
+        } catch (err) {
+          console.error(`❌ Error procesando email UID ${msg.uid} en ${carpeta}:`, err.message);
+          estadisticas.errores++;
+        }
       }
     }
 
@@ -501,7 +548,7 @@ async function sincronizarManual(usuarioId) {
   await liberarLockIdle();
 
   try {
-    await procesarTodasLasCarpetas(usuarioId);
+    await procesarTodasLasCarpetas(usuarioId, true);
   } finally {
     pausandoIdle = false;
     await restablecerLockIdle();
