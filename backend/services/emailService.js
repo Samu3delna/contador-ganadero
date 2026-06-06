@@ -33,6 +33,9 @@ let estadisticas = {
 
 let lockIdle = null;
 let pausandoIdle = false;
+let syncInterval = null;
+let reconnectTimeout = null;
+let reconectando = false;
 
 async function liberarLockIdle() {
   if (lockIdle) {
@@ -49,8 +52,11 @@ async function restablecerLockIdle() {
     console.log('🔒 Restableciendo lock de IDLE...');
     try {
       lockIdle = await clienteIMAP.getMailboxLock('INBOX');
+      console.log('🔒 Lock de INBOX restablecido correctamente');
     } catch (e) {
       console.error('⚠️ No se pudo restablecer el lock de INBOX:', e.message);
+      // Si falla, intentar de nuevo en 5 segundos
+      setTimeout(() => restablecerLockIdle(), 5000);
     }
   }
 }
@@ -138,6 +144,11 @@ async function carpetasParaBuscar() {
  * @param {string} usuarioId - ID del usuario propietario del buzón
  */
 async function iniciarListener(usuarioId) {
+  if (reconectando) {
+    console.log('⏳ Reconexión IMAP ya en curso, omitiendo...');
+    return;
+  }
+
   const config = configurarIMAP();
 
   if (!config.auth.user || !config.auth.pass) {
@@ -145,7 +156,21 @@ async function iniciarListener(usuarioId) {
     return;
   }
 
+  // Limpiar timers anteriores para evitar duplicados
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
+
   asegurarDirectoriosUploads();
+  reconectando = true;
+
+  // Log de diagnóstico (sin password)
+  console.log(`🔧 Config IMAP: host=${config.host}, port=${config.port}, secure=${config.secure}, user=${config.auth.user}`);
 
   try {
     clienteIMAP = new ImapFlow(config);
@@ -158,25 +183,49 @@ async function iniciarListener(usuarioId) {
     clienteIMAP.on('close', () => {
       console.log('📧 Conexión IMAP cerrada');
       conexionActiva = false;
-      // Reconectar automáticamente tras 30 segundos
-      setTimeout(() => {
-        console.log('🔄 Intentando reconexión IMAP...');
-        iniciarListener(usuarioId).catch(console.error);
-      }, 30000);
+      lockIdle = null;
+      // Reconectar automáticamente tras 30 segundos (si no hay otra en curso)
+      if (!reconnectTimeout) {
+        reconnectTimeout = setTimeout(() => {
+          reconnectTimeout = null;
+          console.log('🔄 Intentando reconexión IMAP...');
+          iniciarListener(usuarioId).catch(console.error);
+        }, 30000);
+      }
     });
 
     await clienteIMAP.connect();
     conexionActiva = true;
+    reconectando = false;
     console.log('📧 Conectado al servidor IMAP exitosamente');
 
     // Procesar emails existentes no leídos al arrancar (en todas las carpetas)
     await procesarTodasLasCarpetas(usuarioId);
 
     // Iniciar modo IDLE para escucha en tiempo real (solo INBOX, IDLE no funciona en otras carpetas)
-    await escucharNuevosEmails(usuarioId);
+    escucharNuevosEmails(usuarioId).catch(err => {
+      console.error('❌ Error en escucharNuevosEmails:', err.message);
+    });
+
+    // Sincronización periódica cada 30 minutos como fallback (por si IDLE falla)
+    syncInterval = setInterval(() => {
+      console.log('⏰ Sincronización periódica iniciada (fallback cada 30 min)');
+      sincronizarManual(usuarioId).catch(err => {
+        console.error('❌ Error en sincronización periódica:', err.message);
+      });
+    }, 30 * 60 * 1000);
+
   } catch (error) {
     console.error('❌ Error iniciando listener IMAP:', error.message);
     conexionActiva = false;
+    reconectando = false;
+    // Reintentar en 60 segundos si falla el arranque
+    if (!reconnectTimeout) {
+      reconnectTimeout = setTimeout(() => {
+        reconnectTimeout = null;
+        iniciarListener(usuarioId).catch(console.error);
+      }, 60000);
+    }
   }
 }
 
@@ -231,6 +280,8 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false) 
       }
     }
 
+    console.log(`  🔍 ${uidsCandidatos.length} correo(s) candidato(s) encontrado(s) en "${carpeta}"`);
+
     if (uidsCandidatos.length === 0) {
       console.log(`  ℹ️  No hay correos en "${carpeta}" que coincidan con el filtro.`);
       return;
@@ -251,6 +302,8 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false) 
     );
 
     const uidsAProcesar = uidsCandidatos.filter(uid => !setUidsExistentes.has(uid));
+
+    console.log(`  🗃️  ${facturasExistentes.length} ya procesado(s), ${uidsAProcesar.length} nuevo(s) para procesar`);
 
     if (uidsAProcesar.length === 0) {
       console.log(`  ℹ️  No hay nuevos correos para procesar en "${carpeta}" (de ${uidsCandidatos.length} analizados)`);
@@ -325,8 +378,14 @@ async function escucharNuevosEmails(usuarioId) {
 
     // Mantener la función activa escuchando indefinidamente
     await new Promise((resolve, reject) => {
-      clienteIMAP.on('close', () => resolve());
-      clienteIMAP.on('error', (err) => reject(err));
+      clienteIMAP.on('close', () => {
+        console.log('📧 Evento close en IDLE, deteniendo escucha...');
+        resolve();
+      });
+      clienteIMAP.on('error', (err) => {
+        console.error('❌ Evento error en IDLE:', err.message);
+        reject(err);
+      });
     });
 
   } catch (error) {
@@ -516,6 +575,10 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
  * Si no hay conexión activa, intenta reconectar automáticamente
  */
 async function sincronizarManual(usuarioId) {
+  if (!usuarioId) {
+    throw new Error('usuarioId es requerido para sincronizar');
+  }
+
   // Si no hay conexión, intentar reconectar
   if (!clienteIMAP || !conexionActiva) {
     console.log('🔄 Reconectando IMAP para sincronización manual...');
@@ -581,6 +644,14 @@ function obtenerEstado() {
  * Detener el listener
  */
 async function detenerListener() {
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+  }
   if (clienteIMAP) {
     try {
       await clienteIMAP.logout();

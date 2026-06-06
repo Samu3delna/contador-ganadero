@@ -4,7 +4,7 @@
 
 const configurarOpenRouter = () => {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const modelo = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+  const modelo = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b:free';
 
   if (!apiKey) {
     console.warn('⚠️  OPENROUTER_API_KEY no configurada. El servicio de IA no funcionará.');
