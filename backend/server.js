@@ -1,4 +1,60 @@
-require('dotenv').config({ path: '../.env' });
+const path = require('path');
+
+// Cargar .env desde la raíz del proyecto de forma robusta
+const envPath = path.resolve(__dirname, '..', '.env');
+const dotenv = require('dotenv');
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.warn('⚠️  No se encontró archivo .env en la raíz del proyecto.');
+  console.warn('   Copia .env.example a .env y rellena tus credenciales reales.');
+}
+
+// Verificador de configuración crítica
+function verificarConfig() {
+  const requeridas = [
+    { key: 'MONGODB_URI', name: 'Base de Datos (MongoDB)' },
+    { key: 'IMAP_USER', name: 'Usuario IMAP (correo)' },
+    { key: 'IMAP_PASSWORD', name: 'Contraseña IMAP' },
+    { key: 'OPENROUTER_API_KEY', name: 'API Key de OpenRouter (IA)' },
+  ];
+  const opcionales = [
+    { key: 'JWT_SECRET', name: 'JWT Secret (para tokens de autenticación)' },
+  ];
+
+  let ok = true;
+  console.log('🔍 Verificando configuración del servidor...\n');
+
+  for (const req of requeridas) {
+    const val = process.env[req.key];
+    if (!val || val.includes('tu_') || val.includes('ejemplo')) {
+      console.error(`   ❌ ${req.key} (${req.name}): NO CONFIGURADO o es un valor de ejemplo.`);
+      ok = false;
+    } else {
+      console.log(`   ✅ ${req.key}: configurado`);
+    }
+  }
+
+  for (const opt of opcionales) {
+    const val = process.env[opt.key];
+    if (!val) {
+      console.warn(`   ⚠️  ${opt.key} (${opt.name}): no configurado (opcional, pero recomendado).`);
+    } else {
+      console.log(`   ✅ ${opt.key}: configurado`);
+    }
+  }
+
+  console.log('');
+  if (!ok) {
+    console.error('🚨 CONFIGURACIÓN INCOMPLETA: El servidor arrancará, pero IMAP y/o IA no funcionarán.');
+    console.error('   → Crea el archivo .env en la raíz del proyecto basándote en .env.example\n');
+  } else {
+    console.log('✅ Todas las configuraciones críticas están presentes.\n');
+  }
+  return ok;
+}
+
+verificarConfig();
 
 const express = require('express');
 const cors = require('cors');
