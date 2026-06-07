@@ -4,7 +4,8 @@
   "description": "Aplicación MERN para contabilidad ganadera en Costa Rica",
   "scripts": {
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "lint": "cd backend && npx eslint . && cd ../frontend && npx eslint ."
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

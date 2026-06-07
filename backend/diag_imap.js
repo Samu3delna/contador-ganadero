@@ -7,8 +7,10 @@ const { ImapFlow } = require('imapflow');
 const dns = require('dns');
 const net = require('net');
 
-// Usar DNS públicos para evitar problemas con DNS local
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+// Usar DNS del sistema con fallback a públicos
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (_) {}
 
 const DIVIDER = '═'.repeat(60);
 

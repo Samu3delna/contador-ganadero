@@ -17,9 +17,9 @@ function verificarConfig() {
     { key: 'IMAP_USER', name: 'Usuario IMAP (correo)' },
     { key: 'IMAP_PASSWORD', name: 'Contraseña IMAP' },
     { key: 'OPENROUTER_API_KEY', name: 'API Key de OpenRouter (IA)' },
+    { key: 'JWT_SECRET', name: 'JWT Secret (para tokens de autenticación)' },
   ];
   const opcionales = [
-    { key: 'JWT_SECRET', name: 'JWT Secret (para tokens de autenticación)' },
   ];
 
   let ok = true;
@@ -81,18 +81,6 @@ const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 // Inicializar app
 const app = express();
-
-// Conectar a la base de datos e iniciar listener
-conectarDB().then(async () => {
-  try {
-    const usuario = await Usuario.findOne();
-    if (usuario) {
-      iniciarListener(usuario._id);
-    }
-  } catch (error) {
-    console.error('Error al iniciar listener IMAP:', error.message);
-  }
-});
 
 // Middlewares de seguridad
 app.use(helmet());
@@ -162,4 +150,18 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT} (${process.env.NODE_ENV || 'development'})`);
+
+  // Iniciar listener IMAP después de que el servidor esté escuchando
+  if (process.env.IMAP_USER && process.env.IMAP_PASSWORD) {
+    conectarDB().then(async () => {
+      try {
+        const usuario = await Usuario.findOne();
+        if (usuario) {
+          await iniciarListener(usuario._id);
+        }
+      } catch (error) {
+        console.error('Error al iniciar listener IMAP:', error.message);
+      }
+    });
+  }
 });

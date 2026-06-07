@@ -181,7 +181,7 @@ async function iniciarListener(usuarioId) {
   reconectando = true;
 
   // Log de diagnóstico (sin password)
-  console.log(`🔧 Config IMAP: host=${config.host}, port=${config.port}, secure=${config.secure}, user=${config.auth.user}, passLength=${config.auth.pass.length}`);
+  console.log(`🔧 Config IMAP: host=${config.host}, port=${config.port}, secure=${config.secure}, user=${config.auth.user}`);
 
   try {
     clienteIMAP = new ImapFlow(config);
