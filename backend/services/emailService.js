@@ -36,6 +36,17 @@ let pausandoIdle = false;
 let syncInterval = null;
 let reconnectTimeout = null;
 let reconectando = false;
+let intentosReconexion = 0;
+const MAX_INTENTOS_RECONEXION = 10;
+
+function logErrorDetallado(contexto, error) {
+  console.error(`❌ [${contexto}] Error: ${error.message || error}`);
+  if (error.code) console.error(`   Code: ${error.code}`);
+  if (error.response) console.error(`   Response: ${error.response}`);
+  if (error.stack && process.env.NODE_ENV !== 'production') {
+    console.error(`   Stack: ${error.stack}`);
+  }
+}
 
 async function liberarLockIdle() {
   if (lockIdle) {
@@ -216,9 +227,17 @@ async function iniciarListener(usuarioId) {
     }, 30 * 60 * 1000);
 
   } catch (error) {
-    console.error('❌ Error iniciando listener IMAP:', error.message);
+    logErrorDetallado('iniciarListener', error);
     conexionActiva = false;
     reconectando = false;
+    intentosReconexion++;
+
+    if (intentosReconexion >= MAX_INTENTOS_RECONEXION) {
+      console.error(`🚨 Se alcanzó el máximo de ${MAX_INTENTOS_RECONEXION} intentos de reconexión. Deteniendo listener IMAP para evitar bucle infinito.`);
+      console.error(`   Posibles causas: Contraseña de aplicación incorrecta, acceso IMAP desactivado en Gmail, o conexión bloqueada.`);
+      return;
+    }
+
     // Reintentar en 60 segundos si falla el arranque
     if (!reconnectTimeout) {
       reconnectTimeout = setTimeout(() => {
