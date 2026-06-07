@@ -135,6 +135,34 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Cron job endpoint para sync de emails (sin auth, solo IP allowlist opcional)
+// Usado por cron-job.org / UptimeRobot como backup si el Background Worker falla
+app.post('/api/cron/sync-emails', async (req, res) => {
+  // Opcional: verificar IP de cron jobs conocidos
+  const allowedIPs = (process.env.CRON_ALLOWED_IPS || '').split(',').map(ip => ip.trim()).filter(Boolean);
+  const clientIP = req.ip || req.connection?.remoteAddress || '';
+  
+  if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
+    console.warn(`⚠️  Cron job bloqueado - IP no autorizada: ${clientIP}`);
+    return res.status(403).json({ error: 'IP no autorizada para cron job' });
+  }
+
+  try {
+    const { sincronizarManual } = require('./services/emailService');
+    const Usuario = require('./models/Usuario');
+    
+    const usuario = await Usuario.findOne();
+    if (!usuario) return res.status(404).json({ error: 'No hay usuario configurado' });
+    
+    const result = await sincronizarManual(usuario._id, { soloNoLeidos: true });
+    console.log('✅ Cron sync completado:', result.estadisticas);
+    res.json({ success: true, ...result });
+  } catch (e) {
+    console.error('❌ Error en cron sync:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Registrar rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/ingresos', ingresoRoutes);

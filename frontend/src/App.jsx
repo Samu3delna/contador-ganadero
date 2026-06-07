@@ -1,22 +1,30 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/layout/Sidebar';
 import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import FacturasPage from './pages/FacturasPage';
-import IngresosPage from './pages/IngresosPage';
-import ImpuestosPage from './pages/ImpuestosPage';
-import CalendarioPage from './pages/CalendarioPage';
-import GastosPage from './pages/GastosPage';
-import DeclaracionesPage from './pages/DeclaracionesPage';
-import InventarioPage from './pages/InventarioPage';
-import CostosPage from './pages/CostosPage';
-import FacturacionPage from './pages/FacturacionPage';
 import './App.css';
+
+// Lazy-loaded pages (code-splitting)
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const FacturasPage = lazy(() => import('./pages/FacturasPage'));
+const IngresosPage = lazy(() => import('./pages/IngresosPage'));
+const ImpuestosPage = lazy(() => import('./pages/ImpuestosPage'));
+const CalendarioPage = lazy(() => import('./pages/CalendarioPage'));
+const GastosPage = lazy(() => import('./pages/GastosPage'));
+const DeclaracionesPage = lazy(() => import('./pages/DeclaracionesPage'));
+const InventarioPage = lazy(() => import('./pages/InventarioPage'));
+const CostosPage = lazy(() => import('./pages/CostosPage'));
+const FacturacionPage = lazy(() => import('./pages/FacturacionPage'));
+const PerfilPage = lazy(() => import('./pages/PerfilPage'));
+
+function PageLoader() {
+  return <div className="loader-center"><div className="loader" /></div>;
+}
 
 function RutaProtegida({ children }) {
   const { usuario, cargando } = useAuth();
-  if (cargando) return <div className="loader-center"><div className="loader" /></div>;
+  if (cargando) return <PageLoader />;
   return usuario ? children : <Navigate to="/login" />;
 }
 
@@ -25,18 +33,21 @@ function AppLayout() {
     <div className="app-container">
       <Sidebar />
       <div className="main-content">
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/facturas" element={<FacturasPage />} />
-          <Route path="/gastos" element={<GastosPage />} />
-          <Route path="/ingresos" element={<IngresosPage />} />
-          <Route path="/impuestos" element={<ImpuestosPage />} />
-          <Route path="/declaraciones" element={<DeclaracionesPage />} />
-          <Route path="/inventario" element={<InventarioPage />} />
-          <Route path="/costos" element={<CostosPage />} />
-          <Route path="/facturacion" element={<FacturacionPage />} />
-          <Route path="/calendario" element={<CalendarioPage />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/facturas" element={<FacturasPage />} />
+            <Route path="/gastos" element={<GastosPage />} />
+            <Route path="/ingresos" element={<IngresosPage />} />
+            <Route path="/impuestos" element={<ImpuestosPage />} />
+            <Route path="/declaraciones" element={<DeclaracionesPage />} />
+            <Route path="/inventario" element={<InventarioPage />} />
+            <Route path="/costos" element={<CostosPage />} />
+            <Route path="/facturacion" element={<FacturacionPage />} />
+            <Route path="/calendario" element={<CalendarioPage />} />
+            <Route path="/perfil" element={<PerfilPage />} />
+          </Routes>
+        </Suspense>
       </div>
     </div>
   );
