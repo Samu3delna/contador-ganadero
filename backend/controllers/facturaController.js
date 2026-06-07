@@ -182,7 +182,8 @@ const estadoEmail = async (req, res, next) => {
 
 const forzarSincronizacion = async (req, res, next) => {
   try {
-    const resultado = await sincronizarManual(req.usuario._id);
+    const soloNoLeidos = req.query.soloNoLeidos === 'true' || req.body.soloNoLeidos === true;
+    const resultado = await sincronizarManual(req.usuario._id, { soloNoLeidos });
     res.json(resultado);
   } catch (error) { next(error); }
 };

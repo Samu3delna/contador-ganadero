@@ -1,5 +1,11 @@
 const path = require('path');
 
+// DNS fallback para entornos donde el DNS local falla (MongoDB Atlas, Gmail IMAP)
+const dns = require('dns');
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (_) {}
+
 // Cargar .env desde la raíz del proyecto de forma robusta
 const envPath = path.resolve(__dirname, '..', '.env');
 const dotenv = require('dotenv');

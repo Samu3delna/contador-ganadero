@@ -1,4 +1,10 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// DNS fallback para entornos donde el DNS local falla (ej. MongoDB Atlas SRV)
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (_) {}
 
 const conectarDB = async () => {
   try {

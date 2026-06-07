@@ -251,12 +251,12 @@ async function iniciarListener(usuarioId) {
 /**
  * Procesar emails no leídos en TODAS las carpetas configuradas
  */
-async function procesarTodasLasCarpetas(usuarioId, buscarTodos = false) {
+async function procesarTodasLasCarpetas(usuarioId, buscarTodos = false, soloNoLeidos = false) {
   const carpetas = await carpetasParaBuscar();
 
   for (const carpeta of carpetas) {
     try {
-      await procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos);
+      await procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos, soloNoLeidos);
     } catch (err) {
       console.error(`⚠️  Error procesando carpeta "${carpeta}": ${err.message}`);
     }
@@ -268,7 +268,7 @@ async function procesarTodasLasCarpetas(usuarioId, buscarTodos = false) {
 /**
  * Procesar todos los emails no leídos de una carpeta específica
  */
-async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false) {
+async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false, soloNoLeidos = false) {
   let lock;
   try {
     lock = await clienteIMAP.getMailboxLock(carpeta);
@@ -279,16 +279,21 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false) 
   }
 
   try {
-    console.log(`📂 Procesando carpeta: ${carpeta} (buscarTodos: ${buscarTodos})`);
+    console.log(`📂 Procesando carpeta: ${carpeta} (buscarTodos: ${buscarTodos}, soloNoLeidos: ${soloNoLeidos})`);
 
     // Buscar mensajes de los últimos 60 días o no leídos
     const hace60Dias = new Date();
     hace60Dias.setDate(hace60Dias.getDate() - 60);
     hace60Dias.setHours(0, 0, 0, 0);
 
-    const filtro = buscarTodos
-      ? { all: true }
-      : { or: [{ since: hace60Dias }, { seen: false }] };
+    let filtro;
+    if (buscarTodos) {
+      filtro = { all: true };
+    } else if (soloNoLeidos) {
+      filtro = { seen: false };
+    } else {
+      filtro = { or: [{ since: hace60Dias }, { seen: false }] };
+    }
 
     // Paso 1: Obtener solo UIDs de los mensajes candidatos (consulta ligera)
     const mensajesInfo = clienteIMAP.fetch(filtro, { uid: true });
@@ -593,7 +598,8 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
  * Forzar sincronización manual (busca en todas las carpetas)
  * Si no hay conexión activa, intenta reconectar automáticamente
  */
-async function sincronizarManual(usuarioId) {
+async function sincronizarManual(usuarioId, opciones = {}) {
+  const soloNoLeidos = opciones.soloNoLeidos === true;
   if (!usuarioId) {
     throw new Error('usuarioId es requerido para sincronizar');
   }
@@ -630,7 +636,7 @@ async function sincronizarManual(usuarioId) {
   await liberarLockIdle();
 
   try {
-    await procesarTodasLasCarpetas(usuarioId, true);
+    await procesarTodasLasCarpetas(usuarioId, false, soloNoLeidos);
   } finally {
     pausandoIdle = false;
     await restablecerLockIdle();
