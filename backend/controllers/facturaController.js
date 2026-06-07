@@ -246,6 +246,49 @@ const crearGastoManual = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const diagnosticarIMAP = async (req, res, next) => {
+  try {
+    const { ImapFlow } = require('imapflow');
+    const { configurarIMAP } = require('../config/email');
+    const config = configurarIMAP();
+
+    if (!config.auth.user || !config.auth.pass) {
+      return res.status(400).json({
+        conectado: false,
+        error: 'Faltan credenciales IMAP (IMAP_USER o IMAP_PASSWORD)',
+        detalles: { user: !!config.auth.user, pass: !!config.auth.pass },
+      });
+    }
+
+    const cliente = new ImapFlow(config);
+    let resultado = { conectado: false, error: null, serverInfo: null };
+
+    try {
+      await cliente.connect();
+      resultado.conectado = true;
+      resultado.serverInfo = cliente.serverInfo || 'Sin info';
+      await cliente.logout();
+    } catch (err) {
+      resultado.error = err.message;
+      if (err.response) resultado.imapResponse = err.response;
+    }
+
+    res.json({
+      ...resultado,
+      configCheck: {
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        user: config.auth.user,
+        passLength: config.auth.pass.length,
+      },
+      recomendacion: resultado.conectado
+        ? 'Todo bien! Conexión IMAP exitosa.'
+        : 'La contraseña de aplicación de Gmail es incorrecta o caducó. Genera una nueva en myaccount.google.com/apppasswords',
+    });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   obtenerFacturas,
   obtenerFacturaPorId,
@@ -258,4 +301,5 @@ module.exports = {
   descargarXML,
   descargarPDF,
   obtenerAlertasTarifa,
+  diagnosticarIMAP,
 };

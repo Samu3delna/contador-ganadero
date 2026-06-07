@@ -3,7 +3,7 @@ const router = express.Router();
 const {
   obtenerFacturas, obtenerFacturaPorId, actualizarCategoriaFactura, actualizarDeducibilidad,
   eliminarFactura, estadoEmail, forzarSincronizacion, crearGastoManual,
-  descargarXML, descargarPDF, obtenerAlertasTarifa
+  descargarXML, descargarPDF, obtenerAlertasTarifa, diagnosticarIMAP
 } = require('../controllers/facturaController');
 const { protegerRuta } = require('../middleware/authMiddleware');
 
@@ -17,6 +17,7 @@ router.get('/alertas-tarifa', obtenerAlertasTarifa);
 // Email
 router.get('/email/estado', estadoEmail);
 router.post('/email/sincronizar', forzarSincronizacion);
+router.post('/email/diagnostico', diagnosticarIMAP);
 
 // Descarga de archivos
 router.get('/:id/xml', descargarXML);
