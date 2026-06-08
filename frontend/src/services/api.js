@@ -44,7 +44,8 @@ export const obtenerFacturaAPI = (id) => api.get(`/facturas/${id}`);
 export const actualizarCategoriaAPI = (id, datos) => api.put(`/facturas/${id}/categoria`, datos);
 export const eliminarFacturaAPI = (id) => api.delete(`/facturas/${id}`);
 export const estadoEmailAPI = () => api.get('/facturas/email/estado');
-export const sincronizarEmailAPI = () => api.post('/facturas/email/sincronizar');
+export const sincronizarEmailAPI = (soloNoLeidos = true) => api.post('/facturas/email/sincronizar', { soloNoLeidos });
+export const sincronizarEmailCompletoAPI = () => api.post('/facturas/email/sincronizar', { soloNoLeidos: false });
 
 // === Descarga de archivos XML / PDF ===
 // Usamos una función helper que maneja correctamente los errores con responseType: 'blob'

@@ -16,7 +16,6 @@ const DeclaracionesPage = lazy(() => import('./pages/DeclaracionesPage'));
 const InventarioPage = lazy(() => import('./pages/InventarioPage'));
 const CostosPage = lazy(() => import('./pages/CostosPage'));
 const FacturacionPage = lazy(() => import('./pages/FacturacionPage'));
-const PerfilPage = lazy(() => import('./pages/PerfilPage'));
 
 function PageLoader() {
   return <div className="loader-center"><div className="loader" /></div>;
@@ -45,7 +44,6 @@ function AppLayout() {
             <Route path="/costos" element={<CostosPage />} />
             <Route path="/facturacion" element={<FacturacionPage />} />
             <Route path="/calendario" element={<CalendarioPage />} />
-            <Route path="/perfil" element={<PerfilPage />} />
           </Routes>
         </Suspense>
       </div>
