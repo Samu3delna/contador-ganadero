@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
+import fondoLogin from '../Recursos/fondo_login.webm';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -33,6 +34,9 @@ export default function LoginPage() {
 
   return (
     <div className="login-container">
+      <video className="login-bg-video" autoPlay muted loop playsInline>
+        <source src={fondoLogin} type="video/webm" />
+      </video>
       <div className="login-card glass-card animate-slide-up">
         <LoginHeader />
 
