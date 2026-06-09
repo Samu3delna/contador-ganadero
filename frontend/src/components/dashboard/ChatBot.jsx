@@ -1,7 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, X, Bot, User, Loader2, Sparkles } from 'lucide-react';
-import { chatAPI } from '../../services/api';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, X, Bot, User, Sparkles, Copy, Check, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import DOMPurify from 'dompurify';
+import { chatStreamAPI, chatAPI, chatFeedbackAPI } from '../../services/api';
 import './ChatBot.css';
+
+// ============ CONSTANTES ============
+
+const STORAGE_KEY = 'chatbot_mensajes_v1';
+const MAX_MENSAJES_STORAGE = 50;
 
 const PREGUNTAS_SUGERIDAS = [
   '¿Qué gastos son deducibles en REA?',
@@ -11,123 +19,99 @@ const PREGUNTAS_SUGERIDAS = [
   '¿Qué debo preparar para la declaración de renta?',
 ];
 
-// Formateador simple de Markdown a HTML seguro
-function parsearMarkdown(texto) {
+const MENSAJE_BIENVENIDA = {
+  rol: 'bot',
+  contenido: '¡Hola! Soy tu asistente contable ganadero. Tengo acceso a tus facturas, ingresos, inventario y costos. ¿En qué te ayudo hoy?',
+  timestamp: Date.now(),
+};
+
+// ============ HELPERS ============
+
+/** Sanitiza contenido Markdown para renderizar de forma segura */
+function sanitizarMarkdown(texto) {
   if (!texto) return '';
-
-  // 1. Escapar caracteres HTML básicos para evitar XSS
-  let html = texto
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  // 2. Bloques de código (```código```)
-  html = html.replace(/```([\s\S]*?)```/g, (match, p1) => {
-    return `<pre><code>${p1.trim()}</code></pre>`;
+  return DOMPurify.sanitize(texto, {
+    ALLOWED_TAGS: [],   // react-markdown renderiza, no necesitamos HTML
+    ALLOWED_ATTR: [],
   });
-
-  // 3. Código en línea (`código`)
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // 4. Encabezados (###, ##, #)
-  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
-
-  // 5. Negrita (**texto**)
-  html = html.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
-
-  // 6. Listas ordenadas y desordenadas
-  const lineas = html.split('\n');
-  let enListaDesordenada = false;
-  let enListaOrdenada = false;
-  let resultadoLineas = [];
-
-  for (let i = 0; i < lineas.length; i++) {
-    let linea = lineas[i];
-    
-    // Lista desordenada
-    const matchDesordenada = linea.match(/^[\s]*[-*]\s+(.+)$/);
-    if (matchDesordenada) {
-      if (enListaOrdenada) {
-        resultadoLineas.push('</ol>');
-        enListaOrdenada = false;
-      }
-      if (!enListaDesordenada) {
-        resultadoLineas.push('<ul>');
-        enListaDesordenada = true;
-      }
-      resultadoLineas.push(`<li>${matchDesordenada[1]}</li>`);
-      continue;
-    }
-
-    // Lista ordenada
-    const matchOrdenada = linea.match(/^[\s]*\d+\.\s+(.+)$/);
-    if (matchOrdenada) {
-      if (enListaDesordenada) {
-        resultadoLineas.push('</ul>');
-        enListaDesordenada = false;
-      }
-      if (!enListaOrdenada) {
-        resultadoLineas.push('<ol>');
-        enListaOrdenada = true;
-      }
-      resultadoLineas.push(`<li>${matchOrdenada[1]}</li>`);
-      continue;
-    }
-
-    // Si no es parte de una lista, cerramos cualquier lista abierta
-    if (enListaDesordenada) {
-      resultadoLineas.push('</ul>');
-      enListaDesordenada = false;
-    }
-    if (enListaOrdenada) {
-      resultadoLineas.push('</ol>');
-      enListaOrdenada = false;
-    }
-
-    resultadoLineas.push(linea);
-  }
-
-  if (enListaDesordenada) resultadoLineas.push('</ul>');
-  if (enListaOrdenada) resultadoLineas.push('</ol>');
-
-  html = resultadoLineas.join('\n');
-
-  // 7. Párrafos
-  const bloques = html.split('\n\n');
-  const procesados = bloques.map(bloque => {
-    const b = bloque.trim();
-    if (!b) return '';
-    if (b.startsWith('<h') || b.startsWith('<pre') || b.startsWith('<ul') || b.startsWith('<ol') || b.startsWith('<li>') || b.startsWith('</')) {
-      return b;
-    }
-    return `<p>${b.replace(/\n/g, '<br>')}</p>`;
-  });
-
-  return procesados.join('');
 }
+
+/** Cargar mensajes desde localStorage */
+function cargarMensajesGuardados() {
+  try {
+    const guardados = localStorage.getItem(STORAGE_KEY);
+    if (!guardados) return [MENSAJE_BIENVENIDA];
+    const parsed = JSON.parse(guardados);
+    if (!Array.isArray(parsed) || parsed.length === 0) return [MENSAJE_BIENVENIDA];
+    return parsed;
+  } catch {
+    return [MENSAJE_BIENVENIDA];
+  }
+}
+
+/** Guardar mensajes en localStorage (máximo MAX_MENSAJES_STORAGE) */
+function guardarMensajes(mensajes) {
+  try {
+    const paraGuardar = mensajes
+      .filter(m => !m.cargando) // No guardar mensajes de carga
+      .slice(-MAX_MENSAJES_STORAGE);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(paraGuardar));
+  } catch {
+    // localStorage lleno, limpiar
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch { /* ignore */ }
+  }
+}
+
+// ============ COMPONENTE PRINCIPAL ============
 
 export default function ChatBot() {
   const [abierto, setAbierto] = useState(false);
-  const [mensajes, setMensajes] = useState([
-    { rol: 'bot', contenido: '¡Hola! Soy tu asistente contable ganadero. Tengo acceso a tus facturas, ingresos, inventario y costos. ¿En qué te ayudo hoy?' },
-  ]);
+  const [mensajes, setMensajes] = useState(() => cargarMensajesGuardados());
   const [input, setInput] = useState('');
   const [cargando, setCargando] = useState(false);
-  const [historial, setHistorial] = useState([]);
+  const [copiado, setCopiado] = useState(null); // Índice del mensaje copiado
+  const [feedbackEnviado, setFeedbackEnviado] = useState({}); // { [idx]: 'positivo'|'negativo' }
   const mensajesEndRef = useRef(null);
+  const chatMensajesRef = useRef(null);
   const inputRef = useRef(null);
+  const streamingRef = useRef(false); // Controlar streaming activo
 
+  // Scroll to bottom cuando hay nuevos mensajes
   useEffect(() => {
-    mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatMensajesRef.current) {
+      chatMensajesRef.current.scrollTop = chatMensajesRef.current.scrollHeight;
+    }
   }, [mensajes]);
 
+  // Focus al abrir
   useEffect(() => {
     if (abierto) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [abierto]);
+
+  // Guardar mensajes cuando cambian (debounced)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      guardarMensajes(mensajes);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [mensajes]);
+
+  // Construir historial para la API
+  const construirHistorial = useCallback(() => {
+    return mensajes
+      .filter(m => !m.cargando && m.contenido)
+      .map(m => ({
+        rol: m.rol === 'bot' ? 'assistant' : 'user',
+        contenido: m.contenido,
+      }))
+      .slice(-10);
+  }, [mensajes]);
+
+  // ============ ENVIAR MENSAJE ============
 
   async function enviarMensaje(e) {
     e?.preventDefault();
@@ -136,47 +120,150 @@ export default function ChatBot() {
     const mensajeUsuario = input.trim();
     setInput('');
     setCargando(true);
+    streamingRef.current = true;
 
-    const nuevosMensajes = [
-      ...mensajes,
-      { rol: 'user', contenido: mensajeUsuario },
-      { rol: 'bot', contenido: '', cargando: true },
-    ];
-    setMensajes(nuevosMensajes);
+    // Agregar mensaje del usuario + placeholder de respuesta
+    setMensajes(prev => [
+      ...prev,
+      { rol: 'user', contenido: mensajeUsuario, timestamp: Date.now() },
+      { rol: 'bot', contenido: '', cargando: true, streaming: true, timestamp: Date.now() },
+    ]);
 
+    const historial = construirHistorial();
+
+    // Intentar streaming primero, fallback a chat normal
     try {
-      const res = await chatAPI(mensajeUsuario, historial);
-      const respuesta = res.data.respuesta;
+      let respuestaAcumulada = '';
 
-      setMensajes(prev => [
-        ...prev.slice(0, -1),
-        { rol: 'bot', contenido: respuesta },
-      ]);
-
-      setHistorial(prev => [
-        ...prev,
-        { rol: 'user', contenido: mensajeUsuario },
-        { rol: 'assistant', contenido: respuesta },
-      ].slice(-10));
+      await chatStreamAPI(
+        mensajeUsuario,
+        historial,
+        // onChunk: agregar token a la respuesta
+        (chunk) => {
+          respuestaAcumulada += chunk;
+          setMensajes(prev => {
+            const nuevos = [...prev];
+            const ultimo = nuevos[nuevos.length - 1];
+            if (ultimo?.rol === 'bot') {
+              nuevos[nuevos.length - 1] = {
+                ...ultimo,
+                contenido: respuestaAcumulada,
+                cargando: false,
+                streaming: true,
+              };
+            }
+            return nuevos;
+          });
+        },
+        // onDone: marcar como completado
+        () => {
+          streamingRef.current = false;
+          setMensajes(prev => {
+            const nuevos = [...prev];
+            const ultimo = nuevos[nuevos.length - 1];
+            if (ultimo?.rol === 'bot') {
+              nuevos[nuevos.length - 1] = {
+                ...ultimo,
+                streaming: false,
+                cargando: false,
+                contenido: respuestaAcumulada || 'No se pudo generar respuesta.',
+              };
+            }
+            return nuevos;
+          });
+          setCargando(false);
+        },
+        // onError: fallback a chat normal
+        async (errorMsg) => {
+          console.warn('Stream falló, usando fallback:', errorMsg);
+          try {
+            const res = await chatAPI(mensajeUsuario, historial);
+            const respuesta = res.data.respuesta;
+            setMensajes(prev => [
+              ...prev.slice(0, -1),
+              { rol: 'bot', contenido: respuesta, timestamp: Date.now(), offline: res.data.offline },
+            ]);
+          } catch (err) {
+            console.error('Fallback también falló:', err);
+            setMensajes(prev => [
+              ...prev.slice(0, -1),
+              { rol: 'bot', contenido: 'Error al conectar con la IA. Verifica tu conexión e intenta de nuevo.', timestamp: Date.now(), error: true },
+            ]);
+          }
+          streamingRef.current = false;
+          setCargando(false);
+        }
+      );
     } catch (err) {
-      console.error(err);
+      // Error catastrófico
+      console.error('Error en enviarMensaje:', err);
+      streamingRef.current = false;
       setMensajes(prev => [
         ...prev.slice(0, -1),
-        { rol: 'bot', contenido: 'Error al conectar con la IA. Verifica tu conexión e intenta de nuevo.' },
+        { rol: 'bot', contenido: 'Error inesperado. Intenta de nuevo.', timestamp: Date.now(), error: true },
       ]);
-    } finally {
       setCargando(false);
     }
   }
+
+  // ============ ACCIONES DE MENSAJE ============
 
   function usarSugerida(texto) {
     setInput(texto);
     inputRef.current?.focus();
   }
 
+  async function copiarMensaje(idx, contenido) {
+    try {
+      await navigator.clipboard.writeText(contenido);
+      setCopiado(idx);
+      setTimeout(() => setCopiado(null), 2000);
+    } catch {
+      // Fallback para navegadores sin clipboard API
+      const textarea = document.createElement('textarea');
+      textarea.value = contenido;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopiado(idx);
+      setTimeout(() => setCopiado(null), 2000);
+    }
+  }
+
+  async function enviarFeedback(idx, tipo) {
+    const mensaje = mensajes[idx];
+    const mensajeAnterior = mensajes[idx - 1];
+
+    if (!mensaje || !mensajeAnterior) return;
+
+    setFeedbackEnviado(prev => ({ ...prev, [idx]: tipo }));
+
+    try {
+      await chatFeedbackAPI({
+        mensajeUsuario: mensajeAnterior.contenido,
+        respuestaIA: mensaje.contenido,
+        feedback: tipo,
+      });
+    } catch (err) {
+      console.error('Error enviando feedback:', err);
+      // No revertir el estado visual, el feedback se guardará eventualmente
+    }
+  }
+
+  function limpiarHistorial() {
+    setMensajes([MENSAJE_BIENVENIDA]);
+    setFeedbackEnviado({});
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
   function toggleChat() {
     setAbierto(!abierto);
   }
+
+  // ============ RENDER ============
 
   return (
     <>
@@ -184,6 +271,7 @@ export default function ChatBot() {
         className={`chat-toggle ${abierto ? 'abierto' : ''}`}
         onClick={toggleChat}
         aria-label={abierto ? 'Cerrar chat' : 'Abrir asistente IA'}
+        id="chat-toggle-btn"
       >
         <Sparkles size={24} />
         {!abierto && <span className="chat-label">Asistente IA</span>}
@@ -191,31 +279,116 @@ export default function ChatBot() {
       </button>
 
       {abierto && (
-        <div className="chat-ventana" role="dialog" aria-label="Chat con asistente IA">
+        <div
+          className="chat-ventana"
+          role="dialog"
+          aria-label="Chat con asistente IA"
+          aria-modal="false"
+          id="chat-window"
+        >
           <div className="chat-header">
             <div className="chat-header-info">
               <Bot size={20} className="bot-icon" />
               <span>Asistente Contable Ganadero</span>
             </div>
-            <button className="chat-close" onClick={() => setAbierto(false)} aria-label="Cerrar">
-              <X size={20} />
-            </button>
+            <div className="chat-header-actions">
+              <button
+                className="chat-header-btn"
+                onClick={limpiarHistorial}
+                aria-label="Limpiar historial"
+                title="Limpiar historial"
+                id="chat-clear-btn"
+              >
+                <Trash2 size={16} />
+              </button>
+              <button
+                className="chat-close"
+                onClick={() => setAbierto(false)}
+                aria-label="Cerrar"
+                id="chat-close-btn"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
-          <div className="chat-mensajes" ref={mensajesEndRef}>
+          <div
+            className="chat-mensajes"
+            ref={chatMensajesRef}
+            role="log"
+            aria-live="polite"
+            aria-label="Historial de mensajes"
+            id="chat-messages"
+          >
             {mensajes.map((msg, idx) => (
-              <div key={idx} className={`msg ${msg.rol}`}>
-                <div className="msg-avatar">
+              <div
+                key={`${idx}-${msg.timestamp || idx}`}
+                className={`msg ${msg.rol} ${msg.error ? 'error' : ''} ${msg.offline ? 'offline' : ''}`}
+                id={`msg-${idx}`}
+              >
+                <div className="msg-avatar" aria-hidden="true">
                   {msg.rol === 'bot' ? <Bot size={16} /> : <User size={16} />}
                 </div>
-                <div className="msg-burbuja">
-                  {msg.cargando ? (
-                    <div className="msg-typing">
-                      <Loader2 size={16} className="spin" />
-                      <span>Pensando...</span>
+                <div className="msg-content">
+                  <div className="msg-burbuja">
+                    {msg.cargando && !msg.contenido ? (
+                      <div className="msg-typing" role="status" aria-label="El asistente está pensando">
+                        <div className="typing-dots">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`msg-texto ${msg.streaming ? 'streaming' : ''}`}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            // Abrir links en nueva pestaña
+                            a: ({ children, ...props }) => (
+                              <a {...props} target="_blank" rel="noopener noreferrer">
+                                {children}
+                              </a>
+                            ),
+                          }}
+                        >
+                          {sanitizarMarkdown(msg.contenido)}
+                        </ReactMarkdown>
+                        {msg.streaming && <span className="cursor-blink" aria-hidden="true">▊</span>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Acciones de mensaje (solo para respuestas del bot completadas) */}
+                  {msg.rol === 'bot' && !msg.cargando && !msg.streaming && msg.contenido && (
+                    <div className="msg-acciones" aria-label="Acciones del mensaje">
+                      <button
+                        className={`msg-accion-btn ${copiado === idx ? 'copiado' : ''}`}
+                        onClick={() => copiarMensaje(idx, msg.contenido)}
+                        aria-label={copiado === idx ? 'Copiado' : 'Copiar mensaje'}
+                        title={copiado === idx ? '¡Copiado!' : 'Copiar'}
+                      >
+                        {copiado === idx ? <Check size={14} /> : <Copy size={14} />}
+                      </button>
+                      <button
+                        className={`msg-accion-btn ${feedbackEnviado[idx] === 'positivo' ? 'activo positivo' : ''}`}
+                        onClick={() => enviarFeedback(idx, 'positivo')}
+                        disabled={!!feedbackEnviado[idx]}
+                        aria-label="Respuesta útil"
+                        title="Útil"
+                      >
+                        <ThumbsUp size={14} />
+                      </button>
+                      <button
+                        className={`msg-accion-btn ${feedbackEnviado[idx] === 'negativo' ? 'activo negativo' : ''}`}
+                        onClick={() => enviarFeedback(idx, 'negativo')}
+                        disabled={!!feedbackEnviado[idx]}
+                        aria-label="Respuesta no útil"
+                        title="No útil"
+                      >
+                        <ThumbsDown size={14} />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="msg-texto" dangerouslySetInnerHTML={{ __html: parsearMarkdown(msg.contenido) }} />
                   )}
                 </div>
               </div>
@@ -224,7 +397,7 @@ export default function ChatBot() {
           </div>
 
           {mensajes.length <= 1 && (
-            <div className="chat-sugerencias">
+            <div className="chat-sugerencias" id="chat-suggestions">
               <span className="sugerencias-label">Preguntas frecuentes:</span>
               <div className="sugerencias-lista">
                 {PREGUNTAS_SUGERIDAS.map((p, i) => (
@@ -233,6 +406,7 @@ export default function ChatBot() {
                     className="btn-sugerencia"
                     onClick={() => usarSugerida(p)}
                     disabled={cargando}
+                    id={`suggestion-${i}`}
                   >
                     {p}
                   </button>
@@ -241,7 +415,7 @@ export default function ChatBot() {
             </div>
           )}
 
-          <form onSubmit={enviarMensaje} className="chat-input-area">
+          <form onSubmit={enviarMensaje} className="chat-input-area" id="chat-input-form">
             <input
               ref={inputRef}
               type="text"
@@ -251,12 +425,16 @@ export default function ChatBot() {
               disabled={cargando}
               className="chat-input"
               aria-label="Tu mensaje"
+              id="chat-input"
+              maxLength={2000}
+              autoComplete="off"
             />
             <button
               type="submit"
               className="btn-enviar"
               disabled={!input.trim() || cargando}
               aria-label="Enviar"
+              id="chat-send-btn"
             >
               <Send size={18} />
             </button>

@@ -108,6 +108,81 @@ export const tendenciaMensualAPI = (anio) => api.get('/dashboard/tendencia-mensu
 // === Chat IA ===
 export const chatAPI = (mensaje, historial) => api.post('/chat', { mensaje, historial });
 
+/**
+ * Chat con streaming SSE — retorna un ReadableStream.
+ * Usa fetch directo para leer Server-Sent Events.
+ */
+export const chatStreamAPI = async (mensaje, historial, onChunk, onDone, onError) => {
+  const token = localStorage.getItem('token');
+  const baseUrl = API_URL;
+
+  try {
+    const response = await fetch(`${baseUrl}/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ mensaje, historial }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      onError?.(errorData.respuesta || `Error ${response.status}`);
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Procesar cada línea SSE
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Mantener línea incompleta en buffer
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') {
+            onDone?.();
+            return;
+          }
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) {
+              onError?.(parsed.error);
+              return;
+            }
+            if (parsed.contenido) {
+              onChunk?.(parsed.contenido);
+            }
+            if (parsed.done) {
+              onDone?.(parsed.requestId);
+              return;
+            }
+          } catch {
+            // Ignorar líneas no-JSON
+          }
+        }
+      }
+    }
+
+    onDone?.();
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    onError?.(err.message || 'Error de conexión con el asistente');
+  }
+};
+
+// Feedback del chat
+export const chatFeedbackAPI = (data) => api.post('/chat/feedback', data);
+
 // === Inventario ===
 export const obtenerInventarioAPI = () => api.get('/inventario');
 export const obtenerResumenInventarioAPI = () => api.get('/inventario/resumen');
