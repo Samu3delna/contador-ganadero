@@ -59,7 +59,7 @@ async function calcularIVACuatrimestral(usuarioId, cuatrimestre, anio) {
   ingresos.forEach((ing) => {
     const tasa = ing.tasaIVA || 0;
     const ivaCobrado = ing.ivaVenta || 0;
-    const baseIngreso = ing.cantidadCabezas * ing.precioUnitario;
+    const baseIngreso = ing.montoSubtotal || 0;
 
     if (!ivaPagadoPorTasa[tasa]) {
       ivaPagadoPorTasa[tasa] = { tasa, basePagada: 0, ivaPagado: 0, baseCobrada: 0, ivaCobrado: 0 };
@@ -108,7 +108,7 @@ async function calcularRentaAnual(usuarioId, anio) {
   });
 
   const ingresosBrutos = ingresos.reduce((sum, i) => {
-    return sum + (i.cantidadCabezas * i.precioUnitario);
+    return sum + (i.montoSubtotal || 0);
   }, 0);
 
   // Facturas del año

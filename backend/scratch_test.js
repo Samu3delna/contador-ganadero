@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 require('dotenv').config({ path: '../.env' });
 const Factura = require('./models/Factura');
 const Usuario = require('./models/Usuario');
-const Ingreso = require('./models/Ingreso');
 const { calcularProyeccion } = require('./services/impuestoService');
 
 mongoose.connect(process.env.MONGODB_URI).then(async () => {

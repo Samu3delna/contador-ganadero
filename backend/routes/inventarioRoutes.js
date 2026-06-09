@@ -8,10 +8,13 @@ const {
   eliminarBovino,
   agregarLoteAves,
   actualizarLoteAves,
+  eliminarLoteAves,
   agregarEstanque,
   actualizarEstanque,
+  eliminarEstanque,
   agregarColmena,
   actualizarColmena,
+  eliminarColmena,
   obtenerResumenInventario,
 } = require('../controllers/inventarioController');
 
@@ -29,13 +32,16 @@ router.delete('/bovinos/:id', eliminarBovino);
 // Aves
 router.post('/aves', agregarLoteAves);
 router.put('/aves/:id', actualizarLoteAves);
+router.delete('/aves/:id', eliminarLoteAves);
 
 // Peces
 router.post('/peces', agregarEstanque);
 router.put('/peces/:id', actualizarEstanque);
+router.delete('/peces/:id', eliminarEstanque);
 
 // Colmenas
 router.post('/colmenas', agregarColmena);
 router.put('/colmenas/:id', actualizarColmena);
+router.delete('/colmenas/:id', eliminarColmena);
 
 module.exports = router;

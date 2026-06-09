@@ -75,7 +75,9 @@ function parsearFacturaXML(xmlString) {
 
     return procesarNodoFactura(raiz);
   } catch (error) {
-    throw new Error(`Error parseando XML de factura: ${error.message}`);
+    const err = new Error(`Error parseando XML de factura: ${error.message}`);
+    err.cause = error;
+    throw err;
   }
 }
 

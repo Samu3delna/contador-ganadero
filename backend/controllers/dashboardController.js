@@ -27,7 +27,7 @@ const gastosPorCategoria = async (req, res, next) => {
       { $match: filtro },
       {
         $group: {
-          _id: '$categoriaIA',
+          _id: { $ifNull: ['$categoriaManual', '$categoriaIA'] },
           totalGasto: { $sum: '$resumenFactura.totalComprobante' },
           totalIVA: { $sum: '$resumenFactura.totalImpuesto' },
           cantidad: { $sum: 1 },

@@ -31,6 +31,8 @@ api.interceptors.response.use(
 export const loginAPI = (datos) => api.post('/auth/login', datos);
 export const registroAPI = (datos) => api.post('/auth/registro', datos);
 export const obtenerPerfilAPI = () => api.get('/auth/perfil');
+export const actualizarPerfilAPI = (datos) => api.put('/auth/perfil', datos);
+export const cambiarPasswordAPI = (datos) => api.put('/auth/cambiar-password', datos);
 
 // === Ingresos ===
 export const obtenerIngresosAPI = (params) => api.get('/ingresos', { params });
@@ -111,10 +113,13 @@ export const actualizarBovinoAPI = (id, datos) => api.put(`/inventario/bovinos/$
 export const eliminarBovinoAPI = (id) => api.delete(`/inventario/bovinos/${id}`);
 export const agregarLoteAvesAPI = (datos) => api.post('/inventario/aves', datos);
 export const actualizarLoteAvesAPI = (id, datos) => api.put(`/inventario/aves/${id}`, datos);
+export const eliminarLoteAvesAPI = (id) => api.delete(`/inventario/aves/${id}`);
 export const agregarEstanqueAPI = (datos) => api.post('/inventario/peces', datos);
 export const actualizarEstanqueAPI = (id, datos) => api.put(`/inventario/peces/${id}`, datos);
+export const eliminarEstanqueAPI = (id) => api.delete(`/inventario/peces/${id}`);
 export const agregarColmenaAPI = (datos) => api.post('/inventario/colmenas', datos);
 export const actualizarColmenaAPI = (id, datos) => api.put(`/inventario/colmenas/${id}`, datos);
+export const eliminarColmenaAPI = (id) => api.delete(`/inventario/colmenas/${id}`);
 
 // === Costos de Producción ===
 export const obtenerCostosAPI = (params) => api.get('/costos', { params });

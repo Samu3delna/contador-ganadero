@@ -25,7 +25,7 @@ const protegerRuta = async (req, res, next) => {
       }
 
       next();
-    } catch (error) {
+    } catch {
       res.status(401);
       next(new Error('No autorizado — Token inválido o expirado'));
     }

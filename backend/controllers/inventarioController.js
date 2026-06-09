@@ -31,7 +31,6 @@ const agregarBovino = async (req, res, next) => {
 
 const actualizarBovino = async (req, res, next) => {
   try {
-    const { tagId } = req.params;
     const inventario = await Inventario.findOne({ usuario: req.usuario._id });
     const bovino = inventario.bovinos.id(req.params.id);
     if (!bovino) { res.status(404); throw new Error('Bovino no encontrado'); }
@@ -199,6 +198,39 @@ const obtenerResumenInventario = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const eliminarLoteAves = async (req, res, next) => {
+  try {
+    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const lote = inventario.lotesAves.id(req.params.id);
+    if (!lote) { res.status(404); throw new Error('Lote no encontrado'); }
+    lote.activo = false;
+    await inventario.save();
+    res.json({ mensaje: 'Lote marcado como inactivo' });
+  } catch (error) { next(error); }
+};
+
+const eliminarEstanque = async (req, res, next) => {
+  try {
+    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const estanque = inventario.estanques.id(req.params.id);
+    if (!estanque) { res.status(404); throw new Error('Estanque no encontrado'); }
+    estanque.activo = false;
+    await inventario.save();
+    res.json({ mensaje: 'Estanque marcado como inactivo' });
+  } catch (error) { next(error); }
+};
+
+const eliminarColmena = async (req, res, next) => {
+  try {
+    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const colmena = inventario.colmenas.id(req.params.id);
+    if (!colmena) { res.status(404); throw new Error('Colmena no encontrada'); }
+    colmena.activo = false;
+    await inventario.save();
+    res.json({ mensaje: 'Colmena marcada como inactiva' });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   obtenerInventario,
   agregarBovino,
@@ -206,9 +238,12 @@ module.exports = {
   eliminarBovino,
   agregarLoteAves,
   actualizarLoteAves,
+  eliminarLoteAves,
   agregarEstanque,
   actualizarEstanque,
+  eliminarEstanque,
   agregarColmena,
   actualizarColmena,
+  eliminarColmena,
   obtenerResumenInventario,
 };

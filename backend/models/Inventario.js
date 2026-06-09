@@ -239,6 +239,8 @@ const inventarioSchema = new mongoose.Schema({
   ultimaActualizacion: { type: Date, default: Date.now },
 }, {
   timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
 });
 
 // ============ ÍNDICES ============

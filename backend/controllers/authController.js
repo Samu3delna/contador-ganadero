@@ -129,4 +129,44 @@ const actualizarPerfil = async (req, res, next) => {
   }
 };
 
-module.exports = { registro, login, obtenerPerfil, actualizarPerfil };
+/**
+ * @desc    Cambiar contraseña del usuario
+ * @route   PUT /api/auth/cambiar-password
+ * @access  Privado
+ */
+const cambiarPassword = async (req, res, next) => {
+  try {
+    const { passwordActual, passwordNueva } = req.body;
+
+    if (!passwordActual || !passwordNueva) {
+      res.status(400);
+      throw new Error('Contraseña actual y nueva contraseña son obligatorias');
+    }
+
+    if (passwordNueva.length < 8) {
+      res.status(400);
+      throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
+    }
+
+    const usuario = await Usuario.findById(req.usuario._id).select('+password');
+    if (!usuario) {
+      res.status(404);
+      throw new Error('Usuario no encontrado');
+    }
+
+    const coincide = await usuario.compararPassword(passwordActual);
+    if (!coincide) {
+      res.status(401);
+      throw new Error('La contraseña actual es incorrecta');
+    }
+
+    usuario.password = passwordNueva;
+    await usuario.save();
+
+    res.json({ mensaje: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { registro, login, obtenerPerfil, actualizarPerfil, cambiarPassword };

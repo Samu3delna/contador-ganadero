@@ -18,7 +18,7 @@ export default function DetalleFacturaModal({ facturaSeleccionada, setFacturaSel
           </div>
           
           <div className="detalle-info">
-            <p><strong>Categoría:</strong> <span className="badge badge-primary">{facturaSeleccionada.categoriaIA || facturaSeleccionada.categoriaManual || 'N/A'}</span></p>
+            <p><strong>Categoría:</strong> <span className="badge badge-primary">{facturaSeleccionada.categoriaManual || facturaSeleccionada.categoriaIA || 'N/A'}</span></p>
             <p><strong>Clave XML:</strong> {facturaSeleccionada.claveNumerica ? 'Factura Electrónica (XML)' : 'Ingreso Manual'}</p>
             {facturaSeleccionada.resumenFactura?.totalImpuesto !== undefined && (
               <p><strong>IVA:</strong> ₡{facturaSeleccionada.resumenFactura.totalImpuesto.toLocaleString()}</p>

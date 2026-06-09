@@ -10,7 +10,9 @@ const net = require('net');
 // Usar DNS del sistema con fallback a públicos
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (_) {}
+} catch (err) {
+  console.warn('No se pudo configurar DNS fallback:', err.message);
+}
 
 const DIVIDER = '═'.repeat(60);
 
@@ -165,7 +167,7 @@ async function diagnostico() {
       }
 
       await client2.logout();
-      
+       
       console.log('\n' + DIVIDER);
       console.log('✅ DIAGNÓSTICO COMPLETO: La contraseña FUNCIONA con espacios.');
       console.log('   El bug está en config/email.js que hace .replace(/\\s+/g, "")');
@@ -178,7 +180,7 @@ async function diagnostico() {
       console.log('🚨 CONCLUSIÓN: La contraseña de aplicación es COMPLETAMENTE INVÁLIDA.');
       console.log('   Necesitas generar una nueva en https://myaccount.google.com/apppasswords');
       console.log(DIVIDER);
-      try { await client2.logout(); } catch (_) {}
+      try { await client2.logout(); } catch (err3) { console.warn('Error cerrando client2:', err3.message); }
     }
 
     process.exit(1);

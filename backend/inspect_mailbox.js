@@ -27,7 +27,7 @@ async function checkMailbox() {
       let lock;
       try {
         lock = await clienteIMAP.getMailboxLock(carpeta);
-      } catch (e) {
+      } catch {
         console.log(`Carpeta no existe: ${carpeta}`);
         continue;
       }

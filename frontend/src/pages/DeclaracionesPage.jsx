@@ -4,6 +4,7 @@ import {
   Save, CheckCircle, XCircle, AlertTriangle, FileText, Landmark,
   Plus, Trash2, Archive, Eye, Send, RotateCcw, History
 } from 'lucide-react';
+import Modal from '../components/common/Modal';
 import {
   obtenerConfigFiscalAPI,
   actualizarConfigFiscalAPI,
@@ -79,6 +80,7 @@ export default function DeclaracionesPage() {
   const [declaraciones, setDeclaraciones] = useState({ declaraciones: [], total: 0 });
   const [declaracionActiva, setDeclaracionActiva] = useState(null);
   const [filtroHistorial, setFiltroHistorial] = useState({ tipo: '', anio: '' });
+  const [confirmarEliminarDeclaracion, setConfirmarEliminarDeclaracion] = useState(null);
 
   // Formularios
   const [nuevoIngreso, setNuevoIngreso] = useState({
@@ -356,16 +358,21 @@ export default function DeclaracionesPage() {
     }
   };
 
-  const borrarDeclaracion = async (id) => {
-    if (!window.confirm('¿Eliminar esta declaración?')) return;
+  const borrarDeclaracion = (id) => {
+    setConfirmarEliminarDeclaracion(id);
+  };
+
+  const confirmarEliminarDeclaracionAccion = async () => {
+    if (!confirmarEliminarDeclaracion) return;
     try {
-      await eliminarDeclaracionAPI(id);
+      await eliminarDeclaracionAPI(confirmarEliminarDeclaracion);
       mostrarMensaje('exito', 'Declaración eliminada');
       await cargarDatos();
-      if (declaracionActiva?._id === id) setDeclaracionActiva(null);
     } catch (err) {
       console.error(err);
       mostrarMensaje('error', 'Error eliminando declaración');
+    } finally {
+      setConfirmarEliminarDeclaracion(null);
     }
   };
 
@@ -927,6 +934,24 @@ export default function DeclaracionesPage() {
             </div>
           )}
         </>
+      )}
+
+      {confirmarEliminarDeclaracion && (
+        <Modal
+          isOpen
+          onClose={() => setConfirmarEliminarDeclaracion(null)}
+          title="Confirmar Eliminación"
+          size="sm"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <AlertTriangle size={28} style={{ color: 'var(--color-advertencia)' }} />
+            <span>¿Eliminar esta declaración? Esta acción no se puede deshacer.</span>
+          </div>
+          <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+            <button className="btn btn-secondary" onClick={() => setConfirmarEliminarDeclaracion(null)}>Cancelar</button>
+            <button className="btn btn-danger" onClick={confirmarEliminarDeclaracionAccion}>Eliminar</button>
+          </div>
+        </Modal>
       )}
     </div>
   );

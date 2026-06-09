@@ -109,13 +109,6 @@ const INSUMOS_AGROPECUARIOS_1_PORCIENTO = {
   ],
 };
 
-// ============================================================
-// KEYWORDS APLANADOS PARA BÚSQUEDA RÁPIDA
-// ============================================================
-const KEYWORDS_FLAT = Object.values(INSUMOS_AGROPECUARIOS_1_PORCIENTO)
-  .flat()
-  .map(k => k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
-
 /**
  * Verificar si un producto es un insumo agropecuario que debería tener tarifa reducida (1%)
  * @param {string} descripcionProducto - Descripción del producto de la línea de detalle

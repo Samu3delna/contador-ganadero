@@ -1,6 +1,6 @@
 require('dotenv').config({ path: '../.env' });
 const mongoose = require('mongoose');
-const { sincronizarManual, iniciarListener } = require('./services/emailService');
+const { iniciarListener } = require('./services/emailService');
 
 async function testEmail() {
   try {

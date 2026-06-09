@@ -1,0 +1,148 @@
+/* FormularioBovino.css */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+  background: var(--color-superficie);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radio-lg);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--color-texto-sec);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radio-sm);
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-texto);
+}
+
+.formulario-bovino .formulario-grid {
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.formulario-bovino .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.formulario-bovino .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.formulario-bovino label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-texto);
+}
+
+.formulario-bovino input,
+.formulario-bovino select,
+.formulario-bovino textarea {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.formulario-bovino input:focus,
+.formulario-bovino select:focus,
+.formulario-bovino textarea:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+.formulario-bovino input:disabled,
+.formulario-bovino select:disabled {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-texto-sec);
+  cursor: not-allowed;
+}
+
+.formulario-bovino textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-help {
+  font-size: 0.75rem;
+  color: var(--color-texto-sec);
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .formulario-bovino .formulario-grid {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+}

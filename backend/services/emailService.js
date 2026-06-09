@@ -53,7 +53,9 @@ async function liberarLockIdle() {
     console.log('🔓 Liberando lock de IDLE temporalmente...');
     try {
       await lockIdle.release();
-    } catch (_) {}
+    } catch (err) {
+      console.warn('Error liberando lock IDLE:', err.message);
+    }
     lockIdle = null;
   }
 }
@@ -272,7 +274,7 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false, 
   let lock;
   try {
     lock = await clienteIMAP.getMailboxLock(carpeta);
-  } catch (err) {
+  } catch {
     // La carpeta no existe o no se puede abrir
     console.log(`  ⏩ Carpeta "${carpeta}" no accesible, omitiendo.`);
     return;
@@ -490,7 +492,9 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
     // Marcar como leído igualmente
     try {
       await clienteIMAP.messageFlagsAdd({ uid: msg.uid }, ['\\Seen'], { uid: true });
-    } catch (e) { /* ignorar */ }
+    } catch (err) {
+      console.warn('Error marcando email como leído:', err.message);
+    }
     return;
   }
 
@@ -591,7 +595,9 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
   // Marcar email como leído
   try {
     await clienteIMAP.messageFlagsAdd({ uid: msg.uid }, ['\\Seen'], { uid: true });
-  } catch (e) { /* ignorar errores de flags */ }
+  } catch (err) {
+    console.warn('Error marcando email como leído:', err.message);
+  }
 }
 
 /**
@@ -614,7 +620,9 @@ async function sincronizarManual(usuarioId, opciones = {}) {
     try {
       // Cerrar conexión anterior si existe
       if (clienteIMAP) {
-        try { await clienteIMAP.logout(); } catch (_) {}
+        try { await clienteIMAP.logout(); } catch (err) {
+          console.warn('Error cerrando cliente IMAP previo:', err.message);
+        }
       }
       clienteIMAP = new ImapFlow(config);
       clienteIMAP.on('error', (err) => {
@@ -627,7 +635,9 @@ async function sincronizarManual(usuarioId, opciones = {}) {
       console.log('📧 Reconectado a IMAP exitosamente');
     } catch (err) {
       conexionActiva = false;
-      throw new Error(`No se pudo conectar al servidor IMAP: ${err.message}`);
+      const error = new Error(`No se pudo conectar al servidor IMAP: ${err.message}`);
+      error.cause = err;
+      throw error;
     }
   }
 
@@ -680,7 +690,9 @@ async function detenerListener() {
   if (clienteIMAP) {
     try {
       await clienteIMAP.logout();
-    } catch (e) { /* ignorar */ }
+    } catch (err) {
+      console.warn('Error cerrando cliente IMAP:', err.message);
+    }
     clienteIMAP = null;
     conexionActiva = false;
     console.log('📧 Listener IMAP detenido');

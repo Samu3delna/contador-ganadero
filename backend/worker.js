@@ -4,7 +4,9 @@ const path = require('path');
 const dns = require('dns');
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (_) {}
+} catch (err) {
+  console.warn('No se pudo configurar DNS fallback:', err.message);
+}
 
 // Cargar .env desde la raíz del proyecto
 const envPath = path.resolve(__dirname, '..', '.env');

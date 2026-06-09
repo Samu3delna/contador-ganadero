@@ -4,6 +4,7 @@ import {
   obtenerFacturasAPI, estadoEmailAPI, sincronizarEmailAPI,
   descargarXML_API, descargarPDF_API, obtenerAlertasTarifaAPI
 } from '../services/api';
+import { toast } from 'react-hot-toast';
 import AlertasPanel from '../components/facturas/AlertasPanel';
 import EmailStatus from '../components/facturas/EmailStatus';
 import FacturasTable from '../components/facturas/FacturasTable';
@@ -47,7 +48,8 @@ export default function FacturasPage() {
 
   async function handleSincronizar() {
     setSincronizando(true);
-    try { await sincronizarEmailAPI(); await cargar(); } catch(err) { console.error(err); alert('Error al sincronizar'); }
+    try { await sincronizarEmailAPI(); await cargar(); toast.success('Correos sincronizados correctamente'); }
+    catch(err) { console.error(err); toast.error('Error al sincronizar: ' + (err.response?.data?.error || err.message)); }
     finally { setSincronizando(false); }
   }
 
@@ -63,7 +65,7 @@ export default function FacturasPage() {
       a.download = `factura_${facturaId}.xml`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch(err) { console.error(err); alert('No se pudo descargar el XML: ' + (err.response?.data?.error || err.message)); }
+    } catch(err) { console.error(err); toast.error('No se pudo descargar el XML: ' + (err.response?.data?.error || err.message)); }
     finally { setDescargando(null); }
   }
 
@@ -79,7 +81,7 @@ export default function FacturasPage() {
       a.download = `factura_${facturaId}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch(err) { console.error(err); alert('No se pudo descargar el PDF: ' + (err.response?.data?.error || err.message)); }
+    } catch(err) { console.error(err); toast.error('No se pudo descargar el PDF: ' + (err.response?.data?.error || err.message)); }
     finally { setDescargando(null); }
   }
 

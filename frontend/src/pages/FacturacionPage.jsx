@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { obtenerFacturasEmisionAPI, obtenerResumenEmisionAPI } from '../services/api';
+import { Plus } from 'lucide-react';
+import { obtenerFacturasEmisionAPI, obtenerResumenEmisionAPI, crearFacturaEmisionAPI } from '../services/api';
+import EmitirFacturaModal from '../components/facturacion/EmitirFacturaModal';
+import { toast } from 'react-hot-toast';
 import './FacturacionPage.css';
 
 export default function FacturacionPage() {
@@ -7,6 +10,10 @@ export default function FacturacionPage() {
   const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+
+  // Control de modal
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [guardando, setGuardando] = useState(false);
 
   const cargarDatos = useCallback(async () => {
     try {
@@ -17,7 +24,8 @@ export default function FacturacionPage() {
       ]);
       setFacturas(facturasRes.data.facturas || []);
       setResumen(resumenRes.data);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError('Error cargando facturación');
     } finally {
       setCargando(false);
@@ -28,6 +36,21 @@ export default function FacturacionPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     cargarDatos();
   }, [cargarDatos]);
+
+  const handleEmitirFactura = async (datos) => {
+    setGuardando(true);
+    try {
+      await crearFacturaEmisionAPI(datos);
+      toast.success('Factura REA emitida correctamente (borrador)');
+      setModalAbierto(false);
+      await cargarDatos();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || 'Error al emitir factura');
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   const estadoBadge = (estado) => {
     const map = {
@@ -52,6 +75,9 @@ export default function FacturacionPage() {
           <h1 className="page-title">Facturación Electrónica REA</h1>
           <p className="page-subtitle">Emisión de facturas con tarifa reducida del 1% de IVA</p>
         </div>
+        <button className="btn btn-primary" onClick={() => setModalAbierto(true)}>
+          <Plus size={18} /> Emitir Factura
+        </button>
       </div>
 
       {/* Resumen */}
@@ -109,10 +135,10 @@ export default function FacturacionPage() {
                 <tr key={f._id}>
                   <td>{f.consecutivo}</td>
                   <td>{f.receptor?.nombre}</td>
-                  <td>{f.tipoProducto}</td>
+                  <td>{f.tipoProducto.replace(/_/g, ' ')}</td>
                   <td>{new Date(f.fechaEmision).toLocaleDateString('es-CR')}</td>
-                  <td>₡{f.resumenFactura?.totalComprobante?.toLocaleString()}</td>
-                  <td>₡{f.resumenFactura?.totalImpuesto?.toLocaleString()}</td>
+                  <td>₡{f.resumenFactura?.totalComprobante?.toLocaleString() || 0}</td>
+                  <td>₡{f.resumenFactura?.totalImpuesto?.toLocaleString() || 0}</td>
                   <td>
                     <span className={`badge ${estadoBadge(f.estado)}`}>
                       {f.estado}
@@ -124,6 +150,13 @@ export default function FacturacionPage() {
           </table>
         </div>
       )}
+
+      <EmitirFacturaModal
+        isOpen={modalAbierto}
+        onClose={() => setModalAbierto(false)}
+        onSave={handleEmitirFactura}
+        guardando={guardando}
+      />
     </div>
   );
 }

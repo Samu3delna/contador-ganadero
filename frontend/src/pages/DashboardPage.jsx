@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { resumenDashboardAPI, tendenciaMensualAPI, gastosPorCategoriaAPI, sincronizarEmailAPI, sincronizarEmailCompletoAPI, estadoEmailAPI } from '../services/api';
+import { resumenDashboardAPI, tendenciaMensualAPI, gastosPorCategoriaAPI, sincronizarEmailAPI, sincronizarEmailCompletoAPI } from '../services/api';
+import { toast } from 'react-hot-toast';
 import ResumenCards from '../components/dashboard/ResumenCards';
 import TendenciaChart from '../components/dashboard/TendenciaChart';
 import GastosCategoriaList from '../components/dashboard/GastosCategoriaList';
@@ -24,8 +25,7 @@ export default function DashboardPage() {
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
-  const [modoSync, setModoSync] = useState('rapido'); // 'rapido' | 'completo'
-  const [estadoEmail, setEstadoEmail] = useState(null);
+  const [modoSync, setModoSync] = useState('rapido');
   const [ultimoResultado, setUltimoResultado] = useState(null);
 
   useEffect(() => {
@@ -44,8 +44,6 @@ export default function DashboardPage() {
           setCargando(false);
         }
       });
-    // Cargar estado del email
-    estadoEmailAPI().then(r => { if (activo) setEstadoEmail(r.data); }).catch(() => {});
     return () => { activo = false; };
   }, []);
 
@@ -53,19 +51,17 @@ export default function DashboardPage() {
     setSincronizando(true);
     try {
       const fn = modoSync === 'rapido' ? sincronizarEmailAPI : sincronizarEmailCompletoAPI;
-      const resultado = await fn(true); // true = solo no leidos para rápido
+      const resultado = await fn(true);
       setUltimoResultado(resultado.data);
       // Refrescar datos
       const data = await cargarData();
       setResumen(data.resumen);
       setTendencia(data.tendencia);
       setCategorias(data.categorias);
-      // Actualizar estado email
-      const est = await estadoEmailAPI();
-      setEstadoEmail(est.data);
+      toast.success('Correos sincronizados correctamente');
     } catch (err) {
       console.error(err);
-      alert('Error al sincronizar correos: ' + (err.response?.data?.error || err.message));
+      toast.error('Error al sincronizar: ' + (err.response?.data?.error || err.message));
     } finally {
       setSincronizando(false);
     }
