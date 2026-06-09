@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/layout/Sidebar';
 import LoginPage from './pages/LoginPage';
+import ChatBot from './components/dashboard/ChatBot';
 import './App.css';
 
 // Lazy-loaded pages (code-splitting)
@@ -47,6 +48,7 @@ function AppLayout() {
           </Routes>
         </Suspense>
       </div>
+      <ChatBot />
     </div>
   );
 }

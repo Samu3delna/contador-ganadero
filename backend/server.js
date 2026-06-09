@@ -83,6 +83,7 @@ const declaracionRoutes = require('./routes/declaracionRoutes');
 const inventarioRoutes = require('./routes/inventarioRoutes');
 const costoRoutes = require('./routes/costoRoutes');
 const facturaEmisionRoutes = require('./routes/facturaEmisionRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 // Importar middleware de errores
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
@@ -175,6 +176,7 @@ app.use('/api/declaraciones', declaracionRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/costos', costoRoutes);
 app.use('/api/facturacion', facturaEmisionRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Middleware para rutas no encontradas
 app.use(notFound);

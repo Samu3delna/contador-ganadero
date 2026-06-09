@@ -105,6 +105,9 @@ export const resumenDashboardAPI = () => api.get('/dashboard/resumen');
 export const gastosPorCategoriaAPI = (anio) => api.get('/dashboard/gastos-por-categoria', { params: { anio } });
 export const tendenciaMensualAPI = (anio) => api.get('/dashboard/tendencia-mensual', { params: { anio } });
 
+// === Chat IA ===
+export const chatAPI = (mensaje, historial) => api.post('/chat', { mensaje, historial });
+
 // === Inventario ===
 export const obtenerInventarioAPI = () => api.get('/inventario');
 export const obtenerResumenInventarioAPI = () => api.get('/inventario/resumen');
