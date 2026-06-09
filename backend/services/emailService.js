@@ -256,13 +256,18 @@ async function iniciarListener(usuarioId) {
 async function procesarTodasLasCarpetas(usuarioId, buscarTodos = false, soloNoLeidos = false) {
   const carpetas = await carpetasParaBuscar();
 
-  for (const carpeta of carpetas) {
-    try {
-      await procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos, soloNoLeidos);
-    } catch (err) {
-      console.error(`⚠️  Error procesando carpeta "${carpeta}": ${err.message}`);
-    }
-  }
+  // Para sincronización rápida (solo no leídos), limitar a carpetas principales para mayor velocidad
+  const carpetasAProcesar = soloNoLeidos 
+    ? carpetas.filter(c => c === 'INBOX' || c.toLowerCase().includes('spam') || c.toLowerCase().includes('junk'))
+    : carpetas;
+
+  // Procesar carpetas en paralelo
+  const promesas = carpetasAProcesar.map(carpeta => 
+    procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos, soloNoLeidos)
+      .catch(err => console.error(`⚠️  Error procesando carpeta "${carpeta}": ${err.message}`))
+  );
+
+  await Promise.allSettled(promesas);
 
   ultimaSincronizacion = new Date();
 }
@@ -338,8 +343,9 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false, 
 
     console.log(`  📨 Descargando y procesando ${uidsAProcesar.length} nuevo(s) correo(s) en "${carpeta}"...`);
 
-    // Paso 3: Descargar y procesar en lotes (batching) de 50 para evitar sobrecarga
-    const TAMANO_LOTE = 50;
+    // Paso 3: Descargar y procesar en lotes con concurrencia controlada
+    const TAMANO_LOTE = 20;
+    const MAX_CONCURRENCY = 5;
     let procesados = 0;
 
     for (let i = 0; i < uidsAProcesar.length; i += TAMANO_LOTE) {
@@ -354,13 +360,25 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false, 
         }
       );
 
+      const mensajesArray = [];
       for await (const msg of mensajes) {
-        try {
-          await procesarMensaje(msg, usuarioId, carpeta);
-          procesados++;
-        } catch (err) {
-          console.error(`❌ Error procesando email UID ${msg.uid} en ${carpeta}:`, err.message);
-          estadisticas.errores++;
+        mensajesArray.push(msg);
+      }
+
+      // Procesar mensajes en paralelo con límite de concurrencia
+      for (let j = 0; j < mensajesArray.length; j += MAX_CONCURRENCY) {
+        const chunk = mensajesArray.slice(j, j + MAX_CONCURRENCY);
+        const resultados = await Promise.allSettled(
+          chunk.map(msg => procesarMensaje(msg, usuarioId, carpeta))
+        );
+        
+        for (const resultado of resultados) {
+          if (resultado.status === 'fulfilled') {
+            procesados++;
+          } else {
+            console.error(`❌ Error procesando email en ${carpeta}:`, resultado.reason?.message || resultado.reason);
+            estadisticas.errores++;
+          }
         }
       }
     }
@@ -390,10 +408,8 @@ async function escucharNuevosEmails(usuarioId) {
       pausandoIdle = true;
       try {
         await liberarLockIdle();
-        // Esperamos un segundo para asegurar que el correo esté disponible
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // Procesamos los correos de la bandeja
-        await procesarEmailsEnCarpeta('INBOX', usuarioId);
+        // Procesamos solo no leídos para mayor velocidad
+        await procesarEmailsEnCarpeta('INBOX', usuarioId, false, true);
       } catch (err) {
         console.error('❌ Error procesando nuevo email en IDLE:', err.message);
       } finally {
@@ -431,7 +447,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
   const uid = `${carpeta}_${String(msg.uid)}`;
 
   // Verificar idempotencia: ¿ya procesamos este email?
-  const yaExiste = await Factura.findOne({ emailUID: uid, usuario: usuarioId });
+  const yaExiste = await Factura.exists({ emailUID: uid, usuario: usuarioId });
   if (yaExiste) {
     return; // Ya fue procesado
   }
@@ -535,7 +551,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
 
     // Verificar si ya existe por clave numérica (evitar duplicados de XML diferentes)
     if (datosFactura.claveNumerica) {
-      const existePorClave = await Factura.findOne({
+      const existePorClave = await Factura.exists({
         claveNumerica: datosFactura.claveNumerica,
         usuario: usuarioId,
       });

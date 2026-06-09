@@ -30,12 +30,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let activo = true;
-    cargarData()
-      .then((data) => {
+    const anio = new Date().getFullYear();
+    Promise.all([
+      resumenDashboardAPI(),
+      tendenciaMensualAPI(anio),
+      gastosPorCategoriaAPI(anio)
+    ])
+      .then(([res, tend, cat]) => {
         if (activo) {
-          setResumen(data.resumen);
-          setTendencia(data.tendencia);
-          setCategorias(data.categorias);
+          setResumen(res.data);
+          setTendencia(tend.data);
+          setCategorias(cat.data);
         }
       })
       .catch((err) => console.error(err))
@@ -50,10 +55,13 @@ export default function DashboardPage() {
   async function handleSincronizar() {
     setSincronizando(true);
     try {
-      const fn = modoSync === 'rapido' ? sincronizarEmailAPI : sincronizarEmailCompletoAPI;
-      const resultado = await fn(true);
+      let resultado;
+      if (modoSync === 'rapido') {
+        resultado = await sincronizarEmailAPI(true);
+      } else {
+        resultado = await sincronizarEmailCompletoAPI();
+      }
       setUltimoResultado(resultado.data);
-      // Refrescar datos
       const data = await cargarData();
       setResumen(data.resumen);
       setTendencia(data.tendencia);
