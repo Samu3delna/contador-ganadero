@@ -178,6 +178,18 @@ app.use('/api/costos', costoRoutes);
 app.use('/api/facturacion', facturaEmisionRoutes);
 app.use('/api/chat', chatRoutes);
 
+console.log('📋 Rutas registradas:');
+console.log('   /api/auth');
+console.log('   /api/ingresos');
+console.log('   /api/facturas');
+console.log('   /api/impuestos');
+console.log('   /api/dashboard');
+console.log('   /api/declaraciones');
+console.log('   /api/inventario');
+console.log('   /api/costos');
+console.log('   /api/facturacion');
+console.log('   /api/chat (incluye /stream)');
+
 // Middleware para rutas no encontradas
 app.use(notFound);
 
