@@ -1,22 +1,22 @@
 /**
  * Servicio de IA para categorización de gastos
- * Usa OpenRouter (compatible con SDK de OpenAI)
+ * Usa NVIDIA NIM API (compatible con SDK de OpenAI)
  */
 
 const OpenAI = require('openai');
-const { configurarOpenRouter } = require('../config/ai');
+const { configurarOpenRouter: configurarIA } = require('../config/ai');
 
 let clienteIA = null;
 let modeloIA = null;
 
 /**
- * Inicializar el cliente de OpenRouter
+ * Inicializar el cliente de IA (NVIDIA NIM)
  */
 function inicializarCliente() {
   if (clienteIA) return;
-  const config = configurarOpenRouter();
+  const config = configurarIA();
   if (!config.apiKey) {
-    console.warn('⚠️  Servicio de IA no inicializado: falta OPENROUTER_API_KEY');
+    console.warn('⚠️  Servicio de IA no inicializado: falta AI_API_KEY');
     return;
   }
   clienteIA = new OpenAI({
@@ -113,12 +113,18 @@ ${resumenLineas || '  (sin detalle)'}`;
         { role: 'user', content: promptUsuario },
       ],
       temperature: 0.3,
-      max_tokens: 300,
+      max_tokens: 800,
       response_format: { type: 'json_object' },
     });
 
     const contenido = respuesta.choices[0]?.message?.content;
     if (!contenido) return categoriaFallback();
+
+    // Si se cortó por limite de tokens, no intentar parsear JSON incompleto
+    if (respuesta.choices[0]?.finish_reason === 'length') {
+      console.warn('⚠️  Categorización IA truncada por max_tokens, usando fallback');
+      return categoriaFallback();
+    }
 
     const resultado = JSON.parse(contenido);
 

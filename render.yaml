@@ -18,8 +18,10 @@ services:
         sync: false
       - key: IMAP_PASSWORD
         sync: false
-      - key: OPENROUTER_API_KEY
+      - key: AI_API_KEY
         sync: false
+      - key: AI_MODEL
+        value: nvidia/nemotron-3-ultra-550b-a55b
       - key: FRONTEND_URL
         value: https://contador-ganadero.vercel.app
       - key: EMAIL_ENC_KEY

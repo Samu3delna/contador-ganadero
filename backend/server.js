@@ -24,7 +24,7 @@ function verificarConfig() {
     { key: 'MONGODB_URI', name: 'Base de Datos (MongoDB)' },
     { key: 'IMAP_USER', name: 'Usuario IMAP (correo)' },
     { key: 'IMAP_PASSWORD', name: 'Contraseña IMAP' },
-    { key: 'OPENROUTER_API_KEY', name: 'API Key de OpenRouter (IA)' },
+    { key: 'AI_API_KEY', name: 'API Key de NVIDIA (IA)' },
     { key: 'JWT_SECRET', name: 'JWT Secret (para tokens de autenticación)' },
   ];
   const opcionales = [

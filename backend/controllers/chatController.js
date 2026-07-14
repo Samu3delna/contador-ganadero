@@ -1,6 +1,6 @@
 const OpenAI = require('openai');
 const { v4: uuidv4 } = require('uuid');
-const { configurarOpenRouter } = require('../config/ai');
+const { configurarOpenRouter: configurarIA } = require('../config/ai');
 const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
 const Inventario = require('../models/Inventario');
@@ -43,9 +43,9 @@ function inicializarCliente() {
   if (clienteInicializado) return !!clienteIA;
   clienteInicializado = true;
 
-  const config = configurarOpenRouter();
+  const config = configurarIA();
   if (!config.apiKey) {
-    console.warn('⚠️  Servicio de IA no inicializado: falta OPENROUTER_API_KEY');
+    console.warn('⚠️  Servicio de IA no inicializado: falta AI_API_KEY');
     return false;
   }
   try {
@@ -476,7 +476,7 @@ async function chatStream(req, res) {
       { role: 'user', content: mensajeFiltrado },
     ];
 
-    // Stream desde OpenRouter
+    // Stream desde la API de NVIDIA
     const stream = await clienteIA.chat.completions.create({
       model: modeloIA,
       messages,

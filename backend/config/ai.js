@@ -1,21 +1,22 @@
 /**
- * Configuración centralizada del cliente OpenRouter (compatible con SDK de OpenAI)
+ * Configuración centralizada del cliente de IA (NVIDIA NIM API)
+ * Usa la API de NVIDIA (compatible con el SDK de OpenAI).
  * Incluye defaults para temperature, max_tokens, timeout, y retries.
  */
 
-const configurarOpenRouter = () => {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  const modelo = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+const configurarIA = () => {
+  const apiKey = process.env.AI_API_KEY || process.env.NVIDIA_API_KEY;
+  const modelo = process.env.AI_MODEL || process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
   const frontendUrl = process.env.FRONTEND_URL || 'https://contador-ganadero.vercel.app';
 
   if (!apiKey) {
-    console.warn('⚠️  OPENROUTER_API_KEY no configurada. El servicio de IA no funcionará.');
+    console.warn('⚠️  AI_API_KEY no configurada. El servicio de IA no funcionará.');
   }
 
   return {
     apiKey,
     modelo,
-    baseURL: 'https://openrouter.ai/api/v1',
+    baseURL: process.env.AI_BASE_URL || 'https://integrate.api.nvidia.com/v1',
     headers: {
       'HTTP-Referer': frontendUrl,
       'X-Title': 'Contador Ganadero - Asistente Contable Ganadero CR',
@@ -30,4 +31,7 @@ const configurarOpenRouter = () => {
   };
 };
 
-module.exports = { configurarOpenRouter };
+// Alias por compatibilidad con código existente
+const configurarOpenRouter = configurarIA;
+
+module.exports = { configurarIA, configurarOpenRouter };
