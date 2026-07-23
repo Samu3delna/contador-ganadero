@@ -215,4 +215,43 @@ export const actualizarEstadoFacturaAPI = (id, datos) => api.put(`/facturacion/$
 export const anularFacturaAPI = (id) => api.put(`/facturacion/${id}/anular`);
 export const obtenerResumenEmisionAPI = (params) => api.get('/facturacion/resumen', { params });
 
+// === Hacienda v4.4 nativa ===
+export const infoAmbienteHaciendaAPI = () => api.get('/hacienda/ambiente');
+export const crearBorradorHaciendaAPI = (datos) => api.post('/hacienda/emision', datos);
+export const firmarDocumentoHaciendaAPI = (id) => api.post(`/hacienda/emision/${id}/firmar`);
+export const enviarAHaciendaAPI = (id) => api.post(`/hacienda/emision/${id}/enviar`);
+export const consultarEstadoHaciendaAPI = (id) => api.get(`/hacienda/emision/${id}/estado`);
+export const cancelarDocumentoHaciendaAPI = (id) => api.post(`/hacienda/emision/${id}/cancelar`);
+export const descargarXmlHaciendaAPI = (id) => descargarArchivoBlob(`/hacienda/emision/${id}/xml`);
+
+// REP (Recibo Electronico de Pago)
+export const crearRepAPI = (datos) => api.post('/hacienda/rep', datos);
+export const listarRepAPI = (params) => api.get('/hacienda/rep', { params });
+export const abonosPorFacturaAPI = (facturaIdOriginal) => api.get(`/hacienda/rep/por-factura/${facturaIdOriginal}`);
+
+// FEC (Factura Electronica de Compra)
+export const crearFecAPI = (datos) => api.post('/hacienda/fec', datos);
+export const listarFecAPI = (params) => api.get('/hacienda/fec', { params });
+export const resumenComprasFecAPI = (params) => api.get('/hacienda/fec/resumen', { params });
+
+// D-150 Conconciliacion tributaria
+export const conciliacionD150API = (params, body) => api.post('/hacienda/d150/conciliacion', body, { params });
+export const conciliacionD150GETAPI = (params) => api.get('/hacienda/d150/conciliacion', { params });
+export const reporteD150PDFAPI = (params) => descargarArchivoBlob('/hacienda/d150/reporte/pdf', { params });
+export const reporteD150ExcelAPI = (params) => descargarArchivoBlob('/hacienda/d150/reporte/excel', { params });
+
+// Helper para descargar blob (XML/PDF/Excel)
+async function descargarArchivoBlob(url, config) {
+  try {
+    const res = await api.get(url, { ...config, responseType: 'blob' });
+    return res;
+  } catch (err) {
+    if (err.response?.data instanceof Blob) {
+      const texto = await err.response.data.text();
+      try { err.response.data = JSON.parse(texto); } catch { /* no era JSON */ }
+    }
+    throw err;
+  }
+}
+
 export default api;

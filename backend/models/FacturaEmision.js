@@ -8,36 +8,82 @@ const mongoose = require('mongoose');
 
 const lineaEmisionSchema = new mongoose.Schema({
   numeroLinea: { type: Number, required: true },
-  codigo: { type: String, trim: true },
+  //Codigo CABYS de 13 digitos (obligatorio v4.4)
+  codigo: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 13,
+    maxlength: 13,
+    description: 'Codigo CABYS de 13 digitos obligatorio v4.4',
+  },
   descripcion: { type: String, required: true, trim: true },
   cantidad: { type: Number, required: true, min: 0 },
   unidadMedida: { type: String, default: 'kg', trim: true },
   precioUnitario: { type: Number, required: true, min: 0 },
   subtotal: { type: Number, required: true, min: 0 },
-  descuento: { type: Number, default: 0, min: 0 },
+  descuento: {
+    monto: { type: Number, default: 0, min: 0 },
+    naturalezaDescuento: { type: String, trim: true },
+  },
   impuesto: {
     codigo: { type: String, default: '01' }, // 01 = IVA
-    codigoTarifa: { type: String, default: '02' }, // 02 = 1% (REA)
+    codigoTarifa: {
+      type: String,
+      enum: ['01', '02', '03', '04', '05', '06', '07', '08'],
+      default: '02', // 02 = 1% (REA)
+    },
     tarifa: { type: Number, default: 1 },         // 1%
     monto: { type: Number, default: 0 },
     factorIVA: { type: Number, default: 0.01 },
+    exoneracion: {
+      tipoDocumento: { type: String, trim: true },
+      numeroDocumento: { type: String, trim: true },
+      nombreInstitucion: { type: String, trim: true },
+      fechaEmision: { type: String },
+      montoExoneracion: { type: Number, default: 0 },
+      porcentajeExoneracion: { type: Number, default: 0 },
+    },
   },
   impuestoNeto: { type: Number, default: 0 },
   montoTotal: { type: Number, required: true, min: 0 },
 }, { _id: false });
 
 const facturaEmisionSchema = new mongoose.Schema({
-  // === Identificación ===
+  // === Identificacion v4.4 ===
+  tipoDocumento: {
+    type: String,
+    enum: ['FE', 'TE', 'NC', 'ND', 'FEC', 'REP'],
+    required: true,
+    default: 'FE',
+    description: 'FE=Factura, TE=Tiquete, NC=Nota Credito, ND=Nota Debito, FEC=Factura Electronica Compra, REP=Recibo Electronico Pago',
+  },
+  ambiente: {
+    type: String,
+    enum: ['local', 'sandbox', 'produccion'],
+    required: true,
+    default: 'local',
+  },
   claveNumerica: {
     type: String,
     index: true,
-    description: 'Clave numérica de 50 dígitos asignada por Hacienda',
+    minlength: 50,
+    maxlength: 50,
+    description: 'Clave numerica de 50 digitos (v4.4)',
   },
   consecutivo: {
     type: String,
     required: true,
     trim: true,
-    description: 'Número consecutivo interno de la factura',
+    description: 'Consecutivo de 20 digitos (3 sucursal + 3 terminal + 2 tipo + 10 secuencia)',
+  },
+  //Documento de referencia (para NC/ND/REP)
+  documentoReferencia: {
+    tipoDocReferencia: { type: String, trim: true },
+    numeroReferencia: { type: String, trim: true },
+    fechaEmisionReferencia: { type: String },
+    codigoReferencia: { type: String, trim: true },
+    razonReferencia: { type: String, trim: true },
   },
 
   // === Emisor (productor agropecuario) ===
@@ -124,16 +170,27 @@ const facturaEmisionSchema = new mongoose.Schema({
   // === Estado ===
   estado: {
     type: String,
-    enum: ['borrador', 'generada', 'firmada', 'enviada_hacienda', 'aceptada', 'rechazada', 'anulada'],
+    enum: ['borrador', 'generada', 'firmada', 'enviada_hacienda', 'procesando', 'aceptada', 'rechazada', 'anulada'],
     default: 'borrador',
   },
   fechaEnvioHacienda: { type: Date },
+  fechaRespuestaHacienda: { type: Date },
   respuestaHacienda: {
     clave: String,
     estado: String, // aceptado, rechazado, procesando
     detalle: String,
     fecha: Date,
+    //URL de consulta devuelta por Hacienda en cabecera Location
+    location: { type: String, trim: true },
+    //Indica si el XML firmado fue validado correctamente
+    indicaciones: String,
   },
+  // === XML firmado (v4.4) ===
+  xmlFirmado: { type: String, select: false }, // XML completo firmado (XAdES-EPES)
+  xmlRespuestaHacienda: { type: String, select: false }, // XML Mensaje Hacienda
+  hashFirma: { type: String, trim: true },
+  //Errores de validacion propios (no de Hacienda)
+  erroresValidacion: [{ type: String }],
 
   // === Archivos ===
   archivoXML: String, // Ruta al XML firmado
@@ -166,23 +223,27 @@ facturaEmisionSchema.pre('save', function () {
   let totalDescuentos = 0;
   let totalImpuesto = 0;
 
-  // Para REA, la tarifa es 1%
   const TARIFA_REA = 0.01;
 
   for (const linea of this.lineaDetalle) {
     linea.subtotal = Math.round((linea.precioUnitario * linea.cantidad) * 100) / 100;
-    linea.impuesto.monto = Math.round(linea.subtotal * TARIFA_REA * 100) / 100;
+    const factor = linea.impuesto?.factorIVA != null ? linea.impuesto.factorIVA : TARIFA_REA;
+    linea.impuesto.monto = Math.round(linea.subtotal * factor * 100) / 100;
     linea.impuestoNeto = linea.impuesto.monto;
-    linea.montoTotal = Math.round((linea.subtotal - linea.descuento + linea.impuestoNeto) * 100) / 100;
+    linea.montoTotal = Math.round((linea.subtotal - (linea.descuento?.monto || 0) + linea.impuestoNeto) * 100) / 100;
 
-    totalDescuentos += linea.descuento;
+    totalDescuentos += linea.descuento?.monto || 0;
     totalImpuesto += linea.impuesto.monto;
 
-    // Clasificar en resumen
-    if (this.tipoProducto === 'leche' || this.tipoProducto === 'huevo') {
-      totalServGravados += linea.subtotal;
+    //Clasificar servicio vs mercancia, gravado vs exento
+    const tarifa = linea.impuesto?.tarifa || 1;
+    const esServicio = this.tipoProducto === 'leche' || this.tipoProducto === 'huevo';
+    if (tarifa === 0) {
+      if (esServicio) totalServExentos += linea.subtotal;
+      else totalMercanciasExentas += linea.subtotal;
     } else {
-      totalMercanciasGravadas += linea.subtotal;
+      if (esServicio) totalServGravados += linea.subtotal;
+      else totalMercanciasGravadas += linea.subtotal;
     }
   }
 
@@ -196,7 +257,7 @@ facturaEmisionSchema.pre('save', function () {
     totalMercanciasGravadas: Math.round(totalMercanciasGravadas * 100) / 100,
     totalMercanciasExentas: Math.round(totalMercanciasExentas * 100) / 100,
     totalGravado: Math.round(totalVenta * 100) / 100,
-    totalExento: 0,
+    totalExento: Math.round((totalServExentos + totalMercanciasExentas) * 100) / 100,
     totalVenta: Math.round(totalVenta * 100) / 100,
     totalDescuentos: Math.round(totalDescuentos * 100) / 100,
     totalVentaNeta: Math.round(totalVentaNeta * 100) / 100,

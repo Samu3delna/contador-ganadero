@@ -14,10 +14,11 @@ require('dotenv').config({ path: envPath });
 
 const { conectarDB } = require('./config/db');
 const { iniciarListener, sincronizarManual, detenerListener } = require('./services/emailService');
+const haciendaWorker = require('./services/haciendaWorker');
 const Usuario = require('./models/Usuario');
 
-console.log('🔧 Iniciando Background Worker IMAP — Contador Ganadero');
-console.log('========================================================');
+console.log('🔧 Iniciando Background Worker IMAP + Hacienda — Contador Ganadero');
+console.log('==================================================================');
 
 async function main() {
   // Verificar variables críticas
@@ -53,18 +54,25 @@ async function main() {
     const result = await sincronizarManual(usuario._id, { soloNoLeidos: true });
     console.log('📊 Stats:', result.estadisticas);
 
+    // Iniciar worker asíncrono de envío a Hacienda (facturación v4.4)
+    const ambienteHacienda = process.env.HACIENDA_AMBIENTE || 'local';
+    console.log(`🧾 Iniciando worker de Hacienda (ambiente: ${ambienteHacienda})...`);
+    haciendaWorker.iniciar(Number(process.env.HACIENDA_WORKER_INTERVAL_MS) || 15000);
+
     // Mantener proceso vivo
     console.log('✅ Worker corriendo. Presiona Ctrl+C para detener.');
 
     // Manejar señales de apagado
     process.on('SIGTERM', async () => {
       console.log('\n🛑 SIGTERM recibido, cerrando worker...');
+      haciendaWorker.detener();
       await detenerListener();
       process.exit(0);
     });
 
     process.on('SIGINT', async () => {
       console.log('\n🛑 SIGINT recibido, cerrando worker...');
+      haciendaWorker.detener();
       await detenerListener();
       process.exit(0);
     });

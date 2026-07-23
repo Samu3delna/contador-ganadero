@@ -1,0 +1,62 @@
+/* HaciendaPage.css - estilos especificos de pestañas y badges */
+
+.hacienda-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-wrap: wrap;
+}
+
+.hacienda-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-texto-muted, #888);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.15s;
+}
+
+.hacienda-tab:hover {
+  color: var(--color-texto, #ddd);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.hacienda-tab--activo {
+  color: var(--color-primario-claro, #5fb87a);
+  border-bottom-color: var(--color-primario, #4a9d63);
+  background: rgba(74, 157, 99, 0.07);
+}
+
+.text-sm { font-size: 0.85rem; }
+small { color: var(--color-texto-muted, #888); }
+
+.text-amarillo { color: #f1c40f; font-weight: 600; }
+.text-verde { color: #27ae60; font-weight: 600; }
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--color-texto-muted, #ccc);
+  transition: all 0.15s;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-primario-claro, #5fb87a);
+  border-color: var(--color-primario, #4a9d63);
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

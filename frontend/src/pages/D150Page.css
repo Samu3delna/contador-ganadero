@@ -1,0 +1,42 @@
+/* D150Page.css */
+
+.d150-item {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.d150-label {
+  font-size: 0.78rem;
+  color: var(--color-texto-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.d150-valor {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-texto, #eee);
+  font-family: 'Courier New', monospace;
+  margin-top: 2px;
+}
+
+.d150-item--rojo {
+  border-left-color: #c0392b;
+  background: rgba(192, 57, 43, 0.08);
+}
+.d150-item--rojo .d150-valor { color: #e74c3c; }
+
+.d150-item--verde {
+  border-left-color: #27ae60;
+  background: rgba(39, 174, 96, 0.08);
+}
+.d150-item--verde .d150-valor { color: #2ecc71; }
+
+.d150-item--grande .d150-valor { font-size: 1.4rem; }
+
+.esto-no__rojo { border-left: 3px solid #c0392b; }
+.esto-no__verde { border-left: 3px solid #27ae60; }

@@ -15,10 +15,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dompurify": "^3.4.8",
     "dotenv": "^16.4.2",
+    "exceljs": "^4.4.0",
     "express": "^4.18.2",
     "express-rate-limit": "^7.5.0",
     "fast-xml-parser": "^5.2.0",
@@ -30,11 +32,14 @@
     "mongoose": "^8.9.5",
     "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.2",
+    "node-forge": "^1.4.0",
     "nodemailer": "^6.10.1",
     "openai": "^4.35.0",
     "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.19.1",
     "tiktoken": "^1.0.22",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "xml-crypto": "^6.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

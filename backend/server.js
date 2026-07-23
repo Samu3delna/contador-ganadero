@@ -83,6 +83,7 @@ const declaracionRoutes = require('./routes/declaracionRoutes');
 const inventarioRoutes = require('./routes/inventarioRoutes');
 const costoRoutes = require('./routes/costoRoutes');
 const facturaEmisionRoutes = require('./routes/facturaEmisionRoutes');
+const haciendaRoutes = require('./routes/haciendaRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 
 // Importar middleware de errores
@@ -176,6 +177,7 @@ app.use('/api/declaraciones', declaracionRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/costos', costoRoutes);
 app.use('/api/facturacion', facturaEmisionRoutes);
+app.use('/api/hacienda', haciendaRoutes);
 app.use('/api/chat', chatRoutes);
 
 console.log('📋 Rutas registradas:');
@@ -188,6 +190,7 @@ console.log('   /api/declaraciones');
 console.log('   /api/inventario');
 console.log('   /api/costos');
 console.log('   /api/facturacion');
+console.log('   /api/hacienda (v4.4 nativa)');
 console.log('   /api/chat (incluye /stream)');
 
 // Middleware para rutas no encontradas
@@ -211,6 +214,19 @@ app.listen(PORT, () => {
         }
       } catch (error) {
         console.error('Error al iniciar listener IMAP:', error.message);
+      }
+    });
+  }
+
+  // Iniciar worker asíncrono de Hacienda en el propio servidor (modo dev/test)
+  // En producción debe correr como Background Worker separado (worker.js)
+  if (process.env.HACIENDA_WORKER_EMBEDDED === 'true' || (process.env.NODE_ENV !== 'production' && process.env.HACIENDA_AMBIENTE)) {
+    conectarDB().then(() => {
+      try {
+        const haciendaWorker = require('./services/haciendaWorker');
+        haciendaWorker.iniciar(Number(process.env.HACIENDA_WORKER_INTERVAL_MS) || 15000);
+      } catch (error) {
+        console.error('Error al iniciar worker de Hacienda:', error.message);
       }
     });
   }
