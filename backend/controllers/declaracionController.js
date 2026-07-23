@@ -94,7 +94,7 @@ const generarDeclaracion = async (req, res, next) => {
 
       // Upsert: si ya existe una borrador/calculada para este periodo, actualizarla
       const existente = await Declaracion.findOneAndUpdate(
-        { usuario: req.usuario._id, tipo: 'D-135-1', periodoFiscal: anioNum, cuatrimestre: cuatNum, estado: { $in: ['borrador', 'calculada'] } },
+        { ...req.filtrarPorTenant({ tipo: 'D-135-1', periodoFiscal: anioNum, cuatrimestre: cuatNum, estado: { $in: ['borrador', 'calculada'] } }) },
         {
           ivaCobrado: iva.ivaCobrado,
           ivaPagado: iva.ivaPagado,
@@ -109,7 +109,7 @@ const generarDeclaracion = async (req, res, next) => {
         return res.json({ mensaje: 'Declaración IVA actualizada', declaracion: existente });
       }
 
-      const nueva = await Declaracion.create({
+      const nueva = await Declaracion.create(req.aplicarTenant({
         tipo: 'D-135-1',
         periodoFiscal: anioNum,
         cuatrimestre: cuatNum,
@@ -119,7 +119,7 @@ const generarDeclaracion = async (req, res, next) => {
         detalleIVAPorTasa: iva.detalleIVAPorTasa,
         estado: 'calculada',
         usuario: req.usuario._id,
-      });
+      }));
 
       return res.status(201).json({ mensaje: 'Declaración IVA creada', declaracion: nueva });
     }
@@ -140,7 +140,7 @@ const generarDeclaracion = async (req, res, next) => {
       }
 
       const existente = await Declaracion.findOneAndUpdate(
-        { usuario: req.usuario._id, tipo: 'D-101', periodoFiscal: anioNum, estado: { $in: ['borrador', 'calculada'] } },
+        { ...req.filtrarPorTenant({ tipo: 'D-101', periodoFiscal: anioNum, estado: { $in: ['borrador', 'calculada'] } }) },
         {
           ingresosBrutos: renta.ingresosBrutos,
           gastosDeducibles: renta.gastosDeducibles,
@@ -160,7 +160,7 @@ const generarDeclaracion = async (req, res, next) => {
         return res.json({ mensaje: 'Declaración Renta actualizada', declaracion: { ...existente.toObject(), depreciacionTotal: Math.round(depreciacionTotal) } });
       }
 
-      const nueva = await Declaracion.create({
+      const nueva = await Declaracion.create(req.aplicarTenant({
         tipo: 'D-101',
         periodoFiscal: anioNum,
         ingresosBrutos: renta.ingresosBrutos,
@@ -174,7 +174,7 @@ const generarDeclaracion = async (req, res, next) => {
         impuestoFinal: renta.impuestoFinal,
         estado: 'calculada',
         usuario: req.usuario._id,
-      });
+      }));
 
       return res.status(201).json({ mensaje: 'Declaración Renta creada', declaracion: { ...nueva.toObject(), depreciacionTotal: Math.round(depreciacionTotal) } });
     }
@@ -189,7 +189,7 @@ const generarDeclaracion = async (req, res, next) => {
 const listarDeclaraciones = async (req, res, next) => {
   try {
     const { tipo, anio, page = 1, limit = 20 } = req.query;
-    const filtro = { usuario: req.usuario._id };
+    const filtro = req.filtrarPorTenant();
     if (tipo) filtro.tipo = tipo;
     if (anio) filtro.periodoFiscal = Number(anio);
 
@@ -207,7 +207,7 @@ const listarDeclaraciones = async (req, res, next) => {
 
 const obtenerDeclaracion = async (req, res, next) => {
   try {
-    const declaracion = await Declaracion.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const declaracion = await Declaracion.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!declaracion) { res.status(404); throw new Error('Declaración no encontrada'); }
 
     // Si es Renta, calcular depreciación al vuelo para mostrarla
@@ -233,7 +233,7 @@ const obtenerDeclaracion = async (req, res, next) => {
 const actualizarEstadoDeclaracion = async (req, res, next) => {
   try {
     const { estado } = req.body;
-    const declaracion = await Declaracion.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const declaracion = await Declaracion.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!declaracion) { res.status(404); throw new Error('Declaración no encontrada'); }
     declaracion.estado = estado;
     await declaracion.save();
@@ -245,7 +245,7 @@ const actualizarEstadoDeclaracion = async (req, res, next) => {
 
 const eliminarDeclaracion = async (req, res, next) => {
   try {
-    const declaracion = await Declaracion.findOneAndDelete({ _id: req.params.id, usuario: req.usuario._id });
+    const declaracion = await Declaracion.findOneAndDelete({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!declaracion) { res.status(404); throw new Error('Declaración no encontrada'); }
     res.json({ mensaje: 'Declaración eliminada' });
   } catch (error) { next(error); }

@@ -69,6 +69,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const { conectarDB } = require('./config/db');
 const { iniciarListener } = require('./services/emailService');
 const Usuario = require('./models/Usuario');
@@ -85,6 +86,8 @@ const costoRoutes = require('./routes/costoRoutes');
 const facturaEmisionRoutes = require('./routes/facturaEmisionRoutes');
 const haciendaRoutes = require('./routes/haciendaRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const stripeWebhookRoutes = require('./routes/stripeWebhookRoutes');
+const stripeRoutes = require('./routes/stripeRoutes');
 
 // Importar middleware de errores
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
@@ -110,8 +113,17 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+/**
+ * Webhook Stripe — DEBE montarse ANTES de express.json() para recibir raw body.
+ * Stripe firma el body crudo; si se parsea a JSON primero, la firma falla.
+ * Rate limiters globales NO aplican a este router (específicamente excluido)
+ * porque Stripe necesita entregar el webhook sin límites.
+ */
+app.use('/api/stripe/webhook', stripeWebhookRoutes);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Rate limiting para endpoints de autenticación
 const authLimiter = rateLimit({
@@ -120,10 +132,11 @@ const authLimiter = rateLimit({
   message: { error: 'Demasiados intentos. Intente de nuevo en 15 minutos.' },
 });
 
-// Rate limiting general para la API
+// Rate limiting general para la API (excluye webhook Stripe)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
+  skip: (req) => req.path === '/api/stripe/webhook',
 });
 
 app.use('/api/auth', authLimiter);
@@ -179,9 +192,10 @@ app.use('/api/costos', costoRoutes);
 app.use('/api/facturacion', facturaEmisionRoutes);
 app.use('/api/hacienda', haciendaRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/stripe', stripeRoutes);
 
 console.log('📋 Rutas registradas:');
-console.log('   /api/auth');
+console.log('   /api/auth (incluye /refresh, /logout)');
 console.log('   /api/ingresos');
 console.log('   /api/facturas');
 console.log('   /api/impuestos');
@@ -192,6 +206,7 @@ console.log('   /api/costos');
 console.log('   /api/facturacion');
 console.log('   /api/hacienda (v4.4 nativa)');
 console.log('   /api/chat (incluye /stream)');
+console.log('   /api/stripe (checkout, portal, estado, webhook)');
 
 // Middleware para rutas no encontradas
 app.use(notFound);

@@ -197,6 +197,12 @@ const facturaEmisionSchema = new mongoose.Schema({
   archivoPDF: String, // Ruta al PDF generado
 
   // === Relación ===
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false,
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -208,9 +214,10 @@ const facturaEmisionSchema = new mongoose.Schema({
 });
 
 // ============ ÍNDICES ============
-facturaEmisionSchema.index({ usuario: 1, periodoFiscal: 1, cuatrimestre: 1 });
-facturaEmisionSchema.index({ usuario: 1, fechaEmision: -1 });
+facturaEmisionSchema.index({ tenantId: 1, periodoFiscal: 1, cuatrimestre: 1 });
+facturaEmisionSchema.index({ tenantId: 1, fechaEmision: -1 });
 facturaEmisionSchema.index({ 'emisor.cedula.numero': 1 });
+facturaEmisionSchema.index({ tenantId: 1, usuario: 1 });
 
 // ============ PRE-SAVE: Calcular resumen ============
 facturaEmisionSchema.pre('save', function () {

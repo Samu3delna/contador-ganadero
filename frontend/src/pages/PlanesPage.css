@@ -1,0 +1,23 @@
+.planes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--espacio-lg);
+  align-items: stretch;
+}
+
+.planes-procesando {
+  margin-top: var(--espacio-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-sm);
+  color: var(--color-texto-sec);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 1100px) {
+  .planes-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .planes-grid { grid-template-columns: 1fr; }
+}

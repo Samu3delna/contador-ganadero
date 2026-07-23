@@ -15,6 +15,19 @@ const usuarioSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
   },
+  // === Multi-tenant: cada usuario pertenece a un Tenant (finca) ===
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false, // false para permitir migracion backfill gradual; tenantGuard valida en runtime
+  },
+  // Rol del usuario dentro del tenant (RBAC prep)
+  rol: {
+    type: String,
+    enum: ['dueño', 'contador', 'peon'],
+    default: 'dueño',
+  },
   password: {
     type: String,
     required: [true, 'La contraseña es obligatoria'],

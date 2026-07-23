@@ -527,14 +527,14 @@ async function enviarFeedback(req, res) {
       return res.status(400).json({ error: 'Datos de feedback inválidos' });
     }
 
-    const feedbackDoc = await ChatFeedback.create({
+    const feedbackDoc = await ChatFeedback.create(req.aplicarTenant({
       usuario: usuarioId,
       mensajeUsuario: mensajeUsuario.substring(0, 2000),
       respuestaIA: respuestaIA.substring(0, 10000),
       feedback,
       comentario: comentario?.substring(0, 500),
       modelo: modeloIA,
-    });
+    }));
 
     console.log(`📊 Feedback ${feedback}: usuario=${usuarioId} id=${feedbackDoc._id}`);
 

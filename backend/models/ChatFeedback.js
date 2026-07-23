@@ -7,6 +7,12 @@ const chatFeedbackSchema = new mongoose.Schema({
     required: true,
     index: true,
   },
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false,
+  },
   mensajeUsuario: {
     type: String,
     required: true,
@@ -43,5 +49,6 @@ const chatFeedbackSchema = new mongoose.Schema({
 // Índice para consultas de análisis
 chatFeedbackSchema.index({ feedback: 1, createdAt: -1 });
 chatFeedbackSchema.index({ usuario: 1, createdAt: -1 });
+chatFeedbackSchema.index({ tenantId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('ChatFeedback', chatFeedbackSchema);

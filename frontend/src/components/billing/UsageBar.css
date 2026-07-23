@@ -1,0 +1,55 @@
+.usage-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.usage-bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.usage-bar-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-texto);
+}
+
+.usage-bar-count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-texto-sec);
+}
+
+.usage-bar-count--limite {
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+.usage-bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.usage-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.usage-bar-fill--verde {
+  background: linear-gradient(90deg, var(--color-primario-claro), var(--color-exito));
+}
+
+.usage-bar-fill--amarillo {
+  background: linear-gradient(90deg, var(--color-secundario-claro), var(--color-advertencia));
+}
+
+.usage-bar-fill--rojo {
+  background: linear-gradient(90deg, #FF7043, var(--color-error));
+  box-shadow: 0 0 8px rgba(255, 82, 82, 0.5);
+}

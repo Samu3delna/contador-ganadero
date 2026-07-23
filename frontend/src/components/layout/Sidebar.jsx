@@ -1,5 +1,5 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
 import './Sidebar.css';
@@ -17,11 +17,25 @@ const menuItems = [
   { path: '/declaraciones', label: 'Declaraciones Hacienda', icon: Landmark },
   { path: '/impuestos', label: 'Impuestos', icon: Calculator },
   { path: '/calendario', label: 'Calendario', icon: Calendar },
+  { path: '/planes', label: 'Planes & Facturación', icon: Crown },
+  { path: '/billing', label: 'Mi Suscripción', icon: CreditCard },
 ];
+
+const PLAN_NOMBRES = {
+  free: 'Free',
+  bronce: 'Bronce',
+  oro: 'Oro',
+  corporativo: 'Corporativo',
+};
 
 export default function Sidebar() {
   const { usuario, logout } = useAuth();
   const [abierto, setAbierto] = useState(false);
+  const navigate = useNavigate();
+
+  const planUsuario = usuario?.plan || usuario?.tenant?.plan;
+  const estadoTenant = usuario?.estadoTenant || usuario?.tenant?.estado;
+  const planNombre = PLAN_NOMBRES[planUsuario] || (planUsuario ? planUsuario : null);
 
   return (
     <>
@@ -59,7 +73,25 @@ export default function Sidebar() {
             </div>
             <div className="sidebar-user-info">
               <span className="sidebar-user-name">{usuario?.nombre || 'Usuario'}</span>
-              <span className="sidebar-user-finca">{usuario?.nombreFinca || 'Mi Finca'}</span>
+              <span className="sidebar-user-finca">{usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}</span>
+              {planNombre && (
+                <span
+                  className="sidebar-user-plan"
+                  onClick={() => { setAbierto(false); navigate('/billing'); }}
+                  title="Ver mi suscripción"
+                >
+                  <Crown size={11} /> Plan: {planNombre}
+                </span>
+              )}
+              {estadoTenant && estadoTenant !== 'activo' && (
+                <span
+                  className="sidebar-user-alerta"
+                  onClick={() => { setAbierto(false); navigate('/billing'); }}
+                  title="Acceso limitado"
+                >
+                  <AlertTriangle size={11} /> Acceso limitado
+                </span>
+              )}
             </div>
           </div>
           <button className="sidebar-logout" onClick={logout} title="Cerrar sesión">

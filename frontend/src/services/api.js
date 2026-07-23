@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // Necesario para que las cookies httpOnly del refresh token viajen
 });
 
 // Interceptor: agregar token JWT
@@ -14,16 +15,56 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor: manejar errores 401
+// Bandera para evitar múltiples refresh simultáneos
+let refreshPromise = null;
+
+// Interceptor: manejar errores 401 con refresh token transparente
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Si no es 401, o ya se marcó retry, o es ruta de auth, propagar
+    const esRutaAuth = originalRequest?.url?.startsWith('/auth/');
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      esRutaAuth
+    ) {
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    try {
+      // Reutilizar un único refresh en vuelo si hay varias peticiones 401 simultáneas
+      if (!refreshPromise) {
+        refreshPromise = api.post('/auth/refresh').finally(() => {
+          refreshPromise = null;
+        });
+      }
+
+      const res = await refreshPromise;
+      const nuevoToken = res.data?.token;
+      if (nuevoToken) {
+        localStorage.setItem('token', nuevoToken);
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${nuevoToken}`;
+      }
+      // Reintentar la petición original con el nuevo token
+      return api(originalRequest);
+    } catch (refreshErr) {
+      // Refresh falló: logout genuino (intenta llamar API, ignora errores) y redirect
+      try {
+        await api.post('/auth/logout');
+      } catch { /* cookie posiblemente ya no existe */ }
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      return Promise.reject(refreshErr);
     }
-    return Promise.reject(error);
   }
 );
 
@@ -99,6 +140,14 @@ export const eliminarDeclaracionAPI = (id) => api.delete(`/declaraciones/${id}`)
 
 // === Deducibilidad ===
 export const actualizarDeducibilidadAPI = (id, datos) => api.put(`/facturas/${id}/deducibilidad`, datos);
+
+// === Stripe / SaaS ===
+export const crearCheckoutAPI = (planId) => api.post('/stripe/checkout', { planId });
+export const crearPortalAPI = () => api.post('/stripe/portal');
+export const obtenerEstadoSuscripcionAPI = () => api.get('/stripe/estado');
+// refrescarTokenAPI: usa la misma instancia axios (withCredentials: true) para que la cookie httpOnly viaje
+export const refrescarTokenAPI = () => api.post('/auth/refresh');
+export const logoutAPI = () => api.post('/auth/logout');
 
 // === Dashboard ===
 export const resumenDashboardAPI = () => api.get('/dashboard/resumen');

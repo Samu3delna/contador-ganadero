@@ -58,6 +58,12 @@ const declaracionSchema = new mongoose.Schema({
   },
 
   // === Relación ===
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false,
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -68,6 +74,7 @@ const declaracionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-declaracionSchema.index({ usuario: 1, tipo: 1, periodoFiscal: 1, cuatrimestre: 1 });
+declaracionSchema.index({ tenantId: 1, tipo: 1, periodoFiscal: 1, cuatrimestre: 1 });
+declaracionSchema.index({ tenantId: 1, usuario: 1 });
 
 module.exports = mongoose.model('Declaracion', declaracionSchema);

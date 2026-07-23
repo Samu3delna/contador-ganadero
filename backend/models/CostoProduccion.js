@@ -84,6 +84,12 @@ const centroCostoSchema = new mongoose.Schema({
 
 // ============ MODELO PADRE ============
 const costoProduccionSchema = new mongoose.Schema({
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false,
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -105,8 +111,9 @@ const costoProduccionSchema = new mongoose.Schema({
 });
 
 // ============ ÍNDICES ============
-costoProduccionSchema.index({ usuario: 1, periodoFiscal: 1 });
+costoProduccionSchema.index({ tenantId: 1, periodoFiscal: 1 });
 costoProduccionSchema.index({ 'centrosCosto.referenciaId': 1 });
+costoProduccionSchema.index({ tenantId: 1, usuario: 1 });
 
 // ============ MÉTODO: RECALCULAR INDICADORES ============
 costoProduccionSchema.methods.recalcularIndicadoresCentro = function (referenciaId) {

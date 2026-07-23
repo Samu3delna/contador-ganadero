@@ -6,9 +6,9 @@ const obtenerCostos = async (req, res, next) => {
   try {
     const { periodoFiscal } = req.query;
     const anio = Number(periodoFiscal || new Date().getFullYear());
-    let costos = await CostoProduccion.findOne({ usuario: req.usuario._id, periodoFiscal: anio });
+    let costos = await CostoProduccion.findOne(req.filtrarPorTenant({ periodoFiscal: anio }));
     if (!costos) {
-      costos = await CostoProduccion.create({ usuario: req.usuario._id, periodoFiscal: anio, centrosCosto: [] });
+      costos = await CostoProduccion.create(req.aplicarTenant({ usuario: req.usuario._id, periodoFiscal: anio, centrosCosto: [] }));
     }
     res.json(costos);
   } catch (error) { next(error); }
@@ -19,8 +19,8 @@ const crearCentroCosto = async (req, res, next) => {
     const { referenciaId, tipoActividad, nombreLote, fechaInicio } = req.body;
     const anio = new Date(fechaInicio || Date.now()).getFullYear();
 
-    let costos = await CostoProduccion.findOne({ usuario: req.usuario._id, periodoFiscal: anio });
-    if (!costos) costos = await CostoProduccion.create({ usuario: req.usuario._id, periodoFiscal: anio, centrosCosto: [] });
+    let costos = await CostoProduccion.findOne(req.filtrarPorTenant({ periodoFiscal: anio }));
+    if (!costos) costos = await CostoProduccion.create(req.aplicarTenant({ usuario: req.usuario._id, periodoFiscal: anio, centrosCosto: [] }));
 
     const existe = costos.centrosCosto.find(c => c.referenciaId === referenciaId);
     if (existe) { res.status(400); throw new Error('Ya existe un centro de costo con esa referencia'); }
@@ -35,7 +35,7 @@ const agregarConsumo = async (req, res, next) => {
   try {
     const { referenciaId } = req.params;
     const { tipoInsumo, descripcion, cantidad, unidadMedida, costoUnitario, proveedor, facturaRef } = req.body;
-    const costos = await CostoProduccion.findOne({ usuario: req.usuario._id, 'centrosCosto.referenciaId': referenciaId });
+    const costos = await CostoProduccion.findOne(req.filtrarPorTenant({ 'centrosCosto.referenciaId': referenciaId }));
     if (!costos) { res.status(404); throw new Error('No existe registro de costos para este año'); }
 
     const centro = costos.centrosCosto.find(c => c.referenciaId === referenciaId);
@@ -54,7 +54,7 @@ const agregarProduccion = async (req, res, next) => {
   try {
     const { referenciaId } = req.params;
     const { tipoProducto, cantidad, unidadMedida, ingresoBrutoVenta } = req.body;
-    const costos = await CostoProduccion.findOne({ usuario: req.usuario._id, 'centrosCosto.referenciaId': referenciaId });
+    const costos = await CostoProduccion.findOne(req.filtrarPorTenant({ 'centrosCosto.referenciaId': referenciaId }));
     if (!costos) { res.status(404); throw new Error('No existe registro de costos para este año'); }
 
     const centro = costos.centrosCosto.find(c => c.referenciaId === referenciaId);
@@ -70,7 +70,7 @@ const agregarProduccion = async (req, res, next) => {
 const cerrarCentroCosto = async (req, res, next) => {
   try {
     const { referenciaId } = req.params;
-    const costos = await CostoProduccion.findOne({ usuario: req.usuario._id, 'centrosCosto.referenciaId': referenciaId });
+    const costos = await CostoProduccion.findOne(req.filtrarPorTenant({ 'centrosCosto.referenciaId': referenciaId }));
     if (!costos) { res.status(404); throw new Error('No existe registro de costos'); }
 
     const centro = costos.centrosCosto.find(c => c.referenciaId === referenciaId);
@@ -90,7 +90,7 @@ const obtenerResumenCostos = async (req, res, next) => {
   try {
     const { periodoFiscal } = req.query;
     const anio = Number(periodoFiscal || new Date().getFullYear());
-    const costos = await CostoProduccion.findOne({ usuario: req.usuario._id, periodoFiscal: anio });
+    const costos = await CostoProduccion.findOne(req.filtrarPorTenant({ periodoFiscal: anio }));
     if (!costos) return res.json({ periodoFiscal: anio, resumenGlobal: {}, centrosCosto: [] });
 
     res.json({

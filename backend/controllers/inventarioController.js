@@ -4,9 +4,9 @@ const Inventario = require('../models/Inventario');
 
 const obtenerInventario = async (req, res, next) => {
   try {
-    let inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    let inventario = await Inventario.findOne(req.filtrarPorTenant());
     if (!inventario) {
-      inventario = await Inventario.create({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] });
+      inventario = await Inventario.create(req.aplicarTenant({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] }));
     }
     res.json(inventario);
   } catch (error) { next(error); }
@@ -17,8 +17,8 @@ const obtenerInventario = async (req, res, next) => {
 const agregarBovino = async (req, res, next) => {
   try {
     const { tagId, nombre, raza, tipo, sexo, fechaNacimiento, pesoActualKg, observaciones } = req.body;
-    let inventario = await Inventario.findOne({ usuario: req.usuario._id });
-    if (!inventario) inventario = await Inventario.create({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] });
+    let inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) inventario = await Inventario.create(req.aplicarTenant({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] }));
 
     const existe = inventario.bovinos.find(b => b.tagId === tagId);
     if (existe) { res.status(400); throw new Error('Ya existe un bovino con ese tagId'); }
@@ -31,7 +31,7 @@ const agregarBovino = async (req, res, next) => {
 
 const actualizarBovino = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     const bovino = inventario.bovinos.id(req.params.id);
     if (!bovino) { res.status(404); throw new Error('Bovino no encontrado'); }
 
@@ -51,7 +51,7 @@ const actualizarBovino = async (req, res, next) => {
 
 const eliminarBovino = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     const bovino = inventario.bovinos.id(req.params.id);
     if (!bovino) { res.status(404); throw new Error('Bovino no encontrado'); }
     bovino.activo = false;
@@ -65,8 +65,8 @@ const eliminarBovino = async (req, res, next) => {
 const agregarLoteAves = async (req, res, next) => {
   try {
     const { loteId, especie, galpon, cicloActual } = req.body;
-    let inventario = await Inventario.findOne({ usuario: req.usuario._id });
-    if (!inventario) inventario = await Inventario.create({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] });
+    let inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) inventario = await Inventario.create(req.aplicarTenant({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] }));
 
     const existe = inventario.lotesAves.find(l => l.loteId === loteId);
     if (existe) { res.status(400); throw new Error('Ya existe un lote con ese ID'); }
@@ -79,7 +79,7 @@ const agregarLoteAves = async (req, res, next) => {
 
 const actualizarLoteAves = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     const lote = inventario.lotesAves.id(req.params.id);
     if (!lote) { res.status(404); throw new Error('Lote no encontrado'); }
 
@@ -100,8 +100,8 @@ const actualizarLoteAves = async (req, res, next) => {
 const agregarEstanque = async (req, res, next) => {
   try {
     const { estanqueId, especie, capacidadM3, fechaSiembra, nInicial } = req.body;
-    let inventario = await Inventario.findOne({ usuario: req.usuario._id });
-    if (!inventario) inventario = await Inventario.create({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] });
+    let inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) inventario = await Inventario.create(req.aplicarTenant({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] }));
 
     const existe = inventario.estanques.find(e => e.estanqueId === estanqueId);
     if (existe) { res.status(400); throw new Error('Ya existe un estanque con ese ID'); }
@@ -114,7 +114,7 @@ const agregarEstanque = async (req, res, next) => {
 
 const actualizarEstanque = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     const estanque = inventario.estanques.id(req.params.id);
     if (!estanque) { res.status(404); throw new Error('Estanque no encontrado'); }
 
@@ -138,8 +138,8 @@ const actualizarEstanque = async (req, res, next) => {
 const agregarColmena = async (req, res, next) => {
   try {
     const { colmenaId, especie, ubicacion, tipoColmena } = req.body;
-    let inventario = await Inventario.findOne({ usuario: req.usuario._id });
-    if (!inventario) inventario = await Inventario.create({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] });
+    let inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) inventario = await Inventario.create(req.aplicarTenant({ usuario: req.usuario._id, bovinos: [], lotesAves: [], estanques: [], colmenas: [] }));
 
     const existe = inventario.colmenas.find(c => c.colmenaId === colmenaId);
     if (existe) { res.status(400); throw new Error('Ya existe una colmena con ese ID'); }
@@ -152,7 +152,7 @@ const agregarColmena = async (req, res, next) => {
 
 const actualizarColmena = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     const colmena = inventario.colmenas.id(req.params.id);
     if (!colmena) { res.status(404); throw new Error('Colmena no encontrada'); }
 
@@ -177,7 +177,7 @@ const actualizarColmena = async (req, res, next) => {
 
 const obtenerResumenInventario = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     if (!inventario) return res.json({ totalBovinos: 0, totalAves: 0, totalPeces: 0, totalBiomasa: 0, totalMiel: 0 });
 
     res.json({
@@ -200,7 +200,7 @@ const obtenerResumenInventario = async (req, res, next) => {
 
 const eliminarLoteAves = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     const lote = inventario.lotesAves.id(req.params.id);
     if (!lote) { res.status(404); throw new Error('Lote no encontrado'); }
     lote.activo = false;
@@ -211,7 +211,7 @@ const eliminarLoteAves = async (req, res, next) => {
 
 const eliminarEstanque = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     const estanque = inventario.estanques.id(req.params.id);
     if (!estanque) { res.status(404); throw new Error('Estanque no encontrado'); }
     estanque.activo = false;
@@ -222,7 +222,7 @@ const eliminarEstanque = async (req, res, next) => {
 
 const eliminarColmena = async (req, res, next) => {
   try {
-    const inventario = await Inventario.findOne({ usuario: req.usuario._id });
+    const inventario = await Inventario.findOne(req.filtrarPorTenant());
     const colmena = inventario.colmenas.id(req.params.id);
     if (!colmena) { res.status(404); throw new Error('Colmena no encontrada'); }
     colmena.activo = false;

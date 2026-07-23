@@ -225,6 +225,12 @@ const colmenaSchema = new mongoose.Schema({
 
 // ============ MODELO PADRE DE INVENTARIO ============
 const inventarioSchema = new mongoose.Schema({
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false,
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -249,6 +255,7 @@ inventarioSchema.index({ 'bovinos.tagId': 1 });
 inventarioSchema.index({ 'lotesAves.loteId': 1 });
 inventarioSchema.index({ 'estanques.estanqueId': 1 });
 inventarioSchema.index({ 'colmenas.colmenaId': 1 });
+inventarioSchema.index({ tenantId: 1, usuario: 1 });
 
 // ============ MÉTODOS VIRTUALES ============
 inventarioSchema.virtual('totalBovinosActivos').get(function () {

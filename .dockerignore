@@ -1,0 +1,16 @@
+**/node_modules
+**/.git
+**/.env
+**/dist
+**/coverage
+backend/uploads/
+frontend/dist/
+*.md
+..cursor/
+.claude/
+.opencode/
+tests/
+__tests__/
+jest.setup.js
+babel.config.js
+eslint.config.*

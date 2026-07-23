@@ -83,6 +83,49 @@
 .sidebar-user-name { font-size: 0.85rem; font-weight: 600; }
 .sidebar-user-finca { font-size: 0.7rem; color: var(--color-texto-sec); }
 
+.sidebar-user-plan {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  padding: 2px 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(27,94,32,0.4), rgba(76,175,80,0.2));
+  color: var(--color-primario-claro);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+.sidebar-user-plan:hover {
+  background: linear-gradient(135deg, rgba(27,94,32,0.6), rgba(76,175,80,0.35));
+}
+
+.sidebar-user-alerta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  padding: 2px 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background: rgba(255, 82, 82, 0.12);
+  color: var(--color-error);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+.sidebar-user-alerta:hover {
+  background: rgba(255, 82, 82, 0.18);
+}
+
 .sidebar-logout {
   background: none; border: none; color: var(--color-texto-sec);
   cursor: pointer; padding: 6px; border-radius: var(--radio-sm);

@@ -6,7 +6,7 @@ const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 const obtenerFacturasEmision = async (req, res, next) => {
   try {
     const { periodoFiscal, cuatrimestre, estado, page = 1, limit = 20 } = req.query;
-    const filtro = { usuario: req.usuario._id };
+    const filtro = req.filtrarPorTenant();
     if (periodoFiscal) filtro.periodoFiscal = Number(periodoFiscal);
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);
     if (estado) filtro.estado = estado;
@@ -22,7 +22,7 @@ const obtenerFacturasEmision = async (req, res, next) => {
 
 const obtenerFacturaEmision = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     res.json(factura);
   } catch (error) { next(error); }
@@ -44,7 +44,7 @@ const crearFacturaEmision = async (req, res, next) => {
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
     const periodoFiscal = fechaEmision.getFullYear();
 
-    const nuevaFactura = await FacturaEmision.create({
+    const nuevaFactura = await FacturaEmision.create(req.aplicarTenant({
       consecutivo,
       emisor: { ...emisor, regimen: 'Régimen Especial Agropecuario (REA)' },
       receptor,
@@ -61,7 +61,7 @@ const crearFacturaEmision = async (req, res, next) => {
       periodoFiscal,
       estado: 'borrador',
       usuario: req.usuario._id,
-    });
+    }));
 
     res.status(201).json(nuevaFactura);
   } catch (error) { next(error); }
@@ -70,7 +70,7 @@ const crearFacturaEmision = async (req, res, next) => {
 const actualizarEstadoFactura = async (req, res, next) => {
   try {
     const { estado, respuestaHacienda } = req.body;
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
 
     if (estado) factura.estado = estado;
@@ -88,7 +88,7 @@ const actualizarEstadoFactura = async (req, res, next) => {
 
 const anularFactura = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (factura.estado === 'aceptada') {
       res.status(400); throw new Error('No se puede anular una factura ya aceptada por Hacienda');
@@ -106,7 +106,7 @@ const obtenerResumenEmision = async (req, res, next) => {
     const { anio } = req.query;
     const anioNum = Number(anio || new Date().getFullYear());
 
-    const facturas = await FacturaEmision.find({ usuario: req.usuario._id, periodoFiscal: anioNum });
+    const facturas = await FacturaEmision.find({ ...req.filtrarPorTenant(), periodoFiscal: anioNum });
     const totalEmitido = facturas.reduce((sum, f) => sum + (f.resumenFactura?.totalComprobante || 0), 0);
     const totalIVA = facturas.reduce((sum, f) => sum + (f.resumenFactura?.totalImpuesto || 0), 0);
 

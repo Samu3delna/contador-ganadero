@@ -1,0 +1,155 @@
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-md);
+  padding: var(--espacio-lg);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radio-lg);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.plan-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sombra-lg);
+}
+
+.plan-card--destacado {
+  border-color: var(--color-secundario);
+  box-shadow: 0 0 0 1px var(--color-secundario), var(--sombra-glow);
+}
+
+.plan-card--actual {
+  border-color: var(--color-primario-claro);
+  box-shadow: 0 0 0 1px var(--color-primario-claro);
+}
+
+.plan-card-popular {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, var(--color-secundario), var(--color-secundario-claro));
+  color: var(--color-texto-inv);
+}
+
+.plan-card-head { display: flex; flex-direction: column; gap: 4px; }
+.plan-card-nombre { font-size: 1.25rem; font-weight: 700; }
+.plan-card-descripcion {
+  font-size: 0.85rem;
+  color: var(--color-texto-sec);
+  min-height: 2.4em;
+}
+
+.plan-card-precio {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-family: var(--font-headers);
+  font-weight: 800;
+  color: var(--color-texto);
+}
+.plan-card-precio-sign { font-size: 1.2rem; }
+.plan-card-precio-num { font-size: 2.4rem; line-height: 1; }
+.plan-card-precio-per {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-texto-sec);
+  margin-left: 6px;
+}
+
+.plan-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-texto-sec);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.plan-badge--ok {
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--color-exito);
+  border-color: rgba(0, 230, 118, 0.2);
+}
+.plan-badge--off {
+  background: rgba(255, 82, 82, 0.06);
+  color: var(--color-texto-sec);
+  border-color: rgba(255, 82, 82, 0.15);
+}
+
+.plan-card-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--espacio-sm) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.plan-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--color-texto);
+}
+.plan-feature-icon { color: var(--color-exito); flex-shrink: 0; }
+.plan-feature--off { color: var(--color-texto-sec); }
+.plan-feature--off .plan-feature-icon { color: var(--color-texto-sec); }
+.plan-feature--off span { text-decoration: line-through; opacity: 0.7; }
+
+.plan-card-btn {
+  margin-top: auto;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: var(--radio-md);
+  font-family: var(--font-headers);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.plan-card-btn--primario {
+  background: linear-gradient(135deg, var(--color-primario), var(--color-primario-claro));
+  color: white;
+  box-shadow: 0 4px 10px rgba(27, 94, 32, 0.3);
+}
+.plan-card-btn--primario:hover {
+  box-shadow: var(--sombra-glow);
+  transform: translateY(-1px);
+}
+.plan-card-btn--secundario {
+  background: transparent;
+  border: 1px solid var(--color-primario-claro);
+  color: var(--color-primario-claro);
+}
+.plan-card-btn--secundario:hover { background: rgba(76, 175, 80, 0.1); }
+.plan-card-btn--actual {
+  background: var(--color-superficie-2);
+  color: var(--color-texto-sec);
+  cursor: not-allowed;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+  .plan-card-precio-num { font-size: 2rem; }
+}

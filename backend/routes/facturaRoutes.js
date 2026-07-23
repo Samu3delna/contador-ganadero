@@ -6,8 +6,10 @@ const {
   descargarXML, descargarPDF, obtenerAlertasTarifa, diagnosticarIMAP
 } = require('../controllers/facturaController');
 const { protegerRuta } = require('../middleware/authMiddleware');
+const { extraerTenant } = require('../middleware/tenantGuard');
 
 router.use(protegerRuta);
+router.use(extraerTenant);
 router.route('/').get(obtenerFacturas);
 router.post('/manual', crearGastoManual);
 

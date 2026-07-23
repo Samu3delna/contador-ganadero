@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protegerRuta } = require('../middleware/authMiddleware');
+const { extraerTenant } = require('../middleware/tenantGuard');
 const {
   obtenerCostos,
   crearCentroCosto,
@@ -11,6 +12,7 @@ const {
 } = require('../controllers/costoController');
 
 router.use(protegerRuta);
+router.use(extraerTenant);
 
 router.get('/', obtenerCostos);
 router.get('/resumen', obtenerResumenCostos);

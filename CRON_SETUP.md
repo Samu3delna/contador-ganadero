@@ -131,7 +131,7 @@ El `worker.js` corre 24/7 SIN spin-down en plan FREE de Render.
 - [ ] `IMAP_PASSWORD` = App Password actual
 - [ ] `OPENROUTER_API_KEY`
 - [ ] `FRONTEND_URL` = `https://tu-app.vercel.app`
-- [ ] `EMAIL_ENC_KEY` = `1dbe9072128bc1777863de55f7ee4f25ea8dfe3e36ba8739d782bf291de8e730`
+- [ ] `EMAIL_ENC_KEY` = (regenerar con `openssl rand -hex 32` — el valor previamente expuesto en versiones históricas de este documento queda comprometido y debe rotarse)
 
 ### Render Background Worker:
 - [ ] Mismas variables que Web Service (excepto JWT_SECRET, OPENROUTER_API_KEY, FRONTEND_URL)

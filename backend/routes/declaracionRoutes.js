@@ -14,8 +14,10 @@ const {
   obtenerIngresosDeclaracion,
 } = require('../controllers/declaracionController');
 const { protegerRuta } = require('../middleware/authMiddleware');
+const { extraerTenant } = require('../middleware/tenantGuard');
 
 router.use(protegerRuta);
+router.use(extraerTenant);
 
 router.get('/configuracion', obtenerConfiguracionFiscal);
 router.put('/configuracion', actualizarConfiguracionFiscal);

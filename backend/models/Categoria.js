@@ -27,6 +27,10 @@ const categoriaSchema = new mongoose.Schema({
   },
   icono: String, // Nombre del ícono de Lucide React
   color: String, // Color hex para la UI
+  esGlobal: {
+    type: Boolean,
+    default: true,
+  },
 }, {
   timestamps: true,
 });

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { loginAPI, registroAPI, obtenerPerfilAPI } from '../services/api';
+import { loginAPI, registroAPI, obtenerPerfilAPI, logoutAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -11,8 +11,14 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
     if (token) {
       obtenerPerfilAPI()
-        .then(res => setUsuario(res.data))
-        .catch(() => { localStorage.removeItem('token'); localStorage.removeItem('usuario'); })
+        .then(res => {
+          setUsuario(res.data);
+          localStorage.setItem('usuario', JSON.stringify(res.data));
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('usuario');
+        })
         .finally(() => setCargando(false));
     }
   }, []);
@@ -20,6 +26,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await loginAPI({ email, password });
     localStorage.setItem('token', res.data.token);
+    localStorage.setItem('usuario', JSON.stringify(res.data));
     setUsuario(res.data);
     return res.data;
   };
@@ -27,18 +34,34 @@ export function AuthProvider({ children }) {
   const registro = async (datos) => {
     const res = await registroAPI(datos);
     localStorage.setItem('token', res.data.token);
+    localStorage.setItem('usuario', JSON.stringify(res.data));
     setUsuario(res.data);
     return res.data;
   };
 
-  const logout = () => {
+  // Recarga el perfil desde el backend y actualiza el estado
+  const refrescarSesion = async () => {
+    try {
+      const res = await obtenerPerfilAPI();
+      setUsuario(res.data);
+      localStorage.setItem('usuario', JSON.stringify(res.data));
+      return res.data;
+    } catch {
+      return null;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await logoutAPI();
+    } catch { /* no fallar si no hay cookie */ }
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
     setUsuario(null);
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, cargando, login, registro, logout }}>
+    <AuthContext.Provider value={{ usuario, cargando, login, registro, logout, refrescarSesion }}>
       {children}
     </AuthContext.Provider>
   );

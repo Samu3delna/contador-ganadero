@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protegerRuta } = require('../middleware/authMiddleware');
+const { extraerTenant } = require('../middleware/tenantGuard');
 const {
   obtenerInventario,
   agregarBovino,
@@ -19,6 +20,7 @@ const {
 } = require('../controllers/inventarioController');
 
 router.use(protegerRuta);
+router.use(extraerTenant);
 
 // Inventario general
 router.get('/', obtenerInventario);

@@ -202,6 +202,12 @@ const facturaSchema = new mongoose.Schema({
   },
 
   // === Relación ===
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false,
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -213,8 +219,9 @@ const facturaSchema = new mongoose.Schema({
 });
 
 // Índice compuesto para consultas frecuentes
-facturaSchema.index({ usuario: 1, periodoFiscal: 1, cuatrimestre: 1 });
-facturaSchema.index({ usuario: 1, fechaEmision: -1 });
-facturaSchema.index({ usuario: 1, 'resumenValidacionTarifa.alertasError': -1 });
+facturaSchema.index({ tenantId: 1, periodoFiscal: 1, cuatrimestre: 1 });
+facturaSchema.index({ tenantId: 1, fechaEmision: -1 });
+facturaSchema.index({ tenantId: 1, 'resumenValidacionTarifa.alertasError': -1 });
+facturaSchema.index({ tenantId: 1, usuario: 1 });
 
 module.exports = mongoose.model('Factura', facturaSchema);

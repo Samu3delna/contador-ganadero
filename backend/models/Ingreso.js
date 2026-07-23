@@ -93,6 +93,12 @@ const ingresoSchema = new mongoose.Schema({
   periodoFiscal: Number,
 
   // Relación
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false,
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -128,7 +134,8 @@ ingresoSchema.pre('validate', function () {
 });
 
 // Índice compuesto
-ingresoSchema.index({ usuario: 1, periodoFiscal: 1, cuatrimestre: 1 });
-ingresoSchema.index({ usuario: 1, fecha: -1 });
+ingresoSchema.index({ tenantId: 1, periodoFiscal: 1, cuatrimestre: 1 });
+ingresoSchema.index({ tenantId: 1, fecha: -1 });
+ingresoSchema.index({ tenantId: 1, usuario: 1 });
 
 module.exports = mongoose.model('Ingreso', ingresoSchema);

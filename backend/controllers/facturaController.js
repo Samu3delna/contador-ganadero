@@ -8,7 +8,7 @@ const { validarTarifasFactura } = require('../utils/insumosAgropecuarios');
 const obtenerFacturas = async (req, res, next) => {
   try {
     const { periodoFiscal, cuatrimestre, categoriaIA, estado, soloAlertas, deducible, page = 1, limit = 20 } = req.query;
-    const filtro = { usuario: req.usuario._id };
+    const filtro = req.filtrarPorTenant();
     if (periodoFiscal) filtro.periodoFiscal = Number(periodoFiscal);
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);
     if (categoriaIA) filtro.categoriaIA = categoriaIA;
@@ -29,7 +29,7 @@ const obtenerFacturas = async (req, res, next) => {
 
 const obtenerFacturaPorId = async (req, res, next) => {
   try {
-    const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await Factura.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     res.json(factura);
   } catch (error) { next(error); }
@@ -38,7 +38,7 @@ const obtenerFacturaPorId = async (req, res, next) => {
 const actualizarCategoriaFactura = async (req, res, next) => {
   try {
     const { categoriaManual, esDeducible, motivoNoDeducible } = req.body;
-    const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await Factura.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (categoriaManual) factura.categoriaManual = categoriaManual;
     if (esDeducible !== undefined) factura.esDeducible = esDeducible;
@@ -51,7 +51,7 @@ const actualizarCategoriaFactura = async (req, res, next) => {
 const actualizarDeducibilidad = async (req, res, next) => {
   try {
     const { esDeducible, motivoNoDeducible } = req.body;
-    const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await Factura.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     factura.esDeducible = esDeducible;
     if (!esDeducible) {
@@ -66,7 +66,7 @@ const actualizarDeducibilidad = async (req, res, next) => {
 
 const eliminarFactura = async (req, res, next) => {
   try {
-    const factura = await Factura.findOneAndDelete({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await Factura.findOneAndDelete({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     // Eliminar archivos XML y PDF del disco
     if (factura.archivoXML && fs.existsSync(factura.archivoXML)) {
@@ -92,7 +92,7 @@ function resolverRutaArchivo(rutaDB) {
 
 const descargarXML = async (req, res, next) => {
   try {
-    const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await Factura.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) {
       return res.status(404).json({ error: 'Factura no encontrada' });
     }
@@ -115,7 +115,7 @@ const descargarXML = async (req, res, next) => {
 
 const descargarPDF = async (req, res, next) => {
   try {
-    const factura = await Factura.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await Factura.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) {
       return res.status(404).json({ error: 'Factura no encontrada' });
     }
@@ -141,7 +141,7 @@ const descargarPDF = async (req, res, next) => {
 const obtenerAlertasTarifa = async (req, res, next) => {
   try {
     const facturas = await Factura.find({
-      usuario: req.usuario._id,
+      ...req.filtrarPorTenant(),
       'resumenValidacionTarifa.alertasError': { $gt: 0 },
     }).sort({ fechaEmision: -1 }).limit(100);
 
@@ -221,7 +221,7 @@ const crearGastoManual = async (req, res, next) => {
       resumenValidacionTarifa = validacion.resumenValidacion;
     }
     
-    const nuevaFactura = await Factura.create({
+    const nuevaFactura = await Factura.create(req.aplicarTenant({
       fechaEmision: fecha,
       emisor: { nombre: emisorNombre },
       resumenFactura: {
@@ -241,7 +241,7 @@ const crearGastoManual = async (req, res, next) => {
       alertasTarifa,
       resumenValidacionTarifa,
       consecutivo: numComprobante,
-    });
+    }));
 
     res.status(201).json(nuevaFactura);
   } catch (error) { next(error); }

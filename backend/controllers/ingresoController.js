@@ -4,7 +4,7 @@ const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 const obtenerIngresos = async (req, res, next) => {
   try {
     const { periodoFiscal, cuatrimestre, tipoGanado, categoriaIngreso, page = 1, limit = 20 } = req.query;
-    const filtro = { usuario: req.usuario._id };
+    const filtro = req.filtrarPorTenant();
     if (periodoFiscal) filtro.periodoFiscal = Number(periodoFiscal);
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);
     if (tipoGanado) filtro.tipoGanado = tipoGanado;
@@ -20,7 +20,7 @@ const obtenerIngresos = async (req, res, next) => {
 
 const obtenerIngresoPorId = async (req, res, next) => {
   try {
-    const ingreso = await Ingreso.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const ingreso = await Ingreso.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!ingreso) { res.status(404); throw new Error('Ingreso no encontrado'); }
     res.json(ingreso);
   } catch (error) { next(error); }
@@ -37,7 +37,7 @@ const crearIngreso = async (req, res, next) => {
 
     const fechaObj = new Date(fecha);
 
-    const ingreso = await Ingreso.create({
+    const ingreso = await Ingreso.create(req.aplicarTenant({
       fecha: fechaObj,
       descripcion,
       categoriaIngreso: categoriaIngreso || 'venta_ganado_pie',
@@ -56,7 +56,7 @@ const crearIngreso = async (req, res, next) => {
       cuatrimestre: obtenerCuatrimestre(fechaObj),
       periodoFiscal: fechaObj.getFullYear(),
       usuario: req.usuario._id,
-    });
+    }));
 
     res.status(201).json(ingreso);
   } catch (error) { next(error); }
@@ -64,7 +64,7 @@ const crearIngreso = async (req, res, next) => {
 
 const actualizarIngreso = async (req, res, next) => {
   try {
-    const ingreso = await Ingreso.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const ingreso = await Ingreso.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!ingreso) { res.status(404); throw new Error('Ingreso no encontrado'); }
 
     const campos = [
@@ -89,7 +89,7 @@ const actualizarIngreso = async (req, res, next) => {
 
 const eliminarIngreso = async (req, res, next) => {
   try {
-    const ingreso = await Ingreso.findOneAndDelete({ _id: req.params.id, usuario: req.usuario._id });
+    const ingreso = await Ingreso.findOneAndDelete({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!ingreso) { res.status(404); throw new Error('Ingreso no encontrado'); }
     res.json({ mensaje: 'Ingreso eliminado correctamente' });
   } catch (error) { next(error); }

@@ -16,20 +16,24 @@ const {
 
 /**
  * Calcular IVA Cuatrimestral (Formulario D-135-1)
+ * @param {import('mongoose').ObjectId|string} usuarioId -backward compat
+ * @param {number} cuatrimestre
+ * @param {number} anio
+ * @param {import('mongoose').ObjectId|string} [tenantId] -aislamiento multi-tenant (preferido)
  */
-async function calcularIVACuatrimestral(usuarioId, cuatrimestre, anio) {
+async function calcularIVACuatrimestral(usuarioId, cuatrimestre, anio, tenantId) {
   const { inicio, fin } = obtenerRangoFechasCuatrimestre(cuatrimestre, anio);
 
-  // Obtener facturas (gastos) del cuatrimestre
+  const filtroBase = tenantId ? { tenantId } : { usuario: usuarioId };
+
   const facturas = await Factura.find({
-    usuario: usuarioId,
+    ...filtroBase,
     fechaEmision: { $gte: inicio, $lte: fin },
     estado: { $ne: 'error' },
   });
 
-  // Obtener ingresos (ventas) del cuatrimestre
   const ingresos = await Ingreso.find({
-    usuario: usuarioId,
+    ...filtroBase,
     fecha: { $gte: inicio, $lte: fin },
   });
 
@@ -96,14 +100,18 @@ async function calcularIVACuatrimestral(usuarioId, cuatrimestre, anio) {
 
 /**
  * Calcular Renta Anual (Formulario D-101)
+ * @param {import('mongoose').ObjectId|string} usuarioId
+ * @param {number} anio
+ * @param {import('mongoose').ObjectId|string} [tenantId] -preferido para aislamiento
  */
-async function calcularRentaAnual(usuarioId, anio) {
+async function calcularRentaAnual(usuarioId, anio, tenantId) {
   const inicioAnio = new Date(anio, 0, 1);
   const finAnio = new Date(anio, 11, 31, 23, 59, 59, 999);
 
-  // Ingresos brutos del año
+  const filtroBase = tenantId ? { tenantId } : { usuario: usuarioId };
+
   const ingresos = await Ingreso.find({
-    usuario: usuarioId,
+    ...filtroBase,
     fecha: { $gte: inicioAnio, $lte: finAnio },
   });
 
@@ -111,9 +119,8 @@ async function calcularRentaAnual(usuarioId, anio) {
     return sum + (i.montoSubtotal || 0);
   }, 0);
 
-  // Facturas del año
   const todasFacturas = await Factura.find({
-    usuario: usuarioId,
+    ...filtroBase,
     fechaEmision: { $gte: inicioAnio, $lte: finAnio },
     estado: { $ne: 'error' },
   });
@@ -161,15 +168,18 @@ async function calcularRentaAnual(usuarioId, anio) {
 
 /**
  * Proyección fiscal en tiempo real
+ * @param {import('mongoose').ObjectId|string} usuarioId
+ * @param {number} [anioQuery]
+ * @param {import('mongoose').ObjectId|string} [tenantId] -preferido
  */
-async function calcularProyeccion(usuarioId, anioQuery) {
+async function calcularProyeccion(usuarioId, anioQuery, tenantId) {
   const ahora = new Date();
   const anioActual = anioQuery || ahora.getFullYear();
   const cuatrimestreActual = (anioQuery && anioQuery !== ahora.getFullYear()) ? 3 : obtenerCuatrimestre(ahora);
 
   const [iva, renta] = await Promise.all([
-    calcularIVACuatrimestral(usuarioId, cuatrimestreActual, anioActual),
-    calcularRentaAnual(usuarioId, anioActual),
+    calcularIVACuatrimestral(usuarioId, cuatrimestreActual, anioActual, tenantId),
+    calcularRentaAnual(usuarioId, anioActual, tenantId),
   ]);
 
   return {

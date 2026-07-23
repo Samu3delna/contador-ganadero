@@ -84,6 +84,12 @@ const recordatorioFiscalSchema = new mongoose.Schema({
   },
 
   // Usuario
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true,
+    required: false,
+  },
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -95,8 +101,9 @@ const recordatorioFiscalSchema = new mongoose.Schema({
 });
 
 // Índices compuestos
-recordatorioFiscalSchema.index({ usuario: 1, fechaVencimiento: 1 });
-recordatorioFiscalSchema.index({ usuario: 1, tipo: 1, periodoFiscal: 1, cuatrimestre: 1 });
+recordatorioFiscalSchema.index({ tenantId: 1, fechaVencimiento: 1 });
+recordatorioFiscalSchema.index({ tenantId: 1, tipo: 1, periodoFiscal: 1, cuatrimestre: 1 });
+recordatorioFiscalSchema.index({ tenantId: 1, usuario: 1 });
 
 // Virtual para saber si está vencido
 recordatorioFiscalSchema.virtual('estaVencido').get(function () {
