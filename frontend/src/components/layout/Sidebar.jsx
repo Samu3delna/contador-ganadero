@@ -4,21 +4,41 @@ import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
 import './Sidebar.css';
 
-const menuItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/facturas', label: 'Facturas', icon: FileText },
-  { path: '/gastos', label: 'Gastos por Categoría', icon: CreditCard },
-  { path: '/ingresos', label: 'Ingresos', icon: DollarSign },
-  { path: '/inventario', label: 'Inventario', icon: Warehouse },
-  { path: '/costos', label: 'Costos de Producción', icon: TrendingUp },
-  { path: '/facturacion', label: 'Facturación REA', icon: Receipt },
-  { path: '/hacienda', label: 'Hacienda v4.4', icon: Building2 },
-  { path: '/d150', label: 'Conciliación D-150', icon: FileBarChart2 },
-  { path: '/declaraciones', label: 'Declaraciones Hacienda', icon: Landmark },
-  { path: '/impuestos', label: 'Impuestos', icon: Calculator },
-  { path: '/calendario', label: 'Calendario', icon: Calendar },
-  { path: '/planes', label: 'Planes & Facturación', icon: Crown },
-  { path: '/billing', label: 'Mi Suscripción', icon: CreditCard },
+const menuSections = [
+  {
+    titulo: 'PRINCIPAL',
+    items: [
+      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/facturas', label: 'Facturas XML', icon: FileText },
+      { path: '/gastos', label: 'Gastos por Categoría', icon: CreditCard },
+      { path: '/ingresos', label: 'Ingresos', icon: DollarSign },
+    ]
+  },
+  {
+    titulo: 'GESTIÓN AGROPECUARIA',
+    items: [
+      { path: '/inventario', label: 'Inventario', icon: Warehouse },
+      { path: '/costos', label: 'Costos de Producción', icon: TrendingUp },
+      { path: '/facturacion', label: 'Facturación REA', icon: Receipt },
+    ]
+  },
+  {
+    titulo: 'HACIENDA & FISCAL',
+    items: [
+      { path: '/hacienda', label: 'Hacienda v4.4', icon: Building2 },
+      { path: '/d150', label: 'Conciliación D-150', icon: FileBarChart2 },
+      { path: '/declaraciones', label: 'Declaraciones', icon: Landmark },
+      { path: '/impuestos', label: 'Cálculo Impuestos', icon: Calculator },
+      { path: '/calendario', label: 'Calendario Fiscal', icon: Calendar },
+    ]
+  },
+  {
+    titulo: 'PLAN & CUENTA',
+    items: [
+      { path: '/planes', label: 'Planes & Precios', icon: Crown },
+      { path: '/billing', label: 'Mi Suscripción', icon: CreditCard },
+    ]
+  }
 ];
 
 const PLAN_NOMBRES = {
@@ -39,30 +59,43 @@ export default function Sidebar() {
 
   return (
     <>
-      <button className="sidebar-toggle" onClick={() => setAbierto(!abierto)}>
+      <button 
+        className="sidebar-toggle" 
+        onClick={() => setAbierto(!abierto)}
+        aria-label="Alternar menú"
+      >
         {abierto ? <X size={22} /> : <Menu size={22} />}
       </button>
 
       <aside className={`sidebar ${abierto ? 'sidebar--abierto' : ''}`}>
         <div className="sidebar-header">
-          <span className="sidebar-logo"><Tractor size={28} color="var(--color-primario-claro)" /></span>
-          <div>
+          <div className="sidebar-logo-container">
+            <Tractor size={28} className="sidebar-logo-icon" />
+          </div>
+          <div className="sidebar-brand-info">
             <h2 className="sidebar-title">ContadorGanadero</h2>
-            <span className="sidebar-badge">REA</span>
+            <span className="sidebar-badge">RÉGIMEN REA</span>
           </div>
         </div>
 
         <nav className="sidebar-nav">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'sidebar-link--activo' : ''}`}
-              onClick={() => setAbierto(false)}
-            >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </NavLink>
+          {menuSections.map((seccion) => (
+            <div key={seccion.titulo} className="sidebar-section">
+              <span className="sidebar-section-title">{seccion.titulo}</span>
+              <div className="sidebar-section-items">
+                {seccion.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) => `sidebar-link ${isActive ? 'sidebar-link--activo' : ''}`}
+                    onClick={() => setAbierto(false)}
+                  >
+                    <item.icon size={18} className="sidebar-link-icon" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
@@ -72,15 +105,19 @@ export default function Sidebar() {
               {(usuario?.nombre || 'U').charAt(0).toUpperCase()}
             </div>
             <div className="sidebar-user-info">
-              <span className="sidebar-user-name">{usuario?.nombre || 'Usuario'}</span>
-              <span className="sidebar-user-finca">{usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}</span>
+              <span className="sidebar-user-name" title={usuario?.nombre || 'Usuario'}>
+                {usuario?.nombre || 'Usuario'}
+              </span>
+              <span className="sidebar-user-finca" title={usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}>
+                {usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}
+              </span>
               {planNombre && (
                 <span
                   className="sidebar-user-plan"
                   onClick={() => { setAbierto(false); navigate('/billing'); }}
                   title="Ver mi suscripción"
                 >
-                  <Crown size={11} /> Plan: {planNombre}
+                  <Crown size={10} /> {planNombre}
                 </span>
               )}
               {estadoTenant && estadoTenant !== 'activo' && (
@@ -89,7 +126,7 @@ export default function Sidebar() {
                   onClick={() => { setAbierto(false); navigate('/billing'); }}
                   title="Acceso limitado"
                 >
-                  <AlertTriangle size={11} /> Acceso limitado
+                  <AlertTriangle size={10} /> Limitado
                 </span>
               )}
             </div>

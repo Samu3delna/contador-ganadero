@@ -1,37 +1,117 @@
+/* ImpuestosPage.css */
+
 .impuesto-tabs {
-  display: flex; gap: 4px; margin-bottom: var(--espacio-lg);
-  background: var(--color-superficie); border-radius: var(--radio-lg); padding: 4px;
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--espacio-lg);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: 5px;
   width: fit-content;
+  flex-wrap: wrap;
 }
+
 .impuesto-tab {
-  padding: 0.6rem 1.2rem; border: none; background: none;
-  color: var(--color-texto-sec); cursor: pointer; border-radius: var(--radio-md);
-  font-weight: 500; font-family: var(--font-headers); transition: all 0.2s;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-texto-sec);
+  cursor: pointer;
+  border-radius: var(--radio-md);
+  font-weight: 600;
+  font-family: var(--font-headers);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
 }
-.impuesto-tab:hover { color: var(--color-texto); }
+
+.impuesto-tab:hover {
+  color: var(--color-texto);
+  background: var(--color-superficie-2);
+}
+
 .impuesto-tab--activo {
   background: linear-gradient(135deg, var(--color-primario), var(--color-primario-claro));
-  color: white;
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.35);
 }
 
 .impuesto-controls {
-  display: flex; gap: var(--espacio-lg); margin-bottom: var(--espacio-lg);
-  padding: var(--espacio-md) var(--espacio-lg) !important; align-items: flex-end;
+  display: flex;
+  gap: var(--espacio-lg);
+  margin-bottom: var(--espacio-lg);
+  padding: var(--espacio-md) var(--espacio-lg) !important;
+  align-items: flex-end;
+  flex-wrap: wrap;
 }
-.impuesto-controls .form-group { min-width: 200px; }
 
-.impuesto-resultado h3 { margin-bottom: var(--espacio-lg); }
-.impuesto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--espacio-lg); }
-.impuesto-item { display: flex; flex-direction: column; gap: 4px; }
-.impuesto-label { font-size: 0.8rem; color: var(--color-texto-sec); }
-.impuesto-valor { font-size: 1.2rem; }
+.impuesto-controls .form-group {
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.impuesto-resultado h3 {
+  margin-bottom: var(--espacio-lg);
+  font-size: 1.15rem;
+}
+
+.impuesto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--espacio-lg);
+}
+
+.impuesto-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.impuesto-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-texto-sec);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.impuesto-valor {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-texto);
+  font-family: var(--font-mono);
+}
+
 .impuesto-item--resultado {
-  background: rgba(255,255,255,0.03); padding: var(--espacio-md);
-  border-radius: var(--radio-md); border-left: 3px solid var(--color-primario-claro);
+  background: var(--color-superficie-2);
+  padding: var(--espacio-md);
+  border-radius: var(--radio-md);
+  border: 1px solid var(--color-borde);
+  border-left: 4px solid var(--color-primario-claro);
 }
-.impuesto-valor-grande { font-size: 1.8rem; font-weight: 800; }
-.text-error { color: var(--color-error); }
-.text-success { color: var(--color-exito); }
 
-.impuesto-detalle { margin-top: var(--espacio-lg); }
-.impuesto-detalle h4 { margin-bottom: var(--espacio-md); font-size: 0.95rem; color: var(--color-texto-sec); }
+.impuesto-valor-grande {
+  font-size: 1.85rem;
+  font-weight: 800;
+}
+
+.impuesto-detalle {
+  margin-top: var(--espacio-lg);
+}
+
+.impuesto-detalle h4 {
+  margin-bottom: var(--espacio-md);
+  font-size: 0.98rem;
+  color: var(--color-texto-sec);
+}
+
+@media (max-width: 600px) {
+  .impuesto-tabs {
+    width: 100%;
+  }
+  .impuesto-tab {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

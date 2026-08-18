@@ -2,6 +2,8 @@
   display: flex;
   min-height: 100vh;
   width: 100%;
+  background-color: var(--color-fondo);
+  position: relative;
 }
 
 .main-content {
@@ -9,6 +11,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  min-width: 0; /* Evita que contenido ancho desborde */
   overflow: hidden;
 }
 
@@ -16,22 +19,10 @@
   flex: 1;
   padding: var(--espacio-xl);
   overflow-y: auto;
-  /* Scrollbar styling for a cleaner look */
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--color-superficie-2) transparent;
-}
-
-.page-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.page-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.page-content::-webkit-scrollbar-thumb {
-  background-color: var(--color-superficie-2);
-  border-radius: 10px;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .page-header {
@@ -39,14 +30,45 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--espacio-md);
 }
 
 .page-title {
   font-size: 2rem;
-  margin-bottom: var(--espacio-xs);
+  font-weight: 800;
+  color: var(--color-texto);
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+  line-height: 1.15;
 }
 
 .page-subtitle {
   color: var(--color-texto-sec);
-  font-size: 1rem;
+  font-size: 0.95rem;
+  max-width: 700px;
+  line-height: 1.45;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .page-content {
+    padding: var(--espacio-md);
+    padding-top: calc(var(--espacio-md) + 40px); /* Espacio para botón hamburguesa */
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espacio-sm);
+    margin-bottom: var(--espacio-lg);
+  }
+
+  .page-title {
+    font-size: 1.6rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.85rem;
+  }
 }

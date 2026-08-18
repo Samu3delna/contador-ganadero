@@ -1,30 +1,34 @@
+/* CalendarioPage.css */
+
 .calendario-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
+  gap: var(--espacio-lg);
   align-items: start;
 }
 
 @media (min-width: 1024px) {
   .calendario-layout {
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 2.2fr 1fr;
   }
 }
 
 .calendario-card {
-  padding: 1.5rem;
+  padding: var(--espacio-lg);
 }
 
 .calendario-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--espacio-lg);
+  flex-wrap: wrap;
+  gap: var(--espacio-sm);
 }
 
 .calendario-header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 700;
   color: var(--color-texto);
 }
 
@@ -42,25 +46,29 @@
 
 .calendario-dia-header {
   text-align: center;
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--color-texto-mutado);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--color-texto-sec);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   padding-bottom: 0.5rem;
 }
 
 .calendario-celda {
-  background-color: var(--color-superficie);
+  background-color: var(--color-superficie-2);
   border: 1px solid var(--color-borde);
-  border-radius: 0.5rem;
-  min-height: 80px;
+  border-radius: var(--radio-md);
+  min-height: 86px;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .calendario-celda:not(.vacia):hover {
-  border-color: var(--color-primario);
+  border-color: var(--color-primario-claro);
+  background-color: var(--color-superficie-3);
+  transform: translateY(-1px);
 }
 
 .calendario-celda.vacia {
@@ -69,62 +77,72 @@
 }
 
 .calendario-celda.hoy {
-  border-color: var(--color-primario);
-  background-color: rgba(34, 197, 94, 0.05);
+  border-color: var(--color-primario-claro);
+  background-color: rgba(76, 175, 80, 0.08);
+  box-shadow: inset 0 0 12px rgba(76, 175, 80, 0.1);
 }
 
 .calendario-celda.hoy .numero-dia {
-  background-color: var(--color-primario);
+  background: linear-gradient(135deg, var(--color-primario), var(--color-primario-claro));
   color: white;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(27, 94, 32, 0.4);
 }
 
 .numero-dia {
   font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-texto-mutado);
-  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--color-texto-sec);
+  margin-bottom: 0.4rem;
 }
 
 .facturas-dia-lista {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  overflow-y: auto;
+  max-height: 90px;
 }
 
 .factura-pill {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.35rem;
-  border-radius: 0.25rem;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radio-sm);
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
+  font-weight: 700;
   text-align: center;
+  font-family: var(--font-mono);
+  transition: all 0.15s ease;
 }
 
 .factura-pill.xml {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+  border: 1px solid var(--color-info-border);
 }
 
 .factura-pill.manual {
-  background-color: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
+  background-color: var(--color-advertencia-bg);
+  color: var(--color-advertencia);
+  border: 1px solid var(--color-advertencia-border);
 }
 
 .factura-pill:hover {
   filter: brightness(1.2);
+  transform: scale(1.02);
 }
 
 .detalle-factura-card {
-  padding: 1.5rem;
+  padding: var(--espacio-lg);
   position: sticky;
   top: 1.5rem;
 }
@@ -140,41 +158,45 @@
 
 .detalle-emisor {
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.25rem;
+  color: var(--color-texto);
 }
 
 .detalle-fecha {
-  font-size: 0.85rem;
-  color: var(--color-texto-mutado);
+  font-size: 0.84rem;
+  color: var(--color-texto-muted);
   margin-bottom: 1rem;
 }
 
 .detalle-monto {
-  background-color: var(--color-fondo);
+  background-color: var(--color-superficie-2);
+  border: 1px solid var(--color-borde);
   padding: 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radio-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .monto-label {
-  color: var(--color-texto-mutado);
-  font-weight: 500;
+  color: var(--color-texto-sec);
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .monto-valor {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: var(--color-primario-claro);
+  font-family: var(--font-mono);
 }
 
 .detalle-info p {
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
-  color: var(--color-texto-mutado);
+  color: var(--color-texto-sec);
 }
 
 .detalle-info strong {
@@ -182,13 +204,13 @@
 }
 
 .detalle-lineas {
-  margin-top: 1.5rem;
+  margin-top: 1.25rem;
   border-top: 1px solid var(--color-borde);
   padding-top: 1rem;
 }
 
 .detalle-lineas h4 {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   margin-bottom: 0.5rem;
   color: var(--color-texto);
 }
@@ -197,13 +219,16 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .detalle-lineas li {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: var(--color-texto-mutado);
-  padding: 0.25rem 0;
+  color: var(--color-texto-sec);
+  padding: 0.35rem 0;
   border-bottom: 1px dashed var(--color-borde);
 }

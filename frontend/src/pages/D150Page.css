@@ -3,40 +3,62 @@
 .d150-item {
   display: flex;
   flex-direction: column;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border-left: 3px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  padding: 0.85rem 1rem;
+  background: var(--color-superficie-2);
+  border: 1px solid var(--color-borde);
+  border-left: 4px solid var(--color-borde-fuerte);
+  border-radius: var(--radio-md);
+  transition: all 0.2s ease;
 }
 
 .d150-label {
+  font-family: var(--font-headers);
   font-size: 0.78rem;
-  color: var(--color-texto-muted, #888);
+  color: var(--color-texto-sec);
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 .d150-valor {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-texto, #eee);
-  font-family: 'Courier New', monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-texto);
+  font-family: var(--font-mono);
   margin-top: 2px;
 }
 
 .d150-item--rojo {
-  border-left-color: #c0392b;
-  background: rgba(192, 57, 43, 0.08);
+  border-left-color: var(--color-error);
+  background: var(--color-error-bg);
+  border-color: var(--color-error-border);
 }
-.d150-item--rojo .d150-valor { color: #e74c3c; }
+
+.d150-item--rojo .d150-valor {
+  color: var(--color-error);
+}
 
 .d150-item--verde {
-  border-left-color: #27ae60;
-  background: rgba(39, 174, 96, 0.08);
+  border-left-color: var(--color-exito);
+  background: var(--color-exito-bg);
+  border-color: var(--color-exito-border);
 }
-.d150-item--verde .d150-valor { color: #2ecc71; }
 
-.d150-item--grande .d150-valor { font-size: 1.4rem; }
+.d150-item--verde .d150-valor {
+  color: var(--color-exito);
+}
 
-.esto-no__rojo { border-left: 3px solid #c0392b; }
-.esto-no__verde { border-left: 3px solid #27ae60; }
+.d150-item--grande .d150-valor {
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+
+.esto-no__rojo {
+  border-left: 4px solid var(--color-error) !important;
+  background: var(--color-error-bg) !important;
+}
+
+.esto-no__verde {
+  border-left: 4px solid var(--color-exito) !important;
+  background: var(--color-exito-bg) !important;
+}

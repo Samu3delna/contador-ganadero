@@ -15,11 +15,13 @@ export default function PanelRenta({ renta, anio }) {
       {renta.detalleTramos?.length > 0 && (
         <div className="impuesto-detalle">
           <h4>Desglose por Tramos</h4>
-          <table className="tabla"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
-            <tbody>{renta.detalleTramos.map((t,i)=>(
-              <tr key={i}><td className="text-mono">{formatCRC(t.desde)}</td><td className="text-mono">{formatCRC(t.hasta)}</td><td>{t.tasa}%</td><td className="text-mono">{formatCRC(t.impuesto)}</td></tr>
-            ))}</tbody>
-          </table>
+          <div className="table-responsive">
+            <table className="tabla"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
+              <tbody>{renta.detalleTramos.map((t,i)=>(
+                <tr key={i}><td className="text-mono">{formatCRC(t.desde)}</td><td className="text-mono">{formatCRC(t.hasta)}</td><td>{t.tasa}%</td><td className="text-mono">{formatCRC(t.impuesto)}</td></tr>
+              ))}</tbody>
+            </table>
+          </div>
         </div>
       )}
       <div className="impuesto-grid" style={{marginTop:'var(--espacio-lg)'}}>

@@ -4,19 +4,9 @@
 
 .header-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--espacio-sm);
   align-items: center;
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #d32f2f, #ff5252);
-  color: white;
-  box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3);
-}
-
-.btn-danger:hover {
-  box-shadow: 0 0 15px rgba(255, 82, 82, 0.4);
-  transform: translateY(-1px);
+  flex-wrap: wrap;
 }
 
 /* ===========================
@@ -24,10 +14,13 @@
    =========================== */
 
 .alertas-panel {
-  border: 1px solid rgba(255, 82, 82, 0.3);
-  background: rgba(255, 82, 82, 0.05);
+  border: 1px solid var(--color-error-border);
+  background: rgba(255, 82, 82, 0.06);
   position: relative;
   overflow: hidden;
+  margin-bottom: var(--espacio-lg);
+  border-radius: var(--radio-lg);
+  padding: var(--espacio-lg);
 }
 
 .alertas-panel::before {
@@ -37,12 +30,12 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #ff5252, #ff8a80, #ff5252);
-  animation: alertPulse 2s ease-in-out infinite;
+  background: linear-gradient(90deg, #FF5252, #FF8A80, #FF5252);
+  animation: alertPulse 2.5s ease-in-out infinite;
 }
 
 @keyframes alertPulse {
-  0%, 100% { opacity: 0.7; }
+  0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
 
@@ -51,34 +44,30 @@
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .alertas-icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
-  background: rgba(255, 82, 82, 0.15);
+  border-radius: var(--radio-md);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-error);
   flex-shrink: 0;
-  animation: pulseIcon 1.5s ease-in-out infinite;
-}
-
-@keyframes pulseIcon {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
 }
 
 .alertas-info h3 {
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: var(--color-error);
   margin-bottom: 0.25rem;
 }
 
 .alertas-info p {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--color-texto-sec);
   margin: 0;
 }
@@ -90,17 +79,18 @@
 
 .alertas-label {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--color-texto-sec);
-  margin-bottom: 0.25rem;
+  font-weight: 600;
+  margin-bottom: 2px;
 }
 
 .alertas-valor {
   font-family: var(--font-mono);
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.6rem;
+  font-weight: 800;
   color: var(--color-error);
 }
 
@@ -108,31 +98,32 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .alerta-item {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   border-radius: var(--radio-md);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
 }
 
 .alerta-error {
-  background: rgba(255, 82, 82, 0.08);
+  background: var(--color-error-bg);
   color: var(--color-error);
   border-left: 3px solid var(--color-error);
 }
 
 .alerta-advertencia {
-  background: rgba(255, 215, 64, 0.08);
+  background: var(--color-advertencia-bg);
   color: var(--color-advertencia);
   border-left: 3px solid var(--color-advertencia);
 }
 
 .alerta-ok {
-  background: rgba(0, 230, 118, 0.08);
+  background: var(--color-exito-bg);
   color: var(--color-exito);
   border-left: 3px solid var(--color-exito);
 }
@@ -143,14 +134,14 @@
 
 .alerta-tarifa {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--color-texto-sec);
   margin-top: 0.25rem;
 }
 
 .alerta-diff {
   font-family: var(--font-mono);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-error);
   white-space: nowrap;
 }
@@ -158,7 +149,7 @@
 .alertas-mas {
   text-align: center;
   color: var(--color-texto-sec);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   padding: 0.5rem 0 0;
 }
 
@@ -170,55 +161,32 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.25rem;
+  padding: 0.9rem 1.25rem;
+  margin-bottom: var(--espacio-lg);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
 }
 
 .email-status-indicator {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.92rem;
 }
 
 .status-green { color: var(--color-exito); }
 .status-red { color: var(--color-error); }
 
 .email-status-detail {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--color-texto-sec);
 }
 
 /* ===========================
-   Tabla de facturas
+   Tabla de Facturas
    =========================== */
-
-.tabla-responsive {
-  overflow-x: auto;
-}
-
-.tabla {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.tabla thead th {
-  text-align: left;
-  padding: 0.75rem 1rem;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-texto-sec);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  white-space: nowrap;
-}
-
-.tabla tbody td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  font-size: 0.875rem;
-  vertical-align: middle;
-}
 
 .fila-factura {
   cursor: pointer;
@@ -226,20 +194,21 @@
 }
 
 .fila-factura:hover {
-  background: rgba(76, 175, 80, 0.05);
+  background: rgba(76, 175, 80, 0.06) !important;
 }
 
 .fila-alerta {
-  background: rgba(255, 82, 82, 0.03);
+  background: rgba(255, 82, 82, 0.04);
 }
 
 .fila-alerta:hover {
-  background: rgba(255, 82, 82, 0.08) !important;
+  background: rgba(255, 82, 82, 0.09) !important;
 }
 
 .expand-cell {
-  width: 30px;
+  width: 32px;
   color: var(--color-texto-sec);
+  text-align: center;
 }
 
 .emisor-cell {
@@ -249,90 +218,51 @@
 }
 
 .badge-info-small {
-  background: rgba(64, 196, 255, 0.1);
+  background: var(--color-info-bg);
   color: var(--color-info);
-  border: 1px solid rgba(64, 196, 255, 0.2);
-  font-size: 0.6rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
+  border: 1px solid var(--color-info-border);
+  font-size: 0.65rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radio-sm);
+  font-weight: 600;
 }
-
-/* ===========================
-   Botones de acción
-   =========================== */
 
 .acciones-cell {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.35rem;
 }
 
-.btn-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radio-md);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: transparent;
-  color: var(--color-texto-sec);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-icon:hover {
-  background: rgba(76, 175, 80, 0.15);
-  color: var(--color-primario-claro);
-  border-color: rgba(76, 175, 80, 0.3);
-  transform: translateY(-1px);
-}
-
-.btn-icon:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ===========================
-   Códigos de tarifa
-   =========================== */
-
+/* Códigos de Tarifa */
 .codigo-tarifa {
   font-family: var(--font-mono);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.8rem;
   padding: 0.15rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radio-sm);
 }
 
 .tarifa-general {
-  background: rgba(255, 82, 82, 0.15);
+  background: var(--color-error-bg);
   color: var(--color-error);
+  border: 1px solid var(--color-error-border);
 }
 
 .tarifa-reducida {
-  background: rgba(0, 230, 118, 0.15);
+  background: var(--color-exito-bg);
   color: var(--color-exito);
+  border: 1px solid var(--color-exito-border);
 }
 
-/* ===========================
-   Fila de detalle expandido
-   =========================== */
-
+/* Detalle Expandido */
 .fila-detalle td {
   padding: 0 !important;
-  border-bottom: 2px solid rgba(76, 175, 80, 0.2);
+  border-bottom: 2px solid rgba(76, 175, 80, 0.3);
 }
 
 .detalle-contenido {
-  padding: 1.25rem;
-  background: rgba(15, 25, 35, 0.5);
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 1000px; }
+  padding: 1.35rem;
+  background: rgba(11, 19, 27, 0.7);
+  animation: slideUp 0.3s ease-out;
 }
 
 .detalle-meta {
@@ -341,8 +271,8 @@
   gap: 1.5rem;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 0.8rem;
+  border-bottom: 1px solid var(--color-borde);
+  font-size: 0.84rem;
   color: var(--color-texto-sec);
 }
 
@@ -351,37 +281,31 @@
 }
 
 .detalle-alertas {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .detalle-alertas h4 {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   margin-bottom: 0.5rem;
   color: var(--color-error);
 }
 
 .ahorros-perdidos {
   margin-top: 0.75rem;
-  padding: 0.75rem;
-  background: rgba(255, 82, 82, 0.1);
+  padding: 0.75rem 1rem;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
   border-radius: var(--radio-md);
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--color-error);
+  font-weight: 600;
 }
 
 .detalle-lineas h4 {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   margin-bottom: 0.5rem;
   color: var(--color-texto);
-}
-
-.tabla-mini {
-  font-size: 0.8rem;
-}
-
-.tabla-mini th {
-  font-size: 0.65rem;
 }
 
 .linea-tarifa-general {
@@ -392,45 +316,19 @@
   background: rgba(0, 230, 118, 0.05);
 }
 
-/* ===========================
-   Spin animation
-   =========================== */
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* ===========================
-   Responsive
-   =========================== */
-
 @media (max-width: 768px) {
   .alertas-header {
     flex-direction: column;
     align-items: flex-start;
   }
-
   .alertas-monto {
     margin-left: 0;
     text-align: left;
   }
-
   .header-actions {
-    flex-direction: column;
     width: 100%;
   }
-
   .header-actions .btn {
-    width: 100%;
-  }
-
-  .detalle-meta {
-    flex-direction: column;
-    gap: 0.5rem;
+    flex: 1;
   }
 }

@@ -52,7 +52,7 @@ export default function GastosPage() {
   const COLORES = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-content">
       <div className="page-header">
         <div>
           <h1 className="page-title">Resumen de Gastos</h1>

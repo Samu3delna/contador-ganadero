@@ -2,119 +2,60 @@
 
 .inv-tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 0.5rem;
+  gap: 6px;
+  margin-bottom: var(--espacio-lg);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: 5px;
+  width: fit-content;
+  flex-wrap: wrap;
 }
 
 .inv-tab {
-  padding: 0.6rem 1.2rem;
+  padding: 0.6rem 1.25rem;
   border-radius: var(--radio-md);
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--color-texto-sec);
   font-family: var(--font-headers);
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .inv-tab:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-superficie-2);
   color: var(--color-texto);
 }
 
 .inv-tab--activo {
-  background: rgba(76, 175, 80, 0.15);
-  color: var(--color-primario-claro);
+  background: linear-gradient(135deg, var(--color-primario), var(--color-primario-claro));
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.35);
 }
 
 .inv-tab-content {
   animation: fadeIn 0.3s ease-out;
 }
 
-.table-responsive {
-  overflow-x: auto;
-  border-radius: var(--radio-md);
-  background: var(--color-superficie);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.data-table thead {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.data-table th {
-  padding: 0.8rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: var(--color-texto-sec);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.data-table td {
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  color: var(--color-texto);
-}
-
-.data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.data-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.text-muted {
-  color: var(--color-texto-sec);
-  font-style: italic;
-  padding: 1rem;
-}
-
-.text-exito {
-  color: var(--color-exito);
-  font-weight: 600;
-}
-
-.text-error {
-  color: var(--color-error);
-  font-weight: 600;
-}
-
-.error-message {
-  padding: 1rem;
-  background: rgba(255, 82, 82, 0.1);
-  border: 1px solid rgba(255, 82, 82, 0.2);
-  border-radius: var(--radio-md);
-  color: var(--color-error);
+.inv-empty {
+  padding: 3rem 1rem;
   text-align: center;
-}
-
-.badge-info {
-  background: rgba(64, 196, 255, 0.1);
-  color: var(--color-info);
-  border: 1px solid rgba(64, 196, 255, 0.2);
-}
-
-.badge-primario {
-  background: rgba(76, 175, 80, 0.1);
-  color: var(--color-primario-claro);
-  border: 1px solid rgba(76, 175, 80, 0.2);
-}
-
-.badge-secundario {
-  background: rgba(143, 163, 184, 0.1);
   color: var(--color-texto-sec);
-  border: 1px solid rgba(143, 163, 184, 0.2);
+}
+
+@media (max-width: 600px) {
+  .inv-tabs {
+    width: 100%;
+  }
+  .inv-tab {
+    flex: 1 1 45%;
+    justify-content: center;
+  }
 }

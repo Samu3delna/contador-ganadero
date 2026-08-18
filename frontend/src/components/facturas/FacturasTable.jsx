@@ -149,36 +149,38 @@ export default function FacturasTable({
                         {f.lineaDetalle && f.lineaDetalle.length > 0 && (
                           <div className="detalle-lineas">
                             <h4>📋 Detalle de líneas</h4>
-                            <table className="tabla tabla-mini">
-                              <thead><tr>
-                                <th>#</th>
-                                <th>Descripción</th>
-                                <th>Cant.</th>
-                                <th>Precio Unit.</th>
-                                <th>Cód. Tarifa</th>
-                                <th>IVA %</th>
-                                <th>IVA ₡</th>
-                                <th>Total</th>
-                              </tr></thead>
-                              <tbody>
-                                {f.lineaDetalle.map((l, idx) => (
-                                  <tr key={idx} className={l.impuesto?.codigoTarifa === '08' ? 'linea-tarifa-general' : l.impuesto?.codigoTarifa === '02' ? 'linea-tarifa-reducida' : ''}>
-                                    <td>{l.numeroLinea || idx + 1}</td>
-                                    <td>{l.descripcion}</td>
-                                    <td className="text-mono">{l.cantidad}</td>
-                                    <td className="text-mono">{formatCRC(l.precioUnitario)}</td>
-                                    <td>
-                                      <span className={`codigo-tarifa ${l.impuesto?.codigoTarifa === '08' ? 'tarifa-general' : l.impuesto?.codigoTarifa === '02' || l.impuesto?.codigoTarifa === '01' ? 'tarifa-reducida' : ''}`}>
-                                        {l.impuesto?.codigoTarifa || '—'}
-                                      </span>
-                                    </td>
-                                    <td className="text-mono">{l.impuesto?.tarifa ?? '—'}%</td>
-                                    <td className="text-mono">{formatCRC(l.impuesto?.monto)}</td>
-                                    <td className="text-mono">{formatCRC(l.montoTotal)}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                            <div className="table-responsive">
+                              <table className="tabla tabla-mini">
+                                <thead><tr>
+                                  <th>#</th>
+                                  <th>Descripción</th>
+                                  <th>Cant.</th>
+                                  <th>Precio Unit.</th>
+                                  <th>Cód. Tarifa</th>
+                                  <th>IVA %</th>
+                                  <th>IVA ₡</th>
+                                  <th>Total</th>
+                                </tr></thead>
+                                <tbody>
+                                  {f.lineaDetalle.map((l, idx) => (
+                                    <tr key={idx} className={l.impuesto?.codigoTarifa === '08' ? 'linea-tarifa-general' : l.impuesto?.codigoTarifa === '02' ? 'linea-tarifa-reducida' : ''}>
+                                      <td>{l.numeroLinea || idx + 1}</td>
+                                      <td>{l.descripcion}</td>
+                                      <td className="text-mono">{l.cantidad}</td>
+                                      <td className="text-mono">{formatCRC(l.precioUnitario)}</td>
+                                      <td>
+                                        <span className={`codigo-tarifa ${l.impuesto?.codigoTarifa === '08' ? 'tarifa-general' : l.impuesto?.codigoTarifa === '02' || l.impuesto?.codigoTarifa === '01' ? 'tarifa-reducida' : ''}`}>
+                                          {l.impuesto?.codigoTarifa || '—'}
+                                        </span>
+                                      </td>
+                                      <td className="text-mono">{l.impuesto?.tarifa ?? '—'}%</td>
+                                      <td className="text-mono">{formatCRC(l.impuesto?.monto)}</td>
+                                      <td className="text-mono">{formatCRC(l.montoTotal)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         )}
                       </div>

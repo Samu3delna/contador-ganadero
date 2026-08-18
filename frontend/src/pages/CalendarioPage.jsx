@@ -67,7 +67,7 @@ export default function CalendarioPage() {
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-content">
       <div className="page-header">
         <div>
           <h1 className="page-title">Calendario de Gastos</h1>

@@ -48,7 +48,13 @@ export default function BillingPage() {
     }
   }, []);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => {
+    const run = async () => {
+      await Promise.resolve();
+      cargar();
+    };
+    run();
+  }, [cargar]);
 
   const handlePortal = async () => {
     setAbriendoPortal(true);
