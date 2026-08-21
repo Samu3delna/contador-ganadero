@@ -40,6 +40,28 @@
   margin-bottom: var(--espacio-xl);
 }
 
+.login-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--color-texto-sec);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radio-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: var(--espacio-md);
+  transition: all 0.2s ease;
+}
+
+.login-volver:hover {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.45);
+  color: var(--color-texto);
+}
+
 .login-logo {
   display: inline-flex;
   align-items: center;

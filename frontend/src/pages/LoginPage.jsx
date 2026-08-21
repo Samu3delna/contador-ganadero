@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import fondoLogin from '../Recursos/fondo_login.webm';
@@ -38,6 +39,16 @@ export default function LoginPage() {
         <source src={fondoLogin} type="video/webm" />
       </video>
       <div className="login-card glass-card animate-slide-up">
+        <button
+          type="button"
+          className="login-volver"
+          onClick={() => navigate('/')}
+          aria-label="Volver a la página principal"
+        >
+          <ArrowLeft size={18} />
+          <span>Volver al inicio</span>
+        </button>
+
         <LoginHeader />
 
         <LoginForm 
