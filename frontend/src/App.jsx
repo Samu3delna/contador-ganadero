@@ -7,6 +7,7 @@ import ChatBot from './components/dashboard/ChatBot';
 import './App.css';
 
 // Lazy-loaded pages (code-splitting)
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const FacturasPage = lazy(() => import('./pages/FacturasPage'));
 const IngresosPage = lazy(() => import('./pages/IngresosPage'));
@@ -39,7 +40,7 @@ function AppLayout() {
       <div className="main-content">
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/facturas" element={<FacturasPage />} />
             <Route path="/gastos" element={<GastosPage />} />
             <Route path="/ingresos" element={<IngresosPage />} />
@@ -66,6 +67,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<Suspense fallback={<PageLoader />}><LandingPage /></Suspense>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/*" element={<RutaProtegida><AppLayout /></RutaProtegida>} />
         </Routes>

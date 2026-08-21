@@ -8,7 +8,7 @@ const menuSections = [
   {
     titulo: 'PRINCIPAL',
     items: [
-      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/facturas', label: 'Facturas XML', icon: FileText },
       { path: '/gastos', label: 'Gastos por Categoría', icon: CreditCard },
       { path: '/ingresos', label: 'Ingresos', icon: DollarSign },
