@@ -279,7 +279,7 @@ const exportarDatos = async (req, res, next) => {
 const obtenerGastosDeducibles = async (req, res, next) => {
   try {
     const { anio, cuatrimestre, deducible, page = 1, limit = 50 } = req.query;
-    const filtro = { usuario: req.usuario._id };
+    const filtro = req.filtrarPorTenant();
     
     if (anio) {
       filtro.periodoFiscal = Number(anio);
@@ -329,7 +329,7 @@ const obtenerGastosDeducibles = async (req, res, next) => {
 const obtenerIngresosDeclaracion = async (req, res, next) => {
   try {
     const { anio, cuatrimestre, categoria, page = 1, limit = 50 } = req.query;
-    const filtro = { usuario: req.usuario._id };
+    const filtro = req.filtrarPorTenant();
     
     if (anio) filtro.periodoFiscal = Number(anio);
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);

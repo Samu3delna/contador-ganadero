@@ -33,30 +33,74 @@ export function useReveal(options = {}) {
 export function useCarousel({ items, interval = 5000, autoPlay = true }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const intervalRef = useRef(null);
+  const isPausedRef = useRef(false);
+  const itemsLengthRef = useRef(items.length);
 
-  const goTo = useCallback((index) => {
-    setCurrentIndex((prev) => (index + items.length) % items.length);
+  useEffect(() => {
+    itemsLengthRef.current = items.length;
   }, [items.length]);
 
-  const next = useCallback(() => goTo(currentIndex + 1), [currentIndex, goTo]);
-  const prev = useCallback(() => goTo(currentIndex - 1), [currentIndex, goTo]);
+  const goTo = useCallback((index) => {
+    setCurrentIndex(() => {
+      const len = itemsLengthRef.current;
+      if (len <= 1) return 0;
+      const newIndex = (index % len + len) % len;
+      return newIndex;
+    });
+  }, []);
 
-  useEffect(() => {
-    if (!autoPlay || items.length <= 1) return;
-    intervalRef.current = setInterval(next, interval);
-    return () => clearInterval(intervalRef.current);
-  }, [autoPlay, interval, items.length, next]);
+  const next = useCallback(() => {
+    setCurrentIndex((_prev) => {
+      const len = itemsLengthRef.current;
+      if (len <= 1) return 0;
+      return (_prev + 1) % len;
+    });
+  }, []);
 
-  useEffect(() => {
+  const prev = useCallback(() => {
+    setCurrentIndex((_prev) => {
+      const len = itemsLengthRef.current;
+      if (len <= 1) return 0;
+      return (_prev - 1 + len) % len;
+    });
+  }, []);
+
+  const pause = useCallback(() => {
+    isPausedRef.current = true;
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
-      if (autoPlay && items.length > 1) {
-        intervalRef.current = setInterval(next, interval);
-      }
+      intervalRef.current = null;
     }
-  }, [currentIndex, autoPlay, interval, items.length, next]);
+  }, []);
 
-  return { currentIndex, goTo, next, prev };
+  const resume = useCallback(() => {
+    isPausedRef.current = false;
+    if (autoPlay && itemsLengthRef.current > 1 && !intervalRef.current) {
+      intervalRef.current = setInterval(next, interval);
+    }
+  }, [autoPlay, interval, next]);
+
+  useEffect(() => {
+    if (!autoPlay || itemsLengthRef.current <= 1) return;
+    intervalRef.current = setInterval(next, interval);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [autoPlay, interval, next]);
+
+  useEffect(() => {
+    setCurrentIndex((prev) => {
+      const len = itemsLengthRef.current;
+      if (len <= 1) return 0;
+      if (prev >= len) return len - 1;
+      return prev;
+    });
+  }, [items.length]);
+
+  return { currentIndex, goTo, next, prev, pause, resume };
 }
 
 export function useStaggeredReveal(count, baseDelay = 100) {

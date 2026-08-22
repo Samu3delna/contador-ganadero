@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Tractor, Mail, Sparkles, LayoutDashboard, Warehouse,
   Receipt, TrendingUp, Calendar, Calculator, ArrowRight, Check,
@@ -11,71 +11,6 @@ import { useReveal, useCarousel } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
 import fondoLogin from '../Recursos/fondo_login.webm';
 import './LandingPage.css';
-
-// ===== SEO: FAQ (se usa también para el schema FAQPage) =====
-const FAQ = [
-  {
-    pregunta: '¿Necesito estar inscrito en Hacienda para usar ContadorGanadero?',
-    respuesta:
-      'Para emitir facturas electrónicas y presentar declaraciones necesitas estar inscrito como contribuyente. Los productores agropecuarios de Costa Rica suelen estar en el Régimen Especial Agropecuario (REA), con inscripción ante el MAG. Para registrar gastos e ingresos internos puedes empezar sin estar al día con Hacienda.',
-  },
-  {
-    pregunta: '¿Cómo se descargan mis facturas electrónicas automáticamente?',
-    respuesta:
-      'Conectas una cuenta de correo (Gmail, Outlook u otro con IMAP) donde recibís las facturas de tus proveedores. La plataforma lee los correos, descarga los archivos XML y PDF, extrae los datos y los categoriza con inteligencia artificial. No tenés que digitar nada.',
-  },
-  {
-    pregunta: '¿Funciona con facturas del 1% de IVA del régimen agropecuario?',
-    respuesta:
-      'Sí. ContadorGanadero está diseñado específicamente para la tarifa reducida del 1% del Régimen Especial Agropecuario (REA) y para la facturación electrónica v4.4 de Hacienda, incluyendo la clave numérica de 50 dígitos y la firma digital.',
-  },
-  {
-    pregunta: '¿Qué impuestos calcula la plataforma?',
-    respuesta:
-      'Calcula el IVA cuatrimestral (formulario D-135-1), la renta anual (D-101) con tramos progresivos y la conciliación anual del REA (D-150). Además incluye un calendario fiscal con los vencimientos de Hacienda.',
-  },
-  {
-    pregunta: '¿Puedo controlar bovinos, aves, peces y abejas?',
-    respuesta:
-      'Sí. El módulo de inventario multiespecie registra pesos de bovinos, ciclos de postura de aves, biomasa de peces y extracciones de miel de colmenas. También calcula el costo real de producción por kilo, cartón de huevos o kilo de tilapia.',
-  },
-  {
-    pregunta: '¿Cuánto cuesta? ¿Hay plan gratuito?',
-    respuesta:
-      'Hay un plan Free sin costo y sin tarjeta para probar la plataforma, y planes pagos (Bronce, Oro y Corporativo) que se ajustan al tamaño de tu operación. Podés cancelar cuando quieras.',
-  },
-];
-
-// Schema FAQPage generado a partir de las preguntas
-const FAQ_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQ.map((f) => ({
-    '@type': 'Question',
-    name: f.pregunta,
-    acceptedAnswer: { '@type': 'Answer', text: f.respuesta },
-  })),
-};
-
-// Schema de negocio (servicio profesional) — completar con datos reales
-const NEGOCIO_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'ProfessionalService',
-  name: 'ContadorGanadero',
-  url: 'https://contadorganadero.com',
-  image: 'https://contadorganadero.com/favicon.svg',
-  description:
-    'Contabilidad, inventario y facturación electrónica para productores agropecuarios de Costa Rica bajo el Régimen Especial Agropecuario (REA).',
-  areaServed: { '@type': 'Country', name: 'Costa Rica' },
-  priceRange: '$$',
-  knowsAbout: [
-    'Facturación electrónica Costa Rica v4.4',
-    'Régimen Especial Agropecuario REA',
-    'Declaración IVA D-135-1',
-    'Declaración de renta D-101',
-    'Conciliación D-150',
-  ],
-};
 
 const CARACTERISTICAS = [
   {
@@ -148,6 +83,71 @@ const COMPARATIVA = [
   { tarea: 'Facturación electrónica', manual: 'Software aparte', app: 'Integrada (v4.4 Hacienda)' },
 ];
 
+// FAQ (se usa también para el schema FAQPage)
+const FAQ = [
+  {
+    pregunta: '¿Necesito estar inscrito en Hacienda para usar ContadorGanadero?',
+    respuesta:
+      'Para emitir facturas electrónicas y presentar declaraciones necesitas estar inscrito como contribuyente. Los productores agropecuarios de Costa Rica suelen estar en el Régimen Especial Agropecuario (REA), con inscripción ante el MAG. Para registrar gastos e ingresos internos puedes empezar sin estar al día con Hacienda.',
+  },
+  {
+    pregunta: '¿Cómo se descargan mis facturas electrónicas automáticamente?',
+    respuesta:
+      'Conectas una cuenta de correo (Gmail, Outlook u otro con IMAP) donde recibís las facturas de tus proveedores. La plataforma lee los correos, descarga los archivos XML y PDF, extrae los datos y los categoriza con inteligencia artificial. No tenés que digitar nada.',
+  },
+  {
+    pregunta: '¿Funciona con facturas del 1% de IVA del régimen agropecuario?',
+    respuesta:
+      'Sí. ContadorGanadero está diseñado específicamente para la tarifa reducida del 1% del Régimen Especial Agropecuario (REA) y para la facturación electrónica v4.4 de Hacienda, incluyendo la clave numérica de 50 dígitos y la firma digital.',
+  },
+  {
+    pregunta: '¿Qué impuestos calcula la plataforma?',
+    respuesta:
+      'Calcula el IVA cuatrimestral (formulario D-135-1), la renta anual (D-101) con tramos progresivos y la conciliación anual del REA (D-150). Además incluye un calendario fiscal con los vencimientos de Hacienda.',
+  },
+  {
+    pregunta: '¿Puedo controlar bovinos, aves, peces y abejas?',
+    respuesta:
+      'Sí. El módulo de inventario multiespecie registra pesos de bovinos, ciclos de postura de aves, biomasa de peces y extracciones de miel de colmenas. También calcula el costo real de producción por kilo, cartón de huevos o kilo de tilapia.',
+  },
+  {
+    pregunta: '¿Cuánto cuesta? ¿Hay plan gratuito?',
+    respuesta:
+      'Hay un plan Free sin costo y sin tarjeta para probar la plataforma, y planes pagos (Bronce, Oro y Corporativo) que se ajustan al tamaño de tu operación. Podés cancelar cuando quieras.',
+  },
+];
+
+// Schema FAQPage generado a partir de las preguntas
+const FAQ_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ.map((f) => ({
+    '@type': 'Question',
+    name: f.pregunta,
+    acceptedAnswer: { '@type': 'Answer', text: f.respuesta },
+  })),
+};
+
+// Schema de negocio (servicio profesional) — completar con datos reales
+const NEGOCIO_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfessionalService',
+  name: 'ContadorGanadero',
+  url: 'https://contadorganadero.com',
+  image: 'https://contadorganadero.com/favicon.svg',
+  description:
+    'Contabilidad, inventario y facturación electrónica para productores agropecuarios de Costa Rica bajo el Régimen Especial Agropecuario (REA).',
+  areaServed: { '@type': 'Country', name: 'Costa Rica' },
+  priceRange: '$$',
+  knowsAbout: [
+    'Facturación electrónica Costa Rica v4.4',
+    'Régimen Especial Agropecuario REA',
+    'Declaración IVA D-135-1',
+    'Declaración de renta D-101',
+    'Conciliación D-150',
+  ],
+};
+
 const ITEMS_POR_VISTA = { mobile: 1, tablet: 2, desktop: 3 };
 
 function getItemsPerView() {
@@ -205,6 +205,11 @@ export default function LandingPage() {
   const [ctaRef, ctaVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
   const [footerRef, footerVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
 
+  const carouselRef = useRef(null);
+  const touchStartRef = useRef({ x: 0, y: 0 });
+  const touchEndRef = useRef({ x: 0, y: 0 });
+  const touchMovedRef = useRef(false);
+
   // Carousel for features
   const [slides, setSlides] = useState(() => {
     const perView = getItemsPerView();
@@ -215,13 +220,13 @@ export default function LandingPage() {
     return chunks;
   });
 
-  const { currentIndex, goTo, next, prev } = useCarousel({
+  const { currentIndex, goTo, next, prev, pause, resume } = useCarousel({
     items: slides,
     interval: 5000,
     autoPlay: true,
   });
 
-  // Update slides on resize
+  // Update slides on resize - preserve valid currentIndex
   useEffect(() => {
     const handleResize = () => {
       const perView = getItemsPerView();
@@ -234,6 +239,65 @@ export default function LandingPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!carouselRef.current) return;
+      if (!carouselRef.current.contains(document.activeElement) && e.target !== carouselRef.current) {
+        const carouselEl = document.querySelector('.landing-carousel');
+        if (!carouselEl || !carouselEl.contains(document.activeElement)) return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        next();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [next, prev]);
+
+  // Touch/swipe handlers
+  const handleTouchStart = useCallback((e) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchEndRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchMovedRef.current = false;
+    pause();
+  }, [pause]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (!touchStartRef.current.x) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    touchEndRef.current = { x: currentX, y: currentY };
+    const deltaX = currentX - touchStartRef.current.x;
+    const deltaY = currentY - touchStartRef.current.y;
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+      touchMovedRef.current = true;
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStartRef.current.x || !touchMovedRef.current) {
+      resume();
+      return;
+    }
+    const deltaX = touchEndRef.current.x - touchStartRef.current.x;
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX > 0) next();
+      else prev();
+    }
+    resume();
+  }, [next, prev, resume]);
+
+  const handleMouseEnter = useCallback(() => pause(), [pause]);
+  const handleMouseLeave = useCallback(() => resume(), [resume]);
+  const handleFocusIn = useCallback(() => pause(), [pause]);
+  const handleFocusOut = useCallback(() => resume(), [resume]);
 
   return (
     <div className="landing">
@@ -261,7 +325,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero (único H1 de la página) */}
+      {/* Hero */}
       <section ref={heroRef} className={`landing-hero ${heroVisible ? 'landing-hero--visible' : ''}`}>
         <video className="landing-hero-video" autoPlay muted loop playsInline preload="auto">
           <source src={fondoLogin} type="video/webm" />
@@ -294,7 +358,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TL;DR / En resumen (después de la intención de búsqueda) */}
+      {/* TL;DR / En resumen */}
       <section ref={tldrRef} id="resumen" className={`landing-seccion ${tldrVisible ? 'landing-seccion--visible' : ''}`}>
         <div className="landing-tldr glass-card">
           <h2 className="landing-tldr-titulo">En resumen</h2>
@@ -331,10 +395,29 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div className="landing-carousel">
-          <div className="landing-carousel-track" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
+        <div
+          ref={carouselRef}
+          className="landing-carousel"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onFocusIn={handleFocusIn}
+          onFocusOut={handleFocusOut}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          role="region"
+          aria-label="Carrusel de características"
+          aria-roledescription="carousel"
+        >
+          <div
+            className="landing-carousel-track"
+            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`Slide ${currentIndex + 1} de ${slides.length}`}
+          >
             {slides.map((slide, slideIndex) => (
-              <div key={slideIndex} className="landing-carousel-slide">
+              <div key={slideIndex} className="landing-carousel-slide" role="group" aria-roledescription="slide" aria-label={`Slide ${slideIndex + 1}`}>
                 <div className="landing-caracteristicas-grid">
                   {slide.map(({ icono: Icono, titulo, descripcion }) => (
                     <div key={titulo} className="landing-caracteristica glass-card animate-fade-in" style={{ animationDelay: `${slideIndex * 150}ms` }}>
@@ -350,12 +433,16 @@ export default function LandingPage() {
             ))}
           </div>
 
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            Mostrando slide {currentIndex + 1} de {slides.length}
+          </div>
+
           {slides.length > 1 && (
             <>
-              <button className="landing-carousel-btn landing-carousel-btn--prev" onClick={prev} aria-label="Anterior">
+              <button className="landing-carousel-btn landing-carousel-btn--prev" onClick={prev} aria-label="Slide anterior">
                 <ChevronLeft size={22} />
               </button>
-              <button className="landing-carousel-btn landing-carousel-btn--next" onClick={next} aria-label="Siguiente">
+              <button className="landing-carousel-btn landing-carousel-btn--next" onClick={next} aria-label="Slide siguiente">
                 <ChevronRight size={22} />
               </button>
 

@@ -119,27 +119,17 @@ function firmarXml(xmlString, keyPair) {
 }
 
 /**
- * Detecta el nombre del nodo raiz de un XML (ignorando la declaracion XML
- * y los espacios/comentarios previos). Devuelve null si no lo encuentra.
- */
-function detectarRaiz(xmlString) {
-  if (!xmlString) return null;
-  const sinDeclaracion = String(xmlString).replace(/<\?xml[^>]*\?>\s*/i, '');
-  const match = /<([A-Za-z_][\w.-]*)(?:\s[^>]*)?>/.exec(sinDeclaracion);
-  return match ? match[1] : null;
-}
-
-/**
  * Interfaz de alto nivel: toma un documento y lo firma usando el .p12 configurado.
  * El ambiente local produce un XML "firmado" simulado manteniendo formato valido
  * (para que el resto del pipeline pueda probarse).
  */
 function firmarDocumento(xmlString, { p12Path, pin, ambiente } = {}) {
   if (ambiente === 'local') {
-    //Firma mock: envolvemos con un Signature placeholder para que el worker pueda continuar.
-    //Se detecta el nodo raiz dinamicamente (FE, TE, NC, ND, FEC o REP).
-    const raiz = detectarRaiz(xmlString) || 'FacturaElectronica';
-    return xmlString.replace(`</${raiz}>`, `
+    // Firma mock: detectamos el nodo raiz dinamicamente para soportar todos los tipos
+    const rootMatch = xmlString.match(/^<\?xml[^?]*\?>\s*<(\w+)/);
+    const rootElement = rootMatch ? rootMatch[1] : 'FacturaElectronica';
+    const closingTag = `</${rootElement}>`;
+    return xmlString.replace(closingTag, `
   <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="MockSig">
     <ds:SignedInfo>
       <ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
@@ -155,7 +145,7 @@ function firmarDocumento(xmlString, { p12Path, pin, ambiente } = {}) {
     <ds:SignatureValue>MOCK</ds:SignatureValue>
     <ds:KeyInfo><ds:X509Data><ds:X509Certificate>MOCK</ds:X509Certificate></ds:X509Data></ds:KeyInfo>
   </ds:Signature>
-</${raiz}>`);
+${closingTag}`);
   }
   const keyPair = cargarLlave(p12Path, pin);
   return firmarXml(xmlString, keyPair);
@@ -165,7 +155,6 @@ module.exports = {
   cargarLlave,
   firmarXml,
   firmarDocumento,
-  detectarRaiz,
   limpiarCacheLlave,
   DEFAULT_XADES_POLICY,
 };

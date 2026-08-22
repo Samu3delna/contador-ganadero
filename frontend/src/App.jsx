@@ -54,6 +54,7 @@ function AppLayout() {
             <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/planes" element={<PlanesPage />} />
             <Route path="/billing" element={<BillingPage />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>
       </div>

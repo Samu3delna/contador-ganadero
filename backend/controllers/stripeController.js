@@ -28,11 +28,6 @@ const obtenerPlanPorPriceId = (priceId) => {
   return PRICE_TO_PLAN[priceId] || 'free';
 };
 
-const obtenerPeriodoActual = () => {
-  const ahora = new Date();
-  return `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
-};
-
 /**
  * @desc    Crear Stripe Checkout Session para upgrade de plan
  * @route   POST /api/stripe/checkout

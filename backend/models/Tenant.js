@@ -80,13 +80,9 @@ const tenantSchema = new mongoose.Schema({
   // === Stripe ===
   stripeCustomerId: {
     type: String,
-    index: true,
-    sparse: true,
   },
   stripeSubscriptionId: {
     type: String,
-    index: true,
-    sparse: true,
   },
   stripePriceId: {
     type: String,
@@ -231,6 +227,8 @@ tenantSchema.statics.crearParaUsuario = async function ({ nombreFinca, owner, pl
   const ahora = new Date();
   const periodoActual = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
 
+  const usuarios = owner ? [{ usuarioId: owner, rol: 'dueño', agregadoEn: new Date() }] : [];
+
   const tenant = await this.create({
     nombreFinca: nombreFinca || 'Mi Finca',
     plan,
@@ -242,8 +240,8 @@ tenantSchema.statics.crearParaUsuario = async function ({ nombreFinca, owner, pl
       almacenamientoUsadoMB: 0,
       periodoActual,
     },
-    usuarios: [{ usuarioId: owner, rol: 'dueño', agregadoEn: new Date() }],
-    owner,
+    usuarios,
+    owner: owner || undefined,
   });
 
   return tenant;

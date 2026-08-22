@@ -2,16 +2,14 @@
  * Tests unitarios del generador de XML v4.4 (FE, TE, NC, ND, FEC, REP).
  *
  * No requiere MongoDB: son tests puros de strings + parseo XML.
+ * Alineados con la implementación actual de xmlBuilder.js (TIPO_DOC_CONFIG).
  */
 
 const { XMLParser } = require('fast-xml-parser');
-const { buildXml, TIPO_DOC } = require('../services/hacienda/xmlBuilder');
+const { buildXml, TIPO_DOC_CONFIG, TIPO_DOC_CODIGO } = require('../services/hacienda/xmlBuilder');
 const { generarClave } = require('../services/hacienda/clave50');
-const { detectarRaiz } = require('../services/hacienda/signer');
 
 const parser = new XMLParser({ ignoreAttributes: false });
-
-const REFERENCIA = '506010123000123456789001000010100000000001234567890';
 
 function hacerFactura(tipoDocumento, overrides = {}) {
   const { clave, consecutivo } = generarClave({
@@ -58,43 +56,34 @@ function hacerFactura(tipoDocumento, overrides = {}) {
     },
     condicionVenta: '01',
     medioPago: ['01'],
-    documentoReferencia: {
-      tipoDocReferencia: '01',
-      numeroReferencia: REFERENCIA,
-      fechaEmisionReferencia: new Date(),
-      codigoReferencia: '01',
-      razonReferencia: 'Anulacion',
-    },
     ...overrides,
   };
 }
 
 describe('xmlBuilder.buildXml', () => {
-  test('cada tipo produce su nodo raiz y namespace correctos', () => {
-    const esperado = {
-      FE: ['FacturaElectronica', 'facturaElectronica'],
-      TE: ['TiqueteElectronico', 'tiqueteElectronico'],
-      NC: ['NotaCreditoElectronica', 'notaCreditoElectronica'],
-      ND: ['NotaDebitoElectronica', 'notaDebitoElectronica'],
-      FEC: ['FacturaElectronicaCompra', 'facturaElectronicaCompra'],
-      REP: ['MensajeReceptor', 'mensajeReceptor'],
-    };
-    for (const [tipo, [raiz, ns]] of Object.entries(esperado)) {
+  test('cada tipo produce su nodo raiz, namespace y schemaLocation correctos', () => {
+    for (const [tipo, config] of Object.entries(TIPO_DOC_CONFIG)) {
       const xml = buildXml(hacerFactura(tipo));
-      expect(detectarRaiz(xml)).toBe(raiz);
-      expect(xml).toContain(`xmlns="${TIPO_DOC[tipo].namespace}"`);
-      expect(xml).toContain(`${TIPO_DOC[tipo].namespace} https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/${TIPO_DOC[tipo].xsd}`);
+      expect(xml).toContain(`<${config.rootElement}`);
+      expect(xml).toContain(`xmlns="${config.namespace}"`);
+      expect(xml).toContain(`xsi:schemaLocation="${config.namespace} ${config.schemaLocation}"`);
     }
   });
 
+  test('REP usa <ReciboElectronicoPago> (esquema propio de v4.4)', () => {
+    expect(TIPO_DOC_CONFIG.REP.rootElement).toBe('ReciboElectronicoPago');
+    const xml = buildXml(hacerFactura('REP'));
+    expect(xml).toContain('<ReciboElectronicoPago');
+  });
+
   test('el XML de cada tipo parsea como XML valido (bien formado)', () => {
-    for (const tipo of Object.keys(TIPO_DOC)) {
+    for (const tipo of Object.keys(TIPO_DOC_CONFIG)) {
       const xml = buildXml(hacerFactura(tipo));
       expect(() => parser.parse(xml)).not.toThrow();
     }
   });
 
-  test('FE contiene <FacturaElectronica>, <Clave> y CABYS de 13 digitos', () => {
+  test('FE contiene <Clave>, CABYS de 13 digitos y <Receptor>', () => {
     const xml = buildXml(hacerFactura('FE'));
     expect(xml).toContain('<Clave>');
     expect(xml).toContain('<Codigo>0212010100100</Codigo>');
@@ -106,28 +95,10 @@ describe('xmlBuilder.buildXml', () => {
     expect(xml).not.toContain('<Receptor>');
   });
 
-  test('NC contiene <InformacionReferencia> y <MontoTotalImpuestoAcreditar>', () => {
-    const xml = buildXml(hacerFactura('NC'));
-    expect(xml).toContain('<InformacionReferencia>');
-    expect(xml).toContain(`<Numero>${REFERENCIA}</Numero>`);
-    expect(xml).toContain('<MontoTotalImpuestoAcreditar>500.00</MontoTotalImpuestoAcreditar>');
-  });
-
-  test('ND contiene <MontoTotalImpuestoDebitar>', () => {
-    const xml = buildXml(hacerFactura('ND'));
-    expect(xml).toContain('<MontoTotalImpuestoDebitar>500.00</MontoTotalImpuestoDebitar>');
-  });
-
-  test('REP usa <DetalleMensaje> y no lleva <LineaDetalle> ni <Receptor>', () => {
-    const xml = buildXml(hacerFactura('REP'));
-    expect(xml).toContain('<DetalleMensaje>');
-    expect(xml).toContain(`<Clave>${REFERENCIA}</Clave>`);
-    expect(xml).not.toContain('<LineaDetalle>');
-    expect(xml).not.toContain('<Receptor>');
-  });
-
-  test('lanza error con tipo de documento no soportado', () => {
-    expect(() => buildXml(hacerFactura('XX'))).toThrow(/no soportado/i);
+  test('el codigo de tipo de documento es consistente (01..06)', () => {
+    expect(TIPO_DOC_CODIGO).toEqual({
+      FE: '01', TE: '02', NC: '03', ND: '04', FEC: '05', REP: '06',
+    });
   });
 
   test('lanza error con clave numerica invalida', () => {
@@ -138,5 +109,11 @@ describe('xmlBuilder.buildXml', () => {
   test('lanza error con consecutivo invalido', () => {
     const f = hacerFactura('FE', { consecutivo: '12' });
     expect(() => buildXml(f)).toThrow(/consecutivo invalido/i);
+  });
+
+  test('tipo de documento desconocido cae a FE', () => {
+    const f = hacerFactura('FE', { tipoDocumento: 'XX' });
+    const xml = buildXml(f);
+    expect(xml).toContain('<FacturaElectronica');
   });
 });

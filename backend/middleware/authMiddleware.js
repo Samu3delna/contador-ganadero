@@ -18,6 +18,11 @@ const protegerRuta = async (req, res, next) => {
       }
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+      if (!decoded.tenantId) {
+        res.status(401);
+        throw new Error('No autorizado — Token sin tenantId');
+      }
+
       const usuario = await Usuario.findById(decoded.id).select('-password');
 
       if (!usuario) {

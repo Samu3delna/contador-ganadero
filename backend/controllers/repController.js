@@ -35,7 +35,7 @@ const crearRep = async (req, res, next) => {
 
     const facturaOriginal = await FacturaEmision.findOne({
       _id: facturaIdOriginal,
-      usuario: req.usuario._id,
+      ...req.filtrarPorTenant(),
     });
     if (!facturaOriginal) { res.status(404); throw new Error('Factura original no encontrada'); }
 
@@ -53,8 +53,8 @@ const crearRep = async (req, res, next) => {
     const abonosPrevios = await FacturaEmision.aggregate([
       {
         $match: {
+          ...req.filtrarPorTenant(),
           tipoDocumento: TIPO_REP,
-          usuario: req.usuario._id,
           'documentoReferencia.numeroReferencia': facturaOriginal.claveNumerica,
           estado: { $in: ['firmada', 'procesando', 'aceptada'] },
         },
@@ -73,7 +73,7 @@ const crearRep = async (req, res, next) => {
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
     const consecutivo = `00100001${hacienda.clave50.TIPO_DOC_CODIGO[TIPO_REP]}${String(Date.now()).slice(-10)}`;
 
-    const nuevoRep = await FacturaEmision.create({
+    const nuevoRep = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento: TIPO_REP,
       ambiente: process.env.HACIENDA_AMBIENTE || 'local',
       consecutivo,
@@ -108,7 +108,7 @@ const crearRep = async (req, res, next) => {
       periodoFiscal: fechaEmision.getFullYear(),
       estado: 'borrador',
       usuario: req.usuario._id,
-    });
+    }));
 
     res.status(201).json(nuevoRep);
   } catch (error) { next(error); }
@@ -118,7 +118,7 @@ const crearRep = async (req, res, next) => {
 const listarRep = async (req, res, next) => {
   try {
     const { periodoFiscal, estado, page = 1, limit = 20 } = req.query;
-    const filtro = { usuario: req.usuario._id, tipoDocumento: TIPO_REP };
+    const filtro = { ...req.filtrarPorTenant(), tipoDocumento: TIPO_REP };
     if (periodoFiscal) filtro.periodoFiscal = Number(periodoFiscal);
     if (estado) filtro.estado = estado;
     const skip = (Number(page) - 1) * Number(limit);
@@ -136,13 +136,13 @@ const resumenAbonosPorFactura = async (req, res, next) => {
     const { facturaIdOriginal } = req.params;
     const facturaOriginal = await FacturaEmision.findOne({
       _id: facturaIdOriginal,
-      usuario: req.usuario._id,
+      ...req.filtrarPorTenant(),
     });
     if (!facturaOriginal) { res.status(404); throw new Error('Factura original no encontrada'); }
 
     const abonos = await FacturaEmision.find({
+      ...req.filtrarPorTenant(),
       tipoDocumento: TIPO_REP,
-      usuario: req.usuario._id,
       'documentoReferencia.numeroReferencia': facturaOriginal.claveNumerica,
       estado: { $in: ['firmada', 'procesando', 'aceptada'] },
     }).sort({ fechaEmision: 1 });
