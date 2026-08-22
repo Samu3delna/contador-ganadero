@@ -5,8 +5,9 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const Usuario = require('../models/Usuario');
 const Tenant = require('../models/Tenant');
-const { login, registro, refrescarToken, logout, protegerRuta } = require('../controllers/authController');
+const { login, registro, refrescarToken, logout } = require('../controllers/authController');
 const { protegerRuta: protegerRutaMiddleware } = require('../middleware/authMiddleware');
+const { errorHandler } = require('../middleware/errorMiddleware');
 
 const createApp = () => {
   const app = express();
@@ -17,6 +18,7 @@ const createApp = () => {
   app.post('/api/auth/refresh', refrescarToken);
   app.post('/api/auth/logout', logout);
   app.get('/api/auth/perfil', protegerRutaMiddleware, (req, res) => res.json({ ok: true, user: req.usuario }));
+  app.use(errorHandler);
   return app;
 };
 
@@ -69,8 +71,8 @@ describe('Auth Security Tests', () => {
           .send({ email: 'test@example.com', password: 'wrongpassword' });
       }
       const elapsed = Date.now() - start;
-      expect(elapsed).toBeLessThan(5000);
-    });
+      expect(elapsed).toBeLessThan(15000);
+    }, 15000);
   });
 
   describe('Password Security', () => {

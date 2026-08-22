@@ -59,7 +59,7 @@ const crearFec = async (req, res, next) => {
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
     const consecutivo = `00100001${hacienda.clave50.TIPO_DOC_CODIGO[TIPO_FEC]}${String(Date.now()).slice(-10)}`;
 
-    const nuevoFec = await FacturaEmision.create({
+    const nuevoFec = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento: TIPO_FEC,
       ambiente: process.env.HACIENDA_AMBIENTE || 'local',
       consecutivo,
@@ -77,7 +77,7 @@ const crearFec = async (req, res, next) => {
       periodoFiscal: fechaEmision.getFullYear(),
       estado: 'borrador',
       usuario: req.usuario._id,
-    });
+    }));
 
     res.status(201).json(nuevoFec);
   } catch (error) { next(error); }
@@ -87,7 +87,7 @@ const crearFec = async (req, res, next) => {
 const listarFec = async (req, res, next) => {
   try {
     const { periodoFiscal, estado, page = 1, limit = 20 } = req.query;
-    const filtro = { usuario: req.usuario._id, tipoDocumento: TIPO_FEC };
+    const filtro = { ...req.filtrarPorTenant(), tipoDocumento: TIPO_FEC };
     if (periodoFiscal) filtro.periodoFiscal = Number(periodoFiscal);
     if (estado) filtro.estado = estado;
     const skip = (Number(page) - 1) * Number(limit);
@@ -105,7 +105,7 @@ const resumenCompras = async (req, res, next) => {
     const { periodoFiscal, cuatrimestre } = req.query;
     const anioNum = Number(periodoFiscal || new Date().getFullYear());
     const filtro = {
-      usuario: req.usuario._id,
+      ...req.filtrarPorTenant(),
       tipoDocumento: TIPO_FEC,
       estado: 'aceptada',
       periodoFiscal: anioNum,

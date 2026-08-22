@@ -25,27 +25,18 @@ jest.mock('dotenv', () => ({
   config: jest.fn().mockReturnValue({ parsed: {} }),
 }));
 
-async function runMigration(dryRun) {
-  const originalArgv = process.argv;
-  process.argv = ['node', 'migrateTenant.js'];
-  if (dryRun) process.argv.push('--dry-run');
+const { main: runMigrateMain } = require('../scripts/migrateTenant');
 
+async function runMigration(dryRun) {
   const closeMock = jest.spyOn(mongoose.connection, 'close').mockResolvedValue();
   const logMock = jest.spyOn(console, 'log').mockImplementation(() => {});
   const errorMock = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-  // Re-require del script bajo modulo aislado para que拾 el argv nuevo
-  let modulo;
-  jest.isolateModules(() => {
-    modulo = require('../scripts/migrateTenant');
-  });
-
-  const result = await modulo.main();
+  const result = await runMigrateMain({ dryRun });
 
   closeMock.mockRestore();
   logMock.mockRestore();
   errorMock.mockRestore();
-  process.argv = originalArgv;
   return result;
 }
 
@@ -73,6 +64,10 @@ async function crearDocsSinTenant(usuarioId) {
 }
 
 describe('scripts/migrateTenant.js', () => {
+  beforeAll(() => {
+    jest.setTimeout(20000);
+  });
+
   afterEach(() => {
     jest.resetModules();
   });

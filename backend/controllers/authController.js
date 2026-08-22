@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const Usuario = require('../models/Usuario');
 const Tenant = require('../models/Tenant');
+
+const DUMMY_HASH = '$2a$12$e8Ov5y2ZJ7m6V3QvX7fX9.kX6f8oFzN0zJz5t1Z5V3m6V3QvX7fX9';
 
 /**
  * Genera access token JWT con claims { id, tenantId, rol }
@@ -39,7 +42,7 @@ const setRefreshCookie = (res, token) => {
 };
 
 const clearRefreshCookie = (res) => {
-  res.clearCookie('refreshToken', { path: '/api/auth' });
+  res.clearCookie('refreshToken', { path: '/api/auth', maxAge: 0 });
 };
 
 /**
@@ -76,6 +79,7 @@ const registro = async (req, res, next) => {
     });
 
     tenant.owner = usuario._id;
+    tenant.usuarios = [{ usuarioId: usuario._id, rol: 'dueño', agregadoEn: new Date() }];
     await tenant.save();
 
     const accessToken = generarToken(usuario, tenant._id);
@@ -113,7 +117,14 @@ const login = async (req, res, next) => {
 
     const usuario = await Usuario.findOne({ email }).select('+password');
 
-    if (!usuario || !(await usuario.compararPassword(password))) {
+    let passwordValido = false;
+    if (usuario) {
+      passwordValido = await usuario.compararPassword(password);
+    } else {
+      await bcrypt.compare(password, DUMMY_HASH);
+    }
+
+    if (!usuario || !passwordValido) {
       res.status(401);
       throw new Error('Credenciales incorrectas');
     }

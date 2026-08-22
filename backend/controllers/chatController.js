@@ -22,7 +22,7 @@ function obtenerEncoder() {
   if (!tiktokenEncoder) {
     try {
       tiktokenEncoder = encoding_for_model('gpt-4');
-    } catch (e) {
+    } catch {
       tiktokenEncoder = encoding_for_model('cl100k_base');
     }
   }
@@ -246,7 +246,6 @@ ${contexto.ultimosIngresos.map(i => `  - [${i.id?.slice(-6) || '?'}] ${i.fecha}:
 
 // ============ TRUNCAMIENTO INTELIGENTE ============
 
-const MAX_MENSAJE_LENGTH = 2000;
 const MAX_HISTORIAL_MESSAGES = 10; // Aumentado de 6 a 10
 const MAX_CONTEXTO_TOKENS = 3000;
 

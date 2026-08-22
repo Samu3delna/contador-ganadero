@@ -13,8 +13,6 @@ const CostoProduccion = require('../models/CostoProduccion');
 const RecordatorioFiscal = require('../models/RecordatorioFiscal');
 const ChatFeedback = require('../models/ChatFeedback');
 
-const DRY_RUN = process.argv.includes('--dry-run');
-
 /**
  * Modelos cuyos documentos se asocian a un usuario (campo `usuario`)
  * y tienen `tenantId`. Categoria NO se incluye (catalogo global).
@@ -35,13 +33,14 @@ const MODELOS_USUARIO = [
  * Solo actualiza documentos sin tenantId ($exists: false).
  * @param {mongoose.Types.ObjectId} usuarioId
  * @param {mongoose.Types.ObjectId} tenantId
+ * @param {boolean} [dryRun]
  * @returns {Promise<number>} total de documentos actualizados
  */
-async function propagarTenantADocumentos(usuarioId, tenantId) {
+async function propagarTenantADocumentos(usuarioId, tenantId, dryRun = false) {
   let totalActualizados = 0;
   for (const Modelo of MODELOS_USUARIO) {
     const filtro = { usuario: usuarioId, tenantId: { $exists: false } };
-    if (DRY_RUN) {
+    if (dryRun) {
       const conteo = await Modelo.countDocuments(filtro);
       if (conteo > 0) {
         console.log(`  [DRY-RUN] ${Modelo.modelName}: ${conteo} documentos pendientes`);
@@ -61,16 +60,18 @@ async function propagarTenantADocumentos(usuarioId, tenantId) {
 /**
  * Migra un usuario: crea Tenant, asigna tenantId/rol y propaga a documentos.
  * @param {object} usuario
+ * @param {object} [options]
  * @returns {Promise<{tenantCreado: boolean, docsActualizados: number}>}
  */
-async function migrarUsuario(usuario) {
+async function migrarUsuario(usuario, options = {}) {
+  const dryRun = options.dryRun !== undefined ? options.dryRun : process.argv.includes('--dry-run');
   const nombreFinca = usuario.nombreFinca || 'Mi Finca';
 
-  if (DRY_RUN) {
+  if (dryRun) {
     console.log(`\n[DRY-RUN] Usuario ${usuario.email} (${usuario._id})`);
     console.log(`  Crearia Tenant: nombreFinca="${nombreFinca}", owner=${usuario._id}, plan=free`);
     console.log(`  Asignaria usuario.tenantId y usuario.rol="dueño"`);
-    const docs = await propagarTenantADocumentos(usuario._id, null);
+    const docs = await propagarTenantADocumentos(usuario._id, null, true);
     return { tenantCreado: true, docsActualizados: docs };
   }
 
@@ -83,22 +84,24 @@ async function migrarUsuario(usuario) {
   });
   console.log(`  Tenant creado: ${tenant._id} ("${nombreFinca}")`);
 
-  usuario.tenantId = tenant._id;
-  usuario.rol = 'dueño';
-  await usuario.save();
+  await Usuario.updateOne(
+    { _id: usuario._id },
+    { $set: { tenantId: tenant._id, rol: 'dueño' } }
+  );
   console.log(`  Usuario actualizado: tenantId=${tenant._id}, rol=dueño`);
 
-  const docsActualizados = await propagarTenantADocumentos(usuario._id, tenant._id);
+  const docsActualizados = await propagarTenantADocumentos(usuario._id, tenant._id, false);
   return { tenantCreado: true, docsActualizados };
 }
 
 /**
  * Entry point del script de migracion backfill a multi-tenant.
  */
-async function main() {
+async function main(options = {}) {
+  const dryRun = options.dryRun !== undefined ? options.dryRun : process.argv.includes('--dry-run');
   await conectarDB();
   console.log('Iniciando migracion tenant...');
-  console.log(`Modo: ${DRY_RUN ? 'DRY-RUN (no escribe)' : 'APLICANDO CAMBIOS'}`);
+  console.log(`Modo: ${dryRun ? 'DRY-RUN (no escribe)' : 'APLICANDO CAMBIOS'}`);
 
   const usuariosSinTenant = await Usuario.find({
     $or: [{ tenantId: null }, { tenantId: { $exists: false } }],
@@ -122,7 +125,7 @@ async function main() {
         console.log(`Usuario ${fresh.email} ya tiene tenantId, se omite.`);
         continue;
       }
-      const res = await migrarUsuario(fresh);
+      const res = await migrarUsuario(fresh, { dryRun });
       tenantsCreados += res.tenantCreado ? 1 : 0;
       docsActualizados += res.docsActualizados;
     } catch (err) {
@@ -135,7 +138,7 @@ async function main() {
   console.log(`${usuariosSinTenant.length} usuarios procesados`);
   console.log(`${tenantsCreados} tenants creados`);
   console.log(`${docsActualizados} documentos actualizados`);
-  console.log(DRY_RUN ? '(DRY-RUN: no se aplicaron cambios)' : 'Migracion completada.');
+  console.log(dryRun ? '(DRY-RUN: no se aplicaron cambios)' : 'Migracion completada.');
 }
 
 module.exports = { main, propagarTenantADocumentos, migrarUsuario };
@@ -150,7 +153,9 @@ if (require.main === module) {
       console.error('Migracion fallida:', err);
       try {
         mongoose.connection.close();
-      } catch (_) {}
+      } catch (closeErr) {
+        console.error('Error cerrando conexion:', closeErr.message);
+      }
       process.exit(1);
     });
 }

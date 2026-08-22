@@ -3,7 +3,6 @@
  */
 
 const mongoose = require('mongoose');
-const Tenant = require('../models/Tenant');
 const {
   requiereTenantActivo,
   requiereCreditoConteo,
