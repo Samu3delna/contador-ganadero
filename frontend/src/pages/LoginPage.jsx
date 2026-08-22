@@ -4,12 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
+import useSeo from '../hooks/useSeo';
 import fondoLogin from '../Recursos/fondo_login.webm';
 import './LoginPage.css';
 
 export default function LoginPage() {
   const { login, registro } = useAuth();
   const navigate = useNavigate();
+
+  // La página de login no aporta valor en buscadores: se no-indexa.
+  useSeo({
+    title: 'Iniciar sesión | ContadorGanadero',
+    description: 'Accede a tu cuenta de ContadorGanadero para gestionar la contabilidad de tu finca.',
+    path: '/login',
+    robots: 'noindex, follow',
+  });
   const [esRegistro, setEsRegistro] = useState(false);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);

@@ -30,6 +30,8 @@ frontend/node_modules/
 backend/uploads/
 *.pdf
 *.xml
+# Excepción: el sitemap público SÍ debe versionarse
+!frontend/public/sitemap.xml
 
 # Builds
 dist/

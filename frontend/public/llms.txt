@@ -1,0 +1,37 @@
+# ContadorGanadero
+
+> Plataforma de contabilidad, inventario y facturación electrónica para productores agropecuarios de Costa Rica bajo el Régimen Especial Agropecuario (REA).
+
+ContadorGanadero es una aplicación web (MERN) que actúa como contador personal automatizado para fincas. Importa facturas electrónicas (XML/PDF) por correo (IMAP), categoriza los gastos con inteligencia artificial y genera las declaraciones de impuestos exigidas por el Ministerio de Hacienda de Costa Rica.
+
+## Qué resuelve
+
+- Recolección automática de facturas electrónicas desde una cuenta de correo (IMAP).
+- Categorización de gastos con IA según la canasta de insumos agropecuarios.
+- Cálculo del IVA cuatrimestral (D-135-1), Renta anual (D-101) y conciliación REA (D-150).
+- Control de inventario multiespecie: bovinos, aves de postura, peces (acuicultura) y abejas (apicultura).
+- Cálculo de costos de producción (costo por kg de carne, cartón de huevos, FCA) y márgenes reales.
+- Facturación electrónica v4.4 nativa de Hacienda (clave de 50 dígitos, firma XAdES-EPES).
+
+## Régimen Especial Agropecuario (REA)
+
+- Tarifa reducida de IVA del 1% en insumos y productos agropecuarios primarios.
+- Declaración cuatrimestral de IVA en los meses de mayo, septiembre y enero.
+- Conciliación anual de compras y ventas mediante el formulario D-150.
+- Marco normativo: Ley 9635 y reformas 2026.
+
+## Estructura técnica
+
+- Frontend: React 19 + Vite (SPA).
+- Backend: Node.js, Express, Mongoose (MongoDB).
+- Servicios: lector IMAP, IA (NVIDIA NIM API), Stripe (suscripciones), firma digital Hacienda v4.4.
+
+## Páginas públicas
+
+- `/` — Página de inicio (landing) con características, planes y preguntas frecuentes.
+- `/login` — Inicio de sesión y registro.
+
+## Notas
+
+- La aplicación está dirigida a pequeños y medianos productores agropecuarios de Costa Rica.
+- Los módulos privados (dashboard, inventario, costos, facturación) requieren iniciar sesión.

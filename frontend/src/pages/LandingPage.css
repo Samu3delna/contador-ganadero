@@ -150,6 +150,48 @@
   gap: var(--espacio-sm);
 }
 
+.landing-nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-lg);
+}
+
+.landing-nav-links a {
+  color: var(--color-texto-sec);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.landing-nav-links a:hover {
+  color: var(--color-primario-claro);
+}
+
+.landing-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-xs);
+  background: transparent;
+  border: none;
+  color: var(--color-texto-sec);
+  cursor: pointer;
+  padding: var(--espacio-xs);
+  border-radius: var(--radio-sm);
+  transition: color 0.2s ease, background 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.landing-share-btn:hover {
+  color: var(--color-primario-claro);
+  background: var(--color-superficie-2);
+}
+
+@media (max-width: 860px) {
+  .landing-nav-links {
+    display: none;
+  }
+}
+
 /* --------------------------------------------------------------------------
    HERO
    -------------------------------------------------------------------------- */
@@ -241,6 +283,35 @@
   margin-top: var(--espacio-sm);
 }
 
+.landing-hero-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-xl);
+  flex-wrap: wrap;
+  list-style: none;
+  margin-top: var(--espacio-lg);
+  padding: var(--espacio-md) var(--espacio-lg);
+  border-radius: var(--radio-lg);
+  background: rgba(11, 19, 27, 0.55);
+  border: 1px solid var(--color-borde);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.landing-hero-stats li {
+  color: var(--color-texto-sec);
+  font-size: 0.85rem;
+}
+
+.landing-hero-stats strong {
+  display: block;
+  color: var(--color-texto);
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: var(--font-headers);
+}
+
 /* --------------------------------------------------------------------------
    SECCIONES GENERALES
    -------------------------------------------------------------------------- */
@@ -273,6 +344,213 @@
   color: var(--color-texto-muted);
   max-width: 560px;
   margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   TL;DR / EN RESUMEN
+   -------------------------------------------------------------------------- */
+.landing-tldr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-lg);
+  padding: var(--espacio-xl);
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.landing-tldr-titulo {
+  font-size: 1.4rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.landing-tldr-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-md);
+  list-style: none;
+}
+
+.landing-tldr-lista li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-sm);
+  color: var(--color-texto-sec);
+  line-height: 1.6;
+}
+
+.landing-tldr-lista li svg {
+  color: var(--color-exito);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.landing-tldr-lista strong {
+  color: var(--color-texto);
+}
+
+.landing-tldr .btn {
+  align-self: center;
+}
+
+/* --------------------------------------------------------------------------
+   TABLA COMPARATIVA
+   -------------------------------------------------------------------------- */
+.landing-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.landing-tabla th,
+.landing-tabla td {
+  padding: var(--espacio-md) var(--espacio-lg);
+  text-align: left;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.landing-tabla thead th {
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font-family: var(--font-headers);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.landing-tabla tbody tr:hover {
+  background: var(--color-superficie);
+}
+
+.landing-tabla td {
+  color: var(--color-texto-sec);
+}
+
+.landing-tabla .landing-tabla-ventaja {
+  color: var(--color-texto);
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-xs);
+}
+
+.landing-tabla .landing-tabla-ventaja svg {
+  color: var(--color-exito);
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   FAQ
+   -------------------------------------------------------------------------- */
+.landing-faq {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-sm);
+}
+
+.landing-faq-item {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  background: var(--color-superficie);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.landing-faq-item--abierta {
+  border-color: var(--color-borde-hover);
+}
+
+.landing-faq-pregunta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-md);
+  width: 100%;
+  padding: var(--espacio-md) var(--espacio-lg);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.landing-faq-pregunta h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.landing-faq-chevron {
+  color: var(--color-texto-sec);
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.landing-faq-item--abierta .landing-faq-chevron {
+  transform: rotate(180deg);
+  color: var(--color-primario-claro);
+}
+
+.landing-faq-respuesta {
+  padding: 0 var(--espacio-lg) var(--espacio-md);
+  color: var(--color-texto-sec);
+  line-height: 1.7;
+  font-size: 0.92rem;
+}
+
+/* --------------------------------------------------------------------------
+   CTA FINAL
+   -------------------------------------------------------------------------- */
+.landing-cta-final {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-md);
+  text-align: center;
+  padding: var(--espacio-2xl) var(--espacio-xl);
+  background: linear-gradient(135deg, var(--color-primario-glow) 0%, var(--color-superficie) 60%);
+}
+
+.landing-cta-final-titulo {
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.landing-cta-final-subtitulo {
+  color: var(--color-texto-sec);
+  max-width: 460px;
+}
+
+/* --------------------------------------------------------------------------
+   CTA FIJO EN MÓVIL
+   -------------------------------------------------------------------------- */
+.landing-cta-movil {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .landing-cta-movil {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 90;
+    padding: var(--espacio-sm) var(--espacio-md) calc(var(--espacio-sm) + env(safe-area-inset-bottom));
+    background: rgba(11, 19, 27, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--color-borde);
+  }
+
+  .landing-cta-movil .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .landing {
+    padding-bottom: 76px;
+  }
 }
 
 /* --------------------------------------------------------------------------

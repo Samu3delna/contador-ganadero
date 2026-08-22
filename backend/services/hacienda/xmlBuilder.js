@@ -3,18 +3,76 @@
  * Estructura conforme al esquema oficial de comprobantes electronicos.
  * Soporta: FE, TE, NC, ND, FEC, REP.
  *
- * Produces XML string WITHOUT signature. El signer.js inyecta la firma
+ * ProducE XML string WITHOUT signature. El signer.js inyecta la firma
  * XAdES-EPES envolviendo este XML.
+ *
+ * Cada tipo de documento tiene su propio nodo raiz y namespace (v4.4):
+ *   FE  -> <FacturaElectronica>       facturaElectronica
+ *   TE  -> <TiqueteElectronico>       tiqueteElectronico
+ *   NC  -> <NotaCreditoElectronica>   notaCreditoElectronica
+ *   ND  -> <NotaDebitoElectronica>    notaDebitoElectronica
+ *   FEC -> <FacturaElectronicaCompra> facturaElectronicaCompra
+ *   REP -> <MensajeReceptor>          mensajeReceptor
  */
 
-const TIPO_DOC_CODIGO = {
-  FE: '01',
-  TE: '02',
-  NC: '03',
-  ND: '04',
-  FEC: '05',
-  REP: '06',
+// Metadatos por tipo de documento ########################################
+const TIPO_DOC = {
+  FE: {
+    codigo: '01',
+    raiz: 'FacturaElectronica',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica',
+    xsd: 'facturaElectronica_V4.4.xsd',
+    requiereReceptor: false, // opcional (pero habitual)
+    requiereReferencia: false,
+  },
+  TE: {
+    codigo: '02',
+    raiz: 'TiqueteElectronico',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/tiqueteElectronico',
+    xsd: 'tiqueteElectronico_V4.4.xsd',
+    requiereReceptor: false, // TE no lleva receptor
+    requiereReferencia: false,
+  },
+  NC: {
+    codigo: '03',
+    raiz: 'NotaCreditoElectronica',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaCreditoElectronica',
+    xsd: 'notaCreditoElectronica_V4.4.xsd',
+    requiereReceptor: true,
+    requiereReferencia: true, // InformacionReferencia obligatoria
+    impuestoExtra: 'acreditar',
+  },
+  ND: {
+    codigo: '04',
+    raiz: 'NotaDebitoElectronica',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaDebitoElectronica',
+    xsd: 'notaDebitoElectronica_V4.4.xsd',
+    requiereReceptor: true,
+    requiereReferencia: true,
+    impuestoExtra: 'debitar',
+  },
+  FEC: {
+    codigo: '05',
+    raiz: 'FacturaElectronicaCompra',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronicaCompra',
+    xsd: 'facturaElectronicaCompra_V4.4.xsd',
+    requiereReceptor: false, // el emisor asume rol de comprador; el vendedor va en referencia/extra
+    requiereReferencia: false, // opcional: documento fisico del vendedor
+  },
+  REP: {
+    codigo: '06',
+    raiz: 'MensajeReceptor',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/mensajeReceptor',
+    xsd: 'mensajeReceptor_V4.4.xsd',
+    requiereReceptor: false, // estructura completamente distinta (no hereda de FE)
+    requiereReferencia: true,
+  },
 };
+
+// Mapa de compatibilidad (código del tipo de documento)
+const TIPO_DOC_CODIGO = Object.fromEntries(
+  Object.entries(TIPO_DOC).map(([k, v]) => [k, v.codigo])
+);
 
 // Entidades XML ########################################################
 const AMP = String.fromCharCode(38) + 'amp;';      // &
@@ -49,6 +107,14 @@ function tipoIdentificacionXml(tipo) {
   return ['01', '02', '03', '04'].includes(tipo) ? tipo : '01';
 }
 
+/**
+ * Padding de cedula a 12 digitos (usado en el MensajeReceptor).
+ */
+function padCedula(numero) {
+  const limpio = String(numero || '').replace(/[^0-9]/g, '');
+  return limpio.padStart(12, '0').slice(-12);
+}
+
 function buildLinea(linea, idx) {
   const unidad = linea.unidadMedida || 'kg';
   const cabys = String(linea.codigo || '').padStart(13, '0').slice(-13);
@@ -77,7 +143,7 @@ function buildLinea(linea, idx) {
   }
   xml += `
         <SubTotal>${subTot}</SubTotal>`;
-  //Impuesto (IVA)
+  // Impuesto (IVA)
   if (imp.tarifa != null && imp.tarifa > 0) {
     xml += `
         <Impuesto>
@@ -139,19 +205,92 @@ function buildInfoReferencia(ref) {
 }
 
 /**
- * Construye el XML v4.4 (sin firmar).
- * @returns {string} XML string
+ * Nodo <Emisor> compartido por FE/TE/NC/ND/FEC.
  */
-function buildXml(factura) {
-  if (!factura) throw new Error('factura requerida');
-  if (!factura.claveNumerica || factura.claveNumerica.length !== 50) {
-    throw new Error('claveNumerica invalida (debe ser 50 digitos)');
-  }
-  if (!factura.consecutivo || factura.consecutivo.length !== 20) {
-    throw new Error('consecutivo invalido (debe ser 20 digitos)');
-  }
+function buildEmisor(factura) {
+  const e = factura.emisor || {};
+  const ubicacion = e.provincia
+    ? `
+    <Ubicacion>
+      <Provincia>${escapeXml(e.provincia)}</Provincia>
+      <Canton>${escapeXml(e.canton || '')}</Canton>
+      <Distrito>${escapeXml(e.distrito || '')}</Distrito>
+      <Barrio>${escapeXml(e.barrio || '01')}</Barrio>
+      <OtrasSenas>${escapeXml(e.ubicacion || e.otrasSenas || '')}</OtrasSenas>
+    </Ubicacion>`
+    : '';
+  return `  <Emisor>
+    <Nombre>${escapeXml(e.nombre)}</Nombre>
+    <Identificacion>
+      <Tipo>${tipoIdentificacionXml(e.cedula?.tipo || '01')}</Tipo>
+      <Numero>${escapeXml(e.cedula?.numero)}</Numero>
+    </Identificacion>
+    <NombreComercial>${escapeXml(e.nombreComercial || e.nombre)}</NombreComercial>${ubicacion}
+    <Telefono>
+      <CodigoPais>506</CodigoPais>
+      <NumTelefono>${escapeXml((e.telefono || '').replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
+    </Telefono>
+    <CorreoElectronico>${escapeXml(e.correo || 'noreply@hacienda.go.cr')}</CorreoElectronico>
+  </Emisor>`;
+}
 
-  const tipoDoc = factura.tipoDocumento || 'FE';
+/**
+ * Nodo <Receptor> compartido por FE/NC/ND (no TE, no FEC, no REP).
+ */
+function buildReceptor(factura) {
+  const r = factura.receptor;
+  if (!r || !r.nombre) return '';
+  const identificacion = r.cedula?.numero
+    ? `
+    <Identificacion>
+      <Tipo>${tipoIdentificacionXml(r.cedula?.tipo || '02')}</Tipo>
+      <Numero>${escapeXml(r.cedula?.numero)}</Numero>
+    </Identificacion>`
+    : '';
+  const ubicacion = r.provincia
+    ? `
+    <Ubicacion>
+      <Provincia>${escapeXml(r.provincia)}</Provincia>
+      <Canton>${escapeXml(r.canton || '')}</Canton>
+      <Distrito>${escapeXml(r.distrito || '')}</Distrito>
+      <Barrio>${escapeXml(r.barrio || '01')}</Barrio>
+      <OtrasSenas>${escapeXml(r.ubicacion || r.otrasSenas || '')}</OtrasSenas>
+    </Ubicacion>`
+    : '';
+  const telefono = r.telefono
+    ? `
+    <Telefono>
+      <CodigoPais>506</CodigoPais>
+      <NumTelefono>${escapeXml(String(r.telefono).replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
+    </Telefono>`
+    : '';
+  const correo = r.correo
+    ? `
+    <CorreoElectronico>${escapeXml(r.correo)}</CorreoElectronico>`
+    : '';
+  return `  <Receptor>
+    <Nombre>${escapeXml(r.nombre)}</Nombre>${identificacion}${ubicacion}${telefono}${correo}
+  </Receptor>`;
+}
+
+/**
+ * Arma el nodo raiz con namespace y schemaLocation correctos por tipo.
+ */
+function buildAperturaRaiz(meta) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<${meta.raiz}
+  xmlns="${meta.namespace}"
+  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
+  xsi:schemaLocation="${meta.namespace} https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/${meta.xsd}">`;
+}
+
+/**
+ * Construye comprobantes que heredan la estructura de FE
+ * (FE, TE, NC, ND, FEC).
+ */
+function buildComprobante(factura, meta) {
   const fechaStr = fmtFecha(factura.fechaEmision || new Date());
   const ambienteCod = factura.ambiente === 'produccion' ? '1' : '2';
 
@@ -159,66 +298,35 @@ function buildXml(factura) {
     .map((l, i) => buildLinea(l, i))
     .join('\n');
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<FacturaElectronica
-  xmlns="https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica"
-  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
-  xsi:schemaLocation="https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica_V4.4.xsd">
+  const tieneReceptor = !['TE', 'FEC'].includes(factura.tipoDocumento);
+  const receptorXml = tieneReceptor ? `${buildReceptor(factura)}\n` : '';
+  const referenciaXml = meta.requiereReferencia || factura.documentoReferencia
+    ? `${buildInfoReferencia(factura.documentoReferencia)}\n`
+    : '';
+
+  // NC -> MontoTotalImpuestoAcreditar, ND -> MontoTotalImpuestoDebitar
+  let impuestoExtra = '';
+  if (meta.impuestoExtra === 'acreditar') {
+    impuestoExtra = `  <MontoTotalImpuestoAcreditar>${Number(factura.resumenFactura?.totalImpuesto || 0).toFixed(2)}</MontoTotalImpuestoAcreditar>\n`;
+  } else if (meta.impuestoExtra === 'debitar') {
+    impuestoExtra = `  <MontoTotalImpuestoDebitar>${Number(factura.resumenFactura?.totalImpuesto || 0).toFixed(2)}</MontoTotalImpuestoDebitar>\n`;
+  }
+
+  return `${buildAperturaRaiz(meta)}
   <Clave>${factura.claveNumerica}</Clave>
   <CodigoActividad>${escapeXml(factura.codigoActividadEmisor || '000000')}</CodigoActividad>
   <NumeroConsecutivo>${factura.consecutivo}</NumeroConsecutivo>
   <FechaEmision>${fechaStr}</FechaEmision>
   <IndicadorAutomatico>${escapeXml(factura.indicadorAutomatico || '0')}</IndicadorAutomatico>
-  <Emisor>
-    <Nombre>${escapeXml(factura.emisor.nombre)}</Nombre>
-    <Identificacion>
-      <Tipo>${tipoIdentificacionXml(factura.emisor.cedula?.tipo || '01')}</Tipo>
-      <Numero>${escapeXml(factura.emisor.cedula?.numero)}</Numero>
-    </Identificacion>
-    <NombreComercial>${escapeXml(factura.emisor.nombreComercial || factura.emisor.nombre)}</NombreComercial>${factura.emisor.provincia ? `
-    <Ubicacion>
-      <Provincia>${escapeXml(factura.emisor.provincia)}</Provincia>
-      <Canton>${escapeXml(factura.emisor.canton || '')}</Canton>
-      <Distrito>${escapeXml(factura.emisor.distrito || '')}</Distrito>
-      <Barrio>${escapeXml(factura.emisor.barrio || '01')}</Barrio>
-      <OtrasSenas>${escapeXml(factura.emisor.ubicacion || factura.emisor.otrasSenas || '')}</OtrasSenas>
-    </Ubicacion>` : ''}
-    <Telefono>
-      <CodigoPais>506</CodigoPais>
-      <NumTelefono>${escapeXml((factura.emisor.telefono || '').replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
-    </Telefono>
-    <CorreoElectronico>${escapeXml(factura.emisor.correo || 'noreply@hacienda.go.cr')}</CorreoElectronico>
-  </Emisor>${factura.receptor && tipoDoc !== 'TE' ? `
-  <Receptor>
-    <Nombre>${escapeXml(factura.receptor.nombre)}</Nombre>${factura.receptor.cedula?.numero ? `
-    <Identificacion>
-      <Tipo>${tipoIdentificacionXml(factura.receptor.cedula?.tipo || '02')}</Tipo>
-      <Numero>${escapeXml(factura.receptor.cedula?.numero)}</Numero>
-    </Identificacion>` : ''}${factura.receptor.provincia ? `
-    <Ubicacion>
-      <Provincia>${escapeXml(factura.receptor.provincia)}</Provincia>
-      <Canton>${escapeXml(factura.receptor.canton || '')}</Canton>
-      <Distrito>${escapeXml(factura.receptor.distrito || '')}</Distrito>
-      <Barrio>${escapeXml(factura.receptor.barrio || '01')}</Barrio>
-      <OtrasSenas>${escapeXml(factura.receptor.ubicacion || factura.receptor.otrasSenas || '')}</OtrasSenas>
-    </Ubicacion>` : ''}${factura.receptor.telefono ? `
-    <Telefono>
-      <CodigoPais>506</CodigoPais>
-      <NumTelefono>${escapeXml(String(factura.receptor.telefono).replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
-    </Telefono>` : ''}${factura.receptor.correo ? `
-    <CorreoElectronico>${escapeXml(factura.receptor.correo)}</CorreoElectronico>` : ''}
-  </Receptor>` : ''}
-  <CondicionVenta>${factura.condicionVenta || '01'}</CondicionVenta>
+${buildEmisor(factura)}
+${receptorXml}  <CondicionVenta>${factura.condicionVenta || '01'}</CondicionVenta>
   <PlazoCredito>${escapeXml(factura.plazoCredito || '0')}</PlazoCredito>
   <MedioPago>${(factura.medioPago || ['01']).map((m) => escapeXml(m)).slice(0, 4).join('</MedioPago><MedioPago>')}</MedioPago>
-  ${buildInfoReferencia(factura.documentoReferencia)}
-  <DetalleServicio>
+${referenciaXml}  <DetalleServicio>
 ${lineasXml}
   </DetalleServicio>
   ${buildResumen(factura.resumenFactura)}
-  <Normativa>
+${impuestoExtra}  <Normativa>
     <NumeroResolucion>DGT-R-48-2016</NumeroResolucion>
     <FechaResolucion>07-10-2016</FechaResolucion>
   </Normativa>
@@ -226,13 +334,81 @@ ${lineasXml}
     <OtroTexto>${escapeXml(factura.referencia || '')}</OtroTexto>
     <OtroContenido>${ambienteCod}</OtroContenido>
   </Otros>
-</FacturaElectronica>`;
+</${meta.raiz}>`;
+}
 
-  return xml;
+/**
+ * Construye el MensajeReceptor (REP / codigo 06).
+ *
+ * Estructura v4.4 distinta a la de los comprobantes: no lleva LineaDetalle
+ * ni Receptor; en su lugar referencia la FE original (Clave + datos del
+ * emisor) y un DetalleMensaje con el monto del abono.
+ *
+ * La app lo usa para registrar PAGOS/ABONOS de facturas a credito ya
+ * aceptadas (ver controllers/repController.js).
+ *
+ * ⚠️ Estructura a validar contra mensajeReceptor_V4.4.xsd en sandbox.
+ */
+function buildMensajeReceptor(factura, meta) {
+  const ref = factura.documentoReferencia || {};
+  // El <Clave> del REP es la clave de la FE ORIGINAL referenciada.
+  const claveOriginal = ref.numeroReferencia || factura.claveNumerica;
+  const cedulaEmisor = padCedula(factura.emisor?.cedula?.numero);
+  const fechaDoc = ref.fechaEmisionReferencia || factura.fechaEmision || new Date();
+  // 1 = aceptación total, 2 = aceptación parcial, 3 = rechazo.
+  // Para "mensaje de pago" (caso de uso de la app) se usa 1.
+  const mensaje = factura.mensajeReceptor || '1';
+  const montoTotalImpuesto = Number(factura.resumenFactura?.totalImpuesto || 0).toFixed(2);
+  const totalFactura = Number(factura.resumenFactura?.totalComprobante || 0).toFixed(2);
+
+  return `${buildAperturaRaiz(meta)}
+  <Clave>${claveOriginal}</Clave>
+  <NumeroCedulaEmisor>${cedulaEmisor}</NumeroCedulaEmisor>
+  <FechaEmisionDoc>${fmtFecha(fechaDoc)}</FechaEmisionDoc>
+  <Mensaje>${escapeXml(mensaje)}</Mensaje>
+  <DetalleMensaje>
+    <MontoTotalImpuesto>${montoTotalImpuesto}</MontoTotalImpuesto>
+    <TotalFactura>${totalFactura}</TotalFactura>
+  </DetalleMensaje>
+  <CodigoActividad>${escapeXml(factura.codigoActividadEmisor || '000000')}</CodigoActividad>
+  <CondicionImpuesto>01</CondicionImpuesto>
+  <CondicionVenta>${factura.condicionVenta || '02'}</CondicionVenta>
+</${meta.raiz}>`;
+}
+
+/**
+ * Construye el XML v4.4 (sin firmar) despachando al builder correcto
+ * segun factura.tipoDocumento.
+ * @returns {string} XML string
+ */
+function buildXml(factura) {
+  if (!factura) throw new Error('factura requerida');
+
+  const tipoDoc = (factura.tipoDocumento || 'FE').toUpperCase();
+  const meta = TIPO_DOC[tipoDoc];
+  if (!meta) throw new Error(`Tipo de documento no soportado: ${factura.tipoDocumento}`);
+
+  if (meta.raiz === 'MensajeReceptor') {
+    return buildMensajeReceptor(factura, meta);
+  }
+
+  // Los comprobantes (FE/TE/NC/ND/FEC) requieren clave de 50 y consecutivo de 20
+  if (!factura.claveNumerica || factura.claveNumerica.length !== 50) {
+    throw new Error('claveNumerica invalida (debe ser 50 digitos)');
+  }
+  if (!factura.consecutivo || factura.consecutivo.length !== 20) {
+    throw new Error('consecutivo invalido (debe ser 20 digitos)');
+  }
+  if (!factura.emisor?.cedula?.numero) {
+    throw new Error('emisor.cedula.numero es obligatorio');
+  }
+
+  return buildComprobante(factura, meta);
 }
 
 module.exports = {
   buildXml,
+  TIPO_DOC,
   TIPO_DOC_CODIGO,
   fmtFecha,
   escapeXml,
