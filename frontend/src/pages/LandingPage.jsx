@@ -1,9 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Tractor, Mail, Sparkles, FileCheck, LayoutDashboard, Warehouse,
+  Tractor, Mail, Sparkles, LayoutDashboard, Warehouse,
   Receipt, TrendingUp, Calendar, Calculator, ArrowRight, Check,
-  ChevronLeft, ChevronRight, Users, HardDrive, Eye
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { PLANES } from '../data/planes';
 import PlanCard from '../components/billing/PlanCard';
@@ -95,6 +95,11 @@ export default function LandingPage() {
   const [pricingRef, pricingVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
   const [footerRef, footerVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
 
+  const carouselRef = useRef(null);
+  const touchStartRef = useRef({ x: 0, y: 0 });
+  const touchEndRef = useRef({ x: 0, y: 0 });
+  const touchMovedRef = useRef(false);
+
   // Carousel for features
   const [slides, setSlides] = useState(() => {
     const perView = getItemsPerView();
@@ -105,13 +110,13 @@ export default function LandingPage() {
     return chunks;
   });
 
-  const { currentIndex, goTo, next, prev } = useCarousel({
+  const { currentIndex, goTo, next, prev, pause, resume } = useCarousel({
     items: slides,
     interval: 5000,
     autoPlay: true,
   });
 
-  // Update slides on resize
+  // Update slides on resize - preserve valid currentIndex
   useEffect(() => {
     const handleResize = () => {
       const perView = getItemsPerView();
@@ -124,6 +129,65 @@ export default function LandingPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!carouselRef.current) return;
+      if (!carouselRef.current.contains(document.activeElement) && e.target !== carouselRef.current) {
+        const carouselEl = document.querySelector('.landing-carousel');
+        if (!carouselEl || !carouselEl.contains(document.activeElement)) return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        next();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [next, prev]);
+
+  // Touch/swipe handlers
+  const handleTouchStart = useCallback((e) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchEndRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchMovedRef.current = false;
+    pause();
+  }, [pause]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (!touchStartRef.current.x) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    touchEndRef.current = { x: currentX, y: currentY };
+    const deltaX = currentX - touchStartRef.current.x;
+    const deltaY = currentY - touchStartRef.current.y;
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+      touchMovedRef.current = true;
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStartRef.current.x || !touchMovedRef.current) {
+      resume();
+      return;
+    }
+    const deltaX = touchEndRef.current.x - touchStartRef.current.x;
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX > 0) next();
+      else prev();
+    }
+    resume();
+  }, [next, prev, resume]);
+
+  const handleMouseEnter = useCallback(() => pause(), [pause]);
+  const handleMouseLeave = useCallback(() => resume(), [resume]);
+  const handleFocusIn = useCallback(() => pause(), [pause]);
+  const handleFocusOut = useCallback(() => resume(), [resume]);
 
   return (
     <div className="landing">
@@ -177,10 +241,29 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div className="landing-carousel">
-          <div className="landing-carousel-track" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
+        <div
+          ref={carouselRef}
+          className="landing-carousel"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onFocusIn={handleFocusIn}
+          onFocusOut={handleFocusOut}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          role="region"
+          aria-label="Carrusel de características"
+          aria-roledescription="carousel"
+        >
+          <div
+            className="landing-carousel-track"
+            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`Slide ${currentIndex + 1} de ${slides.length}`}
+          >
             {slides.map((slide, slideIndex) => (
-              <div key={slideIndex} className="landing-carousel-slide">
+              <div key={slideIndex} className="landing-carousel-slide" role="group" aria-roledescription="slide" aria-label={`Slide ${slideIndex + 1}`}>
                 <div className="landing-caracteristicas-grid">
                   {slide.map(({ icono: Icono, titulo, descripcion }) => (
                     <div key={titulo} className="landing-caracteristica glass-card animate-fade-in" style={{ animationDelay: `${slideIndex * 150}ms` }}>
@@ -196,12 +279,16 @@ export default function LandingPage() {
             ))}
           </div>
 
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            Mostrando slide {currentIndex + 1} de {slides.length}
+          </div>
+
           {slides.length > 1 && (
             <>
-              <button className="landing-carousel-btn landing-carousel-btn--prev" onClick={prev} aria-label="Anterior">
+              <button className="landing-carousel-btn landing-carousel-btn--prev" onClick={prev} aria-label="Slide anterior">
                 <ChevronLeft size={22} />
               </button>
-              <button className="landing-carousel-btn landing-carousel-btn--next" onClick={next} aria-label="Siguiente">
+              <button className="landing-carousel-btn landing-carousel-btn--next" onClick={next} aria-label="Slide siguiente">
                 <ChevronRight size={22} />
               </button>
 
@@ -250,7 +337,7 @@ export default function LandingPage() {
           </p>
         </div>
         <div className="landing-planes-grid">
-          {PLANES.map((plan, i) => (
+          {PLANES.map((plan) => (
             <PlanCard
               key={plan.id}
               plan={plan}
