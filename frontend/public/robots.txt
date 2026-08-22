@@ -1,0 +1,24 @@
+# ContadorGanadero — robots.txt
+# https://contadorganadero.com/robots.txt
+
+User-agent: *
+Allow: /
+
+# La zona privada de la aplicación no debe indexarse
+Disallow: /login
+Disallow: /dashboard
+Disallow: /facturas
+Disallow: /gastos
+Disallow: /ingresos
+Disallow: /impuestos
+Disallow: /declaraciones
+Disallow: /inventario
+Disallow: /costos
+Disallow: /facturacion
+Disallow: /hacienda
+Disallow: /d150
+Disallow: /calendario
+Disallow: /planes
+Disallow: /billing
+
+Sitemap: https://contadorganadero.com/sitemap.xml

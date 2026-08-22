@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    // Permite hosts de preview (Arena/e2b) en desarrollo. No afecta el build de producción.
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

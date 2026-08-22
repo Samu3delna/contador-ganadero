@@ -4,6 +4,23 @@ import { Toaster } from 'react-hot-toast'
 import './index.css'
 import App from './App.jsx'
 
+// ===== Google Analytics 4 (GA4) =====
+// Se activa solo si VITE_GA4_ID está definido (ej. en .env: VITE_GA4_ID=G-XXXXXXXXXX).
+// Si no existe, no se inyecta nada y no rompe en desarrollo.
+const GA4_ID = import.meta.env.VITE_GA4_ID;
+if (GA4_ID) {
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`;
+  document.head.appendChild(script);
+
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { window.dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', GA4_ID);
+  window.gtag = gtag;
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
