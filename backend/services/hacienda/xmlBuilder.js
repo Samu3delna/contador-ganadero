@@ -16,6 +16,39 @@ const TIPO_DOC_CODIGO = {
   REP: '06',
 };
 
+const TIPO_DOC_CONFIG = {
+  FE: {
+    rootElement: 'FacturaElectronica',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica',
+    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica_V4.4.xsd',
+  },
+  TE: {
+    rootElement: 'TiqueteElectronico',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/tiqueteElectronico',
+    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/tiqueteElectronico_V4.4.xsd',
+  },
+  NC: {
+    rootElement: 'NotaCreditoElectronica',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaCreditoElectronica',
+    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaCreditoElectronica_V4.4.xsd',
+  },
+  ND: {
+    rootElement: 'NotaDebitoElectronica',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaDebitoElectronica',
+    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaDebitoElectronica_V4.4.xsd',
+  },
+  FEC: {
+    rootElement: 'FacturaElectronicaCompra',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronicaCompra',
+    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronicaCompra_V4.4.xsd',
+  },
+  REP: {
+    rootElement: 'ReciboElectronicoPago',
+    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/reciboElectronicoPago',
+    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/reciboElectronicoPago_V4.4.xsd',
+  },
+};
+
 // Entidades XML ########################################################
 const AMP = String.fromCharCode(38) + 'amp;';      // &
 const LT = String.fromCharCode(38) + 'lt;';        // <
@@ -152,6 +185,7 @@ function buildXml(factura) {
   }
 
   const tipoDoc = factura.tipoDocumento || 'FE';
+  const config = TIPO_DOC_CONFIG[tipoDoc] || TIPO_DOC_CONFIG.FE;
   const fechaStr = fmtFecha(factura.fechaEmision || new Date());
   const ambienteCod = factura.ambiente === 'produccion' ? '1' : '2';
 
@@ -160,12 +194,12 @@ function buildXml(factura) {
     .join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<FacturaElectronica
-  xmlns="https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica"
+<${config.rootElement}
+  xmlns="${config.namespace}"
   xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
-  xsi:schemaLocation="https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica_V4.4.xsd">
+  xsi:schemaLocation="${config.namespace} ${config.schemaLocation}">
   <Clave>${factura.claveNumerica}</Clave>
   <CodigoActividad>${escapeXml(factura.codigoActividadEmisor || '000000')}</CodigoActividad>
   <NumeroConsecutivo>${factura.consecutivo}</NumeroConsecutivo>
@@ -226,7 +260,7 @@ ${lineasXml}
     <OtroTexto>${escapeXml(factura.referencia || '')}</OtroTexto>
     <OtroContenido>${ambienteCod}</OtroContenido>
   </Otros>
-</FacturaElectronica>`;
+</${config.rootElement}>`;
 
   return xml;
 }
@@ -234,6 +268,7 @@ ${lineasXml}
 module.exports = {
   buildXml,
   TIPO_DOC_CODIGO,
+  TIPO_DOC_CONFIG,
   fmtFecha,
   escapeXml,
 };

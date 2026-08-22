@@ -125,8 +125,11 @@ function firmarXml(xmlString, keyPair) {
  */
 function firmarDocumento(xmlString, { p12Path, pin, ambiente } = {}) {
   if (ambiente === 'local') {
-    //Firma mock: envolvemos con un Signature placeholder para que el worker pueda continuar
-    return xmlString.replace('</FacturaElectronica>', `
+    // Firma mock: detectamos el nodo raiz dinamicamente para soportar todos los tipos
+    const rootMatch = xmlString.match(/^<\?xml[^?]*\?>\s*<(\w+)/);
+    const rootElement = rootMatch ? rootMatch[1] : 'FacturaElectronica';
+    const closingTag = `</${rootElement}>`;
+    return xmlString.replace(closingTag, `
   <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="MockSig">
     <ds:SignedInfo>
       <ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
@@ -142,7 +145,7 @@ function firmarDocumento(xmlString, { p12Path, pin, ambiente } = {}) {
     <ds:SignatureValue>MOCK</ds:SignatureValue>
     <ds:KeyInfo><ds:X509Data><ds:X509Certificate>MOCK</ds:X509Certificate></ds:X509Data></ds:KeyInfo>
   </ds:Signature>
-</FacturaElectronica>`);
+${closingTag}`);
   }
   const keyPair = cargarLlave(p12Path, pin);
   return firmarXml(xmlString, keyPair);
