@@ -186,22 +186,68 @@ const consultarEstado = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// ============ CANCELAR (genera NC) — placeholder ============
+// ============ CANCELAR (genera NC) ============
 const cancelarDocumento = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (factura.estado !== 'aceptada') {
-      res.status(400); throw new Error('Solo se pueden cancelar facturas aceptadas; debe emitir NC');
+      res.status(400); throw new Error('Solo se pueden anular facturas aceptadas mediante Nota de Crédito');
     }
-    res.status(202).json({
-      mensaje: 'Para anular una factura aceptada debe emitir una Nota de Credito (NC) ligada. Use /api/hacienda/emision con tipoDocumento=NC y documentoReferencia.',
-      referencia: {
-        tipoDocReferencia: '01',
+    if (factura.anuladaPor) {
+      res.status(400); throw new Error('La factura ya tiene una Nota de Crédito asociada');
+    }
+
+    const motivo = req.body?.motivo || req.body?.razon || 'Anulación de factura aceptada';
+    const fechaEmision = new Date();
+    const cuatrimestre = obtenerCuatrimestre(fechaEmision);
+    const consecutivoTemporal = `${'001'}${'00001'}${hacienda.clave50.TIPO_DOC_CODIGO.NC}${String(Date.now()).slice(-10)}`;
+
+    const nc = await FacturaEmision.create(req.aplicarTenant({
+      tipoDocumento: 'NC',
+      ambiente: process.env.HACIENDA_AMBIENTE || 'local',
+      consecutivo: consecutivoTemporal,
+      emisor: factura.emisor,
+      receptor: factura.receptor,
+      lineaDetalle: factura.lineaDetalle.map((linea) => {
+        const obj = linea.toObject ? linea.toObject() : linea;
+        delete obj._id;
+        return obj;
+      }),
+      tipoProducto: factura.tipoProducto,
+      condicionVenta: factura.condicionVenta || '01',
+      medioPago: factura.medioPago?.length ? factura.medioPago : ['04'],
+      plazoCredito: factura.plazoCredito,
+      referencia: `Anula factura ${factura.consecutivo}`,
+      documentoReferencia: {
+        tipoDocReferencia: hacienda.clave50.TIPO_DOC_CODIGO[factura.tipoDocumento] || '01',
         numeroReferencia: factura.claveNumerica,
         fechaEmisionReferencia: factura.fechaEmision,
         codigoReferencia: '01',
+        razonReferencia: motivo,
       },
+      esFacturaREA: factura.esFacturaREA,
+      fechaEmision,
+      cuatrimestre,
+      periodoFiscal: fechaEmision.getFullYear(),
+      estado: 'borrador',
+      usuario: req.usuario._id,
+      anulaA: factura._id,
+      motivoAnulacion: motivo,
+    }));
+
+    await haciendaWorker.prepararYFirmar(nc._id);
+    factura.anuladaPor = nc._id;
+    await factura.save();
+
+    // Encola envío inmediato sin bloquear la respuesta.
+    haciendaWorker.enviarPendientes().catch((e) => console.error('enviarPendientes NC:', e.message));
+
+    const ncFirmada = await FacturaEmision.findById(nc._id).select('-xmlFirmado -xmlRespuestaHacienda');
+    res.status(201).json({
+      mensaje: 'Nota de Crédito generada y firmada para anular la factura',
+      facturaOriginal: factura._id,
+      notaCredito: ncFirmada,
     });
   } catch (error) { next(error); }
 };

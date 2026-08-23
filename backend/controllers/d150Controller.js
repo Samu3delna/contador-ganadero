@@ -34,6 +34,7 @@ const conciliacion = async (req, res, next) => {
     if (p.mes < 1 || p.mes > 12) { res.status(400); throw new Error('mes invalido (1-12)'); }
     const resultado = await d150Service.generarConciliacion({
       usuarioId: req.usuario._id,
+      tenantId: req.tenant?._id,
       ...p,
     });
     res.json(resultado);
@@ -46,6 +47,7 @@ const reportePDF = async (req, res, next) => {
     const p = parseParametros(req);
     const resultado = await d150Service.generarConciliacion({
       usuarioId: req.usuario._id,
+      tenantId: req.tenant?._id,
       ...p,
     });
 
@@ -152,6 +154,7 @@ const reporteExcel = async (req, res, next) => {
     const p = parseParametros(req);
     const resultado = await d150Service.generarConciliacion({
       usuarioId: req.usuario._id,
+      tenantId: req.tenant?._id,
       ...p,
     });
 

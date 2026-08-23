@@ -301,6 +301,14 @@ ${Object.entries(contexto.resumen.gastosPorCategoria).map(([cat, val]) => `- ${c
 _Intenta tu pregunta de nuevo cuando el servicio se restablezca._`;
 }
 
+async function registrarConsumoChat(req, tokens) {
+  const tokensConsumidos = Math.max(Number(tokens) || 0, 1);
+  if (!req.tenant) return;
+  req.tenant.consumoActual = req.tenant.consumoActual || {};
+  req.tenant.consumoActual.tokensChatMes = (req.tenant.consumoActual.tokensChatMes || 0) + tokensConsumidos;
+  await req.tenant.save();
+}
+
 // ============ ENDPOINT PRINCIPAL: CHAT ============
 
 async function chat(req, res) {
@@ -368,6 +376,8 @@ async function chat(req, res) {
 
     const contenido = respuesta.choices[0]?.message?.content || 'No se pudo generar respuesta.';
     const tokensUsados = respuesta.usage?.total_tokens || 0;
+
+    await registrarConsumoChat(req, tokensUsados || contenido.length / 4);
 
     const duracion = Date.now() - startTime;
     console.log(`💬 [${requestId}] Chat: usuario=${usuarioId} tokens=${tokensUsados} tiempo=${duracion}ms modelo=${modeloIA}`);
@@ -492,6 +502,8 @@ async function chatStream(req, res) {
         res.write(`data: ${JSON.stringify({ contenido: delta })}\n\n`);
       }
     }
+
+    await registrarConsumoChat(req, tokensOut);
 
     const duracion = Date.now() - startTime;
     console.log(`💬 [${requestId}] Stream: usuario=${usuarioId} chunks=${tokensOut} tiempo=${duracion}ms`);

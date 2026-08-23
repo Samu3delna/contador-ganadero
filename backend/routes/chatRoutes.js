@@ -3,6 +3,7 @@ const rateLimit = require('express-rate-limit');
 const { protegerRuta } = require('../middleware/authMiddleware');
 const { extraerTenant } = require('../middleware/tenantGuard');
 const { chat, chatStream, enviarFeedback } = require('../controllers/chatController');
+const { requiereTenantActivo, requiereCreditoChat } = require('../middleware/quotaGuard');
 
 const router = express.Router();
 
@@ -44,8 +45,8 @@ const feedbackLimiter = rateLimit({
 });
 
 // Rutas
-router.post('/', protegerRuta, extraerTenant, chatLimiter, chat);
-router.post('/stream', protegerRuta, streamLimiter, chatStream);
-router.post('/feedback', protegerRuta, extraerTenant, feedbackLimiter, enviarFeedback);
+router.post('/', protegerRuta, extraerTenant, requiereTenantActivo, requiereCreditoChat, chatLimiter, chat);
+router.post('/stream', protegerRuta, extraerTenant, requiereTenantActivo, requiereCreditoChat, streamLimiter, chatStream);
+router.post('/feedback', protegerRuta, extraerTenant, requiereTenantActivo, feedbackLimiter, enviarFeedback);
 
 module.exports = router;

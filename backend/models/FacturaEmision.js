@@ -107,7 +107,13 @@ const facturaEmisionSchema = new mongoose.Schema({
     nombre: { type: String, required: true },
     cedula: {
       tipo: { type: String, default: '02' }, // 02 = Jurídica
-      numero: { type: String, required: true },
+      numero: { type: String },
+    },
+    noInscrito: { type: Boolean, default: false },
+    identificacionExtranjera: {
+      tipo: { type: String, trim: true },
+      numero: { type: String, trim: true },
+      pais: { type: String, trim: true },
     },
     correo: { type: String, trim: true },
     telefono: { type: String, trim: true },
@@ -184,6 +190,19 @@ const facturaEmisionSchema = new mongoose.Schema({
     location: { type: String, trim: true },
     //Indica si el XML firmado fue validado correctamente
     indicaciones: String,
+  },
+  intentosEnvio: { type: Number, default: 0 },
+  fechaProximoIntento: { type: Date },
+  intentosConsulta: { type: Number, default: 0 },
+  fechaLimiteProcesando: { type: Date },
+  anuladaPor: { type: mongoose.Schema.Types.ObjectId, ref: 'FacturaEmision' },
+  anulaA: { type: mongoose.Schema.Types.ObjectId, ref: 'FacturaEmision' },
+  motivoAnulacion: { type: String, trim: true },
+  noInscrito: { type: Boolean, default: false },
+  identificacionExtranjera: {
+    tipo: { type: String, trim: true },
+    numero: { type: String, trim: true },
+    pais: { type: String, trim: true },
   },
   // === XML firmado (v4.4) ===
   xmlFirmado: { type: String, select: false }, // XML completo firmado (XAdES-EPES)

@@ -20,6 +20,8 @@ const { getToken } = hacienda.auth;
 
 const INTERVALO_TICK_MS = 15000;
 const MAX_DOC_POR_TICK = 5;
+const MAX_REINTENTOS_ENVIO = 6;
+const TIMEOUT_PROCESANDO_MS = 24 * 60 * 60 * 1000;
 
 let _running = false;
 let _timer = null;
@@ -101,7 +103,14 @@ async function enviarPendientes() {
   try {
     const cfg = getConfig();
     const pendientes = await FacturaEmision
-      .find({ estado: 'firmada' })
+      .find({
+        estado: 'firmada',
+        $or: [
+          { fechaProximoIntento: { $exists: false } },
+          { fechaProximoIntento: null },
+          { fechaProximoIntento: { $lte: new Date() } },
+        ],
+      })
       .sort({ createdAt: 1 })
       .limit(MAX_DOC_POR_TICK);
 
@@ -138,6 +147,8 @@ async function enviarPendientes() {
         if (resp.httpStatus === 201) {
           factura.estado = 'procesando';
           factura.fechaEnvioHacienda = new Date();
+          factura.fechaLimiteProcesando = new Date(Date.now() + TIMEOUT_PROCESANDO_MS);
+          factura.fechaProximoIntento = undefined;
           factura.respuestaHacienda = {
             clave: factura.claveNumerica,
             estado: 'procesando',
@@ -148,8 +159,29 @@ async function enviarPendientes() {
           await factura.save();
           console.log(`[hacienda worker] enviado ${factura.claveNumerica} -> Location: ${resp.location}`);
         } else if (resp.retry) {
-          //Reintentar en siguiente tick
-          console.warn(`[hacienda worker] retry para ${factura.claveNumerica}: http=${resp.httpStatus}`);
+          factura.intentosEnvio = (factura.intentosEnvio || 0) + 1;
+          if (factura.intentosEnvio >= MAX_REINTENTOS_ENVIO) {
+            factura.estado = 'rechazada';
+            factura.fechaRespuestaHacienda = new Date();
+            factura.respuestaHacienda = {
+              clave: factura.claveNumerica,
+              estado: 'rechazado',
+              detalle: `Reintentos agotados (último HTTP ${resp.httpStatus})`,
+              fecha: new Date(),
+            };
+          } else {
+            const backoffMs = Math.pow(2, factura.intentosEnvio) * 1000;
+            factura.fechaProximoIntento = new Date(Date.now() + backoffMs);
+            factura.respuestaHacienda = {
+              ...(factura.respuestaHacienda?.toObject?.() || factura.respuestaHacienda || {}),
+              clave: factura.claveNumerica,
+              estado: 'retry',
+              detalle: `Reintento ${factura.intentosEnvio}/${MAX_REINTENTOS_ENVIO} en ${Math.round(backoffMs / 1000)}s`,
+              fecha: new Date(),
+            };
+          }
+          await factura.save();
+          console.warn(`[hacienda worker] retry para ${factura.claveNumerica}: http=${resp.httpStatus} intento=${factura.intentosEnvio}`);
         } else {
           factura.estado = 'rechazada';
           factura.fechaRespuestaHacienda = new Date();
@@ -163,6 +195,20 @@ async function enviarPendientes() {
           console.warn(`[hacienda worker] rechazado ${factura.claveNumerica}:`, resp.error);
         }
       } catch (err) {
+        factura.intentosEnvio = (factura.intentosEnvio || 0) + 1;
+        if (factura.intentosEnvio >= MAX_REINTENTOS_ENVIO) {
+          factura.estado = 'rechazada';
+          factura.fechaRespuestaHacienda = new Date();
+          factura.respuestaHacienda = {
+            clave: factura.claveNumerica,
+            estado: 'rechazado',
+            detalle: `Reintentos agotados: ${err.message}`,
+            fecha: new Date(),
+          };
+        } else {
+          factura.fechaProximoIntento = new Date(Date.now() + Math.pow(2, factura.intentosEnvio) * 1000);
+        }
+        await factura.save();
         console.error(`[hacienda worker] error envio ${factura.claveNumerica}:`, err.message);
       }
     }
@@ -183,6 +229,22 @@ async function consultarProcesando() {
 
   for (const factura of enProceso) {
     try {
+      if (factura.fechaLimiteProcesando && factura.fechaLimiteProcesando.getTime() < Date.now()) {
+        factura.estado = 'rechazada';
+        factura.fechaRespuestaHacienda = new Date();
+        factura.respuestaHacienda = {
+          ...(factura.respuestaHacienda?.toObject?.() || factura.respuestaHacienda || {}),
+          clave: factura.claveNumerica,
+          estado: 'rechazado',
+          detalle: 'Timeout — Hacienda no respondió en 24 horas',
+          fecha: new Date(),
+        };
+        await factura.save();
+        console.warn(`[hacienda worker] timeout procesando ${factura.claveNumerica}`);
+        continue;
+      }
+
+      factura.intentosConsulta = (factura.intentosConsulta || 0) + 1;
       const resultado = await pollingHastaTerminal({
         ambiente: cfg.ambiente,
         clave: factura.claveNumerica,
@@ -204,6 +266,8 @@ async function consultarProcesando() {
         };
         await factura.save();
         console.log(`[hacienda worker] ${factura.claveNumerica} -> ${factura.estado}`);
+      } else {
+        await factura.save();
       }
     } catch (err) {
       console.error(`[hacienda worker] error consulta ${factura.claveNumerica}:`, err.message);

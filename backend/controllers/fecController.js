@@ -49,10 +49,14 @@ const crearFec = async (req, res, next) => {
       }
     }
 
-    // Receptor (vendedor) debe estar identificado
-    if (!receptor.cedula?.numero) {
+    // Receptor (vendedor) debe estar identificado o marcado como no inscrito.
+    if (!receptor.noInscrito && !receptor.cedula?.numero) {
       res.status(400);
-      throw new Error('La FEC requiere identificacion del receptor (vendedor)');
+      throw new Error('La FEC requiere identificación del receptor o marcar vendedor no inscrito');
+    }
+    if (receptor.noInscrito && !receptor.identificacionExtranjera?.numero && !receptor.cedula?.numero) {
+      res.status(400);
+      throw new Error('Para vendedor no inscrito indique un número de identificación de respaldo');
     }
 
     const fechaEmision = new Date();
