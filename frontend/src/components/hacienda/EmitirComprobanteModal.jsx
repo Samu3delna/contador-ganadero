@@ -39,7 +39,7 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
   const config = TIPOS_DOC[tipoDoc] || TIPOS_DOC.FE;
 
   const [emisor, setEmisor] = useState({ nombre: '', cedula: { tipo: '01', numero: '' }, telefono: '', correo: '', ubicacion: '' });
-  const [receptor, setReceptor] = useState({ nombre: '', cedula: { tipo: '02', numero: '' }, correo: '', telefono: '' });
+  const [receptor, setReceptor] = useState({ nombre: '', cedula: { tipo: '02', numero: '' }, noInscrito: false, identificacionExtranjera: { tipo: '01', numero: '', pais: 'Costa Rica' }, correo: '', telefono: '' });
   const [lineas, setLineas] = useState([{ codigo: '', descripcion: '', cantidad: 1, unidadMedida: 'kg', precioUnitario: 0, tarifaIdx: 3 }]);
   const [tipoProducto, setTipoProducto] = useState('carne_bovino');
   const [condicionVenta, setCondicionVenta] = useState('01');
@@ -61,7 +61,7 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
       });
     } catch { /* noop */ }
     // Reset
-    setReceptor({ nombre: '', cedula: { tipo: '02', numero: '' }, correo: '', telefono: '' });
+    setReceptor({ nombre: '', cedula: { tipo: '02', numero: '' }, noInscrito: false, identificacionExtranjera: { tipo: '01', numero: '', pais: 'Costa Rica' }, correo: '', telefono: '' });
     setLineas([{ codigo: '', descripcion: '', cantidad: 1, unidadMedida: 'kg', precioUnitario: 0, tarifaIdx: 3 }]);
     setFacturaIdOriginal('');
     setMontoAbono(0);
@@ -93,8 +93,16 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
       toast.error('Datos del emisor incompletos');
       return;
     }
-    if (config.requiereReceptor && (!receptor.nombre || !receptor.cedula?.numero)) {
+    if (config.requiereReceptor && !receptor.nombre) {
       toast.error('Datos del receptor incompletos');
+      return;
+    }
+    if (config.requiereReceptor && !receptor.noInscrito && !receptor.cedula?.numero) {
+      toast.error('Indique la cédula del receptor');
+      return;
+    }
+    if (tipoDoc === 'FEC' && receptor.noInscrito && !receptor.identificacionExtranjera?.numero && !receptor.cedula?.numero) {
+      toast.error('Indique una identificación de respaldo para el vendedor no inscrito');
       return;
     }
     if (tipoDoc !== 'REP') {
@@ -208,26 +216,50 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
             <h4 style={{ gridColumn: 'span 2', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: '12px 0 4px' }}>
               {tipoDoc === 'FEC' ? 'Vendedor (quien vendió al emisor)' : 'Receptor (Comprador)'}
             </h4>
+            {tipoDoc === 'FEC' && (
+              <label className="form-group" style={{ gridColumn: 'span 2', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input type="checkbox" checked={receptor.noInscrito}
+                  onChange={(e) => setReceptor({ ...receptor, noInscrito: e.target.checked })} />
+                Vendedor no inscrito en Hacienda
+              </label>
+            )}
             <div className="form-group">
               <label>Nombre *</label>
               <input className="input" type="text" value={receptor.nombre}
                 onChange={(e) => setReceptor({ ...receptor, nombre: e.target.value })} required />
             </div>
-            <div className="form-group">
-              <label>Tipo Cédula *</label>
-              <select className="input" value={receptor.cedula.tipo}
-                onChange={(e) => setReceptor({ ...receptor, cedula: { ...receptor.cedula, tipo: e.target.value } })}>
-                <option value="01">Física</option>
-                <option value="02">Jurídica</option>
-                <option value="03">DIMEX</option>
-                <option value="04">NITE</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Número Cédula *</label>
-              <input className="input" type="text" value={receptor.cedula.numero}
-                onChange={(e) => setReceptor({ ...receptor, cedula: { ...receptor.cedula, numero: e.target.value } })} required />
-            </div>
+            {!receptor.noInscrito ? (
+              <>
+                <div className="form-group">
+                  <label>Tipo Cédula *</label>
+                  <select className="input" value={receptor.cedula.tipo}
+                    onChange={(e) => setReceptor({ ...receptor, cedula: { ...receptor.cedula, tipo: e.target.value } })}>
+                    <option value="01">Física</option>
+                    <option value="02">Jurídica</option>
+                    <option value="03">DIMEX</option>
+                    <option value="04">NITE</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Número Cédula *</label>
+                  <input className="input" type="text" value={receptor.cedula.numero}
+                    onChange={(e) => setReceptor({ ...receptor, cedula: { ...receptor.cedula, numero: e.target.value } })} required />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="form-group">
+                  <label>Identificación respaldo *</label>
+                  <input className="input" type="text" value={receptor.identificacionExtranjera.numero}
+                    onChange={(e) => setReceptor({ ...receptor, identificacionExtranjera: { ...receptor.identificacionExtranjera, numero: e.target.value } })} required />
+                </div>
+                <div className="form-group">
+                  <label>País de origen</label>
+                  <input className="input" type="text" value={receptor.identificacionExtranjera.pais}
+                    onChange={(e) => setReceptor({ ...receptor, identificacionExtranjera: { ...receptor.identificacionExtranjera, pais: e.target.value } })} />
+                </div>
+              </>
+            )}
             <div className="form-group">
               <label>Correo</label>
               <input className="input" type="email" value={receptor.correo}

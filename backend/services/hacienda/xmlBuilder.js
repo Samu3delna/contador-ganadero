@@ -160,6 +160,41 @@ function buildResumen(resumen) {
     </ResumenFactura>`;
 }
 
+function buildReceptor(receptor) {
+  if (!receptor) return '';
+  const idExtranjera = receptor.identificacionExtranjera || {};
+  const usarExtranjera = receptor.noInscrito || (!receptor.cedula?.numero && (idExtranjera.numero || receptor.cedula?.numero));
+  const identificacion = usarExtranjera
+    ? `
+    <IdentificacionExtranjera>
+      <TipoIdentificacionExtranjera>${escapeXml(idExtranjera.tipo || '01')}</TipoIdentificacionExtranjera>
+      <NumeroIdentificacionExtranjera>${escapeXml(idExtranjera.numero || receptor.cedula?.numero || '')}</NumeroIdentificacionExtranjera>
+      <NombrePaisOrigen>${escapeXml(idExtranjera.pais || 'Costa Rica')}</NombrePaisOrigen>
+    </IdentificacionExtranjera>`
+    : (receptor.cedula?.numero ? `
+    <Identificacion>
+      <Tipo>${tipoIdentificacionXml(receptor.cedula?.tipo || '02')}</Tipo>
+      <Numero>${escapeXml(receptor.cedula?.numero)}</Numero>
+    </Identificacion>` : '');
+
+  return `
+  <Receptor>
+    <Nombre>${escapeXml(receptor.nombre)}</Nombre>${identificacion}${receptor.provincia ? `
+    <Ubicacion>
+      <Provincia>${escapeXml(receptor.provincia)}</Provincia>
+      <Canton>${escapeXml(receptor.canton || '')}</Canton>
+      <Distrito>${escapeXml(receptor.distrito || '')}</Distrito>
+      <Barrio>${escapeXml(receptor.barrio || '01')}</Barrio>
+      <OtrasSenas>${escapeXml(receptor.ubicacion || receptor.otrasSenas || '')}</OtrasSenas>
+    </Ubicacion>` : ''}${receptor.telefono ? `
+    <Telefono>
+      <CodigoPais>506</CodigoPais>
+      <NumTelefono>${escapeXml(String(receptor.telefono).replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
+    </Telefono>` : ''}${receptor.correo ? `
+    <CorreoElectronico>${escapeXml(receptor.correo)}</CorreoElectronico>` : ''}
+  </Receptor>`;
+}
+
 function buildInfoReferencia(ref) {
   if (!ref || !ref.numeroReferencia) return '';
   return `    <InformacionReferencia>
@@ -224,26 +259,7 @@ function buildXml(factura) {
       <NumTelefono>${escapeXml((factura.emisor.telefono || '').replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
     </Telefono>
     <CorreoElectronico>${escapeXml(factura.emisor.correo || 'noreply@hacienda.go.cr')}</CorreoElectronico>
-  </Emisor>${factura.receptor && tipoDoc !== 'TE' ? `
-  <Receptor>
-    <Nombre>${escapeXml(factura.receptor.nombre)}</Nombre>${factura.receptor.cedula?.numero ? `
-    <Identificacion>
-      <Tipo>${tipoIdentificacionXml(factura.receptor.cedula?.tipo || '02')}</Tipo>
-      <Numero>${escapeXml(factura.receptor.cedula?.numero)}</Numero>
-    </Identificacion>` : ''}${factura.receptor.provincia ? `
-    <Ubicacion>
-      <Provincia>${escapeXml(factura.receptor.provincia)}</Provincia>
-      <Canton>${escapeXml(factura.receptor.canton || '')}</Canton>
-      <Distrito>${escapeXml(factura.receptor.distrito || '')}</Distrito>
-      <Barrio>${escapeXml(factura.receptor.barrio || '01')}</Barrio>
-      <OtrasSenas>${escapeXml(factura.receptor.ubicacion || factura.receptor.otrasSenas || '')}</OtrasSenas>
-    </Ubicacion>` : ''}${factura.receptor.telefono ? `
-    <Telefono>
-      <CodigoPais>506</CodigoPais>
-      <NumTelefono>${escapeXml(String(factura.receptor.telefono).replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
-    </Telefono>` : ''}${factura.receptor.correo ? `
-    <CorreoElectronico>${escapeXml(factura.receptor.correo)}</CorreoElectronico>` : ''}
-  </Receptor>` : ''}
+  </Emisor>${factura.receptor && tipoDoc !== 'TE' ? buildReceptor(factura.receptor) : ''}
   <CondicionVenta>${factura.condicionVenta || '01'}</CondicionVenta>
   <PlazoCredito>${escapeXml(factura.plazoCredito || '0')}</PlazoCredito>
   <MedioPago>${(factura.medioPago || ['01']).map((m) => escapeXml(m)).slice(0, 4).join('</MedioPago><MedioPago>')}</MedioPago>

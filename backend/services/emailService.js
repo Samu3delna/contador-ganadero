@@ -18,6 +18,7 @@ const { configurarIMAP } = require('../config/email');
 const { parsearFacturaXML } = require('./xmlParserService');
 const { categorizarFactura } = require('./aiService');
 const Factura = require('../models/Factura');
+const Usuario = require('../models/Usuario');
 
 // Estado del servicio
 let conexionActiva = false;
@@ -38,6 +39,16 @@ let reconnectTimeout = null;
 let reconectando = false;
 let intentosReconexion = 0;
 const MAX_INTENTOS_RECONEXION = 10;
+const tenantCache = new Map();
+
+async function obtenerTenantIdUsuario(usuarioId) {
+  const key = String(usuarioId);
+  if (tenantCache.has(key)) return tenantCache.get(key);
+  const usuario = await Usuario.findById(usuarioId).select('tenantId').lean();
+  const tenantId = usuario?.tenantId || null;
+  tenantCache.set(key, tenantId);
+  return tenantId;
+}
 
 function logErrorDetallado(contexto, error) {
   console.error(`❌ [${contexto}] Error: ${error.message || error}`);
@@ -287,6 +298,7 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false, 
 
   try {
     console.log(`📂 Procesando carpeta: ${carpeta} (buscarTodos: ${buscarTodos}, soloNoLeidos: ${soloNoLeidos})`);
+    const tenantId = await obtenerTenantIdUsuario(usuarioId);
 
     // Buscar mensajes de los últimos 60 días o no leídos
     const hace60Dias = new Date();
@@ -321,7 +333,7 @@ async function procesarEmailsEnCarpeta(carpeta, usuarioId, buscarTodos = false, 
     // Paso 2: Filtrar contra la base de datos para omitir correos ya procesados
     const emailUIDsCandidatos = uidsCandidatos.map(uid => `${carpeta}_${uid}`);
     const facturasExistentes = await Factura.find({
-      usuario: usuarioId,
+      ...(tenantId ? { tenantId } : { usuario: usuarioId }),
       emailUID: { $in: emailUIDsCandidatos }
     }).distinct('emailUID');
 
@@ -445,9 +457,10 @@ async function escucharNuevosEmails(usuarioId) {
  */
 async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
   const uid = `${carpeta}_${String(msg.uid)}`;
+  const tenantId = await obtenerTenantIdUsuario(usuarioId);
 
   // Verificar idempotencia: ¿ya procesamos este email?
-  const yaExiste = await Factura.exists({ emailUID: uid, usuario: usuarioId });
+  const yaExiste = await Factura.exists({ emailUID: uid, ...(tenantId ? { tenantId } : { usuario: usuarioId }) });
   if (yaExiste) {
     return; // Ya fue procesado
   }
@@ -545,6 +558,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
         carpetaOrigen: carpeta,
         archivoXML: rutaXML,
         usuario: usuarioId,
+        ...(tenantId ? { tenantId } : {}),
       });
       continue;
     }
@@ -553,7 +567,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
     if (datosFactura.claveNumerica) {
       const existePorClave = await Factura.exists({
         claveNumerica: datosFactura.claveNumerica,
-        usuario: usuarioId,
+        ...(tenantId ? { tenantId } : { usuario: usuarioId }),
       });
       if (existePorClave) {
         console.log(`  ⏩ Factura ${datosFactura.claveNumerica} ya existe, omitiendo.`);
@@ -600,6 +614,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
       carpetaOrigen: carpeta,
       estado: datosFactura.alertasTarifa?.some(a => a.severidad === 'error') ? 'revision' : 'procesada',
       usuario: usuarioId,
+      ...(tenantId ? { tenantId } : {}),
     });
 
     estadisticas.facturasCreadas++;

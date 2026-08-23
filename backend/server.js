@@ -99,15 +99,24 @@ const app = express();
 app.use(helmet());
 app.use(morgan('dev'));
 
-// CORS — configuración dinámica para evitar bloqueos
+// CORS — configuración dinámica por variables de entorno
+const corsOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:3000,https://contador-ganadero.vercel.app')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permitir si no hay origen (postman, mobile, etc), localhost o el dominio de vercel
-    if (!origin || origin.includes('localhost') || origin.includes('contador-ganadero.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Permitir si no hay origen (postman, mobile, healthchecks) o si coincide con lista configurada.
+    if (!origin) return callback(null, true);
+    const permitido = corsOrigins.some((allowed) => {
+      if (allowed === '*') return true;
+      if (origin === allowed) return true;
+      // Permitir previews locales/Vercel sin abrir a dominios arbitrarios.
+      return origin.includes('localhost') || origin.endsWith('.vercel.app');
+    });
+    if (permitido) callback(null, true);
+    else callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
 };
@@ -216,33 +225,42 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT} (${process.env.NODE_ENV || 'development'})`);
-
-  // Iniciar listener IMAP después de que el servidor esté escuchando
+async function iniciarServiciosSecundarios() {
+  // Iniciar listener IMAP después de tener MongoDB conectado.
   if (process.env.IMAP_USER && process.env.IMAP_PASSWORD) {
-    conectarDB().then(async () => {
-      try {
-        const usuario = await Usuario.findOne();
-        if (usuario) {
-          await iniciarListener(usuario._id);
-        }
-      } catch (error) {
-        console.error('Error al iniciar listener IMAP:', error.message);
+    try {
+      const usuario = await Usuario.findOne();
+      if (usuario) {
+        await iniciarListener(usuario._id);
       }
-    });
+    } catch (error) {
+      console.error('Error al iniciar listener IMAP:', error.message);
+    }
   }
 
-  // Iniciar worker asíncrono de Hacienda en el propio servidor (modo dev/test)
-  // En producción debe correr como Background Worker separado (worker.js)
+  // Iniciar worker asíncrono de Hacienda en el propio servidor (modo dev/test).
+  // En producción debe correr como Background Worker separado (worker.js).
   if (process.env.HACIENDA_WORKER_EMBEDDED === 'true' || (process.env.NODE_ENV !== 'production' && process.env.HACIENDA_AMBIENTE)) {
-    conectarDB().then(() => {
-      try {
-        const haciendaWorker = require('./services/haciendaWorker');
-        haciendaWorker.iniciar(Number(process.env.HACIENDA_WORKER_INTERVAL_MS) || 15000);
-      } catch (error) {
-        console.error('Error al iniciar worker de Hacienda:', error.message);
-      }
-    });
+    try {
+      const haciendaWorker = require('./services/haciendaWorker');
+      haciendaWorker.iniciar(Number(process.env.HACIENDA_WORKER_INTERVAL_MS) || 15000);
+    } catch (error) {
+      console.error('Error al iniciar worker de Hacienda:', error.message);
+    }
   }
+}
+
+async function iniciarServidor() {
+  await conectarDB();
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en puerto ${PORT} (${process.env.NODE_ENV || 'development'})`);
+    iniciarServiciosSecundarios().catch((error) => {
+      console.error('Error iniciando servicios secundarios:', error.message);
+    });
+  });
+}
+
+iniciarServidor().catch((error) => {
+  console.error('💥 Error fatal al iniciar servidor:', error.message);
+  process.exit(1);
 });

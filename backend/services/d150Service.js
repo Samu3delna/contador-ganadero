@@ -56,22 +56,24 @@ function rangoMes(mes, anio) {
  *
  * @param {Object} opts
  * @param {string} opts.usuarioId - ObjectId del usuario
+ * @param {string} [opts.tenantId] - ObjectId del tenant/finca
  * @param {number} opts.mes - 1..12
  * @param {number} opts.anio
  * @param {number[]} [opts.retencionesTarjeta] - lista de montos retenidos por bancos
  * @param {number} [opts.ivaRetenidoPorTerceros] - iva que otros le retiraron al emisor
  */
-async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = [], ivaRetenidoPorTerceros = 0 }) {
+async function generarConciliacion({ usuarioId, tenantId, mes, anio, retencionesTarjeta = [], ivaRetenidoPorTerceros = 0 }) {
   if (!usuarioId) throw new Error('usuarioId requerido');
   if (!mes || !anio) throw new Error('mes y anio son requeridos');
 
   const { inicio, fin } = rangoMes(mes, anio);
+  const scope = tenantId ? { tenantId } : { usuario: usuarioId };
 
   // ============ VENTAS (Debito Fiscal) ============
   // Documentos emitidos por el usuario: FE, TE, REP, NC, ND
   // NC reducen debito fiscal; ND aumentan
   const ventasEmision = await FacturaEmision.find({
-    usuario: usuarioId,
+    ...scope,
     estado: 'aceptada',
     tipoDocumento: { $in: ['FE', 'TE', 'NC', 'ND'] },
     fechaEmision: { $gte: inicio, $lte: fin },
@@ -80,7 +82,7 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
   // ============ COMPRAS (Credito Fiscal) ============
   // 1) FEC emitidas por el usuario (compra a no emisores)
   const comprasFec = await FacturaEmision.find({
-    usuario: usuarioId,
+    ...scope,
     estado: 'aceptada',
     tipoDocumento: 'FEC',
     fechaEmision: { $gte: inicio, $lte: fin },
@@ -90,8 +92,11 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
   let comprasRecibidas = [];
   try {
     comprasRecibidas = await Factura.find({
-      usuario: usuarioId,
-      estado: 'aceptada', // aceptada por Hacienda
+      ...scope,
+      // Factura.estado es estado interno de procesamiento. Las recibidas por IMAP
+      // quedan como "procesada" o "revision"; no existe "aceptada" en este modelo.
+      estado: { $in: ['procesada', 'revision'] },
+      esDeducible: { $ne: false },
       'emisor.cedula.numero': { $exists: true },
       fechaEmision: { $gte: inicio, $lte: fin },
     }).lean();

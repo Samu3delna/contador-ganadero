@@ -39,6 +39,11 @@ frontend/dist/
 build/
 frontend/build/
 
+# Coverage
+coverage/
+backend/coverage/
+frontend/coverage/
+
 # IDEs y OS
 .idea/
 .vscode/
@@ -58,8 +63,3 @@ Thumbs.db
 backend/parsed.txt
 backend/*.tmp
 backend/*.temp
-
-# Archivos de lock del sistema (si se generan)
-package-lock.json
-backend/package-lock.json
-frontend/package-lock.json

@@ -200,6 +200,13 @@ const facturaSchema = new mongoose.Schema({
     enum: ['pendiente', 'procesada', 'error', 'revision'],
     default: 'pendiente',
   },
+  // Estado tributario separado del estado interno de procesamiento.
+  estadoHacienda: {
+    type: String,
+    enum: ['aceptada', 'rechazada', 'procesando', 'desconocido'],
+    default: 'desconocido',
+    index: true,
+  },
 
   // === Relación ===
   tenantId: {
