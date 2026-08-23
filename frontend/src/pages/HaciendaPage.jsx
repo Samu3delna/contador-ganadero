@@ -262,7 +262,7 @@ function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml }) {
                   {d.estado === 'aceptada' && (
                     <button className="btn-icon" title="Ver estado" onClick={() => onEstado(d._id)}><Search size={14} /></button>
                   )}
-                  {d.xmlFirmado && (
+                  {['firmada', 'procesando', 'enviada_hacienda', 'aceptada'].includes(d.estado) && (
                     <button className="btn-icon" title="Descargar XML" onClick={() => onXml(d._id, d.claveNumerica)}><FileText size={14} /></button>
                   )}
                 </div>

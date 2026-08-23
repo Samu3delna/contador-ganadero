@@ -150,7 +150,7 @@ if (require.main === module) {
       console.error('Migracion fallida:', err);
       try {
         mongoose.connection.close();
-      } catch (_) {}
+      } catch { /* conexión ya cerrada o nunca abierta */ }
       process.exit(1);
     });
 }

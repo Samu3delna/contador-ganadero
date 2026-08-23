@@ -86,18 +86,19 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
     fechaEmision: { $gte: inicio, $lte: fin },
   }).lean();
 
-  // 2) Facturas recibidas (IMAP) aceptadas de proveedores con FE
+  // 2) Facturas recibidas (IMAP) de proveedores con FE
+  //    El pipeline de email marca las facturas como 'procesada' o 'revision'
+  //    (nunca 'aceptada'); se excluyen solo las que fallaron el parseo.
   let comprasRecibidas = [];
   try {
     comprasRecibidas = await Factura.find({
       usuario: usuarioId,
-      estado: 'aceptada', // aceptada por Hacienda
+      estado: { $ne: 'error' },
       'emisor.cedula.numero': { $exists: true },
       fechaEmision: { $gte: inicio, $lte: fin },
     }).lean();
   } catch (e) {
-    //colección Factura puede no tener estado aceptada todavia
-    console.warn('[D-150] coleccion Factura sin estado aceptada:', e.message);
+    console.warn('[D-150] error consultando facturas recibidas:', e.message);
   }
 
   // ============ Procesar lineas por tarifa ============

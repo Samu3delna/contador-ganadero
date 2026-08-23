@@ -2,9 +2,26 @@ const Stripe = require('stripe');
 const Tenant = require('../models/Tenant');
 const SubscriptionEvent = require('../models/SubscriptionEvent');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-06-20',
-});
+/**
+ * Cliente Stripe perezoso (lazy).
+ * Se crea en el primer uso para que el servidor pueda arrancar aunque
+ * STRIPE_SECRET_KEY no esté configurada (sin Stripe, /api/stripe responde 503).
+ */
+let _stripeClient = null;
+
+const obtenerClienteStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    const err = new Error('Stripe no configurado. Define STRIPE_SECRET_KEY en el .env para habilitar suscripciones.');
+    err.status = 503;
+    throw err;
+  }
+  if (!_stripeClient) {
+    _stripeClient = Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-06-20',
+    });
+  }
+  return _stripeClient;
+};
 
 /**
  * Mapeo priceId -> plan (free|bronce|oro|corporativo)
@@ -28,11 +45,6 @@ const obtenerPlanPorPriceId = (priceId) => {
   return PRICE_TO_PLAN[priceId] || 'free';
 };
 
-const obtenerPeriodoActual = () => {
-  const ahora = new Date();
-  return `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
-};
-
 /**
  * @desc    Crear Stripe Checkout Session para upgrade de plan
  * @route   POST /api/stripe/checkout
@@ -47,13 +59,12 @@ const crearSesionCheckout = async (req, res, next) => {
     }
 
     const priceId = PLAN_TO_PRICE[planId];
-    if (!priceId || priceId.startsWith('price_') === false && !priceId.startsWith('price_')) {
-      if (!priceId) {
-        res.status(500);
-        throw new Error(`Price ID no configurado para el plan ${planId}. Revisa STRIPE_PRICE_${planId.toUpperCase()} en .env`);
-      }
+    if (!priceId || !String(priceId).startsWith('price_')) {
+      res.status(500);
+      throw new Error(`Price ID no configurado para el plan ${planId}. Revisa STRIPE_PRICE_${planId.toUpperCase()} en .env`);
     }
 
+    const stripe = obtenerClienteStripe();
     const tenant = req.tenant;
 
     let customerId = tenant.stripeCustomerId;
@@ -103,6 +114,7 @@ const crearSesionCheckout = async (req, res, next) => {
  */
 const crearPortalCliente = async (req, res, next) => {
   try {
+    const stripe = obtenerClienteStripe();
     const tenant = req.tenant;
     if (!tenant.stripeCustomerId) {
       res.status(400);
@@ -130,8 +142,9 @@ const obtenerEstadoSuscripcion = async (req, res, next) => {
     const tenant = req.tenant;
     let suscripcionStripe = null;
 
-    if (tenant.stripeSubscriptionId) {
+    if (tenant.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
       try {
+        const stripe = obtenerClienteStripe();
         suscripcionStripe = await stripe.subscriptions.retrieve(tenant.stripeSubscriptionId);
       } catch (err) {
         console.warn('No se pudo recuperar suscripción de Stripe:', err.message);
@@ -169,6 +182,7 @@ const webhookStripe = async (req, res) => {
   let event;
 
   try {
+    const stripe = obtenerClienteStripe();
     event = stripe.webhooks.constructEvent(
       req.body,
       signature,
@@ -350,4 +364,5 @@ module.exports = {
   crearPortalCliente,
   obtenerEstadoSuscripcion,
   webhookStripe,
+  obtenerClienteStripe,
 };

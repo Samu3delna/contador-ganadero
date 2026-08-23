@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const Usuario = require('../models/Usuario');
 const Tenant = require('../models/Tenant');
-const { login, registro, refrescarToken, logout, protegerRuta } = require('../controllers/authController');
+const { login, registro, refrescarToken, logout } = require('../controllers/authController');
 const { protegerRuta: protegerRutaMiddleware } = require('../middleware/authMiddleware');
 
 const createApp = () => {

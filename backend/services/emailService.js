@@ -18,6 +18,7 @@ const { configurarIMAP } = require('../config/email');
 const { parsearFacturaXML } = require('./xmlParserService');
 const { categorizarFactura } = require('./aiService');
 const Factura = require('../models/Factura');
+const Usuario = require('../models/Usuario');
 
 // Estado del servicio
 let conexionActiva = false;
@@ -30,6 +31,27 @@ let estadisticas = {
   alertasTarifa: 0,
   errores: 0,
 };
+
+const tenantIdCache = new Map(); // usuarioId -> tenantId (evita lookups repetidos)
+
+/**
+ * Resuelve el tenantId del usuario dueño del buzón.
+ * Las facturas creadas por IMAP deben llevar tenantId para que aparezcan
+ * en los listados y cálculos, que filtran por tenant.
+ */
+async function resolverTenantId(usuarioId) {
+  const key = String(usuarioId);
+  if (tenantIdCache.has(key)) return tenantIdCache.get(key);
+  let tenantId = null;
+  try {
+    const usuario = await Usuario.findById(usuarioId).select('tenantId').lean();
+    tenantId = usuario?.tenantId || null;
+  } catch (err) {
+    console.warn('No se pudo resolver tenantId del usuario:', err.message);
+  }
+  tenantIdCache.set(key, tenantId);
+  return tenantId;
+}
 
 let lockIdle = null;
 let pausandoIdle = false;
@@ -445,6 +467,7 @@ async function escucharNuevosEmails(usuarioId) {
  */
 async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
   const uid = `${carpeta}_${String(msg.uid)}`;
+  const tenantId = await resolverTenantId(usuarioId);
 
   // Verificar idempotencia: ¿ya procesamos este email?
   const yaExiste = await Factura.exists({ emailUID: uid, usuario: usuarioId });
@@ -545,6 +568,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
         carpetaOrigen: carpeta,
         archivoXML: rutaXML,
         usuario: usuarioId,
+        ...(tenantId ? { tenantId } : {}),
       });
       continue;
     }
@@ -600,6 +624,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
       carpetaOrigen: carpeta,
       estado: datosFactura.alertasTarifa?.some(a => a.severidad === 'error') ? 'revision' : 'procesada',
       usuario: usuarioId,
+      ...(tenantId ? { tenantId } : {}),
     });
 
     estadisticas.facturasCreadas++;

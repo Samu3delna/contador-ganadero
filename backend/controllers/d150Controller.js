@@ -68,9 +68,9 @@ const reportePDF = async (req, res, next) => {
     doc.moveDown(0.3);
     dibujarTablaPDF(doc, resultado.detalleVentas, ['Tarifa', 'Documentos', 'Base', 'IVA Débito', 'NC aplicadas']);
     doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica-Bold').text(`Total ventas gravadas (base): ₡${resultado.totales.ventasGravadasBase.toLocaleString('es-CR')}`);
-    doc.text(`Total IVA débito fiscal: ₡${resultado.totales.ventasIVADebito.toLocaleString('es-CR')}`);
-    doc.text(`Total ventas exentas: ₡${resultado.totales.ventasExentas.toLocaleString('es-CR')}`);
+    doc.fontSize(10).font('Helvetica-Bold').text(`Total ventas gravadas (base): ¢${resultado.totales.ventasGravadasBase.toLocaleString('es-CR')}`);
+    doc.text(`Total IVA débito fiscal: ¢${resultado.totales.ventasIVADebito.toLocaleString('es-CR')}`);
+    doc.text(`Total ventas exentas: ¢${resultado.totales.ventasExentas.toLocaleString('es-CR')}`);
     doc.moveDown(1);
 
     // Cuadros COMPRAS
@@ -78,31 +78,31 @@ const reportePDF = async (req, res, next) => {
     doc.moveDown(0.3);
     dibujarTablaPDF(doc, resultado.detalleCompras, ['Tarifa', 'Documentos', 'Base', 'IVA Crédito']);
     doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica-Bold').text(`Total compras gravadas (base): ₡${resultado.totales.comprasGravadasBase.toLocaleString('es-CR')}`);
-    doc.text(`Total IVA crédito fiscal: ₡${resultado.totales.comprasIVACredito.toLocaleString('es-CR')}`);
-    doc.text(`Total compras exentas: ₡${resultado.totales.comprasExentas.toLocaleString('es-CR')}`);
+    doc.fontSize(10).font('Helvetica-Bold').text(`Total compras gravadas (base): ¢${resultado.totales.comprasGravadasBase.toLocaleString('es-CR')}`);
+    doc.text(`Total IVA crédito fiscal: ¢${resultado.totales.comprasIVACredito.toLocaleString('es-CR')}`);
+    doc.text(`Total compras exentas: ¢${resultado.totales.comprasExentas.toLocaleString('es-CR')}`);
     doc.moveDown(1);
 
     // Prorrata
     doc.fontSize(13).font('Helvetica-Bold').text('3. Prorrata de Crédito Fiscal');
     doc.moveDown(0.3);
     doc.fontSize(10).font('Helvetica').text(`Porcentaje deducible: ${resultado.prorrata.porcentajeDeducible}%`);
-    doc.text(`Crédito deducible: ₡${resultado.prorrata.creditoDeducible.toLocaleString('es-CR')}`);
-    doc.text(`Crédito NO deducible: ₡${resultado.prorrata.creditoNoDeducible.toLocaleString('es-CR')}`);
+    doc.text(`Crédito deducible: ¢${resultado.prorrata.creditoDeducible.toLocaleString('es-CR')}`);
+    doc.text(`Crédito NO deducible: ¢${resultado.prorrata.creditoNoDeducible.toLocaleString('es-CR')}`);
     doc.moveDown(1);
 
     // Resultado final
     doc.fontSize(13).font('Helvetica-Bold').text('4. Resultado del Período');
     doc.moveDown(0.3);
-    doc.fontSize(10).font('Helvetica').text(`Débito fiscal: ₡${resultado.resultadoFinal.debitoFiscal.toLocaleString('es-CR')}`);
-    doc.text(`Crédito deducible: -₡${resultado.resultadoFinal.creditoDeducible.toLocaleString('es-CR')}`);
-    doc.text(`Retenciones tarjeta: -₡${resultado.resultadoFinal.totalRetencionesTarjeta.toLocaleString('es-CR')}`);
-    doc.text(`IVA retenido por terceros: -₡${resultado.resultadoFinal.ivaRetenidoPorTerceros.toLocaleString('es-CR')}`);
+    doc.fontSize(10).font('Helvetica').text(`Débito fiscal: ¢${resultado.resultadoFinal.debitoFiscal.toLocaleString('es-CR')}`);
+    doc.text(`Crédito deducible: -¢${resultado.resultadoFinal.creditoDeducible.toLocaleString('es-CR')}`);
+    doc.text(`Retenciones tarjeta: -¢${resultado.resultadoFinal.totalRetencionesTarjeta.toLocaleString('es-CR')}`);
+    doc.text(`IVA retenido por terceros: -¢${resultado.resultadoFinal.ivaRetenidoPorTerceros.toLocaleString('es-CR')}`);
     doc.moveDown(0.5);
     if (resultado.resultadoFinal.ivaAPagar > 0) {
-      doc.fontSize(12).fillColor('#c0392b').font('Helvetica-Bold').text(`IVA A PAGAR: ₡${resultado.resultadoFinal.ivaAPagar.toLocaleString('es-CR')}`);
+      doc.fontSize(12).fillColor('#c0392b').font('Helvetica-Bold').text(`IVA A PAGAR: ¢${resultado.resultadoFinal.ivaAPagar.toLocaleString('es-CR')}`);
     } else {
-      doc.fontSize(12).fillColor('#27ae60').font('Helvetica-Bold').text(`SALDO A FAVOR: ₡${resultado.resultadoFinal.saldoAFavor.toLocaleString('es-CR')}`);
+      doc.fontSize(12).fillColor('#27ae60').font('Helvetica-Bold').text(`SALDO A FAVOR: ¢${resultado.resultadoFinal.saldoAFavor.toLocaleString('es-CR')}`);
     }
     doc.moveDown(1);
     doc.fontSize(8).fillColor('gray').font('Helvetica').text(
@@ -143,7 +143,7 @@ function dibujarTablaPDF(doc, filas, headers) {
 
 function formatCol(n) {
   if (n == null || n === 0) return '—';
-  return `₡${Number(n).toLocaleString('es-CR')}`;
+  return `¢${Number(n).toLocaleString('es-CR')}`;
 }
 
 // ============ EXCEL ============

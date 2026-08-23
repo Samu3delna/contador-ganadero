@@ -19,6 +19,12 @@ const parser = new XMLParser({
   attributeNamePrefix: '@_',
   parseTagValue: true,
   trimValues: true,
+  // CRÍTICO: la clave numérica (50 dígitos) y el consecutivo (20 dígitos)
+  // pierden precisión al convertirse a Number (quedan en notación científica).
+  // Se dejan como string los números de 15+ dígitos; los montos siguen siendo números.
+  numberParseOptions: {
+    skipLike: /^\d{15,}$/,
+  },
   // Seguridad: no procesar entidades externas
   processEntities: false,
   // Forzar siempre arrays para nodos que pueden repetirse

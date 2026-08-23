@@ -100,10 +100,22 @@ app.use(helmet());
 app.use(morgan('dev'));
 
 // CORS — configuración dinámica para evitar bloqueos
+// Orígenes extra permitidos: FRONTEND_URL del .env (producción) + CORS_EXTRA_ORIGENS (CSV opcional)
+const ORIGENES_EXTRA = [
+  process.env.FRONTEND_URL,
+  ...(process.env.CORS_EXTRA_ORIGENS || '').split(','),
+].map(o => (o || '').trim().replace(/\/+$/, '')).filter(Boolean);
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permitir si no hay origen (postman, mobile, etc), localhost o el dominio de vercel
-    if (!origin || origin.includes('localhost') || origin.includes('contador-ganadero.vercel.app')) {
+    // Permitir si no hay origen (postman, mobile, etc), localhost, el dominio de vercel o los orígenes configurados
+    const permitido =
+      !origin ||
+      origin.includes('localhost') ||
+      origin.includes('contador-ganadero.vercel.app') ||
+      ORIGENES_EXTRA.includes(String(origin).replace(/\/+$/, ''));
+
+    if (permitido) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

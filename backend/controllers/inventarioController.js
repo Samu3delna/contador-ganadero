@@ -32,6 +32,7 @@ const agregarBovino = async (req, res, next) => {
 const actualizarBovino = async (req, res, next) => {
   try {
     const inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) { res.status(404); throw new Error('Inventario no encontrado. Crea el inventario primero'); }
     const bovino = inventario.bovinos.id(req.params.id);
     if (!bovino) { res.status(404); throw new Error('Bovino no encontrado'); }
 
@@ -52,6 +53,7 @@ const actualizarBovino = async (req, res, next) => {
 const eliminarBovino = async (req, res, next) => {
   try {
     const inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) { res.status(404); throw new Error('Inventario no encontrado. Crea el inventario primero'); }
     const bovino = inventario.bovinos.id(req.params.id);
     if (!bovino) { res.status(404); throw new Error('Bovino no encontrado'); }
     bovino.activo = false;
@@ -80,6 +82,7 @@ const agregarLoteAves = async (req, res, next) => {
 const actualizarLoteAves = async (req, res, next) => {
   try {
     const inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) { res.status(404); throw new Error('Inventario no encontrado. Crea el inventario primero'); }
     const lote = inventario.lotesAves.id(req.params.id);
     if (!lote) { res.status(404); throw new Error('Lote no encontrado'); }
 
@@ -115,6 +118,7 @@ const agregarEstanque = async (req, res, next) => {
 const actualizarEstanque = async (req, res, next) => {
   try {
     const inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) { res.status(404); throw new Error('Inventario no encontrado. Crea el inventario primero'); }
     const estanque = inventario.estanques.id(req.params.id);
     if (!estanque) { res.status(404); throw new Error('Estanque no encontrado'); }
 
@@ -153,6 +157,7 @@ const agregarColmena = async (req, res, next) => {
 const actualizarColmena = async (req, res, next) => {
   try {
     const inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) { res.status(404); throw new Error('Inventario no encontrado. Crea el inventario primero'); }
     const colmena = inventario.colmenas.id(req.params.id);
     if (!colmena) { res.status(404); throw new Error('Colmena no encontrada'); }
 
@@ -201,6 +206,7 @@ const obtenerResumenInventario = async (req, res, next) => {
 const eliminarLoteAves = async (req, res, next) => {
   try {
     const inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) { res.status(404); throw new Error('Inventario no encontrado. Crea el inventario primero'); }
     const lote = inventario.lotesAves.id(req.params.id);
     if (!lote) { res.status(404); throw new Error('Lote no encontrado'); }
     lote.activo = false;
@@ -212,6 +218,7 @@ const eliminarLoteAves = async (req, res, next) => {
 const eliminarEstanque = async (req, res, next) => {
   try {
     const inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) { res.status(404); throw new Error('Inventario no encontrado. Crea el inventario primero'); }
     const estanque = inventario.estanques.id(req.params.id);
     if (!estanque) { res.status(404); throw new Error('Estanque no encontrado'); }
     estanque.activo = false;
@@ -223,6 +230,7 @@ const eliminarEstanque = async (req, res, next) => {
 const eliminarColmena = async (req, res, next) => {
   try {
     const inventario = await Inventario.findOne(req.filtrarPorTenant());
+    if (!inventario) { res.status(404); throw new Error('Inventario no encontrado. Crea el inventario primero'); }
     const colmena = inventario.colmenas.id(req.params.id);
     if (!colmena) { res.status(404); throw new Error('Colmena no encontrada'); }
     colmena.activo = false;

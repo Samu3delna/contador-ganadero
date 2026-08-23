@@ -5,7 +5,8 @@ const Ingreso = require('../models/Ingreso');
 /**
  * Genera datos exportables para contador en formato CSV-friendly
  */
-async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null) {
+async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null, tenantId = null) {
+  const filtroBase = tenantId ? { tenantId } : { usuario: usuarioId };
   let fechaInicio, fechaFin;
 
   if (cuatrimestre) {
@@ -19,14 +20,14 @@ async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null) {
 
   // Obtener facturas (gastos)
   const facturas = await Factura.find({
-    usuario: usuarioId,
+    ...filtroBase,
     fechaEmision: { $gte: fechaInicio, $lte: fechaFin },
     estado: { $ne: 'error' },
   }).sort({ fechaEmision: 1 }).lean();
 
   // Obtener ingresos (ventas)
   const ingresos = await Ingreso.find({
-    usuario: usuarioId,
+    ...filtroBase,
     fecha: { $gte: fechaInicio, $lte: fechaFin },
   }).sort({ fecha: 1 }).lean();
 

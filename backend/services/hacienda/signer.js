@@ -29,23 +29,23 @@ function cargarLlave(p12Path, pin) {
   if (!pin) throw new Error('PIN de la llave criptografica es obligatorio');
 
   const p12B64 = fs.readFileSync(p12Path, { encoding: 'base64' });
-  const p12Asn1 = forge.asn1.fromDer(p12B64);
+  // fromDer espera bytes DER binarios: decodificar el base64 antes de parsear
+  const p12Asn1 = forge.asn1.fromDer(forge.util.decode64(p12B64));
   const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, pin);
 
-  let certBag = null;
-  let keyBag = null;
-  for (const bag of p12.safeContents) {
-    for (const item of bag.bags) {
-      if (item.type === forge.pki.oids.certBag && item.attributes?.friendlyId?.value?.[0]) {
-        certBag = item;
-      }
-      if (item.type === forge.pki.oids.pkcs8ShroudedKeyBag || item.type === forge.pki.oids.keyBag) {
-        keyBag = item;
-      }
-    }
-  }
-  if (!certBag) certBag = p12.safeContents.flatMap((s) => s.bags).find((b) => b.type === forge.pki.oids.certBag);
-  if (!keyBag) keyBag = p12.safeContents.flatMap((s) => s.bags).find((b) => b.type === forge.pki.oids.pkcs8ShroudedKeyBag || b.type === forge.pki.oids.keyBag);
+  // Obtener certificado y llave privada vía la API de bags de forge.
+  // (Los SafeContents exponen .safeBags; getBags agrupa por tipo.)
+  const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+  const keyBags = {
+    ...p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag }),
+    ...p12.getBags({ bagType: forge.pki.oids.keyBag }),
+  };
+
+  let certBag = (certBags[forge.pki.oids.certBag] || []).find((b) => b.cert) || null;
+  let keyBag = (keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || [])
+    .concat(keyBags[forge.pki.oids.keyBag] || [])
+    .find((b) => b.key) || null;
+
   if (!certBag) throw new Error('No se encontro certificado en el .p12');
   if (!keyBag) throw new Error('No se encontro llave privada en el .p12 (PIN incorrecto?)');
 

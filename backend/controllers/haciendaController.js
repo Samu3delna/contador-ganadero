@@ -17,6 +17,14 @@ const haciendaWorker = require('../services/haciendaWorker');
 const hacienda = require('../services/hacienda');
 const mockStore = hacienda.mockStore;
 
+/**
+ * Filtro de pertenencia del documento: tenant si existe, si no usuario.
+ * (haciendaRoutes monta extraerTenant, pero se mantiene el fallback por robustez)
+ */
+const filtroDocumento = (req) => (
+  req.tenant ? { _id: req.params.id, tenantId: req.tenant._id } : { _id: req.params.id, usuario: req.usuario._id }
+);
+
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 
 // ============ AMBIENTE ============
@@ -80,6 +88,7 @@ const crearBorrador = async (req, res, next) => {
       periodoFiscal,
       estado: 'borrador',
       usuario: req.usuario._id,
+      ...(req.tenant ? { tenantId: req.tenant._id } : {}),
     });
 
     res.status(201).json(nueva);
@@ -89,7 +98,7 @@ const crearBorrador = async (req, res, next) => {
 // ============ FIRMAR Y ENCOLAR ============
 const firmarDocumento = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await FacturaEmision.findOne(filtroDocumento(req));
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (factura.estado !== 'borrador') {
       res.status(400); throw new Error(`La factura ya esta en estado ${factura.estado}`);
@@ -98,7 +107,7 @@ const firmarDocumento = async (req, res, next) => {
     try {
       await haciendaWorker.prepararYFirmar(factura._id);
     } catch (e) {
-      // Guardar el error具体 en la factura
+      // Guardar el error específico en la factura
       factura.erroresValidacion = [e.message];
       await factura.save();
       res.status(422);
@@ -117,7 +126,7 @@ const firmarDocumento = async (req, res, next) => {
 
 const enviarAHacienda = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await FacturaEmision.findOne(filtroDocumento(req));
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (factura.estado !== 'firmada') {
       res.status(400); throw new Error(`La factura debe estar firmada, estado actual: ${factura.estado}`);
@@ -137,7 +146,8 @@ const enviarAHacienda = async (req, res, next) => {
 // ============ CONSULTAS ============
 const obtenerXml = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    // xmlFirmado tiene select:false -> hay que pedirlo explícitamente
+    const factura = await FacturaEmision.findOne(filtroDocumento(req)).select('+xmlFirmado');
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (!factura.xmlFirmado) { res.status(404); throw new Error('XML no generado aun'); }
 
@@ -149,7 +159,7 @@ const obtenerXml = async (req, res, next) => {
 
 const consultarEstado = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await FacturaEmision.findOne(filtroDocumento(req));
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
 
     // Forzar consulta sincrona (afuera del loop del worker)
@@ -189,7 +199,7 @@ const consultarEstado = async (req, res, next) => {
 // ============ CANCELAR (genera NC) — placeholder ============
 const cancelarDocumento = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, usuario: req.usuario._id });
+    const factura = await FacturaEmision.findOne(filtroDocumento(req));
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (factura.estado !== 'aceptada') {
       res.status(400); throw new Error('Solo se pueden cancelar facturas aceptadas; debe emitir NC');

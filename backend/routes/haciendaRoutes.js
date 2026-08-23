@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protegerRuta } = require('../middleware/authMiddleware');
+const { extraerTenant } = require('../middleware/tenantGuard');
 const {
   infoAmbiente,
   crearBorrador,
@@ -16,6 +17,7 @@ const fecController = require('../controllers/fecController');
 const d150Controller = require('../controllers/d150Controller');
 
 router.use(protegerRuta);
+router.use(extraerTenant);
 
 //_info del ambiente Hacienda
 router.get('/ambiente', infoAmbiente);

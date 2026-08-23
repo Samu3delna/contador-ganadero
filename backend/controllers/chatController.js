@@ -22,7 +22,7 @@ function obtenerEncoder() {
   if (!tiktokenEncoder) {
     try {
       tiktokenEncoder = encoding_for_model('gpt-4');
-    } catch (e) {
+    } catch {
       tiktokenEncoder = encoding_for_model('cl100k_base');
     }
   }
@@ -141,27 +141,36 @@ async function obtenerContextoUsuario(usuarioId) {
   ]);
 
   const totalGastos = facturas.reduce((sum, f) => sum + (f.resumenFactura?.totalComprobante || 0), 0);
-  const totalIngresos = ingresos.reduce((sum, i) => sum + (i.monto || 0), 0);
+  const totalIngresos = ingresos.reduce((sum, i) => sum + (i.montoTotal || i.montoSubtotal || 0), 0);
   const gastosPorCategoria = {};
   facturas.forEach(f => {
     const cat = f.categoriaIA || 'sin_clasificar';
     gastosPorCategoria[cat] = (gastosPorCategoria[cat] || 0) + (f.resumenFactura?.totalComprobante || 0);
   });
 
-  // KPIs ganaderos
-  const costosAbiertos = costos.filter(c => c.estado === 'abierto');
-  const costosCerrados = costos.filter(c => c.estado === 'cerrado');
+  // KPIs ganaderos (CostoProduccion guarda centros de costo embebidos en
+  // `centrosCosto`, con indicadores ya calculados por el modelo)
+  const centrosAbiertos = [];
+  const centrosCerrados = [];
+  costos.forEach(doc =>
+    (doc.centrosCosto || []).forEach(centro => {
+      if (centro.activo) centrosAbiertos.push(centro);
+      else centrosCerrados.push(centro);
+    })
+  );
   let costoKgPromedio = null;
-  if (costosCerrados.length > 0) {
-    const totalCosto = costosCerrados.reduce((sum, c) => sum + (c.costoTotal || 0), 0);
-    const totalKg = costosCerrados.reduce((sum, c) => sum + (c.produccionTotal?.kg || 0), 0);
+  if (centrosCerrados.length > 0) {
+    const totalCosto = centrosCerrados.reduce((sum, c) => sum + (c.consumos || []).reduce((s2, i) => s2 + (i.costoTotal || 0), 0), 0);
+    const totalKg = centrosCerrados.reduce((sum, c) =>
+      sum + (c.producciones || []).reduce((s2, p) => s2 + (p.unidadMedida === 'kg' ? p.cantidad : 0), 0), 0);
     if (totalKg > 0) costoKgPromedio = totalCosto / totalKg;
   }
 
-  const bovinos = inventario?.bovinos?.length || 0;
-  const aves = inventario?.aves?.reduce((sum, l) => sum + (l.cantidad || 0), 0) || 0;
-  const peces = inventario?.peces?.reduce((sum, e) => sum + (e.cantidad || 0), 0) || 0;
-  const colmenas = inventario?.colmenas?.length || 0;
+  // Inventario: los subdocumentos reales son lotesAves / estanques
+  const bovinos = inventario?.bovinos?.filter(b => b.activo !== false).length || 0;
+  const aves = inventario?.lotesAves?.reduce((sum, l) => sum + (l.activo ? (l.cicloActual?.nActualAves || 0) : 0), 0) || 0;
+  const peces = inventario?.estanques?.reduce((sum, e) => sum + (e.activo ? (e.nActual || 0) : 0), 0) || 0;
+  const colmenas = inventario?.colmenas?.filter(c => c.activo !== false).length || 0;
 
   // Gastos por mes (últimos 3 meses) para tendencia
   const hace3Meses = new Date();
@@ -198,10 +207,10 @@ async function obtenerContextoUsuario(usuarioId) {
     ultimosIngresos: ingresos.slice(0, 3).map(i => ({
       id: i._id?.toString(),
       fecha: i.fecha,
-      concepto: i.concepto,
-      monto: i.monto,
+      concepto: i.descripcion,
+      monto: i.montoTotal ?? i.montoSubtotal ?? 0,
     })),
-    centrosCostoActivos: costosAbiertos.length,
+    centrosCostoActivos: centrosAbiertos.length,
   };
 
   // Guardar en cache (5 min)
@@ -246,7 +255,6 @@ ${contexto.ultimosIngresos.map(i => `  - [${i.id?.slice(-6) || '?'}] ${i.fecha}:
 
 // ============ TRUNCAMIENTO INTELIGENTE ============
 
-const MAX_MENSAJE_LENGTH = 2000;
 const MAX_HISTORIAL_MESSAGES = 10; // Aumentado de 6 a 10
 const MAX_CONTEXTO_TOKENS = 3000;
 

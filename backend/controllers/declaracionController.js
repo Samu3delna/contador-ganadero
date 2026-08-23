@@ -51,8 +51,8 @@ const obtenerResumenDeclaracion = async (req, res, next) => {
     const usuario = await Usuario.findById(req.usuario._id).select('configuracionFiscal');
 
     const [iva, renta] = await Promise.all([
-      cuatNum ? calcularIVACuatrimestral(req.usuario._id, cuatNum, anioNum) : null,
-      calcularRentaAnual(req.usuario._id, anioNum),
+      cuatNum ? calcularIVACuatrimestral(req.usuario._id, cuatNum, anioNum, req.tenant?._id) : null,
+      calcularRentaAnual(req.usuario._id, anioNum, req.tenant?._id),
     ]);
 
     // Calcular depreciación anual de activos
@@ -90,7 +90,7 @@ const generarDeclaracion = async (req, res, next) => {
     if (tipo === 'D-135-1') {
       if (!cuatrimestre) { res.status(400); throw new Error('cuatrimestre es requerido para IVA'); }
       const cuatNum = Number(cuatrimestre);
-      const iva = await calcularIVACuatrimestral(req.usuario._id, cuatNum, anioNum);
+      const iva = await calcularIVACuatrimestral(req.usuario._id, cuatNum, anioNum, req.tenant?._id);
 
       // Upsert: si ya existe una borrador/calculada para este periodo, actualizarla
       const existente = await Declaracion.findOneAndUpdate(
@@ -125,7 +125,7 @@ const generarDeclaracion = async (req, res, next) => {
     }
 
     if (tipo === 'D-101') {
-      const renta = await calcularRentaAnual(req.usuario._id, anioNum);
+      const renta = await calcularRentaAnual(req.usuario._id, anioNum, req.tenant?._id);
 
       // Calcular depreciación de activos
       const usuario = await Usuario.findById(req.usuario._id).select('configuracionFiscal');
@@ -260,7 +260,7 @@ const exportarDatos = async (req, res, next) => {
     const cuatNum = cuatrimestre ? Number(cuatrimestre) : null;
     const formatoExp = formato || 'csv';
 
-    const datos = await generarDatosExportacion(req.usuario._id, anioNum, cuatNum);
+    const datos = await generarDatosExportacion(req.usuario._id, anioNum, cuatNum, req.tenant?._id);
 
     if (formatoExp === 'csv') {
       const csv = generarCSV(datos);
@@ -279,8 +279,8 @@ const exportarDatos = async (req, res, next) => {
 const obtenerGastosDeducibles = async (req, res, next) => {
   try {
     const { anio, cuatrimestre, deducible, page = 1, limit = 50 } = req.query;
-    const filtro = { usuario: req.usuario._id };
-    
+    const filtro = req.filtrarPorTenant();
+
     if (anio) {
       filtro.periodoFiscal = Number(anio);
     }
@@ -329,8 +329,8 @@ const obtenerGastosDeducibles = async (req, res, next) => {
 const obtenerIngresosDeclaracion = async (req, res, next) => {
   try {
     const { anio, cuatrimestre, categoria, page = 1, limit = 50 } = req.query;
-    const filtro = { usuario: req.usuario._id };
-    
+    const filtro = req.filtrarPorTenant();
+
     if (anio) filtro.periodoFiscal = Number(anio);
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);
     if (categoria) filtro.categoriaIngreso = categoria;

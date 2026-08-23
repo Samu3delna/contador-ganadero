@@ -45,7 +45,7 @@ const feedbackLimiter = rateLimit({
 
 // Rutas
 router.post('/', protegerRuta, extraerTenant, chatLimiter, chat);
-router.post('/stream', protegerRuta, streamLimiter, chatStream);
+router.post('/stream', protegerRuta, extraerTenant, streamLimiter, chatStream);
 router.post('/feedback', protegerRuta, extraerTenant, feedbackLimiter, enviarFeedback);
 
 module.exports = router;

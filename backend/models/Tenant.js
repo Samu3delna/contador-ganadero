@@ -78,15 +78,12 @@ const tenantSchema = new mongoose.Schema({
   },
 
   // === Stripe ===
+  // (índices únicos definidos con tenantSchema.index más abajo)
   stripeCustomerId: {
     type: String,
-    index: true,
-    sparse: true,
   },
   stripeSubscriptionId: {
     type: String,
-    index: true,
-    sparse: true,
   },
   stripePriceId: {
     type: String,

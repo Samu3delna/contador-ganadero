@@ -77,6 +77,7 @@ const crearFec = async (req, res, next) => {
       periodoFiscal: fechaEmision.getFullYear(),
       estado: 'borrador',
       usuario: req.usuario._id,
+      ...(req.tenant ? { tenantId: req.tenant._id } : {}),
     });
 
     res.status(201).json(nuevoFec);

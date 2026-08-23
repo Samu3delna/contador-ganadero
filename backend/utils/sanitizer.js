@@ -72,6 +72,7 @@ function sanitizarInput(texto) {
   }
 
   // Eliminar caracteres de control (excepto newlines y tabs)
+  // eslint-disable-next-line no-control-regex -- los caracteres de control son precisamente lo que se quiere eliminar
   limpio = limpio.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   return { valido: true, texto: limpio };
