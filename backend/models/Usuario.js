@@ -52,6 +52,20 @@ const usuarioSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  // Google OAuth
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  googleAccessToken: {
+    type: String,
+    select: false,
+  },
+  googleRefreshToken: {
+    type: String,
+    select: false,
+  },
   // Configuración IMAP del usuario (opcional, si cada usuario tiene su propio correo)
   configEmail: {
     host: String,

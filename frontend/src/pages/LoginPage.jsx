@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import useSeo from '../hooks/useSeo';
@@ -42,6 +42,11 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleLogin = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
+    window.location.href = `${apiUrl}/auth/google`;
+  };
+
   return (
     <div className="login-container">
       <video className="login-bg-video" autoPlay muted loop playsInline>
@@ -66,8 +71,22 @@ export default function LoginPage() {
           handleSubmit={handleSubmit} 
           error={error} 
           cargando={cargando} 
-          esRegistro={esRegistro} 
+          esRegistro={esRegistro}
         />
+
+        <div className="login-divider">
+          <span>o continúa con</span>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-google"
+          onClick={handleGoogleLogin}
+          disabled={cargando}
+        >
+          <Mail size={18} />
+          <span>Iniciar sesión con Google</span>
+        </button>
 
         <p className="login-switch">
           {esRegistro ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}
