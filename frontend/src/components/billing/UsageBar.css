@@ -7,19 +7,25 @@
 .usage-bar-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
+  gap: var(--espacio-sm);
+  flex-wrap: wrap;
 }
 
 .usage-bar-label {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--color-texto);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .usage-bar-count {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--color-texto-sec);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .usage-bar-count--limite {

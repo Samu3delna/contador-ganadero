@@ -1,12 +1,12 @@
 /* IngresosPage.css */
 
 .form-ingreso {
-  margin-bottom: var(--espacio-xl);
+  margin-bottom: var(--espacio-fluido-lg);
 }
 
 .form-ingreso h3 {
-  margin-bottom: var(--espacio-lg);
-  font-size: 1.15rem;
+  margin-bottom: var(--espacio-md);
+  font-size: clamp(1rem, 2.6vw, 1.15rem);
 }
 
 .form-resumen {
@@ -24,6 +24,8 @@
 .form-resumen > div {
   display: flex;
   justify-content: space-between;
+  gap: var(--espacio-sm);
+  flex-wrap: wrap;
   font-size: 0.92rem;
 }
 
@@ -35,10 +37,7 @@
   color: var(--color-primario-claro);
 }
 
-.form-actions {
+.form-ingreso .form-actions {
   grid-column: 1 / -1;
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--espacio-md);
   margin-top: var(--espacio-sm);
 }

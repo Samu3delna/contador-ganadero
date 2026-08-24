@@ -11,7 +11,7 @@ export default function DetalleFacturaModal({ facturaSeleccionada, setFacturaSel
       size="md"
     >
       <div className="detalle-modal-body">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--color-texto)', marginBottom: '2px' }}>
               {facturaSeleccionada.emisor?.nombre || 'Emisor sin nombre'}
@@ -33,6 +33,8 @@ export default function DetalleFacturaModal({ facturaSeleccionada, setFacturaSel
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          gap: '0.5rem',
+          flexWrap: 'wrap',
           marginBottom: '1.25rem'
         }}>
           <span style={{ color: 'var(--color-texto-sec)', fontWeight: '600', fontSize: '0.9rem' }}>Total Comprobante:</span>
@@ -43,7 +45,7 @@ export default function DetalleFacturaModal({ facturaSeleccionada, setFacturaSel
         
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))',
           gap: '0.75rem',
           padding: '0.75rem 0',
           borderBottom: '1px solid var(--color-borde)',
@@ -70,6 +72,7 @@ export default function DetalleFacturaModal({ facturaSeleccionada, setFacturaSel
                 <div key={idx} style={{
                   display: 'flex',
                   justifyContent: 'space-between',
+                  gap: '0.5rem',
                   padding: '0.45rem 0.6rem',
                   borderRadius: 'var(--radio-sm)',
                   backgroundColor: 'rgba(255, 255, 255, 0.025)',

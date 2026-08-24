@@ -320,8 +320,8 @@ export default function LandingPage() {
           <button className="landing-share-btn" onClick={handleCompartir} aria-label="Compartir" title="Compartir">
             <Share2 size={18} /> {copiado ? '¡Copiado!' : ''}
           </button>
-          <Link to="/login" className="btn btn-outline">Iniciar Sesión</Link>
-          <Link to="/login" className="btn btn-primary">Comenzar Gratis</Link>
+          <Link to="/login" className="btn btn-outline landing-nav-login">Iniciar Sesión</Link>
+          <Link to="/login" className="btn btn-primary landing-nav-cta">Comenzar Gratis</Link>
         </div>
       </header>
 
@@ -490,8 +490,8 @@ export default function LandingPage() {
             Deja atrás las hojas de cálculo y los cuadernos: esto es lo que ganas al automatizar.
           </p>
         </div>
-        <div className="table-responsive">
-          <table className="landing-tabla">
+        <div className="table-responsive landing-tabla-wrap">
+          <table className="landing-tabla tabla--stack">
             <thead>
               <tr>
                 <th scope="col">Tarea</th>
@@ -502,9 +502,11 @@ export default function LandingPage() {
             <tbody>
               {COMPARATIVA.map((fila) => (
                 <tr key={fila.tarea}>
-                  <td>{fila.tarea}</td>
-                  <td>{fila.manual}</td>
-                  <td className="landing-tabla-ventaja"><Check size={14} /> {fila.app}</td>
+                  <td data-label="Tarea">{fila.tarea}</td>
+                  <td data-label="Forma tradicional">{fila.manual}</td>
+                  <td className="landing-tabla-ventaja" data-label="Con ContadorGanadero">
+                    <Check size={14} /> {fila.app}
+                  </td>
                 </tr>
               ))}
             </tbody>

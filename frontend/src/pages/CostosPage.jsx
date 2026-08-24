@@ -73,10 +73,10 @@ export default function CostosPage() {
       {/* Centros de Costo */}
       <h2 className="chart-title">Centros de Costo</h2>
       {resumen?.centrosCosto?.length === 0 ? (
-        <p className="text-muted">No hay centros de costo registrados.</p>
+        <div className="estado-vacio"><p className="text-muted">No hay centros de costo registrados.</p></div>
       ) : (
         <div className="table-responsive">
-          <table className="data-table">
+          <table className="data-table tabla--stack">
             <thead>
               <tr>
                 <th>Referencia</th>
@@ -92,14 +92,14 @@ export default function CostosPage() {
             <tbody>
               {resumen.centrosCosto.map(c => (
                 <tr key={c.referenciaId}>
-                  <td>{c.referenciaId}</td>
-                  <td>{c.tipoActividad}</td>
-                  <td>{c.nombreLote || '-'}</td>
-                  <td><span className={`badge badge-${c.activo ? 'exito' : 'advertencia'}`}>{c.activo ? 'Activo' : 'Cerrado'}</span></td>
-                  <td>₡{c.indicadores?.costoProduccionPorKg?.toLocaleString() || 0}</td>
-                  <td>{c.indicadores?.factorConversionAlimenticia?.toFixed(2) || '-'}</td>
-                  <td>₡{c.indicadores?.ingresoTotalVentas?.toLocaleString() || 0}</td>
-                  <td className={c.indicadores?.margenRentaOperativa >= 0 ? 'text-exito' : 'text-error'}>
+                  <td data-label="Referencia">{c.referenciaId}</td>
+                  <td data-label="Actividad">{c.tipoActividad}</td>
+                  <td data-label="Nombre">{c.nombreLote || '-'}</td>
+                  <td data-label="Estado"><span className={`badge badge-${c.activo ? 'exito' : 'advertencia'}`}>{c.activo ? 'Activo' : 'Cerrado'}</span></td>
+                  <td data-label="Costo/kg">₡{c.indicadores?.costoProduccionPorKg?.toLocaleString() || 0}</td>
+                  <td data-label="FCA">{c.indicadores?.factorConversionAlimenticia?.toFixed(2) || '-'}</td>
+                  <td data-label="Ingresos">₡{c.indicadores?.ingresoTotalVentas?.toLocaleString() || 0}</td>
+                  <td data-label="Margen" className={c.indicadores?.margenRentaOperativa >= 0 ? 'text-exito' : 'text-error'}>
                     ₡{c.indicadores?.margenRentaOperativa?.toLocaleString() || 0}
                   </td>
                 </tr>

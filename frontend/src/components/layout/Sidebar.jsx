@@ -1,7 +1,7 @@
 import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle } from 'lucide-react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './Sidebar.css';
 
 const menuSections = [
@@ -48,26 +48,88 @@ const PLAN_NOMBRES = {
   corporativo: 'Corporativo',
 };
 
+// Título legible de la ruta actual, para mostrarlo en la barra superior móvil.
+const TITULOS_RUTA = menuSections
+  .flatMap((s) => s.items)
+  .reduce((acc, item) => ({ ...acc, [item.path]: item.label }), {});
+
 export default function Sidebar() {
   const { usuario, logout } = useAuth();
   const [abierto, setAbierto] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const asideRef = useRef(null);
+  const toggleRef = useRef(null);
 
   const planUsuario = usuario?.plan || usuario?.tenant?.plan;
   const estadoTenant = usuario?.estadoTenant || usuario?.tenant?.estado;
   const planNombre = PLAN_NOMBRES[planUsuario] || (planUsuario ? planUsuario : null);
+  const tituloActual = TITULOS_RUTA[location.pathname] || 'ContadorGanadero';
+
+  const cerrar = () => setAbierto(false);
+
+  // El panel se cierra desde los propios enlaces (`onClick={cerrar}`), por lo
+  // que no hace falta un efecto que reaccione al cambio de ruta.
+
+  // Bloquea el scroll del fondo mientras el panel está abierto en móvil.
+  useEffect(() => {
+    if (!abierto) return undefined;
+    document.body.classList.add('no-scroll');
+    return () => document.body.classList.remove('no-scroll');
+  }, [abierto]);
+
+  // Cierra con Escape y devuelve el foco al botón que lo abrió.
+  useEffect(() => {
+    if (!abierto) return undefined;
+    function onKeyDown(e) {
+      if (e.key === 'Escape') {
+        setAbierto(false);
+        toggleRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [abierto]);
+
+  // Si se vuelve a escritorio con el panel abierto, se restablece el estado.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = (e) => { if (e.matches) setAbierto(false); };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   return (
     <>
-      <button 
-        className="sidebar-toggle" 
-        onClick={() => setAbierto(!abierto)}
-        aria-label="Alternar menú"
-      >
-        {abierto ? <X size={22} /> : <Menu size={22} />}
-      </button>
+      {/* Barra superior: sólo visible en móvil y tablet */}
+      <header className="topbar">
+        <button
+          ref={toggleRef}
+          className="topbar-toggle"
+          onClick={() => setAbierto((v) => !v)}
+          aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={abierto}
+          aria-controls="sidebar-nav"
+        >
+          {abierto ? <X size={22} /> : <Menu size={22} />}
+        </button>
 
-      <aside className={`sidebar ${abierto ? 'sidebar--abierto' : ''}`}>
+        <div className="topbar-brand">
+          <Tractor size={20} className="topbar-brand-icon" />
+          <span className="topbar-title">{tituloActual}</span>
+        </div>
+
+        <button className="topbar-logout" onClick={logout} aria-label="Cerrar sesión" title="Cerrar sesión">
+          <LogOut size={19} />
+        </button>
+      </header>
+
+      <aside
+        id="sidebar-nav"
+        ref={asideRef}
+        className={`sidebar ${abierto ? 'sidebar--abierto' : ''}`}
+        aria-hidden={undefined}
+      >
         <div className="sidebar-header">
           <div className="sidebar-logo-container">
             <Tractor size={28} className="sidebar-logo-icon" />
@@ -76,9 +138,16 @@ export default function Sidebar() {
             <h2 className="sidebar-title">ContadorGanadero</h2>
             <span className="sidebar-badge">RÉGIMEN REA</span>
           </div>
+          <button
+            className="sidebar-cerrar"
+            onClick={cerrar}
+            aria-label="Cerrar menú"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav" aria-label="Navegación principal">
           {menuSections.map((seccion) => (
             <div key={seccion.titulo} className="sidebar-section">
               <span className="sidebar-section-title">{seccion.titulo}</span>
@@ -88,7 +157,7 @@ export default function Sidebar() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) => `sidebar-link ${isActive ? 'sidebar-link--activo' : ''}`}
-                    onClick={() => setAbierto(false)}
+                    onClick={cerrar}
                   >
                     <item.icon size={18} className="sidebar-link-icon" />
                     <span>{item.label}</span>
@@ -111,33 +180,41 @@ export default function Sidebar() {
               <span className="sidebar-user-finca" title={usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}>
                 {usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}
               </span>
-              {planNombre && (
-                <span
-                  className="sidebar-user-plan"
-                  onClick={() => { setAbierto(false); navigate('/billing'); }}
-                  title="Ver mi suscripción"
-                >
-                  <Crown size={10} /> {planNombre}
-                </span>
-              )}
-              {estadoTenant && estadoTenant !== 'activo' && (
-                <span
-                  className="sidebar-user-alerta"
-                  onClick={() => { setAbierto(false); navigate('/billing'); }}
-                  title="Acceso limitado"
-                >
-                  <AlertTriangle size={10} /> Limitado
-                </span>
-              )}
+              <div className="sidebar-user-tags">
+                {planNombre && (
+                  <button
+                    type="button"
+                    className="sidebar-user-plan"
+                    onClick={() => { cerrar(); navigate('/billing'); }}
+                    title="Ver mi suscripción"
+                  >
+                    <Crown size={10} /> {planNombre}
+                  </button>
+                )}
+                {estadoTenant && estadoTenant !== 'activo' && (
+                  <button
+                    type="button"
+                    className="sidebar-user-alerta"
+                    onClick={() => { cerrar(); navigate('/billing'); }}
+                    title="Acceso limitado"
+                  >
+                    <AlertTriangle size={10} /> Limitado
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-          <button className="sidebar-logout" onClick={logout} title="Cerrar sesión">
+          <button className="sidebar-logout" onClick={logout} title="Cerrar sesión" aria-label="Cerrar sesión">
             <LogOut size={18} />
           </button>
         </div>
       </aside>
 
-      {abierto && <div className="sidebar-overlay" onClick={() => setAbierto(false)} />}
+      <div
+        className={`sidebar-overlay ${abierto ? 'sidebar-overlay--visible' : ''}`}
+        onClick={cerrar}
+        aria-hidden="true"
+      />
     </>
   );
 }

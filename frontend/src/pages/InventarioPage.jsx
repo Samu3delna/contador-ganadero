@@ -234,10 +234,10 @@ export default function InventarioPage() {
           <div>
             <h2 className="chart-title">Bovinos</h2>
             {inventario?.bovinos?.filter(b => b.activo).length === 0 ? (
-              <p className="text-muted">No hay bovinos registrados.</p>
+              <div className="estado-vacio"><p className="text-muted">No hay bovinos registrados.</p></div>
             ) : (
               <div className="table-responsive">
-                <table className="data-table">
+                <table className="data-table tabla--stack">
                   <thead>
                     <tr>
                       <th>Tag</th>
@@ -252,14 +252,14 @@ export default function InventarioPage() {
                   <tbody>
                     {inventario.bovinos.filter(b => b.activo).map(b => (
                       <tr key={b._id}>
-                        <td>{b.tagId}</td>
-                        <td>{b.nombre || '-'}</td>
-                        <td>{b.tipo}</td>
-                        <td>{b.raza || '-'}</td>
-                        <td>{b.pesoActualKg}</td>
-                        <td><span className={`badge badge-${b.estadoSanitario === 'sano' ? 'exito' : 'advertencia'}`}>{b.estadoSanitario}</span></td>
-                        <td>
-                          <div className="acciones-cell" style={{ display: 'flex', gap: '8px' }}>
+                        <td data-label="Tag">{b.tagId}</td>
+                        <td data-label="Nombre">{b.nombre || '-'}</td>
+                        <td data-label="Tipo">{b.tipo}</td>
+                        <td data-label="Raza">{b.raza || '-'}</td>
+                        <td data-label="Peso (kg)">{b.pesoActualKg}</td>
+                        <td data-label="Estado"><span className={`badge badge-${b.estadoSanitario === 'sano' ? 'exito' : 'advertencia'}`}>{b.estadoSanitario}</span></td>
+                        <td data-label="Acciones">
+                          <div className="acciones-cell">
                             <button className="btn-icon" onClick={() => abrirEdicion(b)} title="Editar"><Edit3 size={16} /></button>
                             <button className="btn-icon" onClick={() => handleEliminar(b._id)} title="Eliminar"><Trash2 size={16} /></button>
                           </div>
@@ -277,10 +277,10 @@ export default function InventarioPage() {
           <div>
             <h2 className="chart-title">Lotes de Aves</h2>
             {inventario?.lotesAves?.filter(l => l.activo).length === 0 ? (
-              <p className="text-muted">No hay lotes de aves registrados.</p>
+              <div className="estado-vacio"><p className="text-muted">No hay lotes de aves registrados.</p></div>
             ) : (
               <div className="table-responsive">
-                <table className="data-table">
+                <table className="data-table tabla--stack">
                   <thead>
                     <tr>
                       <th>Lote</th>
@@ -295,14 +295,14 @@ export default function InventarioPage() {
                   <tbody>
                     {inventario.lotesAves.filter(l => l.activo).map(l => (
                       <tr key={l._id}>
-                        <td>{l.loteId}</td>
-                        <td>{l.especie}</td>
-                        <td>{l.galpon || '-'}</td>
-                        <td>{l.cicloActual?.nActualAves || 0}</td>
-                        <td>{l.totalHuevosProducidos || 0} / {l.totalCartonesProducidos || 0}</td>
-                        <td>{l.cicloActual?.estado || '-'}</td>
-                        <td>
-                          <div className="acciones-cell" style={{ display: 'flex', gap: '8px' }}>
+                        <td data-label="Lote">{l.loteId}</td>
+                        <td data-label="Especie">{l.especie}</td>
+                        <td data-label="Galpón">{l.galpon || '-'}</td>
+                        <td data-label="Aves Actuales">{l.cicloActual?.nActualAves || 0}</td>
+                        <td data-label="Huevos/Cartones">{l.totalHuevosProducidos || 0} / {l.totalCartonesProducidos || 0}</td>
+                        <td data-label="Estado">{l.cicloActual?.estado || '-'}</td>
+                        <td data-label="Acciones">
+                          <div className="acciones-cell">
                             <button className="btn-icon" onClick={() => abrirEdicion(l)} title="Editar"><Edit3 size={16} /></button>
                             <button className="btn-icon" onClick={() => handleEliminar(l._id)} title="Eliminar"><Trash2 size={16} /></button>
                           </div>
@@ -320,10 +320,10 @@ export default function InventarioPage() {
           <div>
             <h2 className="chart-title">Estanques</h2>
             {inventario?.estanques?.filter(e => e.activo).length === 0 ? (
-              <p className="text-muted">No hay estanques registrados.</p>
+              <div className="estado-vacio"><p className="text-muted">No hay estanques registrados.</p></div>
             ) : (
               <div className="table-responsive">
-                <table className="data-table">
+                <table className="data-table tabla--stack">
                   <thead>
                     <tr>
                       <th>Estanque</th>
@@ -339,15 +339,15 @@ export default function InventarioPage() {
                   <tbody>
                     {inventario.estanques.filter(e => e.activo).map(e => (
                       <tr key={e._id}>
-                        <td>{e.estanqueId}</td>
-                        <td>{e.especie}</td>
-                        <td>{e.capacidadM3}</td>
-                        <td>{e.nActual}</td>
-                        <td>{e.biomasaTotalKg?.toLocaleString()}</td>
-                        <td>{e.tasaConversionAlimenticia?.toFixed(2) || '-'}</td>
-                        <td>{e.estado}</td>
-                        <td>
-                          <div className="acciones-cell" style={{ display: 'flex', gap: '8px' }}>
+                        <td data-label="Estanque">{e.estanqueId}</td>
+                        <td data-label="Especie">{e.especie}</td>
+                        <td data-label="Capacidad (m³)">{e.capacidadM3}</td>
+                        <td data-label="Peces">{e.nActual}</td>
+                        <td data-label="Biomasa (kg)">{e.biomasaTotalKg?.toLocaleString()}</td>
+                        <td data-label="FCA">{e.tasaConversionAlimenticia?.toFixed(2) || '-'}</td>
+                        <td data-label="Estado">{e.estado}</td>
+                        <td data-label="Acciones">
+                          <div className="acciones-cell">
                             <button className="btn-icon" onClick={() => abrirEdicion(e)} title="Editar"><Edit3 size={16} /></button>
                             <button className="btn-icon" onClick={() => handleEliminar(e._id)} title="Eliminar"><Trash2 size={16} /></button>
                           </div>
@@ -365,10 +365,10 @@ export default function InventarioPage() {
           <div>
             <h2 className="chart-title">Colmenas</h2>
             {inventario?.colmenas?.filter(c => c.activo).length === 0 ? (
-              <p className="text-muted">No hay colmenas registradas.</p>
+              <div className="estado-vacio"><p className="text-muted">No hay colmenas registradas.</p></div>
             ) : (
               <div className="table-responsive">
-                <table className="data-table">
+                <table className="data-table tabla--stack">
                   <thead>
                     <tr>
                       <th>Colmena</th>
@@ -383,14 +383,14 @@ export default function InventarioPage() {
                   <tbody>
                     {inventario.colmenas.filter(c => c.activo).map(c => (
                       <tr key={c._id}>
-                        <td>{c.colmenaId}</td>
-                        <td>{c.especie}</td>
-                        <td>{c.ubicacion || '-'}</td>
-                        <td>{c.estadoColonia}</td>
-                        <td>{c.mielProducidaTotalKg}</td>
-                        <td>{c.extracciones?.length || 0}</td>
-                        <td>
-                          <div className="acciones-cell" style={{ display: 'flex', gap: '8px' }}>
+                        <td data-label="Colmena">{c.colmenaId}</td>
+                        <td data-label="Especie">{c.especie}</td>
+                        <td data-label="Ubicación">{c.ubicacion || '-'}</td>
+                        <td data-label="Estado">{c.estadoColonia}</td>
+                        <td data-label="Miel (kg)">{c.mielProducidaTotalKg}</td>
+                        <td data-label="Extracciones">{c.extracciones?.length || 0}</td>
+                        <td data-label="Acciones">
+                          <div className="acciones-cell">
                             <button className="btn-icon" onClick={() => abrirEdicion(c)} title="Editar"><Edit3 size={16} /></button>
                             <button className="btn-icon" onClick={() => handleEliminar(c._id)} title="Eliminar"><Trash2 size={16} /></button>
                           </div>
@@ -423,11 +423,11 @@ export default function InventarioPage() {
           title="Confirmar Eliminación"
           size="sm"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div className="confirm-dialog-body">
             <AlertTriangle size={28} style={{ color: 'var(--color-advertencia)' }} />
             <span>¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.</span>
           </div>
-          <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+          <div className="form-actions">
             <button className="btn btn-secondary" onClick={() => setConfirmarEliminar(null)}>Cancelar</button>
             <button className="btn btn-danger" onClick={confirmarEliminarAccion}>Eliminar</button>
           </div>

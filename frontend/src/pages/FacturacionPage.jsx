@@ -115,10 +115,10 @@ export default function FacturacionPage() {
       {/* Lista de facturas */}
       <h2 className="chart-title">Facturas Emitidas</h2>
       {facturas.length === 0 ? (
-        <p className="text-muted">No hay facturas emitidas.</p>
+        <div className="estado-vacio"><p className="text-muted">No hay facturas emitidas.</p></div>
       ) : (
         <div className="table-responsive">
-          <table className="data-table">
+          <table className="data-table tabla--stack">
             <thead>
               <tr>
                 <th>Consecutivo</th>
@@ -133,13 +133,13 @@ export default function FacturacionPage() {
             <tbody>
               {facturas.map(f => (
                 <tr key={f._id}>
-                  <td>{f.consecutivo}</td>
-                  <td>{f.receptor?.nombre}</td>
-                  <td>{f.tipoProducto.replace(/_/g, ' ')}</td>
-                  <td>{new Date(f.fechaEmision).toLocaleDateString('es-CR')}</td>
-                  <td>₡{f.resumenFactura?.totalComprobante?.toLocaleString() || 0}</td>
-                  <td>₡{f.resumenFactura?.totalImpuesto?.toLocaleString() || 0}</td>
-                  <td>
+                  <td data-label="Consecutivo">{f.consecutivo}</td>
+                  <td data-label="Receptor">{f.receptor?.nombre}</td>
+                  <td data-label="Producto">{f.tipoProducto.replace(/_/g, ' ')}</td>
+                  <td data-label="Fecha">{new Date(f.fechaEmision).toLocaleDateString('es-CR')}</td>
+                  <td data-label="Total">₡{f.resumenFactura?.totalComprobante?.toLocaleString() || 0}</td>
+                  <td data-label="IVA (1%)">₡{f.resumenFactura?.totalImpuesto?.toLocaleString() || 0}</td>
+                  <td data-label="Estado">
                     <span className={`badge ${estadoBadge(f.estado)}`}>
                       {f.estado}
                     </span>

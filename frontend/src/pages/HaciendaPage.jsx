@@ -169,7 +169,7 @@ export default function HaciendaPage() {
             {ambiente?.ambiente === 'local' && ' · modo prueba (no envía a Hacienda)'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="btn-group">
           <button className="btn btn-primary" onClick={() => abrirModal('FE')}>
             <FileText size={18} /> Emitir Factura
           </button>
@@ -227,7 +227,7 @@ function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml }) {
   }
   return (
     <div className="table-responsive">
-      <table className="data-table">
+      <table className="data-table tabla--stack">
         <thead>
           <tr>
             <th>Clave / Consecutivo</th>
@@ -242,14 +242,14 @@ function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml }) {
         <tbody>
           {docs.map((d) => (
             <tr key={d._id}>
-              <td className="text-mono text-sm">{d.claveNumerica || '—'}<br /><small>{d.consecutivo}</small></td>
-              <td>{d.receptor?.nombre || '—'}</td>
-              <td>{new Date(d.fechaEmision).toLocaleDateString('es-CR')}</td>
-              <td className="text-mono">₡{d.resumenFactura?.totalComprobante?.toLocaleString('es-CR') || 0}</td>
-              <td className="text-mono">₡{d.resumenFactura?.totalImpuesto?.toLocaleString('es-CR') || 0}</td>
-              <td><span className={`badge ${ESTADO_BADGE[d.estado] || ''}`}>{d.estado}</span></td>
-              <td>
-                <div style={{ display: 'flex', gap: '4px' }}>
+              <td className="text-mono text-sm" data-label="Clave / Consecutivo">{d.claveNumerica || '—'}<br /><small>{d.consecutivo}</small></td>
+              <td data-label="Receptor">{d.receptor?.nombre || '—'}</td>
+              <td data-label="Fecha">{new Date(d.fechaEmision).toLocaleDateString('es-CR')}</td>
+              <td className="text-mono" data-label="Total">₡{d.resumenFactura?.totalComprobante?.toLocaleString('es-CR') || 0}</td>
+              <td className="text-mono" data-label="IVA">₡{d.resumenFactura?.totalImpuesto?.toLocaleString('es-CR') || 0}</td>
+              <td data-label="Estado"><span className={`badge ${ESTADO_BADGE[d.estado] || ''}`}>{d.estado}</span></td>
+              <td data-label="Acciones">
+                <div className="acciones-cell">
                   {d.estado === 'borrador' && (
                     <button className="btn-icon" title="Firmar" onClick={() => onFirmar(d._id)}><PenTool size={14} /></button>
                   )}

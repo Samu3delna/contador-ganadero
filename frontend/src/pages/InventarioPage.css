@@ -9,7 +9,18 @@
   border-radius: var(--radio-lg);
   padding: 5px;
   width: fit-content;
-  flex-wrap: wrap;
+  max-width: 100%;
+  /* En pantallas estrechas las pestañas se desplazan horizontalmente en
+     lugar de romper la fila y duplicar la altura de la cabecera. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.inv-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .inv-tab {
@@ -26,6 +37,12 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 40px;
+  scroll-snap-align: start;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .inv-tab:hover {

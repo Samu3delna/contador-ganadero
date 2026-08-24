@@ -6,43 +6,43 @@
   --color-primario-claro: #4CAF50;    /* Verde esmeralda vivo */
   --color-primario-oscuro: #0A3D12;
   --color-primario-glow: rgba(76, 175, 80, 0.25);
-  
+
   --color-secundario: #F57F17;        /* Ámbar cálido */
   --color-secundario-claro: #FBC02D;
   --color-secundario-glow: rgba(245, 127, 23, 0.25);
-  
+
   /* Superficies y Fondos */
   --color-fondo: #0B131B;             /* Fondo principal */
   --color-superficie: #13202D;        /* Tarjetas base y paneles */
   --color-superficie-2: #1C2D3D;      /* Elementos elevados / inputs / hover */
   --color-superficie-3: #253A4D;      /* Capas activas y menús flotantes */
-  
+
   /* Bordes */
   --color-borde: rgba(255, 255, 255, 0.08);
   --color-borde-fuerte: rgba(255, 255, 255, 0.16);
   --color-borde-hover: rgba(76, 175, 80, 0.35);
   --color-borde-activo: #4CAF50;
-  
+
   /* Tipografía y Contraste */
   --color-texto: #F0F4F8;             /* Texto principal blanco brillante */
   --color-texto-sec: #94A8BC;         /* Texto secundario azul grisáceo legible */
   --color-texto-muted: #677E95;       /* Texto atenuado / subtítulos */
   --color-texto-mutado: #677E95;      /* Alias para compatibilidad */
   --color-texto-inv: #0B131B;         /* Texto sobre fondos muy claros */
-  
+
   /* Estados del Sistema */
   --color-exito: #00E676;             /* Verde neón de éxito */
   --color-exito-bg: rgba(0, 230, 118, 0.12);
   --color-exito-border: rgba(0, 230, 118, 0.3);
-  
+
   --color-error: #FF5252;             /* Rojo vibrante de error */
   --color-error-bg: rgba(255, 82, 82, 0.12);
   --color-error-border: rgba(255, 82, 82, 0.3);
-  
+
   --color-advertencia: #FFD740;       /* Ámbar de advertencia */
   --color-advertencia-bg: rgba(255, 215, 64, 0.12);
   --color-advertencia-border: rgba(255, 215, 64, 0.3);
-  
+
   --color-info: #40C4FF;              /* Cyan informativo */
   --color-info-bg: rgba(64, 196, 255, 0.12);
   --color-info-border: rgba(64, 196, 255, 0.3);
@@ -60,19 +60,47 @@
   --espacio-xl: 2rem;
   --espacio-2xl: 3rem;
 
+  /* Espaciado fluido (se adapta al ancho del viewport) */
+  --espacio-fluido-sm: clamp(0.5rem, 1.6vw, 0.75rem);
+  --espacio-fluido-md: clamp(0.75rem, 2.4vw, 1.25rem);
+  --espacio-fluido-lg: clamp(1rem, 3vw, 2rem);
+  --espacio-fluido-xl: clamp(1.5rem, 5vw, 3rem);
+
+  /* Métricas de Layout */
+  --sidebar-w: 270px;
+  --topbar-h: 56px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Altura de viewport tolerante a las barras de navegación móviles */
+  --vh-full: 100vh;
+
+  /* Área táctil mínima recomendada (WCAG 2.5.5 / iOS HIG) */
+  --tap-min: 44px;
+
   /* Radios de Borde */
   --radio-sm: 6px;
   --radio-md: 10px;
   --radio-lg: 16px;
   --radio-xl: 24px;
   --radio-full: 9999px;
-  
+
   /* Sombras y Luces */
   --sombra-sm: 0 2px 6px rgba(0, 0, 0, 0.25);
   --sombra-md: 0 6px 16px rgba(0, 0, 0, 0.35);
   --sombra-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
   --sombra-glow: 0 0 20px rgba(76, 175, 80, 0.25);
   --sombra-glow-amber: 0 0 20px rgba(245, 127, 23, 0.25);
+}
+
+/* Unidades dinámicas de viewport: evitan el "salto" y el corte de contenido
+   cuando aparece/desaparece la barra de direcciones en móviles. */
+@supports (height: 100dvh) {
+  :root {
+    --vh-full: 100dvh;
+  }
 }
 
 /* ==========================================================================
@@ -88,6 +116,9 @@
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
+  /* Evita que iOS agrande el texto al rotar el dispositivo */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -98,7 +129,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  min-height: var(--vh-full);
   overflow-x: hidden;
+  /* Nada debe poder desbordar horizontalmente el documento */
+  max-width: 100%;
+}
+
+/* Bloquea el scroll del fondo cuando hay un panel/modal abierto */
+body.no-scroll {
+  overflow: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -107,20 +146,47 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-texto);
   line-height: 1.25;
   letter-spacing: -0.015em;
+  /* Evita títulos largos que rompan el layout en pantallas pequeñas */
+  overflow-wrap: break-word;
 }
 
 p {
   color: var(--color-texto);
+  overflow-wrap: break-word;
 }
 
 a {
   color: var(--color-primario-claro);
   text-decoration: none;
   transition: color 0.2s ease, opacity 0.2s ease;
+  overflow-wrap: break-word;
 }
 
 a:hover {
   color: var(--color-exito);
+}
+
+/* Multimedia siempre responsiva */
+img, svg, video, canvas, iframe {
+  max-width: 100%;
+}
+
+img, video {
+  height: auto;
+}
+
+/* Los elementos de formulario heredan la tipografía del sistema */
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 100%;
+  color: inherit;
+}
+
+/* Foco visible y consistente para navegación por teclado */
+:focus-visible {
+  outline: 2px solid var(--color-primario-claro);
+  outline-offset: 2px;
+  border-radius: var(--radio-sm);
 }
 
 /* Scrollbars Globales */
@@ -153,12 +219,20 @@ a:hover {
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-lg);
-  padding: var(--espacio-lg);
+  padding: var(--espacio-fluido-md);
   box-shadow: var(--sombra-md);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
-              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.25s ease;
   position: relative;
+  /* Impide que tablas o textos largos desborden la tarjeta */
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .glass-card, .card {
+    padding: var(--espacio-lg);
+  }
 }
 
 .glass-card:hover {
@@ -174,6 +248,14 @@ a:hover {
   border-radius: var(--radio-md);
 }
 
+/* Los efectos hover con desplazamiento sólo tienen sentido con puntero fino */
+@media (hover: none) {
+  .glass-card:hover,
+  .card:hover {
+    transform: none;
+  }
+}
+
 /* ==========================================================================
    SISTEMA DE BOTONES
    ========================================================================== */
@@ -184,6 +266,7 @@ a:hover {
   justify-content: center;
   gap: var(--espacio-sm);
   padding: 0.65rem 1.25rem;
+  min-height: var(--tap-min);
   border-radius: var(--radio-md);
   font-family: var(--font-headers);
   font-size: 0.92rem;
@@ -194,6 +277,9 @@ a:hover {
   text-decoration: none;
   white-space: nowrap;
   user-select: none;
+  /* Elimina el retardo de 300ms y el resalte azul en móvil */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn:disabled {
@@ -261,6 +347,7 @@ a:hover {
 .btn-sm {
   padding: 0.45rem 0.85rem;
   font-size: 0.82rem;
+  min-height: 36px;
   border-radius: var(--radio-sm);
 }
 
@@ -274,8 +361,8 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   border-radius: var(--radio-md);
   background: var(--color-superficie-2);
@@ -283,6 +370,17 @@ a:hover {
   color: var(--color-texto-sec);
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* En dispositivos táctiles ampliamos el área activa sin cambiar el diseño */
+@media (pointer: coarse) {
+  .btn-icon {
+    width: var(--tap-min);
+    height: var(--tap-min);
+  }
 }
 
 .btn-icon:hover:not(:disabled) {
@@ -297,13 +395,22 @@ a:hover {
   cursor: not-allowed;
 }
 
+/* Utilidad: en móvil el botón ocupa todo el ancho disponible */
+@media (max-width: 640px) {
+  .btn-block-movil {
+    width: 100%;
+  }
+}
+
 /* ==========================================================================
    SISTEMA DE FORMULARIOS & ENTRADAS
    ========================================================================== */
 
 .input, select.input, textarea.input {
   width: 100%;
+  max-width: 100%;
   padding: 0.75rem 1rem;
+  min-height: var(--tap-min);
   border-radius: var(--radio-md);
   border: 1px solid var(--color-borde-fuerte);
   background-color: var(--color-superficie-2);
@@ -311,6 +418,24 @@ a:hover {
   font-family: var(--font-body);
   font-size: 0.92rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* iOS hace zoom automático si el input mide menos de 16px: lo evitamos */
+@media (max-width: 768px) {
+  .input,
+  select.input,
+  textarea.input,
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input[type='number'],
+  input[type='date'],
+  input[type='search'],
+  input[type='tel'],
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 .input:focus, select.input:focus, textarea.input:focus {
@@ -338,11 +463,16 @@ select.input option {
   color: var(--color-texto);
 }
 
+textarea.input {
+  resize: vertical;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-bottom: var(--espacio-md);
+  min-width: 0;
 }
 
 .form-group label {
@@ -353,9 +483,10 @@ select.input option {
   letter-spacing: 0.01em;
 }
 
+/* `min()` evita que la columna mínima (240px) desborde pantallas de 320px */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: var(--espacio-md);
 }
 
@@ -363,6 +494,104 @@ select.input option {
   font-size: 0.8rem;
   color: var(--color-texto-muted);
   margin-top: 2px;
+}
+
+/* Ocupa toda la fila del grid. `1 / -1` es correcto con cualquier número de
+   columnas; `span 2` creaba una columna fantasma (y desbordaba) cuando el
+   grid colapsaba a una sola columna en móvil. */
+.form-grid-full {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+/* Separador de sección dentro de un formulario */
+.form-seccion-titulo {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 4px;
+  margin: var(--espacio-md) 0 var(--espacio-xs);
+  font-size: 0.98rem;
+}
+
+.form-seccion-titulo:first-child {
+  margin-top: 0;
+}
+
+/* --------------------------------------------------------------------------
+   FILAS DE LÍNEAS DE DETALLE (facturación)
+   Escritorio: una fila horizontal. Móvil: campos apilados a ancho completo
+   dentro de una tarjeta, para que no se compriman a 40px de ancho.
+   -------------------------------------------------------------------------- */
+.linea-detalle {
+  display: flex;
+  gap: var(--espacio-sm);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--espacio-sm);
+}
+
+.linea-detalle > .input {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .linea-detalle {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: var(--espacio-md);
+    background: var(--color-superficie-2);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-md);
+  }
+
+  .linea-detalle > .input,
+  .linea-detalle > select.input {
+    flex: 1 1 auto !important;
+    width: 100%;
+  }
+
+  .linea-detalle > .btn-icon {
+    align-self: flex-end;
+  }
+}
+
+/* Resumen de totales (subtotal / IVA / total) */
+.resumen-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--espacio-md);
+  margin-bottom: 4px;
+}
+
+.resumen-fila > span:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.resumen-fila--total {
+  font-weight: 700;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+/* Fila de acciones de formulario: se apila y ocupa el ancho en móvil */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espacio-md);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  .form-actions > .btn {
+    width: 100%;
+  }
 }
 
 /* ==========================================================================
@@ -419,6 +648,29 @@ select.input option {
 }
 
 /* ==========================================================================
+   SISTEMA DE PESTAÑAS (patrón compartido por varias páginas)
+   ========================================================================== */
+
+.tabs-scroll {
+  display: flex;
+  gap: 6px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: 5px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+
+.tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================================================
    SISTEMA DE MODALES GLOBAL
    ========================================================================== */
 
@@ -432,8 +684,11 @@ select.input option {
   align-items: center;
   justify-content: center;
   padding: var(--espacio-lg);
+  padding-top: max(var(--espacio-lg), var(--safe-top));
+  padding-bottom: max(var(--espacio-lg), var(--safe-bottom));
   z-index: 1000;
   animation: fadeIn 0.25s ease-out forwards;
+  overscroll-behavior: contain;
 }
 
 .modal-content, .modal-container {
@@ -443,6 +698,7 @@ select.input option {
   box-shadow: var(--sombra-lg), 0 0 30px rgba(0, 0, 0, 0.6);
   width: 100%;
   max-height: 90vh;
+  max-height: min(90vh, calc(var(--vh-full) - 2 * var(--espacio-lg)));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -459,16 +715,19 @@ select.input option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--espacio-lg);
+  gap: var(--espacio-md);
+  padding: var(--espacio-fluido-md) var(--espacio-fluido-lg);
   border-bottom: 1px solid var(--color-borde);
   background: rgba(11, 19, 27, 0.4);
+  flex-shrink: 0;
 }
 
 .modal-title {
   font-family: var(--font-headers);
-  font-size: 1.25rem;
+  font-size: clamp(1.05rem, 3vw, 1.25rem);
   font-weight: 700;
   color: var(--color-texto);
+  min-width: 0;
 }
 
 .modal-close {
@@ -479,9 +738,19 @@ select.input option {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
   border-radius: var(--radio-sm);
   transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  .modal-close {
+    width: var(--tap-min);
+    height: var(--tap-min);
+  }
 }
 
 .modal-close:hover {
@@ -490,8 +759,10 @@ select.input option {
 }
 
 .modal-body {
-  padding: var(--espacio-lg);
+  padding: var(--espacio-fluido-lg);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   flex: 1;
 }
 
@@ -500,21 +771,66 @@ select.input option {
   align-items: center;
   justify-content: flex-end;
   gap: var(--espacio-md);
-  padding: var(--espacio-md) var(--espacio-lg);
+  padding: var(--espacio-md) var(--espacio-fluido-lg);
   border-top: 1px solid var(--color-borde);
   background: rgba(11, 19, 27, 0.4);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* En móvil el modal se convierte en una hoja inferior a pantalla completa */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-content, .modal-container {
+    max-width: 100%;
+    max-height: calc(var(--vh-full) - var(--safe-top) - 1.5rem);
+    border-radius: var(--radio-xl) var(--radio-xl) 0 0;
+    border-bottom: none;
+    padding-bottom: var(--safe-bottom);
+    animation: sheetUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .modal-footer > .btn {
+    width: 100%;
+  }
 }
 
 /* ==========================================================================
    SISTEMA DE TABLAS GLOBAL
    ========================================================================== */
 
-.table-responsive {
+/* `.table-responsive` y `.tabla-responsive` son equivalentes: ambos nombres
+   se usan en el código y antes sólo uno tenía estilos (las tablas
+   desbordaban horizontalmente la página en móvil). */
+.table-responsive,
+.tabla-responsive {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   border-radius: var(--radio-md);
   border: 1px solid var(--color-borde);
   background: var(--color-superficie);
+  /* Sombras que indican que aún queda contenido por desplazar */
+  background-image:
+    linear-gradient(to right, var(--color-superficie) 30%, rgba(19, 32, 45, 0)),
+    linear-gradient(to left, var(--color-superficie) 30%, rgba(19, 32, 45, 0)),
+    linear-gradient(to right, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0)),
+    linear-gradient(to left, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0));
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
 .data-table, .tabla {
@@ -522,6 +838,20 @@ select.input option {
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.9rem;
+}
+
+/* Dentro de un contenedor con scroll la tabla necesita un ancho mínimo para
+   no comprimir las columnas hasta hacerlas ilegibles. */
+.table-responsive > .data-table,
+.table-responsive > .tabla,
+.tabla-responsive > .data-table,
+.tabla-responsive > .tabla {
+  min-width: 640px;
+}
+
+.table-responsive > .tabla-mini,
+.tabla-responsive > .tabla-mini {
+  min-width: 560px;
 }
 
 .data-table thead th, .tabla thead th {
@@ -563,6 +893,150 @@ select.input option {
   font-size: 0.78rem;
 }
 
+@media (max-width: 768px) {
+  .data-table thead th, .tabla thead th,
+  .data-table tbody td, .tabla tbody td {
+    padding: 0.7rem 0.75rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   TABLAS APILABLES: en móvil cada fila se convierte en una tarjeta.
+   Uso: <table class="tabla tabla--stack"> y <td data-label="Fecha">
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .tabla-responsive:has(.tabla--stack),
+  .table-responsive:has(.tabla--stack) {
+    border: none;
+    background: none;
+    overflow: visible;
+  }
+
+  .table-responsive > .tabla--stack,
+  .tabla-responsive > .tabla--stack {
+    min-width: 0;
+  }
+
+  .tabla--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .tabla--stack tbody tr {
+    display: block;
+    margin-bottom: var(--espacio-sm);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-md);
+    background: var(--color-superficie);
+    padding: 0.25rem 0.25rem;
+  }
+
+  .tabla--stack tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-md);
+    padding: 0.55rem 0.75rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    text-align: right;
+  }
+
+  .tabla--stack tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .tabla--stack tbody td::before {
+    content: attr(data-label);
+    font-family: var(--font-headers);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-texto-sec);
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .tabla--stack tbody td:empty,
+  .tabla--stack tbody td[data-label='']::before {
+    display: none;
+  }
+}
+
+/* Fila de filtros / controles: se envuelve y en móvil ocupa todo el ancho */
+.filtros-row {
+  display: flex;
+  gap: var(--espacio-md);
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filtros-row .form-group {
+  margin: 0;
+  min-width: 0;
+}
+
+.filtros-row .form-group--auto { flex: 1 1 240px; }
+.filtros-row .form-group--sm   { flex: 0 1 130px; }
+.filtros-row .form-group--md   { flex: 0 1 180px; }
+
+@media (max-width: 640px) {
+  .filtros-row {
+    align-items: stretch;
+  }
+
+  .filtros-row .form-group,
+  .filtros-row .form-group--sm,
+  .filtros-row .form-group--md,
+  .filtros-row .form-group--auto {
+    flex: 1 1 100%;
+  }
+
+  .filtros-row > .btn {
+    width: 100%;
+  }
+}
+
+/* Grupo de botones que se apilan en móvil */
+.btn-group {
+  display: flex;
+  gap: var(--espacio-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .btn-group > .btn {
+    flex: 1 1 100%;
+  }
+}
+
+/* Cuerpo de un diálogo de confirmación (icono + mensaje) */
+.confirm-dialog-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-md);
+  margin-bottom: var(--espacio-md);
+}
+
+.confirm-dialog-body > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Grupo de botones de acción dentro de una celda de tabla */
+.acciones-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 /* ==========================================================================
    UTILIDADES & ANIMACIONES
    ========================================================================== */
@@ -591,6 +1065,27 @@ select.input option {
 .text-advertencia { color: var(--color-advertencia) !important; font-weight: 600; }
 .text-muted { color: var(--color-texto-muted) !important; font-style: italic; }
 
+/* Sólo visible para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Visibilidad por breakpoint */
+.solo-movil { display: none; }
+
+@media (max-width: 1023px) {
+  .solo-movil { display: initial; }
+  .solo-escritorio { display: none !important; }
+}
+
 .loader-center {
   display: flex;
   justify-content: center;
@@ -608,6 +1103,18 @@ select.input option {
   animation: spin 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
 }
 
+/* Estado vacío reutilizable */
+.estado-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-sm);
+  text-align: center;
+  padding: clamp(1.5rem, 6vw, 3rem) var(--espacio-md);
+  color: var(--color-texto-sec);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -615,6 +1122,11 @@ select.input option {
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sheetUp {
+  from { opacity: 0; transform: translateY(100%); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -632,4 +1144,21 @@ select.input option {
 
 .animate-slide-up {
   animation: slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   PREFERENCIAS DE ACCESIBILIDAD
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

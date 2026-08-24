@@ -2,9 +2,16 @@
 
 .billing-grid {
   display: grid;
-  grid-template-columns: 1fr 1.35fr;
-  gap: var(--espacio-lg);
-  margin-bottom: var(--espacio-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--espacio-fluido-md);
+  margin-bottom: var(--espacio-fluido-md);
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .billing-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  }
 }
 
 .billing-section {
@@ -29,7 +36,8 @@
   display: flex;
   align-items: center;
   gap: var(--espacio-md);
-  padding: 1.15rem;
+  flex-wrap: wrap;
+  padding: var(--espacio-fluido-md);
   border-radius: var(--radio-md);
   background: var(--color-superficie-2);
   border: 1px solid var(--color-borde);
@@ -51,7 +59,7 @@
 
 .billing-plan-nombre {
   font-family: var(--font-headers);
-  font-size: 1.3rem;
+  font-size: clamp(1.1rem, 3.4vw, 1.3rem);
   font-weight: 800;
   color: var(--color-texto);
 }
@@ -65,6 +73,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--espacio-sm);
+  flex-wrap: wrap;
   font-size: 0.92rem;
   padding: 0.4rem 0;
 }
@@ -77,6 +87,8 @@
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--color-texto);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .billing-error {
@@ -87,8 +99,8 @@
   display: flex;
   align-items: flex-start;
   gap: var(--espacio-sm);
-  padding: var(--espacio-md) var(--espacio-lg);
-  margin-bottom: var(--espacio-lg);
+  padding: var(--espacio-md) var(--espacio-fluido-md);
+  margin-bottom: var(--espacio-md);
   border-radius: var(--radio-md);
   background: var(--color-error-bg);
   border: 1px solid var(--color-error-border);
@@ -114,7 +126,8 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--espacio-md);
-  padding: var(--espacio-lg) !important;
+  flex-wrap: wrap;
+  padding: var(--espacio-fluido-md) !important;
 }
 
 .billing-cta {
@@ -137,15 +150,29 @@
 }
 
 @media (max-width: 900px) {
-  .billing-grid {
-    grid-template-columns: 1fr;
+  .billing-cta {
+    flex-direction: column;
+    align-items: flex-start;
   }
+}
+
+@media (max-width: 640px) {
   .billing-acciones {
     flex-direction: column;
     align-items: stretch;
   }
-  .billing-cta {
+
+  .billing-acciones > .btn {
+    width: 100%;
+  }
+
+  .billing-cta > .btn {
+    width: 100%;
+  }
+
+  .billing-plan {
     flex-direction: column;
     align-items: flex-start;
+    text-align: left;
   }
 }

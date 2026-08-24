@@ -160,7 +160,7 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
       <form onSubmit={handleSubmit} className="form-grid">
         {config.requiereFacturaOriginal && (
           <>
-            <h4 style={{ gridColumn: 'span 2', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: '12px 0 4px' }}>
+            <h4 className="form-seccion-titulo">
               Recibo Electrónico de Pago
             </h4>
             <div className="form-group">
@@ -179,7 +179,7 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
 
         {tipoDoc !== 'REP' && (
           <>
-            <h4 style={{ gridColumn: 'span 2', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: '12px 0 4px' }}>Datos del Comprobante</h4>
+            <h4 className="form-seccion-titulo">Datos del Comprobante</h4>
             <div className="form-group">
               <label>Tipo de Producto *</label>
               <select className="input" value={tipoProducto} onChange={(e) => setTipoProducto(e.target.value)}>
@@ -205,7 +205,7 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
 
         {config.requiereReceptor && (
           <>
-            <h4 style={{ gridColumn: 'span 2', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: '12px 0 4px' }}>
+            <h4 className="form-seccion-titulo">
               {tipoDoc === 'FEC' ? 'Vendedor (quien vendió al emisor)' : 'Receptor (Comprador)'}
             </h4>
             <div className="form-group">
@@ -238,10 +238,10 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
 
         {tipoDoc !== 'REP' && (
           <>
-            <h4 style={{ gridColumn: 'span 2', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: '16px 0 4px' }}>Líneas (CABYS obligatorio)</h4>
-            <div style={{ gridColumn: 'span 2' }}>
+            <h4 className="form-seccion-titulo">Líneas (CABYS obligatorio)</h4>
+            <div className="form-grid-full">
               {lineas.map((l, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div key={idx} className="linea-detalle">
                   <input className="input" style={{ flex: '0 0 130px' }} placeholder="CABYS (13)" maxLength={13}
                     value={l.codigo} onChange={(e) => updateLinea(idx, 'codigo', e.target.value)} required />
                   <input className="input" style={{ flex: '2 1 200px' }} placeholder="Descripción"
@@ -262,16 +262,16 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
               </button>
             </div>
 
-            <div className="form-resumen glass-card" style={{ gridColumn: 'span 2', marginTop: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <div className="form-resumen glass-card form-grid-full" style={{ marginTop: '12px' }}>
+              <div className="resumen-fila">
                 <span>Base imponible:</span>
                 <span className="text-mono">₡{Math.round(totales.base).toLocaleString('es-CR')}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <div className="resumen-fila">
                 <span>IVA:</span>
                 <span className="text-mono">₡{Math.round(totales.iva).toLocaleString('es-CR')}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '6px' }}>
+              <div className="resumen-fila resumen-fila--total">
                 <span>Total:</span>
                 <span className="text-mono">₡{Math.round(totales.total).toLocaleString('es-CR')}</span>
               </div>
@@ -279,7 +279,7 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
           </>
         )}
 
-        <div className="form-actions" style={{ gridColumn: 'span 2', marginTop: '16px' }}>
+        <div className="form-actions form-grid-full" style={{ marginTop: '16px' }}>
           <button className="btn btn-secondary" type="button" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" type="submit" disabled={guardando}>
             {guardando ? 'Procesando...' : `Crear ${config.label}`}
