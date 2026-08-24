@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { LIMITES_POR_PLAN, PLANES_VALIDOS } = require('../config/planes');
 
 /**
  * Modelo Tenant (Inquilino / Finca) — Aislamiento multi-tenant SaaS
@@ -9,6 +10,9 @@ const mongoose = require('mongoose');
  *
  * Hoy: 1 Tenant = 1 Usuario dueño. Mañana: esqueleto preparado para RBAC
  * multi-usuario sin reescribir el esquema.
+ *
+ * Planes vigentes (3): free (Gratis + anuncios) | pro (Pro sin anuncios) |
+ * agro (Agro sin anuncios). Los límites se centralizan en config/planes.js.
  */
 
 // === Usuario miembro del tenant (subdoc embebido) ===
@@ -37,6 +41,9 @@ const limitesSchema = new mongoose.Schema({
   vlmHabilitado: { type: Boolean, default: false },   // Acceso a VLM (neva-22b/vila)
   tokensChatMes: { type: Number, default: 100000 },   // Tokens del chat IA por mes
   moduloContable: { type: Boolean, default: true },   // Acceso al módulo contable/fiscal
+  moduloD150: { type: Boolean, default: false },      // Acceso al módulo D-150 / conciliación REA
+  anunciosHabilitados: { type: Boolean, default: true }, // true = la web muestra anuncios
+  soporte: { type: String, default: 'Comunidad' },     // Comunidad | Email | Prioritario
 }, { _id: false });
 
 // === Consumo actual (se resetea mensualmente con cron o webhook Stripe) ===
@@ -58,7 +65,7 @@ const tenantSchema = new mongoose.Schema({
   // === Suscripción ===
   plan: {
     type: String,
-    enum: ['free', 'bronce', 'oro', 'corporativo'],
+    enum: PLANES_VALIDOS,
     default: 'free',
     index: true,
   },
@@ -126,44 +133,12 @@ tenantSchema.index({ stripeCustomerId: 1 }, { unique: true, sparse: true });
 tenantSchema.index({ stripeSubscriptionId: 1 }, { unique: true, sparse: true });
 
 // === MÉTODO ESTÁTICO: limites por plan ===
-const LIMITES_POR_PLAN = {
-  free: {
-    conteosMes: 5,
-    usuariosTenant: 1,
-    almacenamientoMB: 100,
-    vlmHabilitado: false,
-    tokensChatMes: 100000,
-    moduloContable: true,
-  },
-  bronce: {
-    conteosMes: 100,
-    usuariosTenant: 1,
-    almacenamientoMB: 5120,
-    vlmHabilitado: false,
-    tokensChatMes: 500000,
-    moduloContable: true,
-  },
-  oro: {
-    conteosMes: 500,
-    usuariosTenant: 3,
-    almacenamientoMB: 25600,
-    vlmHabilitado: true,
-    tokensChatMes: 2000000,
-    moduloContable: true,
-  },
-  corporativo: {
-    conteosMes: 5000,
-    usuariosTenant: 10,
-    almacenamientoMB: 204800,
-    vlmHabilitado: true,
-    tokensChatMes: 10000000,
-    moduloContable: true,
-  },
-};
+// (la definición de límites vive en config/planes.js para que backend y
+// el catálogo público /api/stripe/planes no diverjan)
 
 /**
  * Devuelve los límites correspondientes a un plan
- * @param {string} plan - free|bronce|oro|corporativo
+ * @param {string} plan - free|pro|agro
  * @returns {object} limites
  */
 tenantSchema.statics.obtenerLimitesPlan = function (plan) {

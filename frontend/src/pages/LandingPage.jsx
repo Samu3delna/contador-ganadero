@@ -113,7 +113,7 @@ const FAQ = [
   {
     pregunta: '¿Cuánto cuesta? ¿Hay plan gratuito?',
     respuesta:
-      'Hay un plan Free sin costo y sin tarjeta para probar la plataforma, y planes pagos (Bronce, Oro y Corporativo) que se ajustan al tamaño de tu operación. Podés cancelar cuando quieras.',
+      'Hay un plan Gratis sin costo y sin tarjeta para probar la plataforma (con anuncios en la web), y dos planes de pago: Pro ($19/mes) y Agro ($49/mes). Los planes de pago eliminan los anuncios y suman más conteos, VLM y soporte. Podés cancelar cuando quieras.',
   },
 ];
 
@@ -559,7 +559,7 @@ export default function LandingPage() {
           ))}
         </div>
         <p className="landing-planes-nota">
-          <Check size={14} /> Sin tarjeta para el plan Free. Cancela cuando quieras.
+          <Check size={14} /> Sin tarjeta para el plan Gratis. Pro y Agro no muestran anuncios.
         </p>
       </section>
 

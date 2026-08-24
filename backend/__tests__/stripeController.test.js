@@ -27,9 +27,8 @@ jest.mock('stripe', () => {
 process.env.STRIPE_SECRET_KEY = 'sk_test_123';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_123';
 process.env.STRIPE_PRICE_FREE = 'price_free';
-process.env.STRIPE_PRICE_BRONCE = 'price_bronce';
-process.env.STRIPE_PRICE_ORO = 'price_oro';
-process.env.STRIPE_PRICE_CORPORATIVO = 'price_corporativo';
+process.env.STRIPE_PRICE_PRO = 'price_pro';
+process.env.STRIPE_PRICE_AGRO = 'price_agro';
 process.env.FRONTEND_URL = 'http://localhost:5173';
 
 const Tenant = require('../models/Tenant');
@@ -46,7 +45,7 @@ const buildEvent = (overrides = {}) => ({
       subscription: 'sub_test_123',
       metadata: {
         tenantId: null,
-        planId: 'bronce',
+        planId: 'pro',
       },
     },
   },
@@ -122,7 +121,7 @@ describe('controllers/stripeController - webhookStripe', () => {
       type: 'checkout.session.completed',
     });
     event.data.object.metadata.tenantId = tenant._id.toString();
-    event.data.object.metadata.planId = 'bronce';
+    event.data.object.metadata.planId = 'pro';
 
     constructEventMock.mockReturnValue(event);
 
@@ -134,7 +133,7 @@ describe('controllers/stripeController - webhookStripe', () => {
     );
 
     const t = await Tenant.findById(tenant._id);
-    expect(t.plan).toBe('bronce');
+    expect(t.plan).toBe('pro');
     expect(t.estado).toBe('activo');
     expect(t.stripeCustomerId).toBe('cus_test_123');
     expect(t.stripeSubscriptionId).toBe('sub_test_123');
@@ -151,7 +150,7 @@ describe('controllers/stripeController - webhookStripe', () => {
     });
 
     event.data.object.metadata.tenantId = tenant._id.toString();
-    event.data.object.metadata.planId = 'oro';
+    event.data.object.metadata.planId = 'agro';
 
     constructEventMock.mockReturnValue(event);
 
@@ -162,7 +161,7 @@ describe('controllers/stripeController - webhookStripe', () => {
     );
 
     const t = await Tenant.findById(tenant._id);
-    expect(t.plan).toBe('oro');
+    expect(t.plan).toBe('agro');
 
     // Segunda vez con mismo event.id
     const { req: req2, res: res2 } = buildReqRes('raw-2');

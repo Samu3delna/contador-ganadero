@@ -136,6 +136,12 @@
   border-color: var(--color-error-border);
 }
 
+.plan-badge--ads {
+  background: rgba(245, 127, 23, 0.12);
+  color: var(--color-secundario);
+  border-color: rgba(245, 127, 23, 0.35);
+}
+
 .plan-card-features {
   list-style: none;
   display: flex;

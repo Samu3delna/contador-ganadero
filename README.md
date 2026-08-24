@@ -14,6 +14,7 @@ Aplicación MERN full-stack para funcionar como contador personal automatizado p
 6. **Control de Inventario Integral:** Base de datos en tiempo real de pesos individuales de bovinos, ciclos de postura de aves, tasas de conversión alimenticia de peces y volúmenes de extracción de miel.
 7. **Control de Costos de Producción:** Algoritmo que calcula el costo real de producción por kilo de carne, por cartón de huevos o por kilo de tilapia basándose en el consumo de insumos registrados (alimento, sal, vacunas). Esto asegura un margen de rentabilidad real y constante.
 8. **Facturación Electrónica en el REA:** Módulo integrado para cumplir con las directrices de Hacienda, facilitando la recepción de facturas electrónicas de compra al 1% de IVA y la emisión de facturas a clientes directo.
+9. **Suscripciones (3 planes):** Modelo freemium con **Gratis** (con anuncios), **Pro** y **Agro** (sin anuncios) para sufragar la publicidad de la web. Incluye Stripe Checkout, Customer Portal, webhooks idempotentes y límites mensuales por plan.
 
 ## Instalación
 

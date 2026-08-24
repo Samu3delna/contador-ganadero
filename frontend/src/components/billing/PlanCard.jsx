@@ -1,4 +1,4 @@
-import { Check, X, Crown, Sparkles, Eye, Users, HardDrive } from 'lucide-react';
+import { Check, X, Crown, Sparkles, Eye, Users, HardDrive, Megaphone, ShieldCheck } from 'lucide-react';
 import './PlanCard.css';
 
 export default function PlanCard({ plan, planActual, onSeleccionar }) {
@@ -61,6 +61,15 @@ export default function PlanCard({ plan, planActual, onSeleccionar }) {
         <span className="plan-badge" title="Almacenamiento">
           <HardDrive size={12} /> {plan.almacenamiento}
         </span>
+        {plan.anuncios ? (
+          <span className="plan-badge plan-badge--ads" title="La web mostrará anuncios en este plan">
+            <Megaphone size={12} /> Con anuncios
+          </span>
+        ) : (
+          <span className="plan-badge plan-badge--ok" title="Este plan no muestra anuncios">
+            <ShieldCheck size={12} /> Sin anuncios
+          </span>
+        )}
         {plan.vlm ? (
           <span className="plan-badge plan-badge--ok" title="Visión por Lenguaje (VLM)">
             <Sparkles size={12} /> VLM
