@@ -63,7 +63,17 @@ export default function CalendarioPage() {
   };
 
   const dias = getDiasMes(fechaActual);
-  const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  // En móvil sólo cabe la inicial del día; se muestra la versión larga en
+  // pantallas mayores y siempre queda el nombre completo para lectores de pantalla.
+  const diasSemana = [
+    { corto: 'L', largo: 'Lun', completo: 'Lunes' },
+    { corto: 'M', largo: 'Mar', completo: 'Martes' },
+    { corto: 'X', largo: 'Mié', completo: 'Miércoles' },
+    { corto: 'J', largo: 'Jue', completo: 'Jueves' },
+    { corto: 'V', largo: 'Vie', completo: 'Viernes' },
+    { corto: 'S', largo: 'Sáb', completo: 'Sábado' },
+    { corto: 'D', largo: 'Dom', completo: 'Domingo' },
+  ];
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   return (
@@ -83,15 +93,20 @@ export default function CalendarioPage() {
             <div className="calendario-header">
               <h2>{meses[fechaActual.getMonth()]} {fechaActual.getFullYear()}</h2>
               <div className="calendario-nav">
-                <button className="btn-icon" onClick={mesAnterior}><ChevronLeft /></button>
-                <button className="btn btn-outline" onClick={() => setFechaActual(new Date())}>Hoy</button>
-                <button className="btn-icon" onClick={mesSiguiente}><ChevronRight /></button>
+                <button className="btn-icon" onClick={mesAnterior} aria-label="Mes anterior"><ChevronLeft size={18} /></button>
+                <button className="btn btn-outline btn-sm" onClick={() => setFechaActual(new Date())}>Hoy</button>
+                <button className="btn-icon" onClick={mesSiguiente} aria-label="Mes siguiente"><ChevronRight size={18} /></button>
               </div>
             </div>
 
             <div className="calendario-grid">
               {diasSemana.map(dia => (
-                <div key={dia} className="calendario-dia-header">{dia}</div>
+                <div key={dia.completo} className="calendario-dia-header">
+                  <abbr title={dia.completo}>
+                    <span className="dia-corto">{dia.corto}</span>
+                    <span className="dia-largo">{dia.largo}</span>
+                  </abbr>
+                </div>
               ))}
               
               {dias.map((dia, index) => {
@@ -105,13 +120,15 @@ export default function CalendarioPage() {
                     <span className="numero-dia">{dia.getDate()}</span>
                     <div className="facturas-dia-lista">
                       {facturasDelDia.map(f => (
-                        <div 
-                          key={f._id} 
+                        <button
+                          type="button"
+                          key={f._id}
                           className={`factura-pill ${f.categoriaManual ? 'manual' : 'xml'}`}
                           onClick={() => setFacturaSeleccionada(f)}
+                          title={`${f.emisor?.nombre || 'Factura'} — ₡${f.resumenFactura?.totalComprobante?.toLocaleString('es-CR') || 0}`}
                         >
-                          ₡{f.resumenFactura?.totalComprobante?.toLocaleString() || 0}
-                        </div>
+                          ₡{f.resumenFactura?.totalComprobante?.toLocaleString('es-CR') || 0}
+                        </button>
                       ))}
                     </div>
                   </div>

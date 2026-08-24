@@ -1,6 +1,13 @@
+/* ==========================================================================
+   BARRA LATERAL + BARRA SUPERIOR MÓVIL
+   Breakpoint principal: 1024px. Por debajo, la barra lateral se comporta
+   como un panel deslizante (drawer) y aparece una barra superior fija.
+   ========================================================================== */
+
 .sidebar {
-  width: 270px;
+  width: var(--sidebar-w);
   height: 100vh;
+  height: var(--vh-full);
   background: var(--color-superficie);
   border-right: 1px solid var(--color-borde);
   display: flex;
@@ -11,6 +18,7 @@
   flex-shrink: 0;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+  padding-left: var(--safe-left);
 }
 
 .sidebar-header {
@@ -20,6 +28,7 @@
   padding: 1.25rem 1.25rem 1.1rem;
   border-bottom: 1px solid var(--color-borde);
   background: rgba(11, 19, 27, 0.4);
+  flex-shrink: 0;
 }
 
 .sidebar-logo-container {
@@ -45,6 +54,7 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .sidebar-title {
@@ -54,6 +64,8 @@
   color: var(--color-texto);
   letter-spacing: -0.02em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-badge {
@@ -69,6 +81,27 @@
   box-shadow: 0 2px 6px rgba(27, 94, 32, 0.3);
 }
 
+/* Botón de cierre dentro del panel (sólo móvil) */
+.sidebar-cerrar {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  color: var(--color-texto-sec);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-cerrar:hover {
+  background: var(--color-superficie-2);
+  color: var(--color-texto);
+}
+
 .sidebar-nav {
   flex: 1;
   padding: 1rem 0.85rem;
@@ -77,6 +110,8 @@
   gap: 1.1rem;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--color-superficie-2) transparent;
 }
@@ -108,6 +143,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0.75rem;
+  min-height: 40px;
   border-radius: var(--radio-md);
   color: var(--color-texto-sec);
   font-size: 0.88rem;
@@ -115,6 +151,7 @@
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
   border: 1px solid transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-link-icon {
@@ -148,12 +185,14 @@
 
 .sidebar-footer {
   padding: 0.9rem 1.1rem;
+  padding-bottom: max(0.9rem, var(--safe-bottom));
   border-top: 1px solid var(--color-borde);
   background: rgba(11, 19, 27, 0.4);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--espacio-sm);
+  flex-shrink: 0;
 }
 
 .sidebar-user {
@@ -204,21 +243,32 @@
   text-overflow: ellipsis;
 }
 
-.sidebar-user-plan {
+.sidebar-user-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.sidebar-user-plan,
+.sidebar-user-alerta {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  margin-top: 2px;
-  padding: 1px 6px;
+  padding: 2px 7px;
   font-size: 0.65rem;
   font-weight: 700;
+  font-family: inherit;
   border-radius: var(--radio-full);
-  background: rgba(76, 175, 80, 0.15);
-  color: var(--color-primario-claro);
-  border: 1px solid rgba(76, 175, 80, 0.3);
   cursor: pointer;
   width: fit-content;
   transition: all 0.2s ease;
+}
+
+.sidebar-user-plan {
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--color-primario-claro);
+  border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 .sidebar-user-plan:hover {
@@ -227,20 +277,9 @@
 }
 
 .sidebar-user-alerta {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-top: 2px;
-  padding: 1px 6px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  border-radius: var(--radio-full);
   background: var(--color-error-bg);
   color: var(--color-error);
   border: 1px solid var(--color-error-border);
-  cursor: pointer;
-  width: fit-content;
-  transition: all 0.2s ease;
 }
 
 .sidebar-user-alerta:hover {
@@ -252,7 +291,8 @@
   border: 1px solid var(--color-borde);
   color: var(--color-texto-sec);
   cursor: pointer;
-  padding: 7px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radio-md);
   display: flex;
   align-items: center;
@@ -267,49 +307,167 @@
   border-color: var(--color-error-border);
 }
 
-/* Botón Móvil */
-.sidebar-toggle {
+/* --------------------------------------------------------------------------
+   BARRA SUPERIOR MÓVIL
+   Sustituye al antiguo botón hamburguesa flotante, que se superponía al
+   contenido de las páginas.
+   -------------------------------------------------------------------------- */
+.topbar {
   display: none;
   position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 200;
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde-fuerte);
-  color: var(--color-texto);
-  padding: 8px;
-  border-radius: var(--radio-md);
-  cursor: pointer;
-  box-shadow: var(--sombra-md);
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 120;
+  align-items: center;
+  gap: var(--espacio-sm);
+  height: calc(var(--topbar-h) + var(--safe-top));
+  padding: var(--safe-top) max(var(--espacio-sm), var(--safe-right)) 0 max(var(--espacio-sm), var(--safe-left));
+  background: rgba(11, 19, 27, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--color-borde);
 }
 
+.topbar-toggle,
+.topbar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  color: var(--color-texto);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.topbar-toggle:hover,
+.topbar-logout:hover {
+  background: var(--color-superficie-2);
+  border-color: var(--color-borde-fuerte);
+}
+
+.topbar-logout:hover {
+  color: var(--color-error);
+  border-color: var(--color-error-border);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-sm);
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+.topbar-brand-icon {
+  color: var(--color-primario-claro);
+  flex-shrink: 0;
+}
+
+.topbar-title {
+  font-family: var(--font-headers);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Capa oscura tras el panel */
 .sidebar-overlay {
   display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 110;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
 }
 
-@media (max-width: 768px) {
+/* --------------------------------------------------------------------------
+   TABLET & MÓVIL (< 1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  .topbar {
+    display: flex;
+  }
+
   .sidebar {
     position: fixed;
     left: 0;
     top: 0;
+    /* Nunca más ancha que la pantalla en dispositivos pequeños */
+    width: min(var(--sidebar-w), 86vw);
     transform: translateX(-100%);
     box-shadow: 8px 0 32px rgba(0, 0, 0, 0.6);
+    z-index: 130;
+    padding-top: var(--safe-top);
+    visibility: hidden;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
   }
 
   .sidebar--abierto {
     transform: translateX(0);
+    visibility: visible;
   }
 
-  .sidebar-toggle {
+  .sidebar-cerrar {
     display: flex;
   }
 
   .sidebar-overlay {
     display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(4px);
-    z-index: 90;
+  }
+
+  .sidebar-overlay--visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Áreas táctiles más cómodas dentro del panel */
+  .sidebar-link {
+    padding: 0.7rem 0.85rem;
+    min-height: var(--tap-min);
+    font-size: 0.92rem;
+  }
+
+  .sidebar-nav {
+    padding-bottom: var(--espacio-lg);
+  }
+}
+
+/* El botón de salir del panel es redundante con el de la barra superior */
+@media (max-width: 1023px) {
+  .sidebar-footer .sidebar-logout {
+    display: none;
+  }
+}
+
+/* Pantallas muy bajas (móvil en horizontal): compactamos la cabecera */
+@media (max-height: 520px) and (max-width: 1023px) {
+  .sidebar-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .sidebar-footer {
+    padding: 0.6rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar-overlay {
+    transition: none;
   }
 }

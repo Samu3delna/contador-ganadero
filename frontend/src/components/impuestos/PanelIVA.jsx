@@ -26,9 +26,15 @@ export default function PanelIVA({ iva, CUATRIMESTRE_LABEL, cuatrimestre, anio }
         <div className="impuesto-detalle">
           <h4>Desglose por Tasa de IVA</h4>
           <div className="table-responsive">
-            <table className="tabla"><thead><tr><th>Tasa</th><th>Base Pagada</th><th>IVA Pagado</th><th>Base Cobrada</th><th>IVA Cobrado</th></tr></thead>
+            <table className="tabla tabla--stack"><thead><tr><th>Tasa</th><th>Base Pagada</th><th>IVA Pagado</th><th>Base Cobrada</th><th>IVA Cobrado</th></tr></thead>
               <tbody>{iva.detalleIVAPorTasa.map((d,i)=>(
-                <tr key={i}><td>{d.tasa}%</td><td className="text-mono">{formatCRC(d.basePagada)}</td><td className="text-mono">{formatCRC(d.ivaPagado)}</td><td className="text-mono">{formatCRC(d.baseCobrada)}</td><td className="text-mono">{formatCRC(d.ivaCobrado)}</td></tr>
+                <tr key={i}>
+                  <td data-label="Tasa">{d.tasa}%</td>
+                  <td className="text-mono" data-label="Base Pagada">{formatCRC(d.basePagada)}</td>
+                  <td className="text-mono" data-label="IVA Pagado">{formatCRC(d.ivaPagado)}</td>
+                  <td className="text-mono" data-label="Base Cobrada">{formatCRC(d.baseCobrada)}</td>
+                  <td className="text-mono" data-label="IVA Cobrado">{formatCRC(d.ivaCobrado)}</td>
+                </tr>
               ))}</tbody>
             </table>
           </div>

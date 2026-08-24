@@ -87,25 +87,25 @@ export default function D150Page() {
       </div>
 
       <div className="glass-card" style={{ padding: '16px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div className="form-group" style={{ margin: 0 }}>
+        <div className="filtros-row">
+          <div className="form-group form-group--md">
             <label>Mes</label>
             <select className="input" value={mes} onChange={(e) => setMes(Number(e.target.value))}>
               {MESES.map((m) => <option key={m.v} value={m.v}>{m.label}</option>)}
             </select>
           </div>
-          <div className="form-group" style={{ margin: 0 }}>
+          <div className="form-group form-group--sm">
             <label>Año</label>
             <input className="input" type="number" min="2024" max="2099" value={anio}
-              onChange={(e) => setAnio(Number(e.target.value))} style={{ width: '100px' }} />
+              onChange={(e) => setAnio(Number(e.target.value))} />
           </div>
-          <div className="form-group" style={{ margin: 0, flex: '1 1 240px' }}>
+          <div className="form-group form-group--auto">
             <label>Retenciones tarjeta (separadas por coma)</label>
             <input className="input" type="text" value={retencionesTexto}
               placeholder="ej: 12000, 8500, 4300"
               onChange={(e) => setRetencionesTexto(e.target.value)} />
           </div>
-          <div className="form-group" style={{ margin: 0, width: '160px' }}>
+          <div className="form-group form-group--md">
             <label>IVA retenido por terceros</label>
             <input className="input" type="number" min="0" step="any" value={ivaRetenido}
               onChange={(e) => setIvaRetenido(Number(e.target.value))} />
@@ -160,7 +160,7 @@ export default function D150Page() {
           </div>
 
           {/* Exportar */}
-          <div style={{ display: 'flex', gap: '8px', margin: '12px 0' }}>
+          <div className="btn-group" style={{ margin: '12px 0' }}>
             <button className="btn btn-secondary" onClick={() => descargar('pdf')} disabled={!!descargando}>
               <FileDown size={16} /> {descargando === 'pdf' ? 'Generando...' : 'Exportar PDF'}
             </button>
@@ -207,7 +207,7 @@ export default function D150Page() {
           {/* Prorrata + resultado */}
           <div className="glass-card" style={{ padding: '16px', marginTop: '12px' }}>
             <h3 style={{ marginTop: 0 }}>3. Prorrata de Crédito Fiscal</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+            <div className="d150-grid">
               <Item label="Ventas gravadas" valor={`₡${resultado.prorrata.ventasGravadas.toLocaleString('es-CR')}`} />
               <Item label="Ventas exentas" valor={`₡${resultado.prorrata.ventasExentas.toLocaleString('es-CR')}`} />
               <Item label="Porcentaje deducible" valor={`${resultado.prorrata.porcentajeDeducible}%`} />
@@ -217,7 +217,7 @@ export default function D150Page() {
             </div>
 
             <h3>4. Resultado del período</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+            <div className="d150-grid">
               <Item label="Débito fiscal" valor={`₡${resultado.resultadoFinal.debitoFiscal.toLocaleString('es-CR')}`} />
               <Item label="Menos crédito deducible" valor={`-₡${resultado.resultadoFinal.creditoDeducible.toLocaleString('es-CR')}`} />
               <Item label="Menos retenciones tarjeta" valor={`-₡${resultado.resultadoFinal.totalRetencionesTarjeta.toLocaleString('es-CR')}`} />
@@ -247,7 +247,7 @@ export default function D150Page() {
 function TablaCuadros({ head, rows, totales }) {
   return (
     <div className="table-responsive">
-      <table className="data-table">
+      <table className="data-table tabla--stack">
         <thead>
           <tr>
             {head.map((h, i) => <th key={i}>{h}</th>)}
@@ -256,20 +256,24 @@ function TablaCuadros({ head, rows, totales }) {
         <tbody>
           {rows.map((r, i) => (
             <tr key={i}>
-              <td>{r.tarifa === 0 ? 'Exento' : `Tarifa ${r.tarifa}%`}<br /><small>{r.label}</small></td>
-              <td>{r.docs}</td>
-              <td className="text-mono">₡{Math.round(r.base).toLocaleString('es-CR')}</td>
-              <td className="text-mono">₡{Math.round(r.iva).toLocaleString('es-CR')}</td>
-              {r.nc !== undefined && <td className="text-mono">{r.nc > 0 ? `₡${Math.round(r.nc).toLocaleString('es-CR')}` : '—'}</td>}
+              <td data-label={head[0]}>{r.tarifa === 0 ? 'Exento' : `Tarifa ${r.tarifa}%`}<br /><small>{r.label}</small></td>
+              <td data-label={head[1]}>{r.docs}</td>
+              <td className="text-mono" data-label={head[2]}>₡{Math.round(r.base).toLocaleString('es-CR')}</td>
+              <td className="text-mono" data-label={head[3]}>₡{Math.round(r.iva).toLocaleString('es-CR')}</td>
+              {r.nc !== undefined && (
+                <td className="text-mono" data-label={head[4]}>
+                  {r.nc > 0 ? `₡${Math.round(r.nc).toLocaleString('es-CR')}` : '—'}
+                </td>
+              )}
             </tr>
           ))}
           {totales.map((t, i) => (
-            <tr key={`t${i}`} style={{ fontWeight: 'bold', background: 'rgba(255, 255, 255, 0.03)' }}>
-              <td>{t.label}</td>
-              <td></td>
-              <td className="text-mono">₡{Math.round(t.base).toLocaleString('es-CR')}</td>
-              <td className="text-mono">₡{Math.round(t.iva).toLocaleString('es-CR')}</td>
-              {head.length > 4 && <td></td>}
+            <tr key={`t${i}`} className="fila-total">
+              <td data-label={head[0]}>{t.label}</td>
+              <td data-label={head[1]}></td>
+              <td className="text-mono" data-label={head[2]}>₡{Math.round(t.base).toLocaleString('es-CR')}</td>
+              <td className="text-mono" data-label={head[3]}>₡{Math.round(t.iva).toLocaleString('es-CR')}</td>
+              {head.length > 4 && <td data-label={head[4]}></td>}
             </tr>
           ))}
         </tbody>

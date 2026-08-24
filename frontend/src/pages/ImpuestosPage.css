@@ -9,7 +9,18 @@
   border-radius: var(--radio-lg);
   padding: 5px;
   width: fit-content;
-  flex-wrap: wrap;
+  max-width: 100%;
+  /* En pantallas estrechas las pestañas se desplazan horizontalmente en
+     lugar de romper la fila y duplicar la altura de la cabecera. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.impuesto-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .impuesto-tab {
@@ -23,6 +34,12 @@
   font-family: var(--font-headers);
   font-size: 0.9rem;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 40px;
+  scroll-snap-align: start;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .impuesto-tab:hover {
@@ -39,27 +56,38 @@
 
 .impuesto-controls {
   display: flex;
-  gap: var(--espacio-lg);
-  margin-bottom: var(--espacio-lg);
-  padding: var(--espacio-md) var(--espacio-lg) !important;
+  gap: var(--espacio-md) var(--espacio-lg);
+  margin-bottom: var(--espacio-md);
+  padding: var(--espacio-md) var(--espacio-fluido-md) !important;
   align-items: flex-end;
   flex-wrap: wrap;
 }
 
 .impuesto-controls .form-group {
-  min-width: 200px;
+  flex: 1 1 200px;
+  min-width: min(200px, 100%);
   margin-bottom: 0;
 }
 
+@media (max-width: 640px) {
+  .impuesto-controls {
+    align-items: stretch;
+  }
+
+  .impuesto-controls > .btn {
+    width: 100%;
+  }
+}
+
 .impuesto-resultado h3 {
-  margin-bottom: var(--espacio-lg);
-  font-size: 1.15rem;
+  margin-bottom: var(--espacio-md);
+  font-size: clamp(1rem, 2.6vw, 1.15rem);
 }
 
 .impuesto-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--espacio-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  gap: var(--espacio-fluido-md);
 }
 
 .impuesto-item {
@@ -77,7 +105,8 @@
 }
 
 .impuesto-valor {
-  font-size: 1.3rem;
+  font-size: clamp(1.1rem, 3.2vw, 1.3rem);
+  overflow-wrap: anywhere;
   font-weight: 700;
   color: var(--color-texto);
   font-family: var(--font-mono);
@@ -92,7 +121,7 @@
 }
 
 .impuesto-valor-grande {
-  font-size: 1.85rem;
+  font-size: clamp(1.4rem, 5vw, 1.85rem);
   font-weight: 800;
 }
 
@@ -106,12 +135,14 @@
   color: var(--color-texto-sec);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .impuesto-tabs {
     width: 100%;
+    border-radius: var(--radio-md);
   }
+
   .impuesto-tab {
-    flex: 1 1 100%;
-    justify-content: center;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.84rem;
   }
 }

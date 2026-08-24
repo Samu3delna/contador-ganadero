@@ -16,3 +16,18 @@
   padding: 2px 8px;
   border-radius: var(--radio-full);
 }
+
+/* Chips de estado: nunca se parten a mitad de palabra */
+.factura-status-chip {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .facturacion-header-actions {
+    width: 100%;
+  }
+
+  .facturacion-header-actions > .btn {
+    flex: 1 1 100%;
+  }
+}

@@ -723,14 +723,22 @@ export default function DeclaracionesPage() {
                 {resumen.iva.detalleIVAPorTasa?.length > 0 && (
                   <div className="impuesto-detalle">
                     <h4>Desglose por Tasa de IVA</h4>
-                    <table className="tabla">
-                      <thead><tr><th>Tasa</th><th>Base Pagada (Compras)</th><th>IVA Pagado</th><th>Base Cobrada (Ventas)</th><th>IVA Cobrado</th></tr></thead>
-                      <tbody>
-                        {resumen.iva.detalleIVAPorTasa.map((d, i) => (
-                          <tr key={i}><td>{d.tasa}%</td><td className="text-mono">{formatCRC(d.basePagada)}</td><td className="text-mono">{formatCRC(d.ivaPagado)}</td><td className="text-mono">{formatCRC(d.baseCobrada)}</td><td className="text-mono">{formatCRC(d.ivaCobrado)}</td></tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="table-responsive">
+                      <table className="tabla tabla--stack">
+                        <thead><tr><th>Tasa</th><th>Base Pagada (Compras)</th><th>IVA Pagado</th><th>Base Cobrada (Ventas)</th><th>IVA Cobrado</th></tr></thead>
+                        <tbody>
+                          {resumen.iva.detalleIVAPorTasa.map((d, i) => (
+                            <tr key={i}>
+                              <td data-label="Tasa">{d.tasa}%</td>
+                              <td className="text-mono" data-label="Base Pagada">{formatCRC(d.basePagada)}</td>
+                              <td className="text-mono" data-label="IVA Pagado">{formatCRC(d.ivaPagado)}</td>
+                              <td className="text-mono" data-label="Base Cobrada">{formatCRC(d.baseCobrada)}</td>
+                              <td className="text-mono" data-label="IVA Cobrado">{formatCRC(d.ivaCobrado)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -760,14 +768,21 @@ export default function DeclaracionesPage() {
                 {resumen.renta.detalleTramos?.length > 0 && (
                   <div className="impuesto-detalle">
                     <h4>Cálculo por Tramos</h4>
-                    <table className="tabla">
-                      <thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
-                      <tbody>
-                        {resumen.renta.detalleTramos.map((t, i) => (
-                          <tr key={i}><td className="text-mono">{formatCRC(t.desde)}</td><td className="text-mono">{formatCRC(t.hasta)}</td><td>{t.tasa}%</td><td className="text-mono">{formatCRC(t.impuesto)}</td></tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="table-responsive">
+                      <table className="tabla tabla--stack">
+                        <thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
+                        <tbody>
+                          {resumen.renta.detalleTramos.map((t, i) => (
+                            <tr key={i}>
+                              <td className="text-mono" data-label="Desde">{formatCRC(t.desde)}</td>
+                              <td className="text-mono" data-label="Hasta">{formatCRC(t.hasta)}</td>
+                              <td data-label="Tasa">{t.tasa}%</td>
+                              <td className="text-mono" data-label="Impuesto">{formatCRC(t.impuesto)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
 
@@ -863,14 +878,22 @@ export default function DeclaracionesPage() {
                       {declaracionActiva.detalleIVAPorTasa?.length > 0 && (
                         <div className="impuesto-detalle">
                           <h5>Desglose por Tasa</h5>
-                          <table className="tabla">
-                            <thead><tr><th>Tasa</th><th>Base Pagada</th><th>IVA Pagado</th><th>Base Cobrada</th><th>IVA Cobrado</th></tr></thead>
-                            <tbody>
-                              {declaracionActiva.detalleIVAPorTasa.map((det, i) => (
-                                <tr key={i}><td>{det.tasa}%</td><td className="text-mono">{formatCRC(det.basePagada)}</td><td className="text-mono">{formatCRC(det.ivaPagado)}</td><td className="text-mono">{formatCRC(det.baseCobrada)}</td><td className="text-mono">{formatCRC(det.ivaCobrado)}</td></tr>
-                              ))}
-                            </tbody>
-                          </table>
+                          <div className="table-responsive">
+                            <table className="tabla tabla--stack">
+                              <thead><tr><th>Tasa</th><th>Base Pagada</th><th>IVA Pagado</th><th>Base Cobrada</th><th>IVA Cobrado</th></tr></thead>
+                              <tbody>
+                                {declaracionActiva.detalleIVAPorTasa.map((det, i) => (
+                                  <tr key={i}>
+                                    <td data-label="Tasa">{det.tasa}%</td>
+                                    <td className="text-mono" data-label="Base Pagada">{formatCRC(det.basePagada)}</td>
+                                    <td className="text-mono" data-label="IVA Pagado">{formatCRC(det.ivaPagado)}</td>
+                                    <td className="text-mono" data-label="Base Cobrada">{formatCRC(det.baseCobrada)}</td>
+                                    <td className="text-mono" data-label="IVA Cobrado">{formatCRC(det.ivaCobrado)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       )}
                     </>
@@ -888,14 +911,21 @@ export default function DeclaracionesPage() {
                       {declaracionActiva.detalleTramos?.length > 0 && (
                         <div className="impuesto-detalle">
                           <h5>Cálculo por Tramos</h5>
-                          <table className="tabla">
-                            <thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
-                            <tbody>
-                              {declaracionActiva.detalleTramos.map((t, i) => (
-                                <tr key={i}><td className="text-mono">{formatCRC(t.desde)}</td><td className="text-mono">{formatCRC(t.hasta)}</td><td>{t.tasa}%</td><td className="text-mono">{formatCRC(t.impuesto)}</td></tr>
-                              ))}
-                            </tbody>
-                          </table>
+                          <div className="table-responsive">
+                            <table className="tabla tabla--stack">
+                              <thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
+                              <tbody>
+                                {declaracionActiva.detalleTramos.map((t, i) => (
+                                  <tr key={i}>
+                                    <td className="text-mono" data-label="Desde">{formatCRC(t.desde)}</td>
+                                    <td className="text-mono" data-label="Hasta">{formatCRC(t.hasta)}</td>
+                                    <td data-label="Tasa">{t.tasa}%</td>
+                                    <td className="text-mono" data-label="Impuesto">{formatCRC(t.impuesto)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       )}
                     </>
@@ -943,11 +973,11 @@ export default function DeclaracionesPage() {
           title="Confirmar Eliminación"
           size="sm"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div className="confirm-dialog-body">
             <AlertTriangle size={28} style={{ color: 'var(--color-advertencia)' }} />
             <span>¿Eliminar esta declaración? Esta acción no se puede deshacer.</span>
           </div>
-          <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+          <div className="form-actions">
             <button className="btn btn-secondary" onClick={() => setConfirmarEliminarDeclaracion(null)}>Cancelar</button>
             <button className="btn btn-danger" onClick={confirmarEliminarDeclaracionAccion}>Eliminar</button>
           </div>

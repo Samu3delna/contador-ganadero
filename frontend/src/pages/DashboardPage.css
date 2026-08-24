@@ -1,15 +1,16 @@
 .dashboard-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--espacio-lg);
-  margin-bottom: var(--espacio-xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+  gap: var(--espacio-fluido-md);
+  margin-bottom: var(--espacio-fluido-lg);
 }
 
 .dash-card {
   display: flex;
   align-items: center;
   gap: var(--espacio-md);
-  padding: 1.35rem !important;
+  padding: clamp(1rem, 3vw, 1.35rem) !important;
+  min-width: 0;
   border-radius: var(--radio-lg);
   animation-delay: var(--delay, 0s);
   border: 1px solid var(--color-borde);
@@ -22,8 +23,8 @@
 }
 
 .dash-card-icon {
-  width: 52px;
-  height: 52px;
+  width: clamp(44px, 12vw, 52px);
+  height: clamp(44px, 12vw, 52px);
   border-radius: var(--radio-md);
   display: flex;
   align-items: center;
@@ -60,6 +61,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
 }
 
 .dash-card-label {
@@ -73,20 +75,24 @@
 }
 
 .dash-card-value {
-  font-size: 1.45rem;
+  font-size: clamp(1.15rem, 3.4vw, 1.45rem);
+  overflow-wrap: anywhere;
   font-weight: 800;
   color: var(--color-texto);
   letter-spacing: -0.02em;
 }
 
 .dashboard-chart {
-  margin-bottom: var(--espacio-xl);
-  padding: var(--espacio-lg) !important;
+  margin-bottom: var(--espacio-fluido-lg);
+  padding: var(--espacio-fluido-md) !important;
+  /* Recharts necesita un contenedor que pueda encogerse */
+  min-width: 0;
+  overflow: hidden;
 }
 
 .chart-title {
-  margin-bottom: var(--espacio-lg);
-  font-size: 1.15rem;
+  margin-bottom: var(--espacio-md);
+  font-size: clamp(1rem, 2.6vw, 1.15rem);
   font-weight: 700;
   color: var(--color-texto);
   display: flex;
@@ -96,8 +102,9 @@
 
 .dashboard-bottom-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--espacio-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--espacio-fluido-md);
+  align-items: start;
 }
 
 .categoria-list {
@@ -110,7 +117,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--espacio-sm);
   padding: 0.75rem 1rem;
+  flex-wrap: wrap;
   border-radius: var(--radio-md);
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid var(--color-borde);
@@ -127,10 +136,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .categoria-nombre {
   font-size: 0.92rem;
+  overflow-wrap: anywhere;
   font-weight: 600;
   color: var(--color-texto);
   text-transform: capitalize;
@@ -145,6 +156,8 @@
   font-weight: 700;
   font-size: 0.98rem;
   color: var(--color-texto);
+  white-space: nowrap;
+  font-family: var(--font-mono);
 }
 
 .proyeccion-items {
@@ -177,7 +190,8 @@
 }
 
 .proyeccion-valor {
-  font-size: 1.55rem;
+  font-size: clamp(1.25rem, 4vw, 1.55rem);
+  overflow-wrap: anywhere;
   font-weight: 800;
   color: var(--color-texto);
 }
@@ -241,21 +255,66 @@
   animation: slideUp 0.3s ease;
 }
 
-@media (max-width: 900px) {
-  .dashboard-bottom-row {
-    grid-template-columns: 1fr;
-  }
-}
+/* --------------------------------------------------------------------------
+   RESPONSIVO
+   -------------------------------------------------------------------------- */
 
-@media (max-width: 768px) {
+/* Los controles de sincronización se convierten en una fila desplazable
+   antes de apilarse, para no ocupar tres líneas en tablet. */
+@media (max-width: 900px) {
   .dashboard-actions {
     width: 100%;
   }
+
   .sync-buttons {
-    width: 100%;
+    flex: 1;
     justify-content: space-between;
   }
+}
+
+@media (max-width: 640px) {
+  .dashboard-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sync-buttons {
+    width: 100%;
+  }
+
   .sync-buttons .btn {
     flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.4rem;
+    font-size: 0.78rem;
+  }
+
+  .btn-sync-main {
+    width: 100%;
+  }
+
+  .categoria-item {
+    padding: 0.65rem 0.8rem;
+  }
+
+  .alerta-ingresos,
+  .sync-resultado {
+    align-items: flex-start;
+    font-size: 0.84rem;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .alerta-ingresos svg,
+  .sync-resultado svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+/* Sin puntero fino no hay hover: evitamos desplazamientos "fantasma". */
+@media (hover: none) {
+  .dash-card:hover,
+  .categoria-item:hover {
+    transform: none;
   }
 }

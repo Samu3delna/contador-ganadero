@@ -5,7 +5,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--espacio-md);
-  padding: var(--espacio-xl) var(--espacio-lg);
+  padding: var(--espacio-fluido-lg) var(--espacio-fluido-md);
+  min-width: 0;
   background: var(--color-superficie);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-lg);
@@ -57,7 +58,7 @@
 }
 
 .plan-card-nombre {
-  font-size: 1.35rem;
+  font-size: clamp(1.15rem, 3.4vw, 1.35rem);
   font-weight: 800;
   color: var(--color-texto);
 }
@@ -65,14 +66,22 @@
 .plan-card-descripcion {
   font-size: 0.86rem;
   color: var(--color-texto-sec);
-  min-height: 2.5em;
   line-height: 1.4;
+}
+
+/* La altura mínima sólo iguala las tarjetas cuando están en varias columnas;
+   en una sola columna deja huecos innecesarios. */
+@media (min-width: 641px) {
+  .plan-card-descripcion {
+    min-height: 2.5em;
+  }
 }
 
 .plan-card-precio {
   display: flex;
   align-items: baseline;
   gap: 2px;
+  flex-wrap: wrap;
   font-family: var(--font-headers);
   font-weight: 900;
   color: var(--color-texto);
@@ -85,7 +94,7 @@
 }
 
 .plan-card-precio-num {
-  font-size: 2.6rem;
+  font-size: clamp(2rem, 7vw, 2.6rem);
   line-height: 1;
 }
 
@@ -138,10 +147,15 @@
 
 .plan-feature {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   font-size: 0.88rem;
   color: var(--color-texto);
+}
+
+.plan-feature > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .plan-feature-icon {
@@ -166,6 +180,8 @@
   margin-top: auto;
   width: 100%;
   padding: 0.8rem 1rem;
+  min-height: var(--tap-min);
+  touch-action: manipulation;
   border: none;
   border-radius: var(--radio-md);
   font-family: var(--font-headers);
@@ -205,8 +221,11 @@
   border: 1px solid var(--color-borde);
 }
 
-@media (max-width: 768px) {
-  .plan-card-precio-num {
-    font-size: 2.2rem;
+/* Sin puntero fino no hay hover: el desplazamiento sobra */
+@media (hover: none) {
+  .plan-card:hover,
+  .plan-card-btn--primario:hover,
+  .plan-card-btn--secundario:hover {
+    transform: none;
   }
 }

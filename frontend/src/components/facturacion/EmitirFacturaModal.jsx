@@ -156,7 +156,7 @@ export default function EmitirFacturaModal({ isOpen, onClose, onSave, guardando 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Emitir Nueva Factura REA (1% IVA)" size="lg">
       <form onSubmit={handleSubmit} className="form-grid">
-        <h4 style={{ gridColumn: 'span 2', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: '12px 0 4px' }}>Datos del Comprobante</h4>
+        <h4 className="form-seccion-titulo">Datos del Comprobante</h4>
 
         <div className="form-group">
           <label>Número de Consecutivo *</label>
@@ -202,7 +202,7 @@ export default function EmitirFacturaModal({ isOpen, onClose, onSave, guardando 
           </select>
         </div>
 
-        <h4 style={{ gridColumn: 'span 2', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: '16px 0 4px' }}>Receptor (Comprador)</h4>
+        <h4 className="form-seccion-titulo">Receptor (Comprador)</h4>
 
         <div className="form-group">
           <label>Nombre del Receptor *</label>
@@ -252,14 +252,14 @@ export default function EmitirFacturaModal({ isOpen, onClose, onSave, guardando 
           />
         </div>
 
-        <h4 style={{ gridColumn: 'span 2', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', margin: '16px 0 4px' }}>Conceptos (Líneas de Detalle)</h4>
+        <h4 className="form-seccion-titulo">Conceptos (Líneas de Detalle)</h4>
 
-        <div style={{ gridColumn: 'span 2' }}>
+        <div className="form-grid-full">
           {lineas.map((linea, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+            <div key={idx} className="linea-detalle">
               <input
                 className="input"
-                style={{ flex: 3 }}
+                style={{ flex: '3 1 180px' }}
                 type="text"
                 placeholder="Descripción del concepto"
                 value={linea.descripcion}
@@ -268,7 +268,7 @@ export default function EmitirFacturaModal({ isOpen, onClose, onSave, guardando 
               />
               <input
                 className="input"
-                style={{ flex: 1 }}
+                style={{ flex: '1 1 80px' }}
                 type="number"
                 min="0.01"
                 step="any"
@@ -279,7 +279,7 @@ export default function EmitirFacturaModal({ isOpen, onClose, onSave, guardando 
               />
               <input
                 className="input"
-                style={{ flex: 1.5 }}
+                style={{ flex: '1.5 1 110px' }}
                 type="number"
                 min="0"
                 placeholder="Precio Unit."
@@ -289,7 +289,7 @@ export default function EmitirFacturaModal({ isOpen, onClose, onSave, guardando 
               />
               <input
                 className="input"
-                style={{ flex: 1.5 }}
+                style={{ flex: '1.5 1 110px' }}
                 type="number"
                 min="0"
                 placeholder="Desc. (₡)"
@@ -312,28 +312,28 @@ export default function EmitirFacturaModal({ isOpen, onClose, onSave, guardando 
           </button>
         </div>
 
-        <div className="form-resumen glass-card" style={{ gridColumn: 'span 2', marginTop: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+        <div className="form-resumen glass-card form-grid-full" style={{ marginTop: '16px' }}>
+          <div className="resumen-fila">
             <span>Subtotal:</span>
             <span className="text-mono">₡{totalResumen.subtotal.toLocaleString('es-CR')}</span>
           </div>
           {totalResumen.descuentos > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', color: 'var(--color-error)' }}>
+            <div className="resumen-fila" style={{ color: 'var(--color-error)' }}>
               <span>Descuentos:</span>
               <span className="text-mono">-₡{totalResumen.descuentos.toLocaleString('es-CR')}</span>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <div className="resumen-fila">
             <span>IVA (1% REA):</span>
             <span className="text-mono">₡{totalResumen.iva.toLocaleString('es-CR')}</span>
           </div>
-          <div className="form-resumen-total" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '6px' }}>
+          <div className="form-resumen-total resumen-fila resumen-fila--total">
             <span>Total Comprobante:</span>
             <span className="text-mono">₡{Math.round(totalResumen.total).toLocaleString('es-CR')}</span>
           </div>
         </div>
 
-        <div className="form-actions" style={{ gridColumn: 'span 2', marginTop: '16px' }}>
+        <div className="form-actions form-grid-full" style={{ marginTop: '16px' }}>
           <button className="btn btn-secondary" type="button" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" type="submit" disabled={guardando}>
             {guardando ? 'Emitiendo...' : 'Emitir Factura'}

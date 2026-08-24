@@ -1,9 +1,12 @@
 .login-container {
   min-height: 100vh;
+  min-height: var(--vh-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--espacio-lg);
+  padding: var(--espacio-fluido-md);
+  padding-top: max(var(--espacio-fluido-md), var(--safe-top));
+  padding-bottom: max(var(--espacio-fluido-md), var(--safe-bottom));
   position: relative;
   background: var(--color-fondo);
   overflow: hidden;
@@ -26,7 +29,9 @@
   z-index: 1;
   width: 100%;
   max-width: 440px;
-  padding: 2.5rem 2.2rem !important;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: clamp(1.5rem, 5vw, 2.5rem) clamp(1.25rem, 5vw, 2.2rem) !important;
   background: rgba(19, 32, 45, 0.82) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
@@ -37,13 +42,14 @@
 
 .login-header {
   text-align: center;
-  margin-bottom: var(--espacio-xl);
+  margin-bottom: var(--espacio-fluido-lg);
 }
 
 .login-volver {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 38px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: var(--color-texto-sec);
@@ -66,8 +72,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: clamp(56px, 16vw, 72px);
+  height: clamp(56px, 16vw, 72px);
   border-radius: var(--radio-lg);
   background: linear-gradient(135deg, rgba(27, 94, 32, 0.6), rgba(76, 175, 80, 0.25));
   border: 1px solid rgba(76, 175, 80, 0.4);
@@ -76,7 +82,7 @@
 }
 
 .login-title {
-  font-size: 1.75rem;
+  font-size: clamp(1.35rem, 5.5vw, 1.75rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--color-texto);
@@ -104,6 +110,7 @@
   width: 100%;
   padding: 0.9rem;
   font-size: 1.05rem;
+  min-height: 48px;
   margin-top: var(--espacio-sm);
 }
 
@@ -120,7 +127,7 @@
 
 .login-switch {
   text-align: center;
-  margin-top: var(--espacio-lg);
+  margin-top: var(--espacio-md);
   color: var(--color-texto-sec);
   font-size: 0.88rem;
 }
@@ -128,6 +135,8 @@
 .login-switch-btn {
   background: none;
   border: none;
+  padding: 4px;
+  min-height: 32px;
   color: var(--color-primario-claro);
   cursor: pointer;
   font-weight: 700;
@@ -139,4 +148,47 @@
 .login-switch-btn:hover {
   color: var(--color-exito);
   text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVO
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: var(--espacio-sm);
+    align-items: flex-start;
+    padding-top: max(var(--espacio-lg), var(--safe-top));
+  }
+
+  .login-card {
+    border-radius: var(--radio-lg) !important;
+  }
+}
+
+/* Móvil en horizontal: el vídeo de fondo y el logo comen todo el alto útil */
+@media (max-height: 560px) {
+  .login-container {
+    align-items: flex-start;
+  }
+
+  .login-header {
+    margin-bottom: var(--espacio-md);
+  }
+
+  .login-logo {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Ahorro de datos / movimiento reducido: el vídeo de fondo se atenúa */
+@media (prefers-reduced-motion: reduce) {
+  .login-bg-video {
+    display: none;
+  }
+
+  .login-container {
+    background: radial-gradient(circle at 50% 0%, #16324a 0%, var(--color-fondo) 70%);
+  }
 }

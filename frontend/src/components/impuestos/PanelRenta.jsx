@@ -16,9 +16,14 @@ export default function PanelRenta({ renta, anio }) {
         <div className="impuesto-detalle">
           <h4>Desglose por Tramos</h4>
           <div className="table-responsive">
-            <table className="tabla"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
+            <table className="tabla tabla--stack"><thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Impuesto</th></tr></thead>
               <tbody>{renta.detalleTramos.map((t,i)=>(
-                <tr key={i}><td className="text-mono">{formatCRC(t.desde)}</td><td className="text-mono">{formatCRC(t.hasta)}</td><td>{t.tasa}%</td><td className="text-mono">{formatCRC(t.impuesto)}</td></tr>
+                <tr key={i}>
+                  <td className="text-mono" data-label="Desde">{formatCRC(t.desde)}</td>
+                  <td className="text-mono" data-label="Hasta">{formatCRC(t.hasta)}</td>
+                  <td data-label="Tasa">{t.tasa}%</td>
+                  <td className="text-mono" data-label="Impuesto">{formatCRC(t.impuesto)}</td>
+                </tr>
               ))}</tbody>
             </table>
           </div>

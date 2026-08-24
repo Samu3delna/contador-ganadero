@@ -100,11 +100,11 @@ export default function IngresosPage() {
           title="Confirmar Eliminación"
           size="sm"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div className="confirm-dialog-body">
             <AlertTriangle size={28} style={{ color: 'var(--color-advertencia)' }} />
             <span>¿Eliminar este ingreso? Esta acción no se puede deshacer.</span>
           </div>
-          <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+          <div className="form-actions">
             <button className="btn btn-secondary" onClick={() => setConfirmarEliminar(null)}>Cancelar</button>
             <button className="btn btn-danger" onClick={confirmarEliminarIngreso}>Eliminar</button>
           </div>

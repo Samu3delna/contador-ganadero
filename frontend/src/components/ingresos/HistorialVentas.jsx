@@ -8,24 +8,25 @@ export default function HistorialVentas({ cargando, ingresos, handleEliminar }) 
       <h3 className="chart-title">Historial de Ventas</h3>
       {cargando ? <div className="loader-center"><div className="loader" /></div> :
       ingresos.length === 0 ? (
-        <p style={{ color: 'var(--color-texto-sec)', textAlign:'center', padding:'2rem' }}>
-          No hay ingresos registrados. ¡Registra tu primera venta!
-        </p>
+        <div className="estado-vacio">
+          <p>No hay ingresos registrados. ¡Registra tu primera venta!</p>
+        </div>
       ) : (
         <div className="tabla-responsive">
-          <table className="tabla">
+          <table className="tabla tabla--stack">
             <thead><tr>
-              <th>Fecha</th><th>Descripción</th><th>Tipo</th><th>Cabezas</th><th>Total</th><th></th>
+              <th>Fecha</th><th>Descripción</th><th>Tipo</th><th>Cabezas</th><th>Total</th>
+              <th><span className="sr-only">Acciones</span></th>
             </tr></thead>
             <tbody>
               {ingresos.map(ing => (
                 <tr key={ing._id}>
-                  <td>{new Date(ing.fecha).toLocaleDateString('es-CR')}</td>
-                  <td>{ing.descripcion}</td>
-                  <td><span className="badge badge-exito">{ing.tipoGanado}</span></td>
-                  <td>{ing.cantidadCabezas}</td>
-                  <td className="text-mono">{formatCRC(ing.montoTotal)}</td>
-                  <td>
+                  <td data-label="Fecha">{new Date(ing.fecha).toLocaleDateString('es-CR')}</td>
+                  <td data-label="Descripción">{ing.descripcion}</td>
+                  <td data-label="Tipo"><span className="badge badge-exito">{ing.tipoGanado}</span></td>
+                  <td data-label="Cabezas">{ing.cantidadCabezas}</td>
+                  <td className="text-mono" data-label="Total">{formatCRC(ing.montoTotal)}</td>
+                  <td data-label="Acciones">
                     <button className="btn-icon" onClick={() => handleEliminar(ing._id)} title="Eliminar">
                       <Trash2 size={16} />
                     </button>

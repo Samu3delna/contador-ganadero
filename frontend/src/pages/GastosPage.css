@@ -7,22 +7,26 @@
   align-items: start;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1100px) {
   .gastos-layout {
-    grid-template-columns: 3fr 2fr;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
 }
 
 .grafico-card, .desglose-card {
-  padding: var(--espacio-lg);
+  padding: var(--espacio-fluido-md);
   height: 100%;
+  min-width: 0; /* Deja que Recharts se encoja dentro del grid */
 }
 
 .grafico-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 300px;
+  width: 100%;
+  min-width: 0;
+  /* La altura se adapta a la pantalla: gráficos usables también en móvil */
+  height: clamp(220px, 45vw, 300px);
 }
 
 .desglose-lista {
@@ -36,7 +40,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--espacio-sm);
   padding: 0.75rem 1rem;
+  min-height: var(--tap-min);
+  -webkit-tap-highlight-color: transparent;
   background-color: var(--color-superficie-2);
   border-radius: var(--radio-md);
   cursor: pointer;
@@ -59,6 +66,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .desglose-color {
@@ -73,12 +81,15 @@
   font-weight: 600;
   font-size: 0.92rem;
   color: var(--color-texto);
+  overflow-wrap: anywhere;
 }
 
 .desglose-monto {
   font-weight: 700;
   color: var(--color-texto);
   font-family: var(--font-mono);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .mt-4 {
@@ -87,7 +98,7 @@
 
 .facturas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
   gap: var(--espacio-md);
   padding: 1rem 0;
 }
@@ -131,6 +142,14 @@
 .factura-mini-monto {
   color: var(--color-primario-claro);
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: clamp(1rem, 3vw, 1.15rem);
   font-family: var(--font-mono);
+}
+
+/* Sin puntero fino no hay hover: los desplazamientos sobran */
+@media (hover: none) {
+  .desglose-item:hover,
+  .factura-mini-card:hover {
+    transform: none;
+  }
 }

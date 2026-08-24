@@ -2,9 +2,9 @@
 
 .costos-resumen {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--espacio-lg);
-  margin-bottom: var(--espacio-xl);
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--espacio-fluido-md);
+  margin-bottom: var(--espacio-fluido-lg);
 }
 
 .kpi-margen-positivo {

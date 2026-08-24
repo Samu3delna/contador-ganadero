@@ -7,14 +7,9 @@
   align-items: start;
 }
 
-@media (min-width: 1024px) {
-  .calendario-layout {
-    grid-template-columns: 2.2fr 1fr;
-  }
-}
-
 .calendario-card {
-  padding: var(--espacio-lg);
+  padding: var(--espacio-fluido-md);
+  min-width: 0;
 }
 
 .calendario-header {
@@ -27,7 +22,7 @@
 }
 
 .calendario-header h2 {
-  font-size: 1.3rem;
+  font-size: clamp(1.05rem, 3.2vw, 1.3rem);
   font-weight: 700;
   color: var(--color-texto);
 }
@@ -38,30 +33,44 @@
   align-items: center;
 }
 
+/* `minmax(0, 1fr)` es imprescindible: sin él, las celdas con contenido largo
+   ensanchan la cuadrícula y la sacan de la pantalla. */
 .calendario-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: clamp(2px, 0.8vw, 0.5rem);
 }
 
 .calendario-dia-header {
   text-align: center;
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-texto-sec);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding-bottom: 0.5rem;
+  overflow: hidden;
 }
+
+.calendario-dia-header abbr {
+  text-decoration: none;
+  border: none;
+  cursor: default;
+}
+
+.calendario-dia-header .dia-corto { display: none; }
+.calendario-dia-header .dia-largo { display: inline; }
 
 .calendario-celda {
   background-color: var(--color-superficie-2);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
-  min-height: 86px;
-  padding: 0.5rem;
+  /* La altura de la celda escala con el ancho disponible */
+  min-height: clamp(56px, 11vw, 86px);
+  padding: clamp(0.2rem, 1vw, 0.5rem);
   display: flex;
   flex-direction: column;
+  min-width: 0;
   transition: all 0.2s ease;
 }
 
@@ -105,14 +114,23 @@
 .facturas-dia-lista {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.25rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   max-height: 90px;
+  min-width: 0;
+  scrollbar-width: none;
+}
+
+.facturas-dia-lista::-webkit-scrollbar {
+  display: none;
 }
 
 .factura-pill {
-  font-size: 0.72rem;
-  padding: 0.2rem 0.45rem;
+  display: block;
+  width: 100%;
+  font-size: clamp(0.6rem, 1.6vw, 0.72rem);
+  padding: 0.2rem 0.3rem;
   border-radius: var(--radio-sm);
   cursor: pointer;
   white-space: nowrap;
@@ -122,6 +140,8 @@
   text-align: center;
   font-family: var(--font-mono);
   transition: all 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .factura-pill.xml {
@@ -142,9 +162,10 @@
 }
 
 .detalle-factura-card {
-  padding: var(--espacio-lg);
+  padding: var(--espacio-fluido-md);
   position: sticky;
   top: 1.5rem;
+  min-width: 0;
 }
 
 .detalle-header {
@@ -177,6 +198,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--espacio-sm);
+  flex-wrap: wrap;
   margin-bottom: 1.25rem;
 }
 
@@ -187,7 +210,8 @@
 }
 
 .monto-valor {
-  font-size: 1.4rem;
+  font-size: clamp(1.15rem, 4vw, 1.4rem);
+  overflow-wrap: anywhere;
   font-weight: 800;
   color: var(--color-primario-claro);
   font-family: var(--font-mono);
@@ -227,8 +251,65 @@
 .detalle-lineas li {
   display: flex;
   justify-content: space-between;
+  gap: var(--espacio-sm);
+  flex-wrap: wrap;
   font-size: 0.85rem;
   color: var(--color-texto-sec);
   padding: 0.35rem 0;
   border-bottom: 1px dashed var(--color-borde);
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVO
+   -------------------------------------------------------------------------- */
+
+/* Móvil: iniciales de día, celdas compactas y navegación a ancho completo. */
+@media (max-width: 640px) {
+  .calendario-dia-header .dia-corto { display: inline; }
+  .calendario-dia-header .dia-largo { display: none; }
+
+  .calendario-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .calendario-nav {
+    justify-content: space-between;
+  }
+
+  .calendario-nav .btn {
+    flex: 1;
+  }
+
+  .numero-dia {
+    font-size: 0.78rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .calendario-celda.hoy .numero-dia {
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .facturas-dia-lista {
+    max-height: 48px;
+  }
+}
+
+/* Pantallas muy estrechas (<=360px): el importe no cabe, mostramos un punto
+   indicador por factura para no desbordar la cuadrícula. */
+@media (max-width: 380px) {
+  .factura-pill {
+    font-size: 0;
+    height: 6px;
+    padding: 0;
+    border-radius: var(--radio-full);
+  }
+}
+
+@media (hover: none) {
+  .calendario-celda:not(.vacia):hover {
+    transform: none;
+  }
 }

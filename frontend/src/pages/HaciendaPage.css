@@ -9,7 +9,18 @@
   border-radius: var(--radio-lg);
   padding: 5px;
   width: fit-content;
-  flex-wrap: wrap;
+  max-width: 100%;
+  /* En pantallas estrechas las pestañas se desplazan horizontalmente en
+     lugar de romper la fila y duplicar la altura de la cabecera. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.hacienda-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .hacienda-tab {
@@ -26,6 +37,12 @@
   gap: 6px;
   border-radius: var(--radio-md);
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 40px;
+  scroll-snap-align: start;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .hacienda-tab:hover {
@@ -46,12 +63,14 @@ small { color: var(--color-texto-muted); }
 .text-amarillo { color: var(--color-advertencia); font-weight: 600; }
 .text-verde { color: var(--color-exito); font-weight: 600; }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .hacienda-tabs {
     width: 100%;
+    border-radius: var(--radio-md);
   }
+
   .hacienda-tab {
-    flex: 1 1 100%;
-    justify-content: center;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.84rem;
   }
 }

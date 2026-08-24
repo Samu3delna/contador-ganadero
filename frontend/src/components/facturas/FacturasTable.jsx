@@ -25,10 +25,12 @@ export default function FacturasTable({
   if (facturas.length === 0) {
     return (
       <div className="glass-card animate-slide-up" style={{ '--delay':'0.1s' }}>
-        <p style={{ color:'var(--color-texto-sec)', textAlign:'center', padding:'3rem' }}>
-          <FileText size={48} style={{ opacity:0.3, marginBottom:'1rem', display:'block', margin:'0 auto 1rem' }} />
-          {filtroAlertas ? 'No hay facturas con alertas de tarifa.' : 'No hay facturas aún. Configura tu email IMAP o sincroniza manualmente.'}
-        </p>
+        <div className="estado-vacio">
+          <FileText size={44} style={{ opacity: 0.3 }} />
+          <p style={{ color: 'var(--color-texto-sec)' }}>
+            {filtroAlertas ? 'No hay facturas con alertas de tarifa.' : 'No hay facturas aún. Configura tu email IMAP o sincroniza manualmente.'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -36,9 +38,9 @@ export default function FacturasTable({
   return (
     <div className="glass-card animate-slide-up" style={{ '--delay':'0.1s' }}>
       <div className="tabla-responsive">
-        <table className="tabla" id="tabla-facturas">
+        <table className="tabla tabla--stack" id="tabla-facturas">
           <thead><tr>
-            <th></th>
+            <th><span className="sr-only">Expandir</span></th>
             <th>Fecha</th>
             <th>Emisor</th>
             <th>Total</th>
@@ -52,11 +54,11 @@ export default function FacturasTable({
             {facturas.map(f => (
               <Fragment key={f._id}>
                 <tr className={`fila-factura ${f.resumenValidacionTarifa?.alertasError > 0 ? 'fila-alerta' : ''}`} onClick={() => toggleDetalle(f._id)}>
-                  <td className="expand-cell">
+                  <td className="expand-cell" data-label="">
                     {detalleExpandido === f._id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </td>
-                  <td>{new Date(f.fechaEmision).toLocaleDateString('es-CR')}</td>
-                  <td>
+                  <td data-label="Fecha">{new Date(f.fechaEmision).toLocaleDateString('es-CR')}</td>
+                  <td data-label="Emisor">
                     <div className="emisor-cell">
                       {f.emisor?.nombre || '—'}
                       {f.carpetaOrigen && f.carpetaOrigen !== 'INBOX' && (
@@ -64,9 +66,9 @@ export default function FacturasTable({
                       )}
                     </div>
                   </td>
-                  <td className="text-mono">{formatCRC(f.resumenFactura?.totalComprobante)}</td>
-                  <td className="text-mono">{formatCRC(f.resumenFactura?.totalImpuesto)}</td>
-                  <td>
+                  <td className="text-mono" data-label="Total">{formatCRC(f.resumenFactura?.totalComprobante)}</td>
+                  <td className="text-mono" data-label="IVA">{formatCRC(f.resumenFactura?.totalImpuesto)}</td>
+                  <td data-label="Tarifa">
                     {f.resumenValidacionTarifa?.alertasError > 0 ? (
                       <span className="badge badge-error" title="Tarifa incorrecta detectada">
                         <AlertTriangle size={12} style={{marginRight:'4px'}} />
@@ -79,17 +81,17 @@ export default function FacturasTable({
                       </span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Categoría IA">
                     <span className={`badge ${f.confianzaIA > 0.7 ? 'badge-exito' : f.confianzaIA > 0.4 ? 'badge-advertencia' : 'badge-error'}`}>
                       {CATEGORIAS_LABEL[f.categoriaManual || f.categoriaIA] || f.categoriaIA}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     <span className={`badge ${f.estado === 'procesada' ? 'badge-exito' : f.estado === 'revision' ? 'badge-advertencia' : f.estado === 'error' ? 'badge-error' : 'badge-advertencia'}`}>
                       {f.estado}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Acciones">
                     <div className="acciones-cell">
                       <button
                         className="btn-icon"

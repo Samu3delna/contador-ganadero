@@ -1,6 +1,13 @@
+/* ==========================================================================
+   LAYOUT PRINCIPAL DE LA APLICACIÓN
+   Escritorio: barra lateral fija + área de contenido con scroll propio.
+   Móvil/tablet: barra superior fija + barra lateral como panel deslizante.
+   ========================================================================== */
+
 .app-container {
   display: flex;
   min-height: 100vh;
+  min-height: var(--vh-full);
   width: 100%;
   background-color: var(--color-fondo);
   position: relative;
@@ -11,22 +18,35 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: var(--vh-full);
   min-width: 0; /* Evita que contenido ancho desborde */
   overflow: hidden;
 }
 
 .page-content {
   flex: 1;
-  padding: var(--espacio-xl);
+  width: 100%;
+  padding: var(--espacio-fluido-lg);
+  padding-left: max(var(--espacio-fluido-lg), var(--safe-left));
+  padding-right: max(var(--espacio-fluido-lg), var(--safe-right));
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--color-superficie-2) transparent;
   animation: fadeIn 0.3s ease-out;
 }
 
+/* En pantallas muy anchas el contenido se centra para no estirarse en exceso */
+@media (min-width: 1800px) {
+  .page-content > * {
+    max-width: 1680px;
+    margin-inline: auto;
+  }
+}
+
 .page-header {
-  margin-bottom: var(--espacio-xl);
+  margin-bottom: var(--espacio-fluido-lg);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -34,41 +54,79 @@
   gap: var(--espacio-md);
 }
 
+/* La columna de textos puede encogerse; así los botones no la desbordan */
+.page-header > div:first-child {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
 .page-title {
-  font-size: 2rem;
+  font-size: clamp(1.45rem, 4vw, 2rem);
   font-weight: 800;
   color: var(--color-texto);
   letter-spacing: -0.02em;
   margin-bottom: 2px;
   line-height: 1.15;
+  overflow-wrap: break-word;
 }
 
 .page-subtitle {
   color: var(--color-texto-sec);
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 2.2vw, 0.95rem);
   max-width: 700px;
   line-height: 1.45;
 }
 
-/* Responsivo */
-@media (max-width: 768px) {
-  .page-content {
-    padding: var(--espacio-md);
-    padding-top: calc(var(--espacio-md) + 40px); /* Espacio para botón hamburguesa */
+/* Acciones de cabecera: se estiran a todo el ancho en pantallas pequeñas */
+.page-header .header-actions,
+.page-header .dashboard-actions,
+.page-header .facturacion-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-sm);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    align-items: stretch;
   }
 
+  .page-header .header-actions,
+  .page-header .dashboard-actions,
+  .page-header .facturacion-header-actions {
+    width: 100%;
+  }
+
+  .page-header .header-actions > .btn,
+  .page-header .dashboard-actions > .btn,
+  .page-header .facturacion-header-actions > .btn {
+    flex: 1 1 160px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVO
+   -------------------------------------------------------------------------- */
+
+/* Hasta 1023px la barra lateral es un panel deslizante y aparece la barra
+   superior; el contenido se desplaza para no quedar debajo de ella. */
+@media (max-width: 1023px) {
+  .main-content {
+    padding-top: calc(var(--topbar-h) + var(--safe-top));
+  }
+
+  .page-content {
+    padding: var(--espacio-fluido-md);
+    padding-bottom: calc(var(--espacio-fluido-lg) + var(--safe-bottom));
+  }
+}
+
+@media (max-width: 640px) {
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: var(--espacio-sm);
-    margin-bottom: var(--espacio-lg);
-  }
-
-  .page-title {
-    font-size: 1.6rem;
-  }
-
-  .page-subtitle {
-    font-size: 0.85rem;
+    margin-bottom: var(--espacio-md);
   }
 }

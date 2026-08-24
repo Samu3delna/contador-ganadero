@@ -3,6 +3,7 @@
 .d150-item {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   padding: 0.85rem 1rem;
   background: var(--color-superficie-2);
   border: 1px solid var(--color-borde);
@@ -21,7 +22,8 @@
 }
 
 .d150-valor {
-  font-size: 1.25rem;
+  font-size: clamp(1.05rem, 3.2vw, 1.25rem);
+  overflow-wrap: anywhere;
   font-weight: 700;
   color: var(--color-texto);
   font-family: var(--font-mono);
@@ -49,8 +51,15 @@
 }
 
 .d150-item--grande .d150-valor {
-  font-size: 1.55rem;
+  font-size: clamp(1.25rem, 4.2vw, 1.55rem);
   font-weight: 800;
+}
+
+/* Rejilla reutilizable de indicadores D-150 (antes iba en estilos en línea) */
+.d150-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: var(--espacio-sm);
 }
 
 .esto-no__rojo {
@@ -61,4 +70,16 @@
 .esto-no__verde {
   border-left: 4px solid var(--color-exito) !important;
   background: var(--color-exito-bg) !important;
+}
+
+/* Fila de totales de las tablas D-150 */
+.fila-total {
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+@media (max-width: 640px) {
+  .fila-total {
+    border-color: var(--color-borde-fuerte) !important;
+  }
 }
