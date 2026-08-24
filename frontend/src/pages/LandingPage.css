@@ -293,10 +293,23 @@
   position: relative;
   max-width: 1200px;
   margin: 0 auto;
+  min-width: 0;
+}
+
+/* Ventana que recorta los slides fuera de pantalla.
+   Va en un elemento propio (no en .landing-carousel) para que las flechas,
+   posicionadas fuera de la caja, no queden recortadas. */
+.landing-carousel-viewport {
+  overflow: hidden;
+  min-width: 0;
+  /* margen interior para que la sombra/glow de las tarjetas no se corte */
+  padding: 4px;
+  margin: -4px;
 }
 
 .landing-carousel-track {
   display: flex;
+  align-items: stretch;
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
@@ -304,6 +317,7 @@
 .landing-carousel-slide {
   flex: 0 0 100%;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -386,9 +400,16 @@
   pointer-events: none;
 }
 
-.landing-carousel:hover .landing-carousel-btn {
+.landing-carousel:hover .landing-carousel-btn,
+.landing-carousel:focus-within .landing-carousel-btn,
+.landing-carousel-btn:focus-visible {
   opacity: 1;
   pointer-events: auto;
+}
+
+.landing-carousel-btn:focus-visible {
+  outline: 2px solid var(--color-primario-claro);
+  outline-offset: 2px;
 }
 
 .landing-carousel-btn:hover {
@@ -407,51 +428,89 @@
   right: -24px;
 }
 
-@media (max-width: 768px) {
+/* Por debajo de 1200px + margen no cabe la flecha fuera de la caja:
+   se reubica dentro para que no la recorte el overflow-x del contenedor. */
+@media (max-width: 1279px) {
+  .landing-carousel-btn--prev { left: 4px; }
+  .landing-carousel-btn--next { right: 4px; }
+}
+
+@media (max-width: 1023px) {
   .landing-carousel-btn {
     opacity: 1;
     pointer-events: auto;
-    width: 40px;
-    height: 40px;
+    width: var(--tap-min, 44px);
+    height: var(--tap-min, 44px);
   }
-  .landing-carousel-btn--prev { left: -20px; }
-  .landing-carousel-btn--next { right: -20px; }
 }
 
-@media (max-width: 480px) {
+/* En móvil manda el swipe + los dots: las flechas taparían las tarjetas. */
+@media (max-width: 639px) {
   .landing-carousel-btn { display: none; }
 }
 
 /* Carousel dots */
 .landing-carousel-dots {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: var(--espacio-sm);
-  margin-top: var(--espacio-xl);
-  padding: var(--espacio-sm);
+  gap: 2px;
+  margin-top: var(--espacio-lg);
+  padding: var(--espacio-xs) var(--espacio-sm);
 }
 
+/* El botón es una zona táctil transparente de 44px de alto (WCAG 2.5.8);
+   el punto visible se pinta con ::before. Así las áreas de toque quedan
+   contiguas y no se solapan, incluso con 8 slides en móvil. */
 .landing-carousel-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: var(--tap-min, 44px);
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-carousel-dot::before {
+  content: '';
+  display: block;
   width: 10px;
   height: 10px;
   border-radius: var(--radio-full);
   background: var(--color-borde);
-  border: none;
-  cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.landing-carousel-dot:hover {
+.landing-carousel-dot:hover::before {
   background: var(--color-texto-sec);
   transform: scale(1.2);
 }
 
+.landing-carousel-dot:focus-visible {
+  outline: 2px solid var(--color-primario-claro);
+  outline-offset: 2px;
+  border-radius: var(--radio-sm, 6px);
+}
+
 .landing-carousel-dot--active {
-  background: var(--color-primario-claro);
+  width: 40px;
+}
+
+.landing-carousel-dot--active::before {
   width: 28px;
-  border-radius: var(--radio-full);
+  background: var(--color-primario-claro);
   box-shadow: var(--sombra-glow);
+}
+
+.landing-carousel-dot--active:hover::before {
+  background: var(--color-primario-claro);
+  transform: none;
 }
 
 /* Screen reader only utility */
@@ -693,10 +752,6 @@
     padding: var(--espacio-xl) var(--espacio-md);
   }
 
-  .landing-carousel-btn {
-    display: none;
-  }
-
   .landing-tldr .btn {
     width: 100%;
   }
@@ -765,13 +820,16 @@
   .landing-hero-contenido,
   .landing-caracteristica,
   .landing-paso,
-  .landing-nav,
-  .landing-carousel-track {
+  .landing-nav {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
   }
+
+  /* OJO: el track NO puede llevar `transform: none`; su translateX es
+     funcional (posiciona el slide activo), no decorativo. Solo se anula
+     la animación del desplazamiento. */
   .landing-hero-video {
     transition: none !important;
   }

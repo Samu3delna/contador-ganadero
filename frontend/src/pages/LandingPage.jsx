@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Tractor, Mail, Sparkles, LayoutDashboard, Warehouse,
   Receipt, TrendingUp, Calendar, Calculator, ArrowRight, Check,
@@ -211,14 +211,18 @@ export default function LandingPage() {
   const touchMovedRef = useRef(false);
 
   // Carousel for features
-  const [slides, setSlides] = useState(() => {
-    const perView = getItemsPerView();
+  // Guardamos solo cuántas tarjetas caben por slide: así el resize no genera
+  // un array nuevo en cada evento (en móvil la barra de URL dispara `resize`
+  // constantemente al hacer scroll y eso reiniciaba el carrusel).
+  const [itemsPerView, setItemsPerView] = useState(getItemsPerView);
+
+  const slides = useMemo(() => {
     const chunks = [];
-    for (let i = 0; i < CARACTERISTICAS.length; i += perView) {
-      chunks.push(CARACTERISTICAS.slice(i, i + perView));
+    for (let i = 0; i < CARACTERISTICAS.length; i += itemsPerView) {
+      chunks.push(CARACTERISTICAS.slice(i, i + itemsPerView));
     }
     return chunks;
-  });
+  }, [itemsPerView]);
 
   const { currentIndex, goTo, next, prev, pause, resume } = useCarousel({
     items: slides,
@@ -226,18 +230,32 @@ export default function LandingPage() {
     autoPlay: true,
   });
 
-  // Update slides on resize - preserve valid currentIndex
+  // El índice puede quedar fuera de rango durante el render en el que cambia
+  // el número de slides (p. ej. de 8 slides en móvil a 3 en escritorio).
+  // Lo acotamos aquí para que el track nunca se desplace a un slide inexistente.
+  const safeIndex = Math.min(currentIndex, Math.max(slides.length - 1, 0));
+
+  // Recalcular el reparto cuando se cruza un breakpoint.
+  // Se ejecuta también en el montaje, por si el primer render usó otro ancho
+  // (hidratación, restauración de pestaña o rotación antes de montar).
   useEffect(() => {
-    const handleResize = () => {
-      const perView = getItemsPerView();
-      const chunks = [];
-      for (let i = 0; i < CARACTERISTICAS.length; i += perView) {
-        chunks.push(CARACTERISTICAS.slice(i, i + perView));
-      }
-      setSlides(chunks);
+    const sync = () => setItemsPerView((actual) => {
+      const siguiente = getItemsPerView();
+      return siguiente === actual ? actual : siguiente;
+    });
+
+    sync();
+
+    const consultas = [
+      window.matchMedia('(max-width: 639px)'),
+      window.matchMedia('(max-width: 1023px)'),
+    ];
+    consultas.forEach((mq) => mq.addEventListener('change', sync));
+    window.addEventListener('orientationchange', sync);
+    return () => {
+      consultas.forEach((mq) => mq.removeEventListener('change', sync));
+      window.removeEventListener('orientationchange', sync);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Keyboard navigation
@@ -409,32 +427,39 @@ export default function LandingPage() {
           aria-label="Carrusel de características"
           aria-roledescription="carousel"
         >
-          <div
-            className="landing-carousel-track"
-            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`Slide ${currentIndex + 1} de ${slides.length}`}
-          >
-            {slides.map((slide, slideIndex) => (
-              <div key={slideIndex} className="landing-carousel-slide" role="group" aria-roledescription="slide" aria-label={`Slide ${slideIndex + 1}`}>
-                <div className="landing-caracteristicas-grid">
-                  {slide.map(({ icono: Icono, titulo, descripcion }) => (
-                    <div key={titulo} className="landing-caracteristica glass-card animate-fade-in" style={{ animationDelay: `${slideIndex * 150}ms` }}>
-                      <div className="landing-caracteristica-icono">
-                        <Icono size={22} />
+          <div className="landing-carousel-viewport">
+            <div
+              className="landing-carousel-track"
+              style={{ transform: `translateX(-${safeIndex * 100}%)` }}
+            >
+              {slides.map((slide, slideIndex) => (
+                <div
+                  key={slideIndex}
+                  className="landing-carousel-slide"
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`Slide ${slideIndex + 1} de ${slides.length}`}
+                  aria-hidden={slideIndex !== safeIndex}
+                  inert={slideIndex !== safeIndex}
+                >
+                  <div className="landing-caracteristicas-grid">
+                    {slide.map(({ icono: Icono, titulo, descripcion }) => (
+                      <div key={titulo} className="landing-caracteristica glass-card">
+                        <div className="landing-caracteristica-icono">
+                          <Icono size={22} />
+                        </div>
+                        <h3 className="landing-caracteristica-titulo">{titulo}</h3>
+                        <p className="landing-caracteristica-desc">{descripcion}</p>
                       </div>
-                      <h3 className="landing-caracteristica-titulo">{titulo}</h3>
-                      <p className="landing-caracteristica-desc">{descripcion}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           <div aria-live="polite" aria-atomic="true" className="sr-only">
-            Mostrando slide {currentIndex + 1} de {slides.length}
+            Mostrando slide {safeIndex + 1} de {slides.length}
           </div>
 
           {slides.length > 1 && (
@@ -450,10 +475,10 @@ export default function LandingPage() {
                 {slides.map((_, i) => (
                   <button
                     key={i}
-                    className={`landing-carousel-dot ${i === currentIndex ? 'landing-carousel-dot--active' : ''}`}
+                    className={`landing-carousel-dot ${i === safeIndex ? 'landing-carousel-dot--active' : ''}`}
                     onClick={() => goTo(i)}
                     role="tab"
-                    aria-selected={i === currentIndex}
+                    aria-selected={i === safeIndex}
                     aria-label={`Ir a slide ${i + 1}`}
                   />
                 ))}
