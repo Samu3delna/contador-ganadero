@@ -544,7 +544,7 @@ export default function LandingPage() {
         <div className="landing-seccion-head">
           <h2 className="landing-seccion-titulo">Planes y precios</h2>
           <p className="landing-seccion-subtitulo">
-            Elige el plan que mejor se adapta al tamaño de tu operación.
+            Empezá gratis y subí de plan cuando tu finca lo necesite. Pro y Agro no muestran anuncios.
           </p>
         </div>
         <div className="landing-planes-grid">
@@ -559,7 +559,7 @@ export default function LandingPage() {
           ))}
         </div>
         <p className="landing-planes-nota">
-          <Check size={14} /> Sin tarjeta para el plan Gratis. Pro y Agro no muestran anuncios.
+          <Check size={14} /> Sin tarjeta para el plan Gratis. Cancela cuando quieras.
         </p>
       </section>
 

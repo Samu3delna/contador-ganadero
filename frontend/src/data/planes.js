@@ -24,7 +24,6 @@ export const PLANES = [
       { texto: 'Módulo contable y fiscal (IVA, Renta)', incluido: true },
       { texto: 'Módulo D-150 / conciliación REA', incluido: false },
       { texto: 'Conteos por visión (VLM)', incluido: false },
-      { texto: 'Publicidad en la web (se elimina al subir de plan)', incluido: true },
     ],
   },
   {
@@ -48,7 +47,6 @@ export const PLANES = [
       { texto: 'Módulo contable y fiscal (IVA, Renta)', incluido: true },
       { texto: 'Módulo D-150 / conciliación REA', incluido: true },
       { texto: 'Conteos por visión (VLM)', incluido: true },
-      { texto: 'Sin anuncios en la web', incluido: true },
     ],
   },
   {
@@ -72,7 +70,6 @@ export const PLANES = [
       { texto: 'Módulo contable y fiscal (IVA, Renta)', incluido: true },
       { texto: 'Módulo D-150 / conciliación REA', incluido: true },
       { texto: 'Conteos por visión (VLM)', incluido: true },
-      { texto: 'Sin anuncios en la web', incluido: true },
       { texto: 'Soporte prioritario', incluido: true },
     ],
   },

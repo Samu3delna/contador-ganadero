@@ -73,18 +73,13 @@ function construirFeatures(id) {
     { texto: 'Conteos por visión (VLM)', incluido: l.vlmHabilitado },
   ];
 
-  const anuncios =
-    l.anunciosHabilitados
-      ? { texto: 'Publicidad en la web (se elimina al subir de plan)', incluido: true }
-      : { texto: 'Sin anuncios en la web', incluido: true };
-
   const soporte = [
     { texto: 'Soporte por comunidad', incluido: true },
     { texto: 'Soporte por email', incluido: l.soporte === 'Email' || l.soporte === 'Prioritario' },
     { texto: 'Soporte prioritario', incluido: l.soporte === 'Prioritario' },
   ];
 
-  return [...base, anuncios, ...soporte];
+  return [...base, ...soporte];
 }
 
 // Catálogo público que también sirve la API /api/stripe/planes
