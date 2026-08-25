@@ -31,20 +31,23 @@ const setRefreshCookie = (res, token) => {
   });
 };
 
-const oauth2Client = new OAuth2Client(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_CALLBACK_URL
-);
-
 const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://mail.google.com/',
 ];
 
+function getOAuth2Client() {
+  return new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_CALLBACK_URL
+  );
+}
+
 const getGoogleAuthUrl = () => {
-  return oauth2Client.generateAuthUrl({
+  const client = getOAuth2Client();
+  return client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent',
@@ -63,10 +66,11 @@ const googleCallback = async (req, res, next) => {
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
     }
 
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
+    const client = getOAuth2Client();
+    const { tokens } = await client.getToken(code);
+    client.setCredentials(tokens);
 
-    const ticket = await oauth2Client.verifyIdToken({
+    const ticket = await client.verifyIdToken({
       idToken: tokens.id_token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
