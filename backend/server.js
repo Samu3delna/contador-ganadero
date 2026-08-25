@@ -85,6 +85,7 @@ const inventarioRoutes = require('./routes/inventarioRoutes');
 const costoRoutes = require('./routes/costoRoutes');
 const facturaEmisionRoutes = require('./routes/facturaEmisionRoutes');
 const haciendaRoutes = require('./routes/haciendaRoutes');
+const haciendaConfigRoutes = require('./routes/haciendaConfigRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const stripeWebhookRoutes = require('./routes/stripeWebhookRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
@@ -191,6 +192,7 @@ app.use('/api/inventario', inventarioRoutes);
 app.use('/api/costos', costoRoutes);
 app.use('/api/facturacion', facturaEmisionRoutes);
 app.use('/api/hacienda', haciendaRoutes);
+app.use('/api/hacienda', haciendaConfigRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/stripe', stripeRoutes);
 
@@ -204,7 +206,7 @@ console.log('   /api/declaraciones');
 console.log('   /api/inventario');
 console.log('   /api/costos');
 console.log('   /api/facturacion');
-console.log('   /api/hacienda (v4.4 nativa)');
+console.log('   /api/hacienda (v4.4 nativa + config multi-tenant)');
 console.log('   /api/chat (incluye /stream)');
 console.log('   /api/stripe (checkout, portal, estado, webhook)');
 
