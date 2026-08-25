@@ -3,9 +3,21 @@ const Tenant = require('../models/Tenant');
 const SubscriptionEvent = require('../models/SubscriptionEvent');
 const { CATALOGO_PLANES, PLANES_VALIDOS } = require('../config/planes');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-06-20',
-});
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-06-20',
+  });
+}
+
+const requireStripe = () => {
+  if (!stripe) {
+    const err = new Error('Stripe no configurado. Define STRIPE_SECRET_KEY en .env');
+    err.status = 503;
+    throw err;
+  }
+  return stripe;
+};
 
 /**
  * Mapeo priceId -> plan (free|pro|agro)
@@ -34,6 +46,7 @@ const obtenerPlanPorPriceId = (priceId) => {
  */
 const crearSesionCheckout = async (req, res, next) => {
   try {
+    requireStripe();
     const { planId } = req.body;
     if (!['pro', 'agro'].includes(planId)) {
       res.status(400);
@@ -50,7 +63,7 @@ const crearSesionCheckout = async (req, res, next) => {
 
     let customerId = tenant.stripeCustomerId;
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await requireStripe().customers.create({
         email: req.usuario.email,
         name: req.usuario.nombre,
         metadata: {
@@ -63,7 +76,7 @@ const crearSesionCheckout = async (req, res, next) => {
       await tenant.save();
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await requireStripe().checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
@@ -101,7 +114,7 @@ const crearPortalCliente = async (req, res, next) => {
       throw new Error('Aún no tienes una suscripción de Stripe asociada. Suscríbete primero a un plan de pago.');
     }
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await requireStripe().billingPortal.sessions.create({
       customer: tenant.stripeCustomerId,
       return_url: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/billing` : `${process.env.STRIPE_SUCCESS_URL || ''}/billing`,
     });
@@ -124,7 +137,7 @@ const obtenerEstadoSuscripcion = async (req, res, next) => {
 
     if (tenant.stripeSubscriptionId) {
       try {
-        suscripcionStripe = await stripe.subscriptions.retrieve(tenant.stripeSubscriptionId);
+        suscripcionStripe = await requireStripe().subscriptions.retrieve(tenant.stripeSubscriptionId);
       } catch (err) {
         console.warn('No se pudo recuperar suscripción de Stripe:', err.message);
       }
@@ -174,7 +187,7 @@ const webhookStripe = async (req, res) => {
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = requireStripe().webhooks.constructEvent(
       req.body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET

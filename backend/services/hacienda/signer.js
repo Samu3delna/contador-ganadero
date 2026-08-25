@@ -11,25 +11,30 @@ const fs = require('fs');
 const forge = require('node-forge');
 const { SignedXml } = require('xml-crypto');
 
-let _cachedKeyPair = null;
-
 const DEFAULT_XADES_POLICY = 'https://sid.hacienda.go.cr/ak/firma-electronica/4.2';
 
 /**
- * Lee y desempaqueta el .p12 con el PIN.
+ * Cache de llaves por tenant (clave: tenantId o 'global')
+ */
+const _keyCache = new Map();
+
+/**
+ * Lee y desempaqueta el .p12 desde Base64 con el PIN.
  * Retorna { certPem, keyPem, fingerprint, subjectCN, cert }.
  * Cachea el par en memoria tras primera lectura exitosa.
  */
-function cargarLlave(p12Path, pin) {
-  if (_cachedKeyPair && _cachedKeyPair._path === p12Path) return _cachedKeyPair;
+function cargarLlaveDesdeBase64(p12Base64, pin, cacheKey = 'default') {
+  if (_keyCache.has(cacheKey)) return _keyCache.get(cacheKey);
 
-  if (!p12Path || !fs.existsSync(p12Path)) {
-    throw new Error(`Archivo .p12 no encontrado: ${p12Path}`);
+  if (!p12Base64) {
+    throw new Error('certificadoP12Base64 es obligatorio');
   }
   if (!pin) throw new Error('PIN de la llave criptografica es obligatorio');
 
-  const p12B64 = fs.readFileSync(p12Path, { encoding: 'base64' });
-  const p12Asn1 = forge.asn1.fromDer(p12B64);
+  // Remover header data:application/x-pkcs12;base64, si existe
+  const base64Data = p12Base64.includes('base64,') ? p12Base64.split('base64,')[1] : p12Base64;
+  const p12Der = Buffer.from(base64Data, 'base64');
+  const p12Asn1 = forge.asn1.fromDer(p12Der.toString('binary'));
   const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, pin);
 
   let certBag = null;
@@ -53,7 +58,7 @@ function cargarLlave(p12Path, pin) {
   const certPem = forge.pki.certificateToPem(cert);
   const keyPem = forge.pki.privateKeyToPem(keyBag.key);
 
-  //Fingerprint SHA-256 base16 separado por ":" (lo usa xml-crypto como KeyInfo)
+  // Fingerprint SHA-256 base16 separado por ":" (lo usa xml-crypto como KeyInfo)
   const derCert = forge.asn1.toDer(forge.pki.certificateToAsn1(cert));
   const md = forge.md.sha256.create();
   md.update(derCert.getBytes());
@@ -63,7 +68,7 @@ function cargarLlave(p12Path, pin) {
   const issuerCN = cert.issuer.getField('CN')?.value || '';
 
   const result = {
-    _path: p12Path,
+    _cacheKey: cacheKey,
     certPem,
     keyPem,
     fingerprint,
@@ -72,12 +77,33 @@ function cargarLlave(p12Path, pin) {
     cert,
     serialNumber: cert.serialNumber,
   };
-  _cachedKeyPair = result;
+  _keyCache.set(cacheKey, result);
   return result;
 }
 
-function limpiarCacheLlave() {
-  _cachedKeyPair = null;
+/**
+ * Lee y desempaqueta el .p12 desde archivo (compatibilidad legacy).
+ * Retorna { certPem, keyPem, fingerprint, subjectCN, cert }.
+ * Cachea el par en memoria tras primera lectura exitosa.
+ */
+function cargarLlave(p12Path, pin) {
+  if (_keyCache.has(p12Path)) return _keyCache.get(p12Path);
+
+  if (!p12Path || !fs.existsSync(p12Path)) {
+    throw new Error(`Archivo .p12 no encontrado: ${p12Path}`);
+  }
+  if (!pin) throw new Error('PIN de la llave criptografica es obligatorio');
+
+  const p12B64 = fs.readFileSync(p12Path, { encoding: 'base64' });
+  return cargarLlaveDesdeBase64(p12B64, pin, p12Path);
+}
+
+function limpiarCacheLlave(cacheKey) {
+  if (cacheKey) {
+    _keyCache.delete(cacheKey);
+  } else {
+    _keyCache.clear();
+  }
 }
 
 /**
@@ -93,7 +119,7 @@ function firmarXml(xmlString, keyPair) {
     publicCert: keyPair.certPem,
     signatureAlgorithm: 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256',
     canonicalizationAlgorithm: 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315',
-    //xades namespace necesario para XAdES-EPES
+    // xades namespace necesario para XAdES-EPES
   });
 
   signed.addReference({
@@ -105,12 +131,12 @@ function firmarXml(xmlString, keyPair) {
     ],
   });
 
-  //KeyInfo con X509Data
+  // KeyInfo con X509Data
   signed.computeSignature(xmlString, {
     prefix: 'ds',
     location: {
       reference: '/*',
-      action: 'append', //firmara dentro del nodo raiz
+      action: 'append', // firmara dentro del nodo raiz
     },
     existingPrefixes: { xades: 'http://uri.etsi.org/01903/v1.3.2#' },
   });
@@ -123,7 +149,7 @@ function firmarXml(xmlString, keyPair) {
  * El ambiente local produce un XML "firmado" simulado manteniendo formato valido
  * (para que el resto del pipeline pueda probarse).
  */
-function firmarDocumento(xmlString, { p12Path, pin, ambiente } = {}) {
+function firmarDocumento(xmlString, { p12Path, pin, p12Base64, cacheKey, ambiente } = {}) {
   if (ambiente === 'local') {
     // Firma mock: detectamos el nodo raiz dinamicamente para soportar todos los tipos
     const rootMatch = xmlString.match(/^<\?xml[^?]*\?>\s*<(\w+)/);
@@ -147,12 +173,18 @@ function firmarDocumento(xmlString, { p12Path, pin, ambiente } = {}) {
   </ds:Signature>
 ${closingTag}`);
   }
-  const keyPair = cargarLlave(p12Path, pin);
+  let keyPair;
+  if (p12Base64) {
+    keyPair = cargarLlaveDesdeBase64(p12Base64, pin, cacheKey || 'default');
+  } else {
+    keyPair = cargarLlave(p12Path, pin);
+  }
   return firmarXml(xmlString, keyPair);
 }
 
 module.exports = {
   cargarLlave,
+  cargarLlaveDesdeBase64,
   firmarXml,
   firmarDocumento,
   limpiarCacheLlave,

@@ -1,5 +1,5 @@
 /**
- * Controller de Hacienda (facturacion electronica v4.4 nativa).
+ * Controller de Hacienda (facturacion electronica v4.4 nativa) - Multi-tenant.
  *
  * Endpoints:
  *  POST   /api/hacienda/emision            Crea factura (borrador) sin firmar
@@ -8,11 +8,12 @@
  *  GET    /api/hacienda/emision/:id/xml    Devuelve XML firmado
  *  GET    /api/hacienda/emision/:id/estado Consulta estado sincrono
  *  POST   /api/hacienda/emision/:id/cancelar Cancela (NC)
- *  GET    /api/hacienda/ambiente           Estado cfg + ambiente actual
+ *  GET    /api/hacienda/ambiente           Estado cfg + ambiente actual (por tenant)
  *  GET    /api/hacienda/interno/consulta/:clave  Mock endpoint para polling local
  */
 
 const FacturaEmision = require('../models/FacturaEmision');
+const Tenant = require('../models/Tenant');
 const haciendaWorker = require('../services/haciendaWorker');
 const hacienda = require('../services/hacienda');
 const mockStore = hacienda.mockStore;
@@ -22,11 +23,19 @@ const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 // ============ AMBIENTE ============
 const infoAmbiente = async (req, res, next) => {
   try {
+    const tenant = req.tenant;
+    const hc = tenant.configuracionHacienda || {};
+    const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
+
     res.json({
-      ambiente: process.env.HACIENDA_AMBIENTE || 'local',
-      p12Configurado: Boolean(process.env.HACIENDA_P12_PATH),
-      usuarioConfigurado: (process.env.HACIENDA_USUARIO || '').startsWith('cpf-'),
-      workerActivo: true, //el worker se inicia desde worker.js
+      ambiente: cfg.ambiente,
+      p12Configurado: !!cfg.p12Base64 || !!cfg.p12Path,
+      usuarioConfigurado: cfg.usuario?.startsWith('cpf-') || false,
+      workerActivo: true,
+      tenantConfigurado: hc.estaConfigurado?.() || false,
+      sucursal: cfg.sucursal,
+      terminal: cfg.terminal,
+      codigoActividad: cfg.codigoActividad,
       endpoints: {
         sandbox: hacienda.auth.ENDPOINTS.sandbox,
         produccion: hacienda.auth.ENDPOINTS.produccion,
@@ -55,16 +64,20 @@ const crearBorrador = async (req, res, next) => {
       }
     }
 
+    const tenant = req.tenant;
+    const hc = tenant.configuracionHacienda || {};
+    const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
+
     const fechaEmision = new Date();
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
     const periodoFiscal = fechaEmision.getFullYear();
 
     // consecutivo temporal sin firma - se regenera al firmar
-    const consecutivoTemporal = `${'001'}${'00001'}${hacienda.clave50.TIPO_DOC_CODIGO[tipoDocumento] || '01'}${String(Date.now()).slice(-10)}`;
+    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO[tipoDocumento] || '01'}${String(Date.now()).slice(-10)}`;
 
     const nueva = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento,
-      ambiente: process.env.HACIENDA_AMBIENTE || 'local',
+      ambiente: cfg.ambiente,
       consecutivo: consecutivoTemporal,
       emisor: { ...emisor, regimen: 'Régimen Especial Agropecuario (REA)' },
       receptor,
@@ -98,7 +111,7 @@ const firmarDocumento = async (req, res, next) => {
     try {
       await haciendaWorker.prepararYFirmar(factura._id);
     } catch (e) {
-      // Guardar el error具体 en la factura
+      // Guardar el error específico en la factura
       factura.erroresValidacion = [e.message];
       await factura.save();
       res.status(422);
@@ -149,11 +162,18 @@ const obtenerXml = async (req, res, next) => {
 
 const consultarEstado = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
+    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() }).populate('tenantId');
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
 
+    // Obtener config del tenant
+    let cfg;
+    if (factura.tenantId && factura.tenantId.configuracionHacienda?.estaConfigurado?.()) {
+      cfg = haciendaWorker.getTenantConfig(factura.tenantId);
+    } else {
+      cfg = haciendaWorker.getGlobalConfig();
+    }
+
     // Forzar consulta sincrona (afuera del loop del worker)
-    const cfg = haciendaWorker.getConfig();
     const haciendaRecepcion = hacienda.recepcion;
     const resultado = await haciendaRecepcion.consultarEstado({
       ambiente: cfg.ambiente,

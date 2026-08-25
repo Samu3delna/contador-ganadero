@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { LIMITES_POR_PLAN, PLANES_VALIDOS } = require('../config/planes');
+const { encrypt, decrypt } = require('../utils/crypto');
 
 /**
  * Modelo Tenant (Inquilino / Finca) — Aislamiento multi-tenant SaaS
@@ -32,6 +33,73 @@ const usuarioTenantSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, { _id: false });
+
+// === Configuración Hacienda por tenant (credenciales encriptadas) ===
+const haciendaConfigSchema = new mongoose.Schema({
+  ambiente: {
+    type: String,
+    enum: ['local', 'sandbox', 'produccion'],
+    default: 'local',
+  },
+  certificadoP12Base64: {
+    type: String,
+    select: false,
+  },
+  pinCertificado: {
+    type: String,
+    select: false,
+  },
+  usuarioHacienda: {
+    type: String,
+    select: false,
+  },
+  passwordHacienda: {
+    type: String,
+    select: false,
+  },
+  sucursal: {
+    type: String,
+    default: '001',
+    trim: true,
+  },
+  terminal: {
+    type: String,
+    default: '00001',
+    trim: true,
+  },
+  codigoActividad: {
+    type: String,
+    default: '000000',
+    trim: true,
+  },
+  configuradoEn: {
+    type: Date,
+  },
+  ultimoError: {
+    type: String,
+  },
+}, { _id: false });
+
+// Métodos de encriptación para configuración Hacienda
+haciendaConfigSchema.methods.establecerPinCertificado = function (pin) {
+  this.pinCertificado = encrypt(pin);
+};
+
+haciendaConfigSchema.methods.obtenerPinCertificado = function () {
+  return this.pinCertificado ? decrypt(this.pinCertificado) : null;
+};
+
+haciendaConfigSchema.methods.establecerPasswordHacienda = function (password) {
+  this.passwordHacienda = encrypt(password);
+};
+
+haciendaConfigSchema.methods.obtenerPasswordHacienda = function () {
+  return this.passwordHacienda ? decrypt(this.passwordHacienda) : null;
+};
+
+haciendaConfigSchema.methods.estaConfigurado = function () {
+  return !!(this.certificadoP12Base64 && this.pinCertificado && this.usuarioHacienda && this.passwordHacienda);
+};
 
 // === Limites del plan contratado ===
 const limitesSchema = new mongoose.Schema({
@@ -103,6 +171,12 @@ const tenantSchema = new mongoose.Schema({
   },
   consumoActual: {
     type: consumoActualSchema,
+    default: () => ({}),
+  },
+
+  // === Configuración Hacienda (facturación electrónica) ===
+  configuracionHacienda: {
+    type: haciendaConfigSchema,
     default: () => ({}),
   },
 
@@ -215,6 +289,7 @@ tenantSchema.statics.crearParaUsuario = async function ({ nombreFinca, owner, pl
       almacenamientoUsadoMB: 0,
       periodoActual,
     },
+    configuracionHacienda: {},
     usuarios,
     owner: owner || undefined,
   });

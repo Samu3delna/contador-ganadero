@@ -8,6 +8,13 @@ export function AuthProvider({ children }) {
   const [cargando, setCargando] = useState(() => !!localStorage.getItem('token'));
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    if (tokenFromUrl) {
+      localStorage.setItem('token', tokenFromUrl);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     const token = localStorage.getItem('token');
     if (token) {
       obtenerPerfilAPI()
@@ -20,6 +27,8 @@ export function AuthProvider({ children }) {
           localStorage.removeItem('usuario');
         })
         .finally(() => setCargando(false));
+    } else {
+      setCargando(false);
     }
   }, []);
 
