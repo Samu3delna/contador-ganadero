@@ -42,10 +42,9 @@ const menuSections = [
 ];
 
 const PLAN_NOMBRES = {
-  free: 'Free',
-  bronce: 'Bronce',
-  oro: 'Oro',
-  corporativo: 'Corporativo',
+  free: 'Gratis',
+  pro: 'Pro',
+  agro: 'Agro',
 };
 
 // Título legible de la ruta actual, para mostrarlo en la barra superior móvil.

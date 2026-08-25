@@ -1,4 +1,4 @@
-/* Auto-fit permite 4 / 3 / 2 / 1 columnas sin escribir un breakpoint por
+/* Auto-fit permite 3 / 2 / 1 columnas sin escribir un breakpoint por
    cada tamaño y sin desbordar en pantallas de 320px. */
 .planes-grid {
   display: grid;
@@ -9,7 +9,7 @@
 
 @media (min-width: 1280px) {
   .planes-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

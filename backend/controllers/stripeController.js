@@ -1,6 +1,7 @@
 const Stripe = require('stripe');
 const Tenant = require('../models/Tenant');
 const SubscriptionEvent = require('../models/SubscriptionEvent');
+const { CATALOGO_PLANES, PLANES_VALIDOS } = require('../config/planes');
 
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
@@ -19,21 +20,19 @@ const requireStripe = () => {
 };
 
 /**
- * Mapeo priceId -> plan (free|bronce|oro|corporativo)
+ * Mapeo priceId -> plan (free|pro|agro)
  * Cargado desde variables de entorno STRIPE_PRICE_*
  */
 const PRICE_TO_PLAN = {
   [process.env.STRIPE_PRICE_FREE || 'price_free']: 'free',
-  [process.env.STRIPE_PRICE_BRONCE || 'price_bronce']: 'bronce',
-  [process.env.STRIPE_PRICE_ORO || 'price_oro']: 'oro',
-  [process.env.STRIPE_PRICE_CORPORATIVO || 'price_corporativo']: 'corporativo',
+  [process.env.STRIPE_PRICE_PRO || 'price_pro']: 'pro',
+  [process.env.STRIPE_PRICE_AGRO || 'price_agro']: 'agro',
 };
 
 const PLAN_TO_PRICE = {
   free: process.env.STRIPE_PRICE_FREE,
-  bronce: process.env.STRIPE_PRICE_BRONCE,
-  oro: process.env.STRIPE_PRICE_ORO,
-  corporativo: process.env.STRIPE_PRICE_CORPORATIVO,
+  pro: process.env.STRIPE_PRICE_PRO,
+  agro: process.env.STRIPE_PRICE_AGRO,
 };
 
 const obtenerPlanPorPriceId = (priceId) => {
@@ -49,17 +48,15 @@ const crearSesionCheckout = async (req, res, next) => {
   try {
     requireStripe();
     const { planId } = req.body;
-    if (!['bronce', 'oro', 'corporativo'].includes(planId)) {
+    if (!['pro', 'agro'].includes(planId)) {
       res.status(400);
-      throw new Error('planId inválido. Debe ser: bronce, oro o corporativo');
+      throw new Error('planId inválido. Debe ser: pro o agro');
     }
 
     const priceId = PLAN_TO_PRICE[planId];
-    if (!priceId || priceId.startsWith('price_') === false && !priceId.startsWith('price_')) {
-      if (!priceId) {
-        res.status(500);
-        throw new Error(`Price ID no configurado para el plan ${planId}. Revisa STRIPE_PRICE_${planId.toUpperCase()} en .env`);
-      }
+    if (!priceId) {
+      res.status(500);
+      throw new Error(`Price ID no configurado para el plan ${planId}. Revisa STRIPE_PRICE_${planId.toUpperCase()} en .env`);
     }
 
     const tenant = req.tenant;
@@ -168,6 +165,19 @@ const obtenerEstadoSuscripcion = async (req, res, next) => {
 };
 
 /**
+ * @desc    Obtener catálogo público de planes (precios, límites y anuncios)
+ * @route   GET /api/stripe/planes
+ * @access  Público
+ */
+const obtenerPlanes = async (req, res, next) => {
+  try {
+    res.json({ planes: CATALOGO_PLANES });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Procesar webhook Stripe (raw body, sin json parser)
  * @route   POST /api/stripe/webhook
  * @access  Público (valida firma Stripe)
@@ -236,7 +246,7 @@ const procesarEventoStripe = async (event, subscriptionEvent) => {
       tenant.stripeCustomerId = stripeCustomerId;
       tenant.stripeSubscriptionId = subscriptionId;
 
-      if (planId && ['free', 'bronce', 'oro', 'corporativo'].includes(planId)) {
+      if (planId && PLANES_VALIDOS.includes(planId)) {
         tenant.aplicarPlan(planId);
       }
 
@@ -357,5 +367,6 @@ module.exports = {
   crearSesionCheckout,
   crearPortalCliente,
   obtenerEstadoSuscripcion,
+  obtenerPlanes,
   webhookStripe,
 };

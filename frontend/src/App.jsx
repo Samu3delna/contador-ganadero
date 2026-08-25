@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/layout/Sidebar';
 import LoginPage from './pages/LoginPage';
 import ChatBot from './components/dashboard/ChatBot';
+import AdvertisingSlot from './components/ads/AdvertisingSlot';
 import './App.css';
 
 // Lazy-loaded pages (code-splitting)
@@ -38,6 +39,7 @@ function AppLayout() {
     <div className="app-container">
       <Sidebar />
       <div className="main-content">
+        <AdvertisingSlot />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/dashboard" element={<DashboardPage />} />

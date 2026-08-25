@@ -55,9 +55,9 @@ describe('middleware/tenantGuard - extraerTenant', () => {
   test('(c) Tenant suspendido -> 402 SUSCRIPCION_SUSPENDIDA', async () => {
     const suspendido = await Tenant.create({
       nombreFinca: 'Finca Suspendida',
-      plan: 'bronce',
+      plan: 'pro',
       estado: 'suspendido',
-      limites: Tenant.obtenerLimitesPlan('bronce'),
+      limites: Tenant.obtenerLimitesPlan('pro'),
     });
 
     const req = mockReq({ usuario: { tenantId: suspendido._id } });
@@ -95,9 +95,9 @@ describe('middleware/tenantGuard - extraerTenant', () => {
   test('(e) Tenant activo -> next(), req.tenant, filtrarPorTenant y aplicarTenant', async () => {
     const activo = await Tenant.create({
       nombreFinca: 'Finca Activa',
-      plan: 'oro',
+      plan: 'agro',
       estado: 'activo',
-      limites: Tenant.obtenerLimitesPlan('oro'),
+      limites: Tenant.obtenerLimitesPlan('agro'),
     });
 
     const req = mockReq({ usuario: { tenantId: activo._id } });
@@ -121,9 +121,9 @@ describe('middleware/tenantGuard - extraerTenant', () => {
   test('(f) Tenant periodo_gracia -> next() acceso permitido', async () => {
     const gracia = await Tenant.create({
       nombreFinca: 'Finca en Gracia',
-      plan: 'oro',
+      plan: 'agro',
       estado: 'periodo_gracia',
-      limites: Tenant.obtenerLimitesPlan('oro'),
+      limites: Tenant.obtenerLimitesPlan('agro'),
     });
 
     const req = mockReq({ usuario: { tenantId: gracia._id } });

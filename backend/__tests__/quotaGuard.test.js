@@ -22,7 +22,7 @@ const mockNext = jest.fn();
 
 const buildTenantMock = (overrides = {}) => ({
   _id: new mongoose.Types.ObjectId(),
-  plan: 'oro',
+  plan: 'pro',
   estado: 'activo',
   limites: {
     conteosMes: 5,

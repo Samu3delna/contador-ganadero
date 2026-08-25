@@ -605,9 +605,11 @@
    -------------------------------------------------------------------------- */
 .landing-planes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--espacio-fluido-md);
-  align-items: start;
+  align-items: stretch;
+  max-width: 1080px;
+  margin: 0 auto;
 }
 
 .landing-planes-nota {
@@ -618,6 +620,12 @@
   margin-top: var(--espacio-xl);
   color: var(--color-texto-muted);
   font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+  .landing-planes-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  }
 }
 
 /* --------------------------------------------------------------------------

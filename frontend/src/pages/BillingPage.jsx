@@ -7,10 +7,9 @@ import { CreditCard, Crown, RefreshCw, ArrowRight, AlertTriangle } from 'lucide-
 import './BillingPage.css';
 
 const PLAN_NOMBRES = {
-  free: 'Free',
-  bronce: 'Bronce',
-  oro: 'Oro',
-  corporativo: 'Corporativo',
+  free: 'Gratis',
+  pro: 'Pro',
+  agro: 'Agro',
 };
 
 const ESTADO_LABEL = {
@@ -132,6 +131,10 @@ export default function BillingPage() {
             <span className="billing-plan-label">Próxima renovación</span>
             <span className="billing-plan-valor">{esFree ? 'Sin renovación' : formatFecha(periodoRenovacion)}</span>
           </div>
+          <div className="billing-plan-row">
+            <span className="billing-plan-label">Publicidad</span>
+            <span className="billing-plan-valor">{esFree ? 'Con anuncios' : 'Sin anuncios'}</span>
+          </div>
         </section>
 
         <section className="glass-card billing-section">
@@ -150,7 +153,7 @@ export default function BillingPage() {
             label="Tokens del chat IA"
           />
           <UsageBar
-            consumo={consumo.almacenamientoMB || 0}
+            consumo={consumo.almacenamientoUsadoMB || 0}
             limite={limites.almacenamientoMB || 0}
             label="Almacenamiento (MB)"
           />
@@ -162,7 +165,7 @@ export default function BillingPage() {
           <div className="billing-cta">
             <div>
               <h3>Sube de plan y desbloquea todo</h3>
-              <p>Accede a más conteos, VLM y soporte prioritario.</p>
+              <p>Más conteos, VLM, soporte prioritario y sin anuncios.</p>
             </div>
             <button className="btn btn-primary" onClick={() => navigate('/planes')}>
               Haz upgrade <ArrowRight size={16} />
