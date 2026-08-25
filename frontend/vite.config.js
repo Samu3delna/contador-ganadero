@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    emptyOutDir: true,
+  },
   server: {
     port: 3000,
     // Permite hosts de preview (Arena/e2b) en desarrollo. No afecta el build de producción.
