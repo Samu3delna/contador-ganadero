@@ -9,7 +9,6 @@ import { PLANES } from '../data/planes';
 import PlanCard from '../components/billing/PlanCard';
 import { useReveal, useCarousel } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
-import fondoLogin from '../Recursos/fondo_login.webm';
 import './LandingPage.css';
 
 const CARACTERISTICAS = [
@@ -345,9 +344,6 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section ref={heroRef} className={`landing-hero ${heroVisible ? 'landing-hero--visible' : ''}`}>
-        <video className="landing-hero-video" autoPlay muted loop playsInline preload="auto">
-          <source src={fondoLogin} type="video/webm" />
-        </video>
         <div className="landing-hero-overlay" />
         <div className="landing-hero-contenido animate-slide-up">
           <span className="landing-badge">Régimen Especial Agropecuario (REA)</span>
