@@ -65,27 +65,16 @@ Aplicación MERN full-stack para funcionar como contador personal automatizado p
 - Generación de XML y PDF con clave numérica.
 - Estados: borrador, generada, firmada, enviada a Hacienda, aceptada/rechazada.
 
-## Despliegue en Cloudflare
+## Despliegue en Vercel
 
-Configuración del proyecto (Workers & Pages):
+Configuración del proyecto para el frontend en Vercel:
 
 | Ajuste | Valor |
 | --- | --- |
-| Root directory | `/frontend` |
-| Build command | `rm -rf dist && npm run build` |
-| Deploy command | `npx wrangler deploy` |
-| Variables de build | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID` |
+| **Framework Preset** | `Vite` |
+| **Root Directory** | `frontend` |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `dist` |
+| **Variables de Entorno** | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID` |
 
-> ⚠️ **Rama de producción:** Cloudflare debe construirse desde `main`. Construir desde ramas `arena/*` antiguas (o cualquier rama sin el video comprimido) falla con `Asset too large`, porque esos commits traen `fondo_login.webm` de 62 MB.
-
-### Límite de 25 MiB por asset
-
-Cloudflare Workers solo acepta archivos de hasta **25 MiB** por asset. El workflow **Frontend CI** construye `dist/` en cada push/PR y falla si algún archivo lo excede (el mismo chequeo que hace `wrangler deploy`).
-
-Si un asset (por ejemplo, un video de fondo) crece demasiado:
-
-1. **Comprimirlo antes de commitarlo**, por ejemplo:
-   ```bash
-   ffmpeg -i fondo_login.webm -c:v libvpx-vp9 -b:v 1.5M -crf 40 -preset slow -an fondo_login_comprimido.webm
-   ```
-2. **O hospedarlo fuera del repo** (Cloudflare R2, YouTube, etc.) y referenciarlo por URL en el código, en vez de importarlo como asset.
+El archivo [`frontend/vercel.json`](frontend/vercel.json) gestiona automáticamente la reescritura de rutas para Single Page Application (SPA).
