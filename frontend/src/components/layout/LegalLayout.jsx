@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { 
   Tractor, 
@@ -8,7 +9,10 @@ import {
   Scale, 
   Calendar, 
   MapPin, 
-  ListTree
+  ListTree,
+  ChevronDown,
+  ChevronUp,
+  ArrowUp
 } from 'lucide-react';
 import '../../pages/LegalPages.css';
 
@@ -22,8 +26,30 @@ export default function LegalLayout({
   tocItems = [],
   children
 }) {
+  const [tocAbiertoMovil, setTocAbiertoMovil] = useState(false);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTocClick = (e, id) => {
+    e.preventDefault();
+    setTocAbiertoMovil(false);
+    const element = document.getElementById(id);
+    if (element) {
+      const headerOffset = 130;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
   };
 
   const getBadgeClass = (type) => {
@@ -54,11 +80,11 @@ export default function LegalLayout({
           </Link>
 
           <div className="legal-header-actions">
-            <Link to="/" className="btn-legal-back">
+            <Link to="/" className="btn-legal-back" title="Volver al inicio">
               <ArrowLeft size={16} />
-              <span>Inicio</span>
+              <span className="btn-legal-text">Inicio</span>
             </Link>
-            <Link to="/login" className="btn-legal-login">
+            <Link to="/login" className="btn-legal-login" title="Ir al acceso de usuarios">
               <span>Iniciar Sesión</span>
             </Link>
           </div>
@@ -66,7 +92,7 @@ export default function LegalLayout({
       </header>
 
       {/* Selector de Vistas / Pestañas Legales */}
-      <nav className="legal-nav-tabs-wrapper" aria-label="Navegación legal">
+      <nav className="legal-nav-tabs-wrapper" aria-label="Navegación entre documentos legales">
         <div className="legal-nav-tabs">
           <NavLink 
             to="/terminos" 
@@ -125,7 +151,7 @@ export default function LegalLayout({
               type="button" 
               onClick={handlePrint} 
               className="btn-print-legal"
-              title="Imprimir o guardar como PDF"
+              title="Imprimir o guardar este documento como PDF"
             >
               <Printer size={15} />
               <span>Imprimir / PDF</span>
@@ -138,24 +164,54 @@ export default function LegalLayout({
       <main className="legal-content-container">
         {tocItems && tocItems.length > 0 && (
           <aside className="legal-toc-sidebar" aria-label="Índice del documento">
-            <div className="legal-toc-title">
-              <ListTree size={16} />
-              <span>Índice del Contenido</span>
+            <button 
+              type="button"
+              className="legal-toc-mobile-toggle"
+              onClick={() => setTocAbiertoMovil(!tocAbiertoMovil)}
+              aria-expanded={tocAbiertoMovil}
+            >
+              <div className="legal-toc-title" style={{ margin: 0 }}>
+                <ListTree size={16} />
+                <span>Índice del Contenido ({tocItems.length})</span>
+              </div>
+              {tocAbiertoMovil ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+
+            <div className={`legal-toc-collapse ${tocAbiertoMovil ? 'open' : ''}`}>
+              <div className="legal-toc-title desktop-only">
+                <ListTree size={16} />
+                <span>Índice del Contenido</span>
+              </div>
+              <ul className="legal-toc-list">
+                {tocItems.map((item) => (
+                  <li key={item.id}>
+                    <a 
+                      href={`#${item.id}`} 
+                      onClick={(e) => handleTocClick(e, item.id)}
+                      className="legal-toc-link"
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="legal-toc-list">
-              {tocItems.map((item) => (
-                <li key={item.id}>
-                  <a href={`#${item.id}`} className="legal-toc-link">
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
           </aside>
         )}
 
         <article className="legal-document-card">
           {children}
+
+          <div className="legal-document-bottom-actions">
+            <button 
+              type="button" 
+              onClick={scrollToTop} 
+              className="btn-legal-back-top"
+            >
+              <ArrowUp size={16} />
+              <span>Volver arriba</span>
+            </button>
+          </div>
         </article>
       </main>
 

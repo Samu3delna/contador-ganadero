@@ -200,34 +200,122 @@
 }
 
 /* --------------------------------------------------------------------------
+   CAJA LEGAL EN LOGIN
+   -------------------------------------------------------------------------- */
+
+.login-legal-box {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-align: center;
+}
+
+.login-legal-text {
+  font-size: 0.775rem;
+  color: var(--color-texto-muted);
+  line-height: 1.45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.login-legal-icon {
+  color: var(--color-primario-claro);
+  flex-shrink: 0;
+}
+
+.login-legal-link {
+  color: var(--color-texto-sec);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.login-legal-link:hover {
+  color: var(--color-primario-claro);
+}
+
+.login-legal-pills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.login-legal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radio-sm);
+  color: var(--color-texto-sec);
+  font-size: 0.725rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.login-legal-pill:hover {
+  color: var(--color-texto);
+  background: rgba(76, 175, 80, 0.12);
+  border-color: rgba(76, 175, 80, 0.35);
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
    RESPONSIVO
    -------------------------------------------------------------------------- */
 
 @media (max-width: 480px) {
   .login-container {
     padding: var(--espacio-sm);
-    align-items: flex-start;
-    padding-top: max(var(--espacio-lg), var(--safe-top));
+    align-items: center;
+    padding-top: max(var(--espacio-sm), var(--safe-top));
+    padding-bottom: max(var(--espacio-sm), var(--safe-bottom));
   }
 
   .login-card {
     border-radius: var(--radio-lg) !important;
+    padding: 1.25rem 1rem !important;
+  }
+
+  .login-legal-pills {
+    gap: 0.3rem;
+  }
+
+  .login-legal-pill {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.7rem;
   }
 }
 
 /* Móvil en horizontal: el vídeo de fondo y el logo comen todo el alto útil */
-@media (max-height: 560px) {
+@media (max-height: 600px) {
   .login-container {
     align-items: flex-start;
   }
 
   .login-header {
-    margin-bottom: var(--espacio-md);
+    margin-bottom: var(--espacio-sm);
   }
 
   .login-logo {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--espacio-xs);
+  }
+
+  .login-card {
+    padding: 1rem !important;
   }
 }
 

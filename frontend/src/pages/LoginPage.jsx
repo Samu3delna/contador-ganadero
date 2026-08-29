@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Scale, FileText } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import useSeo from '../hooks/useSeo';
@@ -106,24 +106,16 @@ export default function LoginPage() {
 
         <div className="login-footer">
           {esRegistro ? (
-            <>
-              <p>
-                ¿Ya tienes cuenta?{' '}
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => { setEsRegistro(false); setError(''); }}
-                >
-                  Inicia sesión
-                </button>
-              </p>
-              <p className="login-legal-terms" style={{ fontSize: '0.75rem', color: 'var(--color-texto-muted)', marginTop: '0.75rem', textAlign: 'center' }}>
-                Al registrarte, aceptas nuestros{' '}
-                <Link to="/terminos" className="btn-link" style={{ fontSize: '0.75rem' }}>Términos</Link>,{' '}
-                <Link to="/condiciones-servicio" className="btn-link" style={{ fontSize: '0.75rem' }}>Condiciones</Link> y{' '}
-                <Link to="/privacidad" className="btn-link" style={{ fontSize: '0.75rem' }}>Privacidad</Link>.
-              </p>
-            </>
+            <p>
+              ¿Ya tienes cuenta?{' '}
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => { setEsRegistro(false); setError(''); }}
+              >
+                Inicia sesión
+              </button>
+            </p>
           ) : (
             <p>
               ¿No tienes cuenta?{' '}
@@ -136,6 +128,34 @@ export default function LoginPage() {
               </button>
             </p>
           )}
+        </div>
+
+        {/* Sección Legal Destacada y Responsiva */}
+        <div className="login-legal-box" aria-label="Información legal y normativas">
+          <div className="login-legal-text">
+            <ShieldCheck size={14} className="login-legal-icon" />
+            <span>
+              Al acceder o registrarte, aceptas nuestros{' '}
+              <Link to="/terminos" className="login-legal-link">Términos</Link>,{' '}
+              <Link to="/condiciones-servicio" className="login-legal-link">Condiciones</Link> y{' '}
+              <Link to="/privacidad" className="login-legal-link">Privacidad</Link>.
+            </span>
+          </div>
+
+          <div className="login-legal-pills">
+            <Link to="/terminos" className="login-legal-pill" title="Ver Términos y Condiciones">
+              <Scale size={12} />
+              <span>Términos</span>
+            </Link>
+            <Link to="/condiciones-servicio" className="login-legal-pill" title="Ver Condiciones del Servicio">
+              <FileText size={12} />
+              <span>Condiciones</span>
+            </Link>
+            <Link to="/privacidad" className="login-legal-pill" title="Ver Política de Privacidad">
+              <ShieldCheck size={12} />
+              <span>Privacidad</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
