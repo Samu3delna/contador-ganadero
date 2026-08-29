@@ -9,7 +9,7 @@ import { PLANES } from '../data/planes';
 import PlanCard from '../components/billing/PlanCard';
 import { useReveal, useCarousel } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
-import fondoLogin from '../Recursos/fondo_login.webm';
+import fondoLogin from '../assets/videos/fondo_login.webm';
 import './LandingPage.css';
 
 const CARACTERISTICAS = [

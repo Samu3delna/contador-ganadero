@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import useSeo from '../hooks/useSeo';
-import fondoLogin from '../Recursos/fondo_login.webm';
+import fondoLogin from '../assets/videos/fondo_login.webm';
 import './LoginPage.css';
 
 export default function LoginPage() {
