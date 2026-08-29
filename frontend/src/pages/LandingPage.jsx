@@ -622,6 +622,9 @@ export default function LandingPage() {
           <a href="#comparativa">Comparativa</a>
           <a href="#planes">Planes</a>
           <a href="#faq">Preguntas frecuentes</a>
+          <Link to="/terminos">Términos y Condiciones</Link>
+          <Link to="/condiciones-servicio">Condiciones del Servicio</Link>
+          <Link to="/privacidad">Política de Privacidad</Link>
         </div>
         <p className="landing-footer-copy">
           © {new Date().getFullYear()} ContadorGanadero. Todos los derechos reservados.

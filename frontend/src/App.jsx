@@ -9,6 +9,9 @@ import './App.css';
 
 // Lazy-loaded pages (code-splitting)
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
+const CondicionesServicioPage = lazy(() => import('./pages/CondicionesServicioPage'));
+const PoliticaPrivacidadPage = lazy(() => import('./pages/PoliticaPrivacidadPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const FacturasPage = lazy(() => import('./pages/FacturasPage'));
 const IngresosPage = lazy(() => import('./pages/IngresosPage'));
@@ -72,6 +75,15 @@ function App() {
         <Routes>
           <Route path="/" element={<Suspense fallback={<PageLoader />}><LandingPage /></Suspense>} />
           <Route path="/login" element={<LoginPage />} />
+          
+          {/* Páginas Legales Públicas */}
+          <Route path="/terminos" element={<Suspense fallback={<PageLoader />}><TerminosCondicionesPage /></Suspense>} />
+          <Route path="/terminos-y-condiciones" element={<Suspense fallback={<PageLoader />}><TerminosCondicionesPage /></Suspense>} />
+          <Route path="/condiciones-servicio" element={<Suspense fallback={<PageLoader />}><CondicionesServicioPage /></Suspense>} />
+          <Route path="/condiciones-del-servicio" element={<Suspense fallback={<PageLoader />}><CondicionesServicioPage /></Suspense>} />
+          <Route path="/privacidad" element={<Suspense fallback={<PageLoader />}><PoliticaPrivacidadPage /></Suspense>} />
+          <Route path="/politica-de-privacidad" element={<Suspense fallback={<PageLoader />}><PoliticaPrivacidadPage /></Suspense>} />
+
           <Route path="/*" element={<RutaProtegida><AppLayout /></RutaProtegida>} />
         </Routes>
       </AuthProvider>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
@@ -106,16 +106,24 @@ export default function LoginPage() {
 
         <div className="login-footer">
           {esRegistro ? (
-            <p>
-              ¿Ya tienes cuenta?{' '}
-              <button
-                type="button"
-                className="btn-link"
-                onClick={() => { setEsRegistro(false); setError(''); }}
-              >
-                Inicia sesión
-              </button>
-            </p>
+            <>
+              <p>
+                ¿Ya tienes cuenta?{' '}
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => { setEsRegistro(false); setError(''); }}
+                >
+                  Inicia sesión
+                </button>
+              </p>
+              <p className="login-legal-terms" style={{ fontSize: '0.75rem', color: 'var(--color-texto-muted)', marginTop: '0.75rem', textAlign: 'center' }}>
+                Al registrarte, aceptas nuestros{' '}
+                <Link to="/terminos" className="btn-link" style={{ fontSize: '0.75rem' }}>Términos</Link>,{' '}
+                <Link to="/condiciones-servicio" className="btn-link" style={{ fontSize: '0.75rem' }}>Condiciones</Link> y{' '}
+                <Link to="/privacidad" className="btn-link" style={{ fontSize: '0.75rem' }}>Privacidad</Link>.
+              </p>
+            </>
           ) : (
             <p>
               ¿No tienes cuenta?{' '}
