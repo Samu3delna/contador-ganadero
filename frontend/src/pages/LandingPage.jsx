@@ -365,13 +365,13 @@ export default function LandingPage() {
             de Costa Rica: importa facturas por correo, categoriza gastos con IA y
             genera tus declaraciones de Hacienda sin esfuerzo.
           </p>
-          <div className="landing-hero-ctas flex items-center justify-center gap-4 pt-2">
-            <Button asChild variant="gradient" size="lg" className="h-12 px-7 text-base shadow-xl">
+          <div className="landing-hero-ctas flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full max-w-xs sm:max-w-none mx-auto pt-2">
+            <Button asChild variant="gradient" size="lg" className="h-12 px-7 text-base shadow-xl w-full sm:w-auto">
               <Link to="/login">
                 Comenzar Gratis <ArrowRight size={18} className="ml-2" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="h-12 px-7 text-base bg-slate-900/60 backdrop-blur-md border-slate-700">
+            <Button asChild variant="outline" size="lg" className="h-12 px-7 text-base bg-slate-900/60 backdrop-blur-md border-slate-700 w-full sm:w-auto">
               <a href="#como-funciona">
                 Ver cómo funciona
               </a>

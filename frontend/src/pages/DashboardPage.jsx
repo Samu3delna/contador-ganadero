@@ -105,13 +105,13 @@ export default function DashboardPage() {
           </div>
           <p className="page-subtitle text-slate-400 text-sm mt-1">Resumen financiero y estado tributario del Régimen REA</p>
         </div>
-        <div className="dashboard-actions">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-lg bg-slate-900/80 p-1 border border-slate-800">
+        <div className="dashboard-actions w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="inline-flex rounded-lg bg-slate-900/80 p-1 border border-slate-800 justify-center">
               <Button
                 variant={modoSync === 'rapido' ? 'secondary' : 'ghost'}
                 size="sm"
-                className={`text-xs h-8 px-3 ${modoSync === 'rapido' ? 'bg-slate-800 text-white font-medium' : 'text-slate-400'}`}
+                className={`text-xs h-8 px-3 flex-1 sm:flex-none ${modoSync === 'rapido' ? 'bg-slate-800 text-white font-medium' : 'text-slate-400'}`}
                 onClick={() => setModoSync('rapido')}
                 disabled={sincronizando}
                 title="Solo emails no leídos (~10-15s)"
@@ -121,7 +121,7 @@ export default function DashboardPage() {
               <Button
                 variant={modoSync === 'completo' ? 'secondary' : 'ghost'}
                 size="sm"
-                className={`text-xs h-8 px-3 ${modoSync === 'completo' ? 'bg-slate-800 text-white font-medium' : 'text-slate-400'}`}
+                className={`text-xs h-8 px-3 flex-1 sm:flex-none ${modoSync === 'completo' ? 'bg-slate-800 text-white font-medium' : 'text-slate-400'}`}
                 onClick={() => setModoSync('completo')}
                 disabled={sincronizando}
                 title="Todos los emails últimos 60 días (~2-3 min)"
@@ -134,7 +134,7 @@ export default function DashboardPage() {
               id="btn-sincronizar-dashboard"
               variant="gradient"
               size="sm"
-              className="h-9 px-4 gap-2 font-semibold shadow-md shadow-emerald-950/40"
+              className="h-9 px-4 gap-2 font-semibold shadow-md shadow-emerald-950/40 w-full sm:w-auto justify-center"
               onClick={handleSincronizar}
               disabled={sincronizando}
             >
