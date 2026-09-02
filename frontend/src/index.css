@@ -1,5 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 212 42% 7%;
+    --foreground: 210 40% 98%;
+
+    --card: 213 40% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 213 40% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 122 39% 49%;
+    --primary-foreground: 120 100% 98%;
+
+    --secondary: 212 37% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 212 30% 20%;
+    --muted-foreground: 211 20% 60%;
+
+    --accent: 36 96% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 153 100% 45%;
+    --success-foreground: 212 42% 7%;
+
+    --warning: 45 100% 63%;
+    --warning-foreground: 212 42% 7%;
+
+    --border: 212 30% 22%;
+    --input: 212 30% 22%;
+    --ring: 122 39% 49%;
+
+    --radius: 0.625rem;
+  }
+}
+
 :root {
   /* Paleta de Colores - Dark Theme de Alta Gama */
   --color-primario: #1B5E20;          /* Verde bosque profundo */

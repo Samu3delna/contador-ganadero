@@ -4,6 +4,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, Scale, FileText } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
+import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import useSeo from '../hooks/useSeo';
 import fondoLogin from '../assets/videos/fondo_login.webm';
 import './LoginPage.css';
@@ -52,16 +54,18 @@ export default function LoginPage() {
       <video className="login-bg-video" autoPlay muted loop playsInline>
         <source src={fondoLogin} type="video/webm" />
       </video>
-      <div className="login-card glass-card animate-slide-up">
-        <button
+      <Card className="login-card p-8 sm:p-10 border-slate-800/90 bg-slate-900/85 backdrop-blur-xl shadow-2xl animate-slide-up max-w-md w-full">
+        <Button
           type="button"
-          className="login-volver"
+          variant="ghost"
+          size="sm"
+          className="login-volver text-slate-400 hover:text-white mb-3 -ml-2 self-start gap-1.5"
           onClick={() => navigate('/')}
           aria-label="Volver a la página principal"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={16} />
           <span>Volver al inicio</span>
-        </button>
+        </Button>
 
         <LoginHeader />
 
@@ -74,18 +78,20 @@ export default function LoginPage() {
           esRegistro={esRegistro}
         />
 
-        <div className="login-divider">
+        <div className="login-divider my-5">
           <span>o</span>
         </div>
 
-        <button
+        <Button
           type="button"
-          className="btn-google"
+          variant="outline"
+          size="lg"
+          className="btn-google w-full gap-2.5 bg-slate-800/60 hover:bg-slate-800 border-slate-700 text-slate-200"
           onClick={handleGoogleLogin}
           disabled={cargando}
           aria-label="Continuar con Google"
         >
-          <svg className="google-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="google-icon shrink-0" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -104,15 +110,15 @@ export default function LoginPage() {
             />
           </svg>
           <span>Continuar con Google</span>
-        </button>
+        </Button>
 
-        <div className="login-footer">
+        <div className="login-footer mt-4 text-center text-xs text-slate-400">
           {esRegistro ? (
             <p>
               ¿Ya tienes cuenta?{' '}
               <button
                 type="button"
-                className="btn-link"
+                className="text-emerald-400 hover:underline font-semibold"
                 onClick={() => { setEsRegistro(false); setError(''); }}
               >
                 Inicia sesión
@@ -123,7 +129,7 @@ export default function LoginPage() {
               ¿No tienes cuenta?{' '}
               <button
                 type="button"
-                className="btn-link"
+                className="text-emerald-400 hover:underline font-semibold"
                 onClick={() => { setEsRegistro(true); setError(''); }}
               >
                 Regístrate gratis
@@ -132,34 +138,34 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Sección Legal Destacada y Responsiva */}
-        <div className="login-legal-box" aria-label="Información legal y normativas">
-          <div className="login-legal-text">
-            <ShieldCheck size={14} className="login-legal-icon" />
+        {/* Sección Legal Destacada */}
+        <div className="login-legal-box mt-6 pt-4 border-t border-slate-800/80 text-xs text-slate-400 space-y-2" aria-label="Información legal y normativas">
+          <div className="login-legal-text flex items-center gap-1.5 justify-center text-[11px] text-slate-400">
+            <ShieldCheck size={13} className="text-emerald-400 shrink-0" />
             <span>
-              Al acceder o registrarte, aceptas nuestros{' '}
-              <Link to="/terminos" className="login-legal-link">Términos</Link>,{' '}
-              <Link to="/condiciones-servicio" className="login-legal-link">Condiciones</Link> y{' '}
-              <Link to="/privacidad" className="login-legal-link">Privacidad</Link>.
+              Al acceder, aceptas los{' '}
+              <Link to="/terminos" className="text-slate-300 hover:text-white underline">Términos</Link>,{' '}
+              <Link to="/condiciones-servicio" className="text-slate-300 hover:text-white underline">Condiciones</Link> y{' '}
+              <Link to="/privacidad" className="text-slate-300 hover:text-white underline">Privacidad</Link>.
             </span>
           </div>
 
-          <div className="login-legal-pills">
-            <Link to="/terminos" className="login-legal-pill" title="Ver Términos y Condiciones">
-              <Scale size={12} />
+          <div className="login-legal-pills flex items-center justify-center gap-2 pt-1">
+            <Link to="/terminos" className="text-[11px] flex items-center gap-1 text-slate-400 hover:text-slate-200 bg-slate-800/60 px-2.5 py-0.5 rounded-full border border-slate-700/60" title="Ver Términos y Condiciones">
+              <Scale size={11} />
               <span>Términos</span>
             </Link>
-            <Link to="/condiciones-servicio" className="login-legal-pill" title="Ver Condiciones del Servicio">
-              <FileText size={12} />
+            <Link to="/condiciones-servicio" className="text-[11px] flex items-center gap-1 text-slate-400 hover:text-slate-200 bg-slate-800/60 px-2.5 py-0.5 rounded-full border border-slate-700/60" title="Ver Condiciones del Servicio">
+              <FileText size={11} />
               <span>Condiciones</span>
             </Link>
-            <Link to="/privacidad" className="login-legal-pill" title="Ver Política de Privacidad">
-              <ShieldCheck size={12} />
+            <Link to="/privacidad" className="text-[11px] flex items-center gap-1 text-slate-400 hover:text-slate-200 bg-slate-800/60 px-2.5 py-0.5 rounded-full border border-slate-700/60" title="Ver Política de Privacidad">
+              <ShieldCheck size={11} />
               <span>Privacidad</span>
             </Link>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

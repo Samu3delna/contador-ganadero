@@ -28,6 +28,7 @@ export function AuthProvider({ children }) {
         })
         .finally(() => setCargando(false));
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCargando(false);
     }
   }, []);

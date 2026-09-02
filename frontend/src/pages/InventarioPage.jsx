@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Edit3, Trash2, Plus, AlertTriangle } from 'lucide-react';
+import { Edit3, Trash2, Plus, AlertTriangle, Loader2 } from 'lucide-react';
 import {
   obtenerInventarioAPI,
   obtenerResumenInventarioAPI,
@@ -22,6 +22,11 @@ import BovinoForm from '../components/inventario/BovinoForm';
 import AvesForm from '../components/inventario/AvesForm';
 import PecesForm from '../components/inventario/PecesForm';
 import ColmenaForm from '../components/inventario/ColmenaForm';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Card, CardContent } from '../components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import './InventarioPage.css';
 
 export default function InventarioPage() {
@@ -146,14 +151,34 @@ export default function InventarioPage() {
     setModalAbierto(true);
   };
 
-  if (cargando) return <div className="loader-center"><div className="loader" /></div>;
-  if (error) return <div className="error-message">{error}</div>;
+  if (cargando) {
+    return (
+      <div className="page-content">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+            <p className="text-sm text-slate-400">Cargando inventario agropecuario...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-content">
+        <div className="p-4 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-sm">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
-    { id: 'bovinos', label: 'Bovinos', count: resumen?.totalBovinos || 0 },
-    { id: 'aves', label: 'Aves', count: resumen?.totalAves || 0 },
-    { id: 'peces', label: 'Peces', count: resumen?.totalPeces || 0 },
-    { id: 'colmenas', label: 'Colmenas', count: inventario?.colmenas?.filter(c => c.activo).length || 0 },
+    { id: 'bovinos', label: 'Bovinos', icon: '🐄', count: resumen?.totalBovinos || 0 },
+    { id: 'aves', label: 'Aves', icon: '🐔', count: resumen?.totalAves || 0 },
+    { id: 'peces', label: 'Peces', icon: '🐟', count: resumen?.totalPeces || 0 },
+    { id: 'colmenas', label: 'Colmenas', icon: '🍯', count: inventario?.colmenas?.filter(c => c.activo).length || 0 },
   ];
 
   const renderFormulario = () => {
@@ -173,237 +198,279 @@ export default function InventarioPage() {
 
   return (
     <div className="page-content">
-      <div className="page-header">
+      <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="page-title">Inventario Agropecuario</h1>
-          <p className="page-subtitle">Control integral de bovinos, aves, peces y colmenas</p>
+          <h1 className="page-title text-2xl md:text-3xl font-bold font-heading text-white">Inventario Agropecuario</h1>
+          <p className="page-subtitle text-slate-400 text-sm mt-1">Control multiespecie de bovinos, aves, acuicultura y apicultura</p>
         </div>
-        <button className="btn btn-primary" onClick={abrirRegistro}>
+        <Button variant="gradient" size="default" className="gap-2 shadow-md shadow-emerald-950/40 self-start sm:self-auto" onClick={abrirRegistro}>
           <Plus size={18} /> Registrar {tabActiva === 'bovinos' ? 'Bovino' : tabActiva === 'aves' ? 'Lote de Aves' : tabActiva === 'peces' ? 'Estanque' : 'Colmena'}
-        </button>
+        </Button>
       </div>
 
-      {/* Resumen */}
-      <div className="dashboard-cards">
-        <div className="glass-card dash-card">
-          <div className="dash-card-icon dash-card-icon--green"><span>🐄</span></div>
-          <div className="dash-card-info">
-            <span className="dash-card-label">Bovinos Activos</span>
-            <span className="dash-card-value">{resumen?.totalBovinos || 0}</span>
-          </div>
-        </div>
-        <div className="glass-card dash-card">
-          <div className="dash-card-icon dash-card-icon--amber"><span>🐔</span></div>
-          <div className="dash-card-info">
-            <span className="dash-card-label">Aves en Producción</span>
-            <span className="dash-card-value">{resumen?.totalAves || 0}</span>
-          </div>
-        </div>
-        <div className="glass-card dash-card">
-          <div className="dash-card-icon dash-card-icon--blue"><span>🐟</span></div>
-          <div className="dash-card-info">
-            <span className="dash-card-label">Biomasa Peces (kg)</span>
-            <span className="dash-card-value">{resumen?.totalBiomasa?.toLocaleString() || 0}</span>
-          </div>
-        </div>
-        <div className="glass-card dash-card">
-          <div className="dash-card-icon dash-card-icon--green"><span>🍯</span></div>
-          <div className="dash-card-info">
-            <span className="dash-card-label">Miel Producida (kg)</span>
-            <span className="dash-card-value">{resumen?.totalMiel?.toLocaleString() || 0}</span>
-          </div>
-        </div>
+      {/* Resumen Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card className="border-slate-800/80 bg-slate-900/70 backdrop-blur-md">
+          <CardContent className="p-4 flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xl shrink-0">
+              <span>🐄</span>
+            </div>
+            <div>
+              <span className="text-xs text-slate-400 font-medium">Bovinos Activos</span>
+              <div className="text-2xl font-bold text-white font-heading mt-0.5">{resumen?.totalBovinos || 0}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-800/80 bg-slate-900/70 backdrop-blur-md">
+          <CardContent className="p-4 flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl shrink-0">
+              <span>🐔</span>
+            </div>
+            <div>
+              <span className="text-xs text-slate-400 font-medium">Aves en Producción</span>
+              <div className="text-2xl font-bold text-white font-heading mt-0.5">{resumen?.totalAves || 0}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-800/80 bg-slate-900/70 backdrop-blur-md">
+          <CardContent className="p-4 flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-xl shrink-0">
+              <span>🐟</span>
+            </div>
+            <div>
+              <span className="text-xs text-slate-400 font-medium">Biomasa Peces (kg)</span>
+              <div className="text-2xl font-bold text-white font-heading mt-0.5">{resumen?.totalBiomasa?.toLocaleString() || 0}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-800/80 bg-slate-900/70 backdrop-blur-md">
+          <CardContent className="p-4 flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-xl shrink-0">
+              <span>🍯</span>
+            </div>
+            <div>
+              <span className="text-xs text-slate-400 font-medium">Miel Producida (kg)</span>
+              <div className="text-2xl font-bold text-white font-heading mt-0.5">{resumen?.totalMiel?.toLocaleString() || 0}</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Tabs */}
-      <div className="inv-tabs">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            className={`inv-tab ${tabActiva === tab.id ? 'inv-tab--activo' : ''}`}
-            onClick={() => setTabActiva(tab.id)}
-          >
-            {tab.label} ({tab.count})
-          </button>
-        ))}
-      </div>
+      <Tabs value={tabActiva} onValueChange={setTabActiva} className="w-full">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 h-auto p-1.5 gap-1 mb-6 bg-slate-900/80 border border-slate-800 rounded-xl">
+          {tabs.map(tab => (
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className="py-2.5 px-4 text-xs sm:text-sm font-semibold rounded-lg data-[state=active]:bg-emerald-600 data-[state=active]:text-white transition-all gap-1.5"
+            >
+              <span>{tab.icon}</span> {tab.label} <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-4 bg-slate-800">{tab.count}</Badge>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Contenido por tab */}
-      <div className="inv-tab-content">
-        {tabActiva === 'bovinos' && (
-          <div>
-            <h2 className="chart-title">Bovinos</h2>
-            {inventario?.bovinos?.filter(b => b.activo).length === 0 ? (
-              <div className="estado-vacio"><p className="text-muted">No hay bovinos registrados.</p></div>
-            ) : (
-              <div className="table-responsive">
-                <table className="data-table tabla--stack">
-                  <thead>
-                    <tr>
-                      <th>Tag</th>
-                      <th>Nombre</th>
-                      <th>Tipo</th>
-                      <th>Raza</th>
-                      <th>Peso (kg)</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inventario.bovinos.filter(b => b.activo).map(b => (
-                      <tr key={b._id}>
-                        <td data-label="Tag">{b.tagId}</td>
-                        <td data-label="Nombre">{b.nombre || '-'}</td>
-                        <td data-label="Tipo">{b.tipo}</td>
-                        <td data-label="Raza">{b.raza || '-'}</td>
-                        <td data-label="Peso (kg)">{b.pesoActualKg}</td>
-                        <td data-label="Estado"><span className={`badge badge-${b.estadoSanitario === 'sano' ? 'exito' : 'advertencia'}`}>{b.estadoSanitario}</span></td>
-                        <td data-label="Acciones">
-                          <div className="acciones-cell">
-                            <button className="btn-icon" onClick={() => abrirEdicion(b)} title="Editar"><Edit3 size={16} /></button>
-                            <button className="btn-icon" onClick={() => handleEliminar(b._id)} title="Eliminar"><Trash2 size={16} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Tab Bovinos */}
+        <TabsContent value="bovinos">
+          {inventario?.bovinos?.filter(b => b.activo).length === 0 ? (
+            <Card className="p-8 text-center border-slate-800 bg-slate-900/60">
+              <p className="text-slate-400 text-sm">No hay bovinos registrados aún. Usa el botón superior para registrar uno.</p>
+            </Card>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tag / Arete</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Raza</TableHead>
+                  <TableHead>Peso (kg)</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventario.bovinos.filter(b => b.activo).map(b => (
+                  <TableRow key={b._id}>
+                    <TableCell className="font-mono font-semibold text-emerald-400">{b.tagId}</TableCell>
+                    <TableCell className="font-medium text-white">{b.nombre || '-'}</TableCell>
+                    <TableCell className="capitalize text-slate-300">{b.tipo}</TableCell>
+                    <TableCell className="text-slate-400">{b.raza || '-'}</TableCell>
+                    <TableCell className="font-mono text-slate-200">{b.pesoActualKg} kg</TableCell>
+                    <TableCell>
+                      <Badge variant={b.estadoSanitario === 'sano' ? 'default' : 'amber'} className="text-[11px] capitalize">
+                        {b.estadoSanitario}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => abrirEdicion(b)} title="Editar">
+                          <Edit3 size={15} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-400" onClick={() => handleEliminar(b._id)} title="Eliminar">
+                          <Trash2 size={15} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
 
-        {tabActiva === 'aves' && (
-          <div>
-            <h2 className="chart-title">Lotes de Aves</h2>
-            {inventario?.lotesAves?.filter(l => l.activo).length === 0 ? (
-              <div className="estado-vacio"><p className="text-muted">No hay lotes de aves registrados.</p></div>
-            ) : (
-              <div className="table-responsive">
-                <table className="data-table tabla--stack">
-                  <thead>
-                    <tr>
-                      <th>Lote</th>
-                      <th>Especie</th>
-                      <th>Galpón</th>
-                      <th>Aves Actuales</th>
-                      <th>Huevos/Cartones</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inventario.lotesAves.filter(l => l.activo).map(l => (
-                      <tr key={l._id}>
-                        <td data-label="Lote">{l.loteId}</td>
-                        <td data-label="Especie">{l.especie}</td>
-                        <td data-label="Galpón">{l.galpon || '-'}</td>
-                        <td data-label="Aves Actuales">{l.cicloActual?.nActualAves || 0}</td>
-                        <td data-label="Huevos/Cartones">{l.totalHuevosProducidos || 0} / {l.totalCartonesProducidos || 0}</td>
-                        <td data-label="Estado">{l.cicloActual?.estado || '-'}</td>
-                        <td data-label="Acciones">
-                          <div className="acciones-cell">
-                            <button className="btn-icon" onClick={() => abrirEdicion(l)} title="Editar"><Edit3 size={16} /></button>
-                            <button className="btn-icon" onClick={() => handleEliminar(l._id)} title="Eliminar"><Trash2 size={16} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Tab Aves */}
+        <TabsContent value="aves">
+          {inventario?.lotesAves?.filter(l => l.activo).length === 0 ? (
+            <Card className="p-8 text-center border-slate-800 bg-slate-900/60">
+              <p className="text-slate-400 text-sm">No hay lotes de aves registrados.</p>
+            </Card>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Lote ID</TableHead>
+                  <TableHead>Especie</TableHead>
+                  <TableHead>Galpón</TableHead>
+                  <TableHead>Aves Actuales</TableHead>
+                  <TableHead>Huevos / Cartones</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventario.lotesAves.filter(l => l.activo).map(l => (
+                  <TableRow key={l._id}>
+                    <TableCell className="font-mono font-semibold text-amber-400">{l.loteId}</TableCell>
+                    <TableCell className="font-medium text-white">{l.especie}</TableCell>
+                    <TableCell className="text-slate-300">{l.galpon || '-'}</TableCell>
+                    <TableCell className="font-mono text-slate-200">{l.cicloActual?.nActualAves || 0}</TableCell>
+                    <TableCell className="font-mono text-slate-300">{l.totalHuevosProducidos || 0} / {l.totalCartonesProducidos || 0}</TableCell>
+                    <TableCell>
+                      <Badge variant="blue" className="text-[11px] capitalize">
+                        {l.cicloActual?.estado || 'Activo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => abrirEdicion(l)} title="Editar">
+                          <Edit3 size={15} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-400" onClick={() => handleEliminar(l._id)} title="Eliminar">
+                          <Trash2 size={15} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
 
-        {tabActiva === 'peces' && (
-          <div>
-            <h2 className="chart-title">Estanques</h2>
-            {inventario?.estanques?.filter(e => e.activo).length === 0 ? (
-              <div className="estado-vacio"><p className="text-muted">No hay estanques registrados.</p></div>
-            ) : (
-              <div className="table-responsive">
-                <table className="data-table tabla--stack">
-                  <thead>
-                    <tr>
-                      <th>Estanque</th>
-                      <th>Especie</th>
-                      <th>Capacidad (m³)</th>
-                      <th>Peces</th>
-                      <th>Biomasa (kg)</th>
-                      <th>FCA</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inventario.estanques.filter(e => e.activo).map(e => (
-                      <tr key={e._id}>
-                        <td data-label="Estanque">{e.estanqueId}</td>
-                        <td data-label="Especie">{e.especie}</td>
-                        <td data-label="Capacidad (m³)">{e.capacidadM3}</td>
-                        <td data-label="Peces">{e.nActual}</td>
-                        <td data-label="Biomasa (kg)">{e.biomasaTotalKg?.toLocaleString()}</td>
-                        <td data-label="FCA">{e.tasaConversionAlimenticia?.toFixed(2) || '-'}</td>
-                        <td data-label="Estado">{e.estado}</td>
-                        <td data-label="Acciones">
-                          <div className="acciones-cell">
-                            <button className="btn-icon" onClick={() => abrirEdicion(e)} title="Editar"><Edit3 size={16} /></button>
-                            <button className="btn-icon" onClick={() => handleEliminar(e._id)} title="Eliminar"><Trash2 size={16} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Tab Peces */}
+        <TabsContent value="peces">
+          {inventario?.estanques?.filter(e => e.activo).length === 0 ? (
+            <Card className="p-8 text-center border-slate-800 bg-slate-900/60">
+              <p className="text-slate-400 text-sm">No hay estanques registrados.</p>
+            </Card>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Estanque</TableHead>
+                  <TableHead>Especie</TableHead>
+                  <TableHead>Capacidad (m³)</TableHead>
+                  <TableHead>Peces</TableHead>
+                  <TableHead>Biomasa (kg)</TableHead>
+                  <TableHead>FCA</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventario.estanques.filter(e => e.activo).map(e => (
+                  <TableRow key={e._id}>
+                    <TableCell className="font-mono font-semibold text-sky-400">{e.estanqueId}</TableCell>
+                    <TableCell className="font-medium text-white">{e.especie}</TableCell>
+                    <TableCell className="font-mono text-slate-300">{e.capacidadM3} m³</TableCell>
+                    <TableCell className="font-mono text-slate-200">{e.nActual}</TableCell>
+                    <TableCell className="font-mono text-slate-200">{e.biomasaTotalKg?.toLocaleString()} kg</TableCell>
+                    <TableCell className="font-mono text-emerald-400">{e.tasaConversionAlimenticia?.toFixed(2) || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant="default" className="text-[11px] capitalize">
+                        {e.estado}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => abrirEdicion(e)} title="Editar">
+                          <Edit3 size={15} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-400" onClick={() => handleEliminar(e._id)} title="Eliminar">
+                          <Trash2 size={15} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
 
-        {tabActiva === 'colmenas' && (
-          <div>
-            <h2 className="chart-title">Colmenas</h2>
-            {inventario?.colmenas?.filter(c => c.activo).length === 0 ? (
-              <div className="estado-vacio"><p className="text-muted">No hay colmenas registradas.</p></div>
-            ) : (
-              <div className="table-responsive">
-                <table className="data-table tabla--stack">
-                  <thead>
-                    <tr>
-                      <th>Colmena</th>
-                      <th>Especie</th>
-                      <th>Ubicación</th>
-                      <th>Estado</th>
-                      <th>Miel (kg)</th>
-                      <th>Extracciones</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inventario.colmenas.filter(c => c.activo).map(c => (
-                      <tr key={c._id}>
-                        <td data-label="Colmena">{c.colmenaId}</td>
-                        <td data-label="Especie">{c.especie}</td>
-                        <td data-label="Ubicación">{c.ubicacion || '-'}</td>
-                        <td data-label="Estado">{c.estadoColonia}</td>
-                        <td data-label="Miel (kg)">{c.mielProducidaTotalKg}</td>
-                        <td data-label="Extracciones">{c.extracciones?.length || 0}</td>
-                        <td data-label="Acciones">
-                          <div className="acciones-cell">
-                            <button className="btn-icon" onClick={() => abrirEdicion(c)} title="Editar"><Edit3 size={16} /></button>
-                            <button className="btn-icon" onClick={() => handleEliminar(c._id)} title="Eliminar"><Trash2 size={16} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Tab Colmenas */}
+        <TabsContent value="colmenas">
+          {inventario?.colmenas?.filter(c => c.activo).length === 0 ? (
+            <Card className="p-8 text-center border-slate-800 bg-slate-900/60">
+              <p className="text-slate-400 text-sm">No hay colmenas registradas.</p>
+            </Card>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Colmena</TableHead>
+                  <TableHead>Especie</TableHead>
+                  <TableHead>Ubicación</TableHead>
+                  <TableHead>Estado Colonia</TableHead>
+                  <TableHead>Miel Total (kg)</TableHead>
+                  <TableHead>Extracciones</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventario.colmenas.filter(c => c.activo).map(c => (
+                  <TableRow key={c._id}>
+                    <TableCell className="font-mono font-semibold text-amber-400">{c.colmenaId}</TableCell>
+                    <TableCell className="font-medium text-white">{c.especie}</TableCell>
+                    <TableCell className="text-slate-300">{c.ubicacion || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant="amber" className="text-[11px] capitalize">
+                        {c.estadoColonia}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-emerald-400 font-semibold">{c.mielProducidaTotalKg} kg</TableCell>
+                    <TableCell className="font-mono text-slate-300">{c.extracciones?.length || 0}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => abrirEdicion(c)} title="Editar">
+                          <Edit3 size={15} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-400" onClick={() => handleEliminar(c._id)} title="Eliminar">
+                          <Trash2 size={15} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <Modal
         isOpen={modalAbierto}
@@ -423,13 +490,13 @@ export default function InventarioPage() {
           title="Confirmar Eliminación"
           size="sm"
         >
-          <div className="confirm-dialog-body">
-            <AlertTriangle size={28} style={{ color: 'var(--color-advertencia)' }} />
-            <span>¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.</span>
+          <div className="confirm-dialog-body flex items-start gap-3 p-2">
+            <AlertTriangle size={24} className="text-amber-400 shrink-0 mt-0.5" />
+            <span className="text-slate-200 text-sm">¿Está seguro de que desea eliminar este registro? Esta acción no se puede deshacer.</span>
           </div>
-          <div className="form-actions">
-            <button className="btn btn-secondary" onClick={() => setConfirmarEliminar(null)}>Cancelar</button>
-            <button className="btn btn-danger" onClick={confirmarEliminarAccion}>Eliminar</button>
+          <div className="form-actions flex justify-end gap-2 mt-4">
+            <Button variant="secondary" size="sm" onClick={() => setConfirmarEliminar(null)}>Cancelar</Button>
+            <Button variant="destructive" size="sm" onClick={confirmarEliminarAccion}>Eliminar</Button>
           </div>
         </Modal>
       )}

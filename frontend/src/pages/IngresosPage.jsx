@@ -5,6 +5,8 @@ import { toast } from 'react-hot-toast';
 import FormularioIngreso from '../components/ingresos/FormularioIngreso';
 import HistorialVentas from '../components/ingresos/HistorialVentas';
 import Modal from '../components/common/Modal';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import './IngresosPage.css';
 
 export default function IngresosPage() {
@@ -65,14 +67,25 @@ export default function IngresosPage() {
 
   return (
     <div className="page-content">
-      <div className="page-header">
+      <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="page-title">Ingresos</h1>
-          <p className="page-subtitle">Registro de ventas de ganado</p>
+          <div className="flex items-center gap-2">
+            <h1 className="page-title text-2xl md:text-3xl font-bold font-heading text-white">Ingresos & Ventas</h1>
+            <Badge variant="default" className="text-xs bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+              Régimen REA
+            </Badge>
+          </div>
+          <p className="page-subtitle text-slate-400 text-sm mt-1">Registro y control de ventas de ganado, subastas y productos de la finca</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setMostrarForm(!mostrarForm)}>
-          <Plus size={18} /> Registrar Venta
-        </button>
+        <Button
+          variant={mostrarForm ? 'secondary' : 'gradient'}
+          size="default"
+          className="gap-2 shadow-md shadow-emerald-950/40 self-start sm:self-auto"
+          onClick={() => setMostrarForm(!mostrarForm)}
+        >
+          <Plus size={18} className={mostrarForm ? 'rotate-45 transition-transform' : ''} />
+          {mostrarForm ? 'Cerrar Formulario' : 'Registrar Venta'}
+        </Button>
       </div>
 
       {mostrarForm && (
@@ -100,13 +113,13 @@ export default function IngresosPage() {
           title="Confirmar Eliminación"
           size="sm"
         >
-          <div className="confirm-dialog-body">
-            <AlertTriangle size={28} style={{ color: 'var(--color-advertencia)' }} />
-            <span>¿Eliminar este ingreso? Esta acción no se puede deshacer.</span>
+          <div className="confirm-dialog-body flex items-start gap-3 p-2">
+            <AlertTriangle size={24} className="text-amber-400 shrink-0 mt-0.5" />
+            <span className="text-slate-200 text-sm">¿Está seguro de que desea eliminar este registro de ingreso? Esta acción no se puede deshacer.</span>
           </div>
-          <div className="form-actions">
-            <button className="btn btn-secondary" onClick={() => setConfirmarEliminar(null)}>Cancelar</button>
-            <button className="btn btn-danger" onClick={confirmarEliminarIngreso}>Eliminar</button>
+          <div className="form-actions flex justify-end gap-2 mt-4">
+            <Button variant="secondary" size="sm" onClick={() => setConfirmarEliminar(null)}>Cancelar</Button>
+            <Button variant="destructive" size="sm" onClick={confirmarEliminarIngreso}>Eliminar</Button>
           </div>
         </Modal>
       )}

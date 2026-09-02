@@ -1,7 +1,9 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
+import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Badge } from '../ui/badge';
 import './Sidebar.css';
 
 const menuSections = [
@@ -67,9 +69,6 @@ export default function Sidebar() {
 
   const cerrar = () => setAbierto(false);
 
-  // El panel se cierra desde los propios enlaces (`onClick={cerrar}`), por lo
-  // que no hace falta un efecto que reaccione al cambio de ruta.
-
   // Bloquea el scroll del fondo mientras el panel está abierto en móvil.
   useEffect(() => {
     if (!abierto) return undefined;
@@ -97,6 +96,8 @@ export default function Sidebar() {
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, []);
+
+  const inicialUsuario = (usuario?.nombre || 'U').charAt(0).toUpperCase();
 
   return (
     <>
@@ -131,11 +132,13 @@ export default function Sidebar() {
       >
         <div className="sidebar-header">
           <div className="sidebar-logo-container">
-            <Tractor size={28} className="sidebar-logo-icon" />
+            <Tractor size={26} className="sidebar-logo-icon" />
           </div>
           <div className="sidebar-brand-info">
             <h2 className="sidebar-title">ContadorGanadero</h2>
-            <span className="sidebar-badge">RÉGIMEN REA</span>
+            <Badge variant="default" className="text-[10px] px-2 py-0 h-4 font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+              RÉGIMEN REA
+            </Badge>
           </div>
           <button
             className="sidebar-cerrar"
@@ -160,6 +163,7 @@ export default function Sidebar() {
                   >
                     <item.icon size={18} className="sidebar-link-icon" />
                     <span>{item.label}</span>
+                    <ChevronRight size={14} className="sidebar-link-arrow opacity-0 transition-opacity ml-auto" />
                   </NavLink>
                 ))}
               </div>
@@ -169,9 +173,11 @@ export default function Sidebar() {
 
         <div className="sidebar-footer">
           <div className="sidebar-user">
-            <div className="sidebar-user-avatar">
-              {(usuario?.nombre || 'U').charAt(0).toUpperCase()}
-            </div>
+            <Avatar className="h-9 w-9 border-emerald-500/40">
+              <AvatarFallback className="bg-emerald-950 text-emerald-300 font-bold">
+                {inicialUsuario}
+              </AvatarFallback>
+            </Avatar>
             <div className="sidebar-user-info">
               <span className="sidebar-user-name" title={usuario?.nombre || 'Usuario'}>
                 {usuario?.nombre || 'Usuario'}

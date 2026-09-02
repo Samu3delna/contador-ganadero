@@ -3,10 +3,13 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Tractor, Mail, Sparkles, LayoutDashboard, Warehouse,
   Receipt, TrendingUp, Calendar, Calculator, ArrowRight, Check,
-  ChevronLeft, ChevronRight, ChevronDown, Share2
+  ChevronLeft, ChevronRight, ChevronDown, Share2, ShieldCheck, Zap
 } from 'lucide-react';
 import { PLANES } from '../data/planes';
 import PlanCard from '../components/billing/PlanCard';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { useReveal, useCarousel } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
 import fondoLogin from '../assets/videos/fondo_login.webm';
@@ -128,7 +131,7 @@ const FAQ_SCHEMA = {
   })),
 };
 
-// Schema de negocio (servicio profesional) — completar con datos reales
+// Schema de negocio (servicio profesional)
 const NEGOCIO_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'ProfessionalService',
@@ -160,7 +163,7 @@ function getItemsPerView() {
 export default function LandingPage() {
   const navigate = useNavigate();
 
-  // ===== SEO: meta-título ≠ H1, meta-descripción, canonical, schemas =====
+  // ===== SEO =====
   useSeo({
     title: 'ContadorGanadero | Contabilidad Agrícola y Facturación REA en Costa Rica',
     description:
@@ -173,7 +176,7 @@ export default function LandingPage() {
     navigate('/login');
   };
 
-  // Compartir (Web Share API con fallback a copiar enlace)
+  // Compartir
   const [copiado, setCopiado] = useState(false);
   const handleCompartir = async () => {
     const url = window.location.href;
@@ -210,10 +213,6 @@ export default function LandingPage() {
   const touchEndRef = useRef({ x: 0, y: 0 });
   const touchMovedRef = useRef(false);
 
-  // Carousel for features
-  // Guardamos solo cuántas tarjetas caben por slide: así el resize no genera
-  // un array nuevo en cada evento (en móvil la barra de URL dispara `resize`
-  // constantemente al hacer scroll y eso reiniciaba el carrusel).
   const [itemsPerView, setItemsPerView] = useState(getItemsPerView);
 
   const slides = useMemo(() => {
@@ -230,14 +229,8 @@ export default function LandingPage() {
     autoPlay: true,
   });
 
-  // El índice puede quedar fuera de rango durante el render en el que cambia
-  // el número de slides (p. ej. de 8 slides en móvil a 3 en escritorio).
-  // Lo acotamos aquí para que el track nunca se desplace a un slide inexistente.
   const safeIndex = Math.min(currentIndex, Math.max(slides.length - 1, 0));
 
-  // Recalcular el reparto cuando se cruza un breakpoint.
-  // Se ejecuta también en el montaje, por si el primer render usó otro ancho
-  // (hidratación, restauración de pestaña o rotación antes de montar).
   useEffect(() => {
     const sync = () => setItemsPerView((actual) => {
       const siguiente = getItemsPerView();
@@ -258,7 +251,6 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!carouselRef.current) return;
@@ -278,7 +270,6 @@ export default function LandingPage() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [next, prev]);
 
-  // Touch/swipe handlers
   const handleTouchStart = useCallback((e) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchEndRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -335,11 +326,22 @@ export default function LandingPage() {
           <a href="#faq">Preguntas</a>
         </nav>
         <div className="landing-nav-actions">
-          <button className="landing-share-btn" onClick={handleCompartir} aria-label="Compartir" title="Compartir">
-            <Share2 size={18} /> {copiado ? '¡Copiado!' : ''}
-          </button>
-          <Link to="/login" className="btn btn-outline landing-nav-login">Iniciar Sesión</Link>
-          <Link to="/login" className="btn btn-primary landing-nav-cta">Comenzar Gratis</Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="landing-share-btn gap-1.5"
+            onClick={handleCompartir}
+            aria-label="Compartir"
+            title="Compartir"
+          >
+            <Share2 size={16} /> {copiado ? '¡Copiado!' : ''}
+          </Button>
+          <Button asChild variant="outline" size="sm" className="landing-nav-login">
+            <Link to="/login">Iniciar Sesión</Link>
+          </Button>
+          <Button asChild variant="gradient" size="sm" className="landing-nav-cta">
+            <Link to="/login">Comenzar Gratis</Link>
+          </Button>
         </div>
       </header>
 
@@ -350,22 +352,30 @@ export default function LandingPage() {
         </video>
         <div className="landing-hero-overlay" />
         <div className="landing-hero-contenido animate-slide-up">
-          <span className="landing-badge">Régimen Especial Agropecuario (REA)</span>
-          <h1 className="landing-hero-titulo">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <Badge variant="default" className="text-xs px-3.5 py-1 bg-emerald-500/20 text-emerald-300 border-emerald-500/40 backdrop-blur-md shadow-md">
+              <ShieldCheck size={14} className="mr-1.5 inline" /> Régimen Especial Agropecuario (REA)
+            </Badge>
+          </div>
+          <h1 className="landing-hero-titulo font-heading font-black tracking-tight">
             Tu contador personal<br />automatizado para la finca
           </h1>
-          <p className="landing-hero-subtitulo">
+          <p className="landing-hero-subtitulo text-slate-300">
             ContadorGanadero es la plataforma para pequeños productores agropecuarios
             de Costa Rica: importa facturas por correo, categoriza gastos con IA y
             genera tus declaraciones de Hacienda sin esfuerzo.
           </p>
-          <div className="landing-hero-ctas">
-            <Link to="/login" className="btn btn-primary btn-lg">
-              Comenzar Gratis <ArrowRight size={18} />
-            </Link>
-            <a href="#como-funciona" className="btn btn-outline btn-lg">
-              Ver cómo funciona
-            </a>
+          <div className="landing-hero-ctas flex items-center justify-center gap-4 pt-2">
+            <Button asChild variant="gradient" size="lg" className="h-12 px-7 text-base shadow-xl">
+              <Link to="/login">
+                Comenzar Gratis <ArrowRight size={18} className="ml-2" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="h-12 px-7 text-base bg-slate-900/60 backdrop-blur-md border-slate-700">
+              <a href="#como-funciona">
+                Ver cómo funciona
+              </a>
+            </Button>
           </div>
           <ul className="landing-hero-stats" aria-label="Datos clave">
             <li><strong>4</strong> especies controladas</li>
@@ -378,37 +388,44 @@ export default function LandingPage() {
 
       {/* TL;DR / En resumen */}
       <section ref={tldrRef} id="resumen" className={`landing-seccion ${tldrVisible ? 'landing-seccion--visible' : ''}`}>
-        <div className="landing-tldr glass-card">
-          <h2 className="landing-tldr-titulo">En resumen</h2>
-          <ul className="landing-tldr-lista">
-            <li>
-              <Check size={16} />
+        <Card className="landing-tldr max-w-4xl mx-auto p-8 border-slate-800 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap size={20} className="text-amber-400" />
+            <h2 className="landing-tldr-titulo text-2xl font-bold font-heading text-white">En resumen</h2>
+          </div>
+          <ul className="landing-tldr-lista space-y-3.5 my-6 text-slate-200">
+            <li className="flex items-start gap-3">
+              <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
               <span><strong>Automatiza tu contabilidad:</strong> las facturas llegan solas desde tu correo y la IA las clasifica.</span>
             </li>
-            <li>
-              <Check size={16} />
+            <li className="flex items-start gap-3">
+              <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
               <span><strong>Cumple con Hacienda:</strong> IVA (D-135-1), Renta (D-101) y conciliación REA (D-150) listas para declarar.</span>
             </li>
-            <li>
-              <Check size={16} />
+            <li className="flex items-start gap-3">
+              <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
               <span><strong>Conoce tu rentabilidad real:</strong> costo por kilo de carne, cartón de huevos o kilo de tilapia.</span>
             </li>
-            <li>
-              <Check size={16} />
+            <li className="flex items-start gap-3">
+              <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
               <span><strong>Todo en un solo lugar:</strong> inventario de bovinos, aves, peces y abejas, sin hojas de cálculo.</span>
             </li>
           </ul>
-          <Link to="/login" className="btn btn-primary">
-            Empieza hoy, gratis <ArrowRight size={16} />
-          </Link>
-        </div>
+          <div className="pt-2">
+            <Button asChild variant="gradient" size="default">
+              <Link to="/login">
+                Empieza hoy, gratis <ArrowRight size={16} className="ml-1.5" />
+              </Link>
+            </Button>
+          </div>
+        </Card>
       </section>
 
       {/* Características - Carrusel */}
       <section ref={featuresRef} id="caracteristicas" className={`landing-seccion ${featuresVisible ? 'landing-seccion--visible' : ''}`}>
         <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo">Todo lo que tu finca necesita</h2>
-          <p className="landing-seccion-subtitulo">
+          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Todo lo que tu finca necesita</h2>
+          <p className="landing-seccion-subtitulo text-slate-400">
             Una plataforma completa diseñada para el productor agropecuario costarricense.
           </p>
         </div>
@@ -444,13 +461,17 @@ export default function LandingPage() {
                 >
                   <div className="landing-caracteristicas-grid">
                     {slide.map(({ icono: Icono, titulo, descripcion }) => (
-                      <div key={titulo} className="landing-caracteristica glass-card">
-                        <div className="landing-caracteristica-icono">
-                          <Icono size={22} />
-                        </div>
-                        <h3 className="landing-caracteristica-titulo">{titulo}</h3>
-                        <p className="landing-caracteristica-desc">{descripcion}</p>
-                      </div>
+                      <Card key={titulo} className="landing-caracteristica border-slate-800 bg-slate-900/70 hover:border-emerald-500/40 hover:shadow-xl transition-all duration-300">
+                        <CardHeader className="p-6">
+                          <div className="landing-caracteristica-icono mb-2">
+                            <Icono size={22} className="text-emerald-400" />
+                          </div>
+                          <CardTitle className="text-xl font-bold font-heading">{titulo}</CardTitle>
+                          <CardDescription className="text-slate-400 text-sm mt-2 leading-relaxed">
+                            {descripcion}
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
                     ))}
                   </div>
                 </div>
@@ -491,18 +512,20 @@ export default function LandingPage() {
       {/* Cómo funciona */}
       <section ref={stepsRef} id="como-funciona" className={`landing-seccion ${stepsVisible ? 'landing-seccion--visible' : ''}`}>
         <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo">¿Cómo funciona?</h2>
-          <p className="landing-seccion-subtitulo">
+          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">¿Cómo funciona?</h2>
+          <p className="landing-seccion-subtitulo text-slate-400">
             En tres pasos, tu contabilidad queda bajo control.
           </p>
         </div>
         <div className="landing-pasos">
           {PASOS.map(({ numero, titulo, descripcion }, i) => (
-            <div key={numero} className={`landing-paso glass-card ${stepsVisible ? 'landing-paso--visible' : ''}`} style={{ animationDelay: `${i * 150}ms` }}>
-              <div className="landing-paso-numero">{numero}</div>
-              <h3 className="landing-paso-titulo">{titulo}</h3>
-              <p className="landing-paso-desc">{descripcion}</p>
-            </div>
+            <Card key={numero} className={`landing-paso border-slate-800 bg-slate-900/70 shadow-lg ${stepsVisible ? 'landing-paso--visible' : ''}`} style={{ animationDelay: `${i * 150}ms` }}>
+              <CardContent className="p-6">
+                <div className="landing-paso-numero">{numero}</div>
+                <h3 className="landing-paso-titulo text-xl font-bold font-heading text-white mt-4">{titulo}</h3>
+                <p className="landing-paso-desc text-slate-400 text-sm mt-2">{descripcion}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>
@@ -510,8 +533,8 @@ export default function LandingPage() {
       {/* Comparativa (tabla) */}
       <section ref={comparativaRef} id="comparativa" className={`landing-seccion ${comparativaVisible ? 'landing-seccion--visible' : ''}`}>
         <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo">Contabilidad manual vs. ContadorGanadero</h2>
-          <p className="landing-seccion-subtitulo">
+          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Contabilidad manual vs. ContadorGanadero</h2>
+          <p className="landing-seccion-subtitulo text-slate-400">
             Deja atrás las hojas de cálculo y los cuadernos: esto es lo que ganas al automatizar.
           </p>
         </div>
@@ -542,8 +565,8 @@ export default function LandingPage() {
       {/* Planes y precios */}
       <section ref={pricingRef} id="planes" className={`landing-seccion ${pricingVisible ? 'landing-seccion--visible' : ''}`}>
         <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo">Planes y precios</h2>
-          <p className="landing-seccion-subtitulo">
+          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Planes y precios</h2>
+          <p className="landing-seccion-subtitulo text-slate-400">
             Empezá gratis y subí de plan cuando tu finca lo necesite. Pro y Agro no muestran anuncios.
           </p>
         </div>
@@ -558,33 +581,33 @@ export default function LandingPage() {
             />
           ))}
         </div>
-        <p className="landing-planes-nota">
-          <Check size={14} /> Sin tarjeta para el plan Gratis. Cancela cuando quieras.
+        <p className="landing-planes-nota text-slate-400">
+          <Check size={14} className="text-emerald-400 inline mr-1" /> Sin tarjeta para el plan Gratis. Cancela cuando quieras.
         </p>
       </section>
 
       {/* FAQ */}
       <section ref={faqRef} id="faq" className={`landing-seccion ${faqVisible ? 'landing-seccion--visible' : ''}`}>
         <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo">Preguntas frecuentes</h2>
-          <p className="landing-seccion-subtitulo">
+          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Preguntas frecuentes</h2>
+          <p className="landing-seccion-subtitulo text-slate-400">
             Las dudas más comunes de los productores agropecuarios.
           </p>
         </div>
-        <div className="landing-faq">
+        <div className="landing-faq max-w-3xl mx-auto space-y-3">
           {FAQ.map((item, i) => {
             const abierta = faqAbierta === i;
             return (
-              <div key={item.pregunta} className={`landing-faq-item ${abierta ? 'landing-faq-item--abierta' : ''}`}>
+              <div key={item.pregunta} className={`landing-faq-item rounded-xl border border-slate-800 bg-slate-900/70 ${abierta ? 'landing-faq-item--abierta border-emerald-500/40 shadow-lg' : ''}`}>
                 <button
-                  className="landing-faq-pregunta"
+                  className="landing-faq-pregunta w-full flex items-center justify-between p-5 text-left"
                   onClick={() => setFaqAbierta(abierta ? -1 : i)}
                   aria-expanded={abierta}
                 >
-                  <h3>{item.pregunta}</h3>
-                  <ChevronDown size={20} className="landing-faq-chevron" />
+                  <h3 className="font-semibold text-base text-white">{item.pregunta}</h3>
+                  <ChevronDown size={20} className={`landing-faq-chevron transition-transform duration-200 text-slate-400 ${abierta ? 'rotate-180 text-emerald-400' : ''}`} />
                 </button>
-                {abierta && <p className="landing-faq-respuesta">{item.respuesta}</p>}
+                {abierta && <p className="landing-faq-respuesta px-5 pb-5 text-slate-300 text-sm leading-relaxed border-t border-slate-800/60 pt-3">{item.respuesta}</p>}
               </div>
             );
           })}
@@ -593,15 +616,21 @@ export default function LandingPage() {
 
       {/* CTA final */}
       <section ref={ctaRef} id="comenzar" className={`landing-seccion ${ctaVisible ? 'landing-seccion--visible' : ''}`}>
-        <div className="landing-cta-final glass-card">
-          <h2 className="landing-cta-final-titulo">Empieza hoy a controlar tu finca</h2>
-          <p className="landing-cta-final-subtitulo">
-            Crea tu cuenta gratis y ten tu contabilidad agropecuaria lista en minutos.
-          </p>
-          <Link to="/login" className="btn btn-primary btn-lg">
-            Crear cuenta gratis <ArrowRight size={18} />
-          </Link>
-        </div>
+        <Card className="landing-cta-final max-w-4xl mx-auto p-10 text-center border-emerald-500/40 bg-gradient-to-b from-emerald-950/40 via-slate-900/90 to-slate-900 shadow-2xl">
+          <CardHeader className="p-0 mb-6">
+            <CardTitle className="landing-cta-final-titulo text-3xl md:text-4xl font-black font-heading text-white">Empieza hoy a controlar tu finca</CardTitle>
+            <CardDescription className="landing-cta-final-subtitulo text-slate-300 text-base max-w-xl mx-auto mt-2">
+              Crea tu cuenta gratis y ten tu contabilidad agropecuaria lista en minutos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Button asChild variant="gradient" size="lg" className="h-12 px-8 text-base shadow-xl">
+              <Link to="/login">
+                Crear cuenta gratis <ArrowRight size={18} className="ml-2" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Footer */}
@@ -633,9 +662,11 @@ export default function LandingPage() {
 
       {/* CTA fijo en móvil */}
       <div className="landing-cta-movil">
-        <Link to="/login" className="btn btn-primary">
-          Comenzar Gratis <ArrowRight size={16} />
-        </Link>
+        <Button asChild variant="gradient" className="w-full shadow-lg">
+          <Link to="/login">
+            Comenzar Gratis <ArrowRight size={16} className="ml-1" />
+          </Link>
+        </Button>
       </div>
     </div>
   );

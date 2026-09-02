@@ -1,13 +1,26 @@
 import { Fragment } from 'react';
 import { ChevronUp, ChevronDown, AlertTriangle, CheckCircle, XCircle, FileCode, Download, FileText } from 'lucide-react';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../ui/table';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Card } from '../ui/card';
 
-const formatCRC = (n) => `₡${(n||0).toLocaleString('es-CR')}`;
+const formatCRC = (n) => `₡${(n || 0).toLocaleString('es-CR')}`;
 
 const CATEGORIAS_LABEL = {
-  veterinaria:'Veterinaria', alimentacion_animal:'Alimentación Animal', maquinaria_equipo:'Maquinaria',
-  transporte:'Transporte', servicios_profesionales:'Servicios Prof.', combustible:'Combustible',
-  mantenimiento:'Mantenimiento', seguros:'Seguros', insumos_agropecuarios:'Insumos Agro',
-  salarios:'Salarios', servicios_publicos:'Serv. Públicos', otros:'Otros', sin_clasificar:'Sin Clasificar',
+  veterinaria: 'Veterinaria',
+  alimentacion_animal: 'Alimentación Animal',
+  maquinaria_equipo: 'Maquinaria',
+  transporte: 'Transporte',
+  servicios_profesionales: 'Servicios Prof.',
+  combustible: 'Combustible',
+  mantenimiento: 'Mantenimiento',
+  seguros: 'Seguros',
+  insumos_agropecuarios: 'Insumos Agro',
+  salarios: 'Salarios',
+  servicios_publicos: 'Serv. Públicos',
+  otros: 'Otros',
+  sin_clasificar: 'Sin Clasificar',
 };
 
 export default function FacturasTable({ 
@@ -16,184 +29,208 @@ export default function FacturasTable({
 }) {
   if (cargando) {
     return (
-      <div className="glass-card animate-slide-up" style={{ '--delay':'0.1s' }}>
-        <div className="loader-center"><div className="loader" /></div>
-      </div>
+      <Card className="p-12 text-center border-slate-800 bg-slate-900/60">
+        <div className="flex flex-col items-center justify-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+          <p className="text-sm text-slate-400">Cargando facturas electrónicas...</p>
+        </div>
+      </Card>
     );
   }
 
   if (facturas.length === 0) {
     return (
-      <div className="glass-card animate-slide-up" style={{ '--delay':'0.1s' }}>
-        <div className="estado-vacio">
-          <FileText size={44} style={{ opacity: 0.3 }} />
-          <p style={{ color: 'var(--color-texto-sec)' }}>
-            {filtroAlertas ? 'No hay facturas con alertas de tarifa.' : 'No hay facturas aún. Configura tu email IMAP o sincroniza manualmente.'}
+      <Card className="p-12 text-center border-slate-800 bg-slate-900/60">
+        <div className="flex flex-col items-center justify-center gap-3">
+          <FileText size={44} className="text-slate-600" />
+          <p className="text-sm text-slate-400 max-w-sm mx-auto">
+            {filtroAlertas ? 'No hay facturas con alertas de tarifa incorrecta.' : 'No hay facturas aún. Configura tu correo IMAP o sincroniza para importar facturas XML.'}
           </p>
         </div>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="glass-card animate-slide-up" style={{ '--delay':'0.1s' }}>
-      <div className="tabla-responsive">
-        <table className="tabla tabla--stack" id="tabla-facturas">
-          <thead><tr>
-            <th><span className="sr-only">Expandir</span></th>
-            <th>Fecha</th>
-            <th>Emisor</th>
-            <th>Total</th>
-            <th>IVA</th>
-            <th>Tarifa</th>
-            <th>Categoría IA</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr></thead>
-          <tbody>
-            {facturas.map(f => (
-              <Fragment key={f._id}>
-                <tr className={`fila-factura ${f.resumenValidacionTarifa?.alertasError > 0 ? 'fila-alerta' : ''}`} onClick={() => toggleDetalle(f._id)}>
-                  <td className="expand-cell" data-label="">
-                    {detalleExpandido === f._id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </td>
-                  <td data-label="Fecha">{new Date(f.fechaEmision).toLocaleDateString('es-CR')}</td>
-                  <td data-label="Emisor">
-                    <div className="emisor-cell">
-                      {f.emisor?.nombre || '—'}
-                      {f.carpetaOrigen && f.carpetaOrigen !== 'INBOX' && (
-                        <span className="badge badge-info-small">{f.carpetaOrigen.replace('[Gmail]/', '')}</span>
-                      )}
+    <Table id="tabla-facturas">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-8"><span className="sr-only">Expandir</span></TableHead>
+          <TableHead>Fecha</TableHead>
+          <TableHead>Emisor</TableHead>
+          <TableHead>Total</TableHead>
+          <TableHead>IVA</TableHead>
+          <TableHead>Tarifa REA</TableHead>
+          <TableHead>Categoría IA</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead className="text-right">Acciones</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {facturas.map(f => (
+          <Fragment key={f._id}>
+            <TableRow 
+              className={`cursor-pointer transition-colors ${f.resumenValidacionTarifa?.alertasError > 0 ? 'bg-amber-950/20 hover:bg-amber-950/30' : ''}`}
+              onClick={() => toggleDetalle(f._id)}
+            >
+              <TableCell className="text-slate-400">
+                {detalleExpandido === f._id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-slate-300 font-mono text-xs">
+                {new Date(f.fechaEmision).toLocaleDateString('es-CR')}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-medium text-white text-sm">{f.emisor?.nombre || '—'}</span>
+                  {f.carpetaOrigen && f.carpetaOrigen !== 'INBOX' && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-800 border-slate-700 text-slate-400">
+                      {f.carpetaOrigen.replace('[Gmail]/', '')}
+                    </Badge>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell className="font-mono font-semibold text-white whitespace-nowrap">
+                {formatCRC(f.resumenFactura?.totalComprobante)}
+              </TableCell>
+              <TableCell className="font-mono text-slate-300 whitespace-nowrap">
+                {formatCRC(f.resumenFactura?.totalImpuesto)}
+              </TableCell>
+              <TableCell>
+                {f.resumenValidacionTarifa?.alertasError > 0 ? (
+                  <Badge variant="destructive" className="text-[10px] gap-1">
+                    <AlertTriangle size={11} /> {f.resumenValidacionTarifa.alertasError} alerta(s)
+                  </Badge>
+                ) : (
+                  <Badge variant="default" className="text-[10px] gap-1">
+                    <CheckCircle size={11} /> OK
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant={f.confianzaIA > 0.7 ? 'default' : f.confianzaIA > 0.4 ? 'amber' : 'secondary'}
+                  className="text-[11px]"
+                >
+                  {CATEGORIAS_LABEL[f.categoriaManual || f.categoriaIA] || f.categoriaIA}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant={f.estado === 'procesada' ? 'default' : f.estado === 'revision' ? 'amber' : 'destructive'}
+                  className="text-[10px] uppercase font-bold"
+                >
+                  {f.estado}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-emerald-400"
+                    title="Descargar XML"
+                    onClick={(e) => handleDescargarXML(f._id, e)}
+                    disabled={descargando === f._id}
+                    id={`btn-xml-${f._id}`}
+                  >
+                    <FileCode size={16} />
+                  </Button>
+                  {f.archivoPDF && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-sky-400"
+                      title="Descargar PDF"
+                      onClick={(e) => handleDescargarPDF(f._id, e)}
+                      disabled={descargando === f._id}
+                      id={`btn-pdf-${f._id}`}
+                    >
+                      <Download size={16} />
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+            
+            {/* Fila expandida con detalle */}
+            {detalleExpandido === f._id && (
+              <TableRow key={`${f._id}-detail`} className="bg-slate-950/60 hover:bg-slate-950/70 border-b border-slate-800">
+                <TableCell colSpan={9} className="p-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs bg-slate-900/90 p-3 rounded-lg border border-slate-800">
+                      <div><strong className="text-slate-400">Clave:</strong> <span className="font-mono text-slate-200 text-[11px] block truncate">{f.claveNumerica || 'N/A'}</span></div>
+                      <div><strong className="text-slate-400">Esquema:</strong> <span className="text-slate-200 ml-1">{f.versionEsquema || 'v4.4'}</span></div>
+                      <div><strong className="text-slate-400">Moneda:</strong> <span className="text-slate-200 ml-1">{f.moneda || 'CRC'}</span></div>
+                      <div><strong className="text-slate-400">Carpeta:</strong> <span className="text-slate-200 ml-1">{f.carpetaOrigen || 'INBOX'}</span></div>
                     </div>
-                  </td>
-                  <td className="text-mono" data-label="Total">{formatCRC(f.resumenFactura?.totalComprobante)}</td>
-                  <td className="text-mono" data-label="IVA">{formatCRC(f.resumenFactura?.totalImpuesto)}</td>
-                  <td data-label="Tarifa">
-                    {f.resumenValidacionTarifa?.alertasError > 0 ? (
-                      <span className="badge badge-error" title="Tarifa incorrecta detectada">
-                        <AlertTriangle size={12} style={{marginRight:'4px'}} />
-                        {f.resumenValidacionTarifa.alertasError} alerta(s)
-                      </span>
-                    ) : (
-                      <span className="badge badge-exito">
-                        <CheckCircle size={12} style={{marginRight:'4px'}} />
-                        OK
-                      </span>
-                    )}
-                  </td>
-                  <td data-label="Categoría IA">
-                    <span className={`badge ${f.confianzaIA > 0.7 ? 'badge-exito' : f.confianzaIA > 0.4 ? 'badge-advertencia' : 'badge-error'}`}>
-                      {CATEGORIAS_LABEL[f.categoriaManual || f.categoriaIA] || f.categoriaIA}
-                    </span>
-                  </td>
-                  <td data-label="Estado">
-                    <span className={`badge ${f.estado === 'procesada' ? 'badge-exito' : f.estado === 'revision' ? 'badge-advertencia' : f.estado === 'error' ? 'badge-error' : 'badge-advertencia'}`}>
-                      {f.estado}
-                    </span>
-                  </td>
-                  <td data-label="Acciones">
-                    <div className="acciones-cell">
-                      <button
-                        className="btn-icon"
-                        title="Descargar XML"
-                        onClick={(e) => handleDescargarXML(f._id, e)}
-                        disabled={descargando === f._id}
-                        id={`btn-xml-${f._id}`}
-                      >
-                        <FileCode size={16} />
-                      </button>
-                      {f.archivoPDF && (
-                        <button
-                          className="btn-icon"
-                          title="Descargar PDF"
-                          onClick={(e) => handleDescargarPDF(f._id, e)}
-                          disabled={descargando === f._id}
-                          id={`btn-pdf-${f._id}`}
-                        >
-                          <Download size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-                
-                {/* Fila expandida con detalle de líneas y alertas */}
-                {detalleExpandido === f._id && (
-                  <tr key={`${f._id}-detail`} className="fila-detalle">
-                    <td colSpan={9}>
-                      <div className="detalle-contenido">
-                        <div className="detalle-meta">
-                          <span><strong>Clave:</strong> {f.claveNumerica || 'N/A'}</span>
-                          <span><strong>Versión XML:</strong> {f.versionEsquema || '—'}</span>
-                          <span><strong>Moneda:</strong> {f.moneda}</span>
-                          <span><strong>Carpeta:</strong> {f.carpetaOrigen || 'INBOX'}</span>
-                        </div>
 
-                        {/* Alertas de tarifa de esta factura */}
-                        {f.alertasTarifa && f.alertasTarifa.length > 0 && (
-                          <div className="detalle-alertas">
-                            <h4>🚨 Alertas de Tarifa</h4>
-                            {f.alertasTarifa.map((a, i) => (
-                              <div key={i} className={`alerta-item alerta-${a.severidad}`}>
-                                {a.severidad === 'error' ? <XCircle size={14} /> : a.severidad === 'advertencia' ? <AlertTriangle size={14} /> : <CheckCircle size={14} />}
-                                <span>{a.mensaje}</span>
-                              </div>
-                            ))}
-                            {f.resumenValidacionTarifa?.ahorrosPerdidos > 0 && (
-                              <div className="ahorros-perdidos">
-                                💸 Estás pagando <strong>{formatCRC(f.resumenValidacionTarifa.ahorrosPerdidos)}</strong> de más por tarifa incorrecta
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Líneas de detalle */}
-                        {f.lineaDetalle && f.lineaDetalle.length > 0 && (
-                          <div className="detalle-lineas">
-                            <h4>📋 Detalle de líneas</h4>
-                            <div className="table-responsive">
-                              <table className="tabla tabla-mini">
-                                <thead><tr>
-                                  <th>#</th>
-                                  <th>Descripción</th>
-                                  <th>Cant.</th>
-                                  <th>Precio Unit.</th>
-                                  <th>Cód. Tarifa</th>
-                                  <th>IVA %</th>
-                                  <th>IVA ₡</th>
-                                  <th>Total</th>
-                                </tr></thead>
-                                <tbody>
-                                  {f.lineaDetalle.map((l, idx) => (
-                                    <tr key={idx} className={l.impuesto?.codigoTarifa === '08' ? 'linea-tarifa-general' : l.impuesto?.codigoTarifa === '02' ? 'linea-tarifa-reducida' : ''}>
-                                      <td>{l.numeroLinea || idx + 1}</td>
-                                      <td>{l.descripcion}</td>
-                                      <td className="text-mono">{l.cantidad}</td>
-                                      <td className="text-mono">{formatCRC(l.precioUnitario)}</td>
-                                      <td>
-                                        <span className={`codigo-tarifa ${l.impuesto?.codigoTarifa === '08' ? 'tarifa-general' : l.impuesto?.codigoTarifa === '02' || l.impuesto?.codigoTarifa === '01' ? 'tarifa-reducida' : ''}`}>
-                                          {l.impuesto?.codigoTarifa || '—'}
-                                        </span>
-                                      </td>
-                                      <td className="text-mono">{l.impuesto?.tarifa ?? '—'}%</td>
-                                      <td className="text-mono">{formatCRC(l.impuesto?.monto)}</td>
-                                      <td className="text-mono">{formatCRC(l.montoTotal)}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                    {f.alertasTarifa && f.alertasTarifa.length > 0 && (
+                      <div className="p-3.5 rounded-lg bg-red-950/30 border border-red-500/30 space-y-2">
+                        <h4 className="text-xs font-bold font-heading text-red-300 flex items-center gap-1.5">
+                          <AlertTriangle size={14} className="text-red-400" /> Alertas de Tarifa Detectadas
+                        </h4>
+                        <div className="space-y-1.5">
+                          {f.alertasTarifa.map((a, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs text-red-200">
+                              {a.severidad === 'error' ? <XCircle size={13} className="text-red-400 shrink-0" /> : <AlertTriangle size={13} className="text-amber-400 shrink-0" />}
+                              <span>{a.mensaje}</span>
                             </div>
+                          ))}
+                        </div>
+                        {f.resumenValidacionTarifa?.ahorrosPerdidos > 0 && (
+                          <div className="text-xs text-amber-300 font-semibold pt-1 border-t border-red-500/20">
+                            Sobrecosto por tarifa: <strong>{formatCRC(f.resumenValidacionTarifa.ahorrosPerdidos)}</strong>
                           </div>
                         )}
                       </div>
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                    )}
+
+                    {f.lineaDetalle && f.lineaDetalle.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-semibold text-slate-300">Detalle de líneas facturadas</h4>
+                        <div className="overflow-x-auto rounded-lg border border-slate-800">
+                          <table className="w-full text-xs text-slate-300">
+                            <thead className="bg-slate-900 border-b border-slate-800 text-slate-400 text-[11px] uppercase">
+                              <tr>
+                                <th className="p-2 text-left">#</th>
+                                <th className="p-2 text-left">Descripción</th>
+                                <th className="p-2 text-left">Cant.</th>
+                                <th className="p-2 text-left">Precio Unit.</th>
+                                <th className="p-2 text-left">Tarifa</th>
+                                <th className="p-2 text-left">IVA %</th>
+                                <th className="p-2 text-left">IVA ₡</th>
+                                <th className="p-2 text-right">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+                              {f.lineaDetalle.map((l, idx) => (
+                                <tr key={idx} className="hover:bg-slate-800/40">
+                                  <td className="p-2 font-mono">{l.numeroLinea || idx + 1}</td>
+                                  <td className="p-2 font-medium text-white">{l.descripcion}</td>
+                                  <td className="p-2 font-mono">{l.cantidad}</td>
+                                  <td className="p-2 font-mono">{formatCRC(l.precioUnitario)}</td>
+                                  <td className="p-2">
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-800 border-slate-700">
+                                      {l.impuesto?.codigoTarifa || '—'}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-2 font-mono">{l.impuesto?.tarifa ?? '—'}%</td>
+                                  <td className="p-2 font-mono text-slate-300">{formatCRC(l.impuesto?.monto)}</td>
+                                  <td className="p-2 font-mono font-semibold text-right text-emerald-400">{formatCRC(l.montoTotal)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </Fragment>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
