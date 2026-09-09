@@ -13,11 +13,11 @@ const { XMLParser } = require('fast-xml-parser');
 const { codigoTarifaAPorcentaje, obtenerCuatrimestre } = require('../utils/costaRicaTax');
 const { validarTarifasFactura } = require('../utils/insumosAgropecuarios');
 
-// Configurar parser con seguridad XXE deshabilitada
+// Configurar parser con seguridad XXE deshabilitada y parseTagValue en false para preservar exactitud de cadenas
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
-  parseTagValue: true,
+  parseTagValue: false, // CRÍTICO: nunca convertir a números para evitar truncar claves de 50 dígitos o perder ceros a la izquierda
   trimValues: true,
   // Seguridad: no procesar entidades externas
   processEntities: false,
@@ -41,7 +41,8 @@ function parsearFacturaXML(xmlString) {
 
     // El nodo raíz puede ser FacturaElectronica, NotaCreditoElectronica, etc.
     // Con removeNSPrefix: true, ya no hay prefijos de namespace
-    const raiz =
+    let rootTagName = 'FacturaElectronica';
+    let raiz =
       parsed.FacturaElectronica ||
       parsed['FacturaElectronica'] ||
       parsed.NotaCreditoElectronica ||
@@ -49,6 +50,7 @@ function parsearFacturaXML(xmlString) {
       parsed.TiqueteElectronico ||
       parsed.FacturaElectronicaCompra ||
       parsed.FacturaElectronicaExportacion ||
+      parsed.ReciboElectronicoPago ||
       // Fallback: buscar con URLs de namespace (schema v4.3 / v4.4)
       parsed['https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/facturaElectronica'] ||
       parsed['https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/facturaElectronica'] ||
@@ -59,21 +61,32 @@ function parsearFacturaXML(xmlString) {
       parsed['https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/facturaElectronicaCompra'] ||
       null;
 
+    if (raiz) {
+      for (const [nombre, val] of Object.entries(parsed)) {
+        if (val === raiz) {
+          rootTagName = nombre;
+          break;
+        }
+      }
+    }
+
     if (!raiz) {
       // Intentar buscar con prefijo de namespace genérico
       const keys = Object.keys(parsed);
       const facturaKey = keys.find(k =>
         k.toLowerCase().includes('factura') ||
         k.toLowerCase().includes('nota') ||
-        k.toLowerCase().includes('tiquete')
+        k.toLowerCase().includes('tiquete') ||
+        k.toLowerCase().includes('recibo')
       );
       if (!facturaKey) {
         throw new Error('No se encontró un nodo raíz válido de factura electrónica');
       }
-      return procesarNodoFactura(parsed[facturaKey]);
+      rootTagName = facturaKey;
+      return procesarNodoFactura(parsed[facturaKey], rootTagName);
     }
 
-    return procesarNodoFactura(raiz);
+    return procesarNodoFactura(raiz, rootTagName);
   } catch (error) {
     const err = new Error(`Error parseando XML de factura: ${error.message}`);
     err.cause = error;
@@ -84,7 +97,7 @@ function parsearFacturaXML(xmlString) {
 /**
  * Procesar el nodo principal de la factura
  */
-function procesarNodoFactura(nodo) {
+function procesarNodoFactura(nodo, rootTagName = '') {
   const emisor = extraerEmisor(nodo.Emisor);
   const receptor = extraerReceptor(nodo.Receptor);
   const lineas = extraerLineasDetalle(nodo.DetalleServicio);
@@ -98,7 +111,7 @@ function procesarNodoFactura(nodo) {
   const versionEsquema = detectarVersionEsquema(nodo);
 
   // Tipo de documento
-  const tipoDocumento = detectarTipoDocumento(nodo);
+  const tipoDocumento = detectarTipoDocumento(nodo, rootTagName);
 
   // ====================================================
   // VALIDACIÓN DE TARIFAS CONTRA INSUMOS AGROPECUARIOS
@@ -106,8 +119,8 @@ function procesarNodoFactura(nodo) {
   const { alertas, resumenValidacion } = validarTarifasFactura(lineas);
 
   return {
-    claveNumerica: String(nodo.Clave || ''),
-    consecutivo: String(nodo.NumeroConsecutivo || ''),
+    claveNumerica: String(nodo.Clave || '').trim(),
+    consecutivo: String(nodo.NumeroConsecutivo || '').trim(),
     fechaEmision,
     emisor,
     receptor,
@@ -144,23 +157,45 @@ function detectarVersionEsquema(nodo) {
 }
 
 /**
- * Detectar el tipo de documento electrónico
+ * Detectar el tipo de documento electrónico según esquema oficial de Hacienda CR
  */
-function detectarTipoDocumento(nodo) {
-  // El consecutivo tiene el tipo embebido en las posiciones 22-23
-  const consecutivo = String(nodo.NumeroConsecutivo || '');
-  if (consecutivo.length >= 23) {
-    const tipo = consecutivo.substring(21, 23);
-    const tipos = {
-      '01': 'Factura Electrónica',
-      '02': 'Nota de Débito',
-      '03': 'Nota de Crédito',
-      '04': 'Tiquete Electrónico',
-      '05': 'Factura Electrónica de Compra',
-      '06': 'Factura de Exportación',
-    };
-    return tipos[tipo] || 'Desconocido';
+function detectarTipoDocumento(nodo, rootTagName = '') {
+  // 1. Verificar por nombre de etiqueta raíz
+  const tagLower = String(rootTagName).toLowerCase();
+  if (tagLower.includes('notacredito')) return 'Nota de Crédito';
+  if (tagLower.includes('notadebito')) return 'Nota de Débito';
+  if (tagLower.includes('tiquete')) return 'Tiquete Electrónico';
+  if (tagLower.includes('compra')) return 'Factura Electrónica de Compra';
+  if (tagLower.includes('exportacion')) return 'Factura de Exportación';
+  if (tagLower.includes('recibo') || tagLower.includes('pago')) return 'Recibo Electrónico de Pago';
+
+  // 2. Verificar consecutivo de 20 dígitos: pos 9-10 (índices 8..10) indican el tipo
+  const consecutivo = String(nodo.NumeroConsecutivo || '').trim();
+  const tipos = {
+    '01': 'Factura Electrónica',
+    '02': 'Nota de Débito',
+    '03': 'Nota de Crédito',
+    '04': 'Tiquete Electrónico',
+    '05': 'Factura Electrónica de Compra',
+    '06': 'Factura de Exportación',
+    '07': 'Recibo Electrónico de Pago',
+  };
+
+  if (consecutivo.length >= 10) {
+    // Si tiene 20 dígitos o al menos 10 (sucursal 3 + terminal 5 + tipo 2)
+    const tipo = consecutivo.length >= 20
+      ? consecutivo.substring(8, 10)
+      : consecutivo.substring(consecutivo.length - 12, consecutivo.length - 10);
+    if (tipos[tipo]) return tipos[tipo];
   }
+
+  // 3. Si se tiene clave de 50 dígitos: pos 30-31 (índices 29..31)
+  const clave = String(nodo.Clave || '').trim();
+  if (clave.length === 50) {
+    const tipo = clave.substring(29, 31);
+    if (tipos[tipo]) return tipos[tipo];
+  }
+
   return 'Factura Electrónica';
 }
 

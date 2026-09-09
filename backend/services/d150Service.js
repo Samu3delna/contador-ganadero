@@ -18,6 +18,7 @@
 
 const FacturaEmision = require('../models/FacturaEmision');
 const Factura = require('../models/Factura'); // facturas recibidas por IMAP
+const Ingreso = require('../models/Ingreso'); // ingresos y ventas registradas
 
 //Cuadros CI = credito fiscal soportado (compras), DC = debito fiscal (ventas)
 const CUADROS_VENTAS = [
@@ -52,7 +53,8 @@ function rangoMes(mes, anio) {
  *
  * Fuentes:
  *   - FacturaEmision con tipoDocumento FE/TE/NC/ND/REP/FEC ESTADO aceptada
- *   - Factura (recibidas via IMAP) aceptadas (compras con FE de proveedores)
+ *   - Ingreso (ventas registradas de ganado/leche/otros no duplicadas)
+ *   - Factura (recibidas via IMAP de proveedores, deducibles y sin error)
  *
  * @param {Object} opts
  * @param {string} opts.usuarioId - ObjectId del usuario
@@ -68,13 +70,18 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
   const { inicio, fin } = rangoMes(mes, anio);
 
   // ============ VENTAS (Debito Fiscal) ============
-  // Documentos emitidos por el usuario: FE, TE, REP, NC, ND
-  // NC reducen debito fiscal; ND aumentan
+  // 1) Documentos emitidos electrónicamente por el usuario: FE, TE, REP, NC, ND
   const ventasEmision = await FacturaEmision.find({
     usuario: usuarioId,
     estado: 'aceptada',
     tipoDocumento: { $in: ['FE', 'TE', 'NC', 'ND'] },
     fechaEmision: { $gte: inicio, $lte: fin },
+  }).lean();
+
+  // 2) Ingresos registrados en el sistema (ventas en pie, leche, etc.)
+  const ingresosRegistrados = await Ingreso.find({
+    usuario: usuarioId,
+    fecha: { $gte: inicio, $lte: fin },
   }).lean();
 
   // ============ COMPRAS (Credito Fiscal) ============
@@ -86,18 +93,18 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
     fechaEmision: { $gte: inicio, $lte: fin },
   }).lean();
 
-  // 2) Facturas recibidas (IMAP) aceptadas de proveedores con FE
+  // 2) Facturas recibidas (IMAP) válidas de proveedores con FE (excluyendo no deducibles y errores)
   let comprasRecibidas = [];
   try {
     comprasRecibidas = await Factura.find({
       usuario: usuarioId,
-      estado: 'aceptada', // aceptada por Hacienda
+      estado: { $ne: 'error' },
+      esDeducible: { $ne: false },
       'emisor.cedula.numero': { $exists: true },
       fechaEmision: { $gte: inicio, $lte: fin },
     }).lean();
   } catch (e) {
-    //colección Factura puede no tener estado aceptada todavia
-    console.warn('[D-150] coleccion Factura sin estado aceptada:', e.message);
+    console.warn('[D-150] coleccion Factura error:', e.message);
   }
 
   // ============ Procesar lineas por tarifa ============
@@ -113,7 +120,10 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
     if (esNC) bucket[key].ncMonto += base + iva;
   }
 
+  // Acumular ventas electrónicas
+  const clavesVentasProcesadas = new Set();
   for (const d of ventasEmision) {
+    if (d.claveNumerica) clavesVentasProcesadas.add(d.claveNumerica);
     const esNC = d.tipoDocumento === 'NC';
     const factorSigno = esNC ? -1 : 1;
     for (const l of d.lineaDetalle || []) {
@@ -124,6 +134,19 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
     }
   }
 
+  // Acumular ventas de Ingresos (evitando duplicar si ya están en FacturaEmision)
+  for (const ing of ingresosRegistrados) {
+    const claveIngreso = ing.facturaElectronica?.claveNumerica;
+    if (claveIngreso && clavesVentasProcesadas.has(claveIngreso)) {
+      continue;
+    }
+    const tarifa = ing.tasaIVA != null ? ing.tasaIVA : 0;
+    const base = ing.montoSubtotal || 0;
+    const iva = ing.ivaVenta || (tarifa > 0 ? (base * tarifa) / 100 : 0);
+    acumular(ventasPorTarifa, tarifa, base, iva, false);
+  }
+
+  // Acumular compras FEC (Factura Electrónica de Compra)
   for (const d of comprasFec) {
     for (const l of d.lineaDetalle || []) {
       const tarifa = l.impuesto?.tarifa || 0;
@@ -131,20 +154,29 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
     }
   }
 
+  // Acumular compras recibidas por correo (IMAP)
   for (const f of comprasRecibidas) {
-    // Factura recibida usa resumenFactura (esquema IMAP distinto al de emision)
-    const resumen = f.resumenFactura || {};
-    const base = resumen.totalVentaNeta || 0;
-    const iva = resumen.totalImpuesto || 0;
-    // Aproximacion de tarifa por proporcion (cuando no hay lineaDetalle explicita)
-    let tarifa = 0;
-    if (iva > 0 && base > 0) {
-      const ratio = Math.round((iva / base) * 1000) / 10;
-      //Snapping a tarifas estandar CR
-      const estandar = [13, 4, 2, 1];
-      tarifa = estandar.find((t) => Math.abs(ratio - t) <= 0.5) || Math.round(ratio);
+    // Si la factura tiene desglose por líneas de detalle, usar sus tarifas exactas
+    if (Array.isArray(f.lineaDetalle) && f.lineaDetalle.length > 0) {
+      for (const l of f.lineaDetalle) {
+        const tarifa = l.impuesto?.tarifa != null ? l.impuesto.tarifa : (f.tasaIVA || 13);
+        const base = l.subtotal || l.baseImponible || 0;
+        const iva = l.impuesto?.monto != null ? l.impuesto.monto : (tarifa > 0 ? (base * tarifa) / 100 : 0);
+        acumular(comprasPorTarifa, tarifa, base, iva);
+      }
+    } else {
+      // Fallback a resumenFactura
+      const resumen = f.resumenFactura || {};
+      const base = resumen.totalVentaNeta || resumen.totalVenta || 0;
+      const iva = resumen.totalImpuesto || 0;
+      let tarifa = f.tasaIVA != null ? f.tasaIVA : 0;
+      if (iva > 0 && base > 0 && tarifa === 0) {
+        const ratio = Math.round((iva / base) * 1000) / 10;
+        const estandar = [13, 4, 2, 1];
+        tarifa = estandar.find((t) => Math.abs(ratio - t) <= 0.5) || Math.round(ratio);
+      }
+      acumular(comprasPorTarifa, tarifa, base, iva);
     }
-    acumular(comprasPorTarifa, tarifa, base, iva);
   }
 
   // ============ Totales ============
@@ -223,11 +255,66 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
     };
   });
 
+  // ============ Lista normalizada de documentos para auditoría ============
+  const listaDocumentos = [];
+
+  for (const v of ventasEmision) {
+    listaDocumentos.push({
+      tipo: 'VENTA',
+      tipoDoc: v.tipoDocumento || 'FE',
+      fecha: v.fechaEmision ? new Date(v.fechaEmision).toISOString().split('T')[0] : '',
+      tercero: v.receptor?.nombre || '',
+      cedula: v.receptor?.cedula?.numero ? String(v.receptor.cedula.numero).trim() : '',
+      consecutivo: String(v.consecutivo || '').trim(),
+      claveNumerica: String(v.claveNumerica || '').trim(),
+      subtotal: v.resumenFactura?.totalVentaNeta || 0,
+      iva: v.resumenFactura?.totalImpuesto || 0,
+      total: v.resumenFactura?.totalComprobante || 0,
+      tasaIVA: v.tasaIVA || 1,
+    });
+  }
+
+  for (const ing of ingresosRegistrados) {
+    const clave = ing.facturaElectronica?.claveNumerica;
+    if (clave && clavesVentasProcesadas.has(clave)) continue;
+    listaDocumentos.push({
+      tipo: 'VENTA',
+      tipoDoc: 'INGRESO',
+      fecha: ing.fecha ? new Date(ing.fecha).toISOString().split('T')[0] : '',
+      tercero: ing.comprador?.nombre || '',
+      cedula: ing.comprador?.cedula ? String(ing.comprador.cedula).trim() : '',
+      consecutivo: String(ing.facturaElectronica?.numero || '').trim(),
+      claveNumerica: String(ing.facturaElectronica?.claveNumerica || '').trim(),
+      subtotal: ing.montoSubtotal || 0,
+      iva: ing.ivaVenta || 0,
+      total: ing.montoTotal || 0,
+      tasaIVA: ing.tasaIVA || 0,
+    });
+  }
+
+  for (const c of comprasRecibidas) {
+    listaDocumentos.push({
+      tipo: 'COMPRA',
+      tipoDoc: c.tipoDocumento || 'FE',
+      fecha: c.fechaEmision ? new Date(c.fechaEmision).toISOString().split('T')[0] : '',
+      tercero: c.emisor?.nombre || '',
+      cedula: c.emisor?.cedula?.numero ? String(c.emisor.cedula.numero).trim() : '',
+      consecutivo: String(c.consecutivo || '').trim(),
+      claveNumerica: String(c.claveNumerica || '').trim(),
+      subtotal: c.resumenFactura?.totalVentaNeta || c.resumenFactura?.totalVenta || 0,
+      iva: c.resumenFactura?.totalImpuesto || 0,
+      total: c.resumenFactura?.totalComprobante || 0,
+      tasaIVA: c.tasaIVA || 13,
+      esDeducible: c.esDeducible ? 'Sí' : 'No',
+    });
+  }
+
   return {
     periodo: { mes, anio, inicio, fin },
     totales,
     detalleVentas,
     detalleCompras,
+    documentos: listaDocumentos,
     prorrata: {
       porcentajeDeducible: Math.round(porcentajeProrrata * 10000) / 100, //2 dec
       ventasGravadas: round2(totales.ventasGravadasBase),

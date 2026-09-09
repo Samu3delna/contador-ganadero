@@ -147,6 +147,7 @@ function formatCol(n) {
 }
 
 // ============ EXCEL ============
+// ============ EXCEL ============
 const reporteExcel = async (req, res, next) => {
   try {
     const p = parseParametros(req);
@@ -159,77 +160,441 @@ const reporteExcel = async (req, res, next) => {
     res.setHeader('Content-Disposition', `attachment; filename="D-150_${p.anio}-${String(p.mes).padStart(2, '0')}.xlsx"`);
 
     const wb = new ExcelJS.Workbook();
-    wb.creator = 'ContadorGanadero';
+    wb.creator = 'Contador IA Ganadero';
+    wb.lastModifiedBy = 'Contador IA Ganadero';
     wb.created = new Date();
+    wb.modified = new Date();
 
-    const ws = wb.addWorksheet(`D-150 ${p.anio}-${p.mes}`);
+    const nombreUsuario = req.usuario.nombreFinca || req.usuario.nombre || 'Contribuyente Ganadero';
+    const cedulaUsuario = req.usuario.cedula?.numero ? String(req.usuario.cedula.numero).trim() : 'No especificada';
+    const mesNombre = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre'][p.mes - 1] || `Mes ${p.mes}`;
 
-    ws.columns = [
-      { header: 'Tarifa', key: 'tarifa', width: 22 },
-      { header: 'Documentos', key: 'docs', width: 14 },
-      { header: 'Base imponible', key: 'base', width: 18 },
-      { header: 'IVA', key: 'iva', width: 16 },
-      { header: 'NC aplicadas', key: 'nc', width: 16 },
+    const COLOR_PRIMARIO = '1B4332'; // Verde Hacienda
+    const COLOR_SECUNDARIO = '2D6A4F';
+    const COLOR_BORDE = 'E2E8F0';
+
+    const bordeFino = {
+      top: { style: 'thin', color: { argb: 'FF' + COLOR_BORDE } },
+      left: { style: 'thin', color: { argb: 'FF' + COLOR_BORDE } },
+      bottom: { style: 'thin', color: { argb: 'FF' + COLOR_BORDE } },
+      right: { style: 'thin', color: { argb: 'FF' + COLOR_BORDE } },
+    };
+
+    const bordeDobleInferior = {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'double', color: { argb: 'FF000000' } },
+    };
+
+    // =========================================================================
+    // HOJA 1: CONCILIACIÓN OFICIAL D-150
+    // =========================================================================
+    const ws1 = wb.addWorksheet(`Conciliación D-150`, {
+      views: [{ showGridLines: true }],
+    });
+
+    ws1.columns = [
+      { width: 4 },  // A margen
+      { width: 34 }, // B Concepto / Tarifa
+      { width: 14 }, // C Docs
+      { width: 22 }, // D Base Imponible
+      { width: 20 }, // E IVA
+      { width: 20 }, // F NC Aplicadas
     ];
 
-    ws.addRow(['Conciliación D-150', '', '', '', '']).font = { bold: true, size: 14 };
-    ws.addRow([`Período ${p.mes}/${p.anio}`, '', '', '', '']);
-    ws.addRow([]);
+    // Banner título
+    ws1.mergeCells('B2:F2');
+    const celdaTit = ws1.getCell('B2');
+    celdaTit.value = 'CONCILIACIÓN TRIBUTARIA D-150 - IMPUESTO AL VALOR AGREGADO (IVA)';
+    celdaTit.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+    celdaTit.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + COLOR_PRIMARIO } };
+    celdaTit.alignment = { vertical: 'middle', horizontal: 'center' };
+    ws1.getRow(2).height = 30;
 
-    ws.addRow(['1. Débito Fiscal — Ventas / Servicios']).font = { bold: true };
-    ws.addRow(['Tarifa', 'Doc', 'Base', 'IVA Débito', 'NC']).font = { bold: true };
-    resultado.detalleVentas.forEach((d) => ws.addRow([
-      d.label,
-      d.cantidadDocumentos,
-      d.baseImponible,
-      d.ivaDebitoFiscal,
-      d.notasCreditoAplicadas,
-    ]));
-    ws.addRow([]);
-    ws.addRow(['Subtotal ventas', '', resultado.totales.ventasGravadasBase, resultado.totales.ventasIVADebito, '']).font = { bold: true };
-    ws.addRow(['Ventas exentas', '', resultado.totales.ventasExentas, '', '']).font = { italic: true };
-    ws.addRow([]);
+    // Metadatos
+    ws1.getCell('B4').value = 'Contribuyente / Finca:';
+    ws1.getCell('B4').font = { bold: true, color: { argb: 'FF475569' } };
+    ws1.getCell('C4').value = nombreUsuario;
+    ws1.getCell('C4').font = { bold: true };
 
-    ws.addRow(['2. Crédito Fiscal — Compras / Gastos']).font = { bold: true };
-    ws.addRow(['Tarifa', 'Doc', 'Base', 'IVA Crédito', '']).font = { bold: true };
-    resultado.detalleCompras.forEach((d) => ws.addRow([
-      d.label,
-      d.cantidadDocumentos,
-      d.baseImponible,
-      d.ivaCreditoFiscal,
-      '',
-    ]));
-    ws.addRow([]);
-    ws.addRow(['Subtotal compras', '', resultado.totales.comprasGravadasBase, resultado.totales.comprasIVACredito, '']).font = { bold: true };
-    ws.addRow(['Compras exentas', '', resultado.totales.comprasExentas, '', '']).font = { italic: true };
-    ws.addRow([]);
+    ws1.getCell('E4').value = 'Cédula:';
+    ws1.getCell('E4').font = { bold: true, color: { argb: 'FF475569' } };
+    ws1.getCell('F4').value = cedulaUsuario;
+    ws1.getCell('F4').numFmt = '@';
+    ws1.getCell('F4').font = { bold: true };
 
-    ws.addRow(['3. Prorrata de Crédito Fiscal']).font = { bold: true };
-    ws.addRow(['Porcentaje deducible', resultado.prorrata.porcentajeDeducible + ' %']);
-    ws.addRow(['Crédito deducible', resultado.prorrata.creditoDeducible]);
-    ws.addRow(['Crédito no deducible', resultado.prorrata.creditoNoDeducible]);
-    ws.addRow([]);
+    ws1.getCell('B5').value = 'Período a Declarar:';
+    ws1.getCell('B5').font = { bold: true, color: { argb: 'FF475569' } };
+    ws1.getCell('C5').value = `${mesNombre} ${p.anio}`;
+    ws1.getCell('C5').font = { bold: true, color: { argb: 'FF166534' } };
 
-    ws.addRow(['4. Retenciones']).font = { bold: true };
-    ws.addRow(['Retenciones tarjeta (total)', resultado.retencionesTarjeta.total]);
-    ws.addRow(['IVA retenido por terceros', resultado.ivaRetenidoPorTerceros]);
-    ws.addRow([]);
+    ws1.getCell('E5').value = 'Plataforma Oficial:';
+    ws1.getCell('E5').font = { bold: true, color: { argb: 'FF475569' } };
+    ws1.getCell('F5').value = 'TRIBU-CR (ovitribucr.hacienda.go.cr)';
 
-    ws.addRow(['5. Resultado final']).font = { bold: true, size: 12 };
-    ws.addRow(['Débito fiscal', resultado.resultadoFinal.debitoFiscal]);
-    ws.addRow(['Crédito deducible', -resultado.resultadoFinal.creditoDeducible]);
-    ws.addRow(['Retenciones tarjeta', -resultado.resultadoFinal.totalRetencionesTarjeta]);
-    ws.addRow(['IVA retenido por terceros', -resultado.resultadoFinal.ivaRetenidoPorTerceros]);
-    if (resultado.resultadoFinal.ivaAPagar > 0) {
-      const row = ws.addRow(['IVA A PAGAR', resultado.resultadoFinal.ivaAPagar]);
-      row.font = { bold: true, color: { argb: 'FF0000' } };
-    } else {
-      const row = ws.addRow(['SALDO A FAVOR', resultado.resultadoFinal.saldoAFavor]);
-      row.font = { bold: true, color: { argb: '27AE60' } };
+    let rIdx = 7;
+
+    // --- SECCIÓN 1: DÉBITO FISCAL (VENTAS) ---
+    ws1.getCell(`B${rIdx}`).value = '1. DÉBITO FISCAL — VENTAS Y PRESTACIÓN DE SERVICIOS';
+    ws1.getCell(`B${rIdx}`).font = { bold: true, size: 11, color: { argb: 'FF' + COLOR_PRIMARIO } };
+    rIdx++;
+
+    const cabVentas = ['Tarifa de IVA / Casilla', 'Documentos', 'Base Imponible (₡)', 'IVA Débito (₡)', 'NC Aplicadas (₡)'];
+    const rowCabV = ws1.getRow(rIdx);
+    cabVentas.forEach((h, i) => {
+      const col = ['B', 'C', 'D', 'E', 'F'][i];
+      const cell = ws1.getCell(`${col}${rIdx}`);
+      cell.value = h;
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + COLOR_SECUNDARIO } };
+      cell.alignment = { vertical: 'middle', horizontal: i <= 1 ? 'left' : 'center' };
+    });
+    rowCabV.height = 24;
+    rIdx++;
+
+    const inicioVentas = rIdx;
+    resultado.detalleVentas.forEach((d, idx) => {
+      const row = ws1.getRow(rIdx);
+      const bg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
+
+      row.getCell(2).value = d.label;
+      row.getCell(2).border = bordeFino;
+      row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.getCell(3).value = d.cantidadDocumentos;
+      row.getCell(3).alignment = { horizontal: 'center' };
+      row.getCell(3).border = bordeFino;
+      row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.getCell(4).value = Number(d.baseImponible);
+      row.getCell(4).numFmt = '₡#,##0.00';
+      row.getCell(4).border = bordeFino;
+      row.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.getCell(5).value = Number(d.ivaDebitoFiscal);
+      row.getCell(5).numFmt = '₡#,##0.00';
+      row.getCell(5).border = bordeFino;
+      row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.getCell(6).value = Number(d.notasCreditoAplicadas || 0);
+      row.getCell(6).numFmt = '₡#,##0.00';
+      row.getCell(6).border = bordeFino;
+      row.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.height = 20;
+      rIdx++;
+    });
+
+    // Fila total ventas
+    const rowTotV = ws1.getRow(rIdx);
+    rowTotV.getCell(2).value = 'SUBTOTAL VENTAS GRAVADAS';
+    rowTotV.getCell(2).font = { bold: true };
+    rowTotV.getCell(2).border = bordeDobleInferior;
+
+    rowTotV.getCell(3).value = '';
+    rowTotV.getCell(3).border = bordeDobleInferior;
+
+    rowTotV.getCell(4).value = Number(resultado.totales.ventasGravadasBase);
+    rowTotV.getCell(4).numFmt = '₡#,##0.00';
+    rowTotV.getCell(4).font = { bold: true };
+    rowTotV.getCell(4).border = bordeDobleInferior;
+
+    rowTotV.getCell(5).value = Number(resultado.totales.ventasIVADebito);
+    rowTotV.getCell(5).numFmt = '₡#,##0.00';
+    rowTotV.getCell(5).font = { bold: true, color: { argb: 'FF166534' } };
+    rowTotV.getCell(5).border = bordeDobleInferior;
+
+    rowTotV.getCell(6).value = '';
+    rowTotV.getCell(6).border = bordeDobleInferior;
+    rowTotV.height = 22;
+    rIdx += 2;
+
+    // --- SECCIÓN 2: CRÉDITO FISCAL (COMPRAS) ---
+    ws1.getCell(`B${rIdx}`).value = '2. CRÉDITO FISCAL — COMPRAS Y GASTOS CON DERECHO A CRÉDITO';
+    ws1.getCell(`B${rIdx}`).font = { bold: true, size: 11, color: { argb: 'FF' + COLOR_PRIMARIO } };
+    rIdx++;
+
+    const cabCompras = ['Tarifa de IVA / Casilla', 'Documentos', 'Base Imponible (₡)', 'IVA Crédito (₡)', ''];
+    const rowCabC = ws1.getRow(rIdx);
+    cabCompras.forEach((h, i) => {
+      const col = ['B', 'C', 'D', 'E', 'F'][i];
+      const cell = ws1.getCell(`${col}${rIdx}`);
+      cell.value = h;
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + COLOR_SECUNDARIO } };
+      cell.alignment = { vertical: 'middle', horizontal: i <= 1 ? 'left' : 'center' };
+    });
+    rowCabC.height = 24;
+    rIdx++;
+
+    resultado.detalleCompras.forEach((d, idx) => {
+      const row = ws1.getRow(rIdx);
+      const bg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
+
+      row.getCell(2).value = d.label;
+      row.getCell(2).border = bordeFino;
+      row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.getCell(3).value = d.cantidadDocumentos;
+      row.getCell(3).alignment = { horizontal: 'center' };
+      row.getCell(3).border = bordeFino;
+      row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.getCell(4).value = Number(d.baseImponible);
+      row.getCell(4).numFmt = '₡#,##0.00';
+      row.getCell(4).border = bordeFino;
+      row.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.getCell(5).value = Number(d.ivaCreditoFiscal);
+      row.getCell(5).numFmt = '₡#,##0.00';
+      row.getCell(5).border = bordeFino;
+      row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.getCell(6).border = bordeFino;
+      row.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+
+      row.height = 20;
+      rIdx++;
+    });
+
+    // Fila total compras
+    const rowTotC = ws1.getRow(rIdx);
+    rowTotC.getCell(2).value = 'SUBTOTAL COMPRAS GRAVADAS';
+    rowTotC.getCell(2).font = { bold: true };
+    rowTotC.getCell(2).border = bordeDobleInferior;
+
+    rowTotC.getCell(3).value = '';
+    rowTotC.getCell(3).border = bordeDobleInferior;
+
+    rowTotC.getCell(4).value = Number(resultado.totales.comprasGravadasBase);
+    rowTotC.getCell(4).numFmt = '₡#,##0.00';
+    rowTotC.getCell(4).font = { bold: true };
+    rowTotC.getCell(4).border = bordeDobleInferior;
+
+    rowTotC.getCell(5).value = Number(resultado.totales.comprasIVACredito);
+    rowTotC.getCell(5).numFmt = '₡#,##0.00';
+    rowTotC.getCell(5).font = { bold: true, color: { argb: 'FF1E40AF' } };
+    rowTotC.getCell(5).border = bordeDobleInferior;
+
+    rowTotC.getCell(6).border = bordeDobleInferior;
+    rowTotC.height = 22;
+    rIdx += 2;
+
+    // --- SECCIÓN 3: PRORRATA Y RETENCIONES ---
+    ws1.getCell(`B${rIdx}`).value = '3. PRORRATA DE CRÉDITO FISCAL Y RETENCIONES';
+    ws1.getCell(`B${rIdx}`).font = { bold: true, size: 11, color: { argb: 'FF' + COLOR_PRIMARIO } };
+    rIdx++;
+
+    const filasProrrata = [
+      ['Porcentaje de Prorrata Aplicable (% Deducible)', `${resultado.prorrata.porcentajeDeducible}%`, ''],
+      ['Crédito Fiscal Total Soportado', resultado.prorrata.creditoTotal, 'MONEDA'],
+      ['Crédito Fiscal DEDUCIBLE (aplicable en D-150)', resultado.prorrata.creditoDeducible, 'MONEDA_VERDE'],
+      ['Crédito Fiscal NO Deducible', resultado.prorrata.creditoNoDeducible, 'MONEDA_ROJO'],
+      ['Retenciones de Tarjetas / Datáfonos Bancarios', resultado.retencionesTarjeta.total, 'MONEDA'],
+      ['IVA Retenido por Terceros o Entidades Públicas', resultado.ivaRetenidoPorTerceros, 'MONEDA'],
+    ];
+
+    filasProrrata.forEach(([concepto, valor, fmt]) => {
+      const row = ws1.getRow(rIdx);
+      row.getCell(2).value = concepto;
+      row.getCell(2).border = bordeFino;
+
+      ws1.mergeCells(`D${rIdx}:E${rIdx}`);
+      const celdaVal = ws1.getCell(`D${rIdx}`);
+      celdaVal.value = fmt.startsWith('MONEDA') ? Number(valor) : valor;
+      if (fmt.startsWith('MONEDA')) {
+        celdaVal.numFmt = '₡#,##0.00';
+      }
+      celdaVal.border = bordeFino;
+      celdaVal.alignment = { horizontal: 'right' };
+
+      if (fmt === 'MONEDA_VERDE') {
+        celdaVal.font = { bold: true, color: { argb: 'FF15803D' } };
+      } else if (fmt === 'MONEDA_ROJO') {
+        celdaVal.font = { color: { argb: 'FFB91C1C' } };
+      }
+
+      row.height = 20;
+      rIdx++;
+    });
+
+    rIdx++;
+
+    // --- SECCIÓN 4: LIQUIDACIÓN FINAL ---
+    ws1.getCell(`B${rIdx}`).value = '4. DETERMINACIÓN DEL RESULTADO DEL PERÍODO';
+    ws1.getCell(`B${rIdx}`).font = { bold: true, size: 11, color: { argb: 'FF' + COLOR_PRIMARIO } };
+    rIdx++;
+
+    const liquidacion = [
+      ['Débito Fiscal (IVA Facturado)', resultado.resultadoFinal.debitoFiscal, false],
+      ['(-) Crédito Fiscal Deducible', -resultado.resultadoFinal.creditoDeducible, false],
+      ['(-) Retenciones de Tarjeta', -resultado.resultadoFinal.totalRetencionesTarjeta, false],
+      ['(-) IVA Retenido por Terceros', -resultado.resultadoFinal.ivaRetenidoPorTerceros, false],
+    ];
+
+    liquidacion.forEach(([concepto, valor, esResultado]) => {
+      const row = ws1.getRow(rIdx);
+      row.getCell(2).value = concepto;
+      row.getCell(2).border = bordeFino;
+
+      ws1.mergeCells(`D${rIdx}:E${rIdx}`);
+      const celdaVal = ws1.getCell(`D${rIdx}`);
+      celdaVal.value = Number(valor);
+      celdaVal.numFmt = '₡#,##0.00';
+      celdaVal.border = bordeFino;
+      celdaVal.alignment = { horizontal: 'right' };
+
+      row.height = 20;
+      rIdx++;
+    });
+
+    // Tarjeta Resultado Final Destacada
+    const rowRes = ws1.getRow(rIdx);
+    const esPagar = resultado.resultadoFinal.ivaAPagar > 0;
+    const textoRes = esPagar ? 'IVA A PAGAR EN TRIBU-CR' : 'SALDO A FAVOR DEL CONTRIBUYENTE';
+    const montoRes = esPagar ? resultado.resultadoFinal.ivaAPagar : resultado.resultadoFinal.saldoAFavor;
+    const colorTexto = esPagar ? 'FFB91C1C' : 'FF15803D';
+    const colorBg = esPagar ? 'FFFEE2E2' : 'FFD1FAE5';
+
+    rowRes.getCell(2).value = textoRes;
+    rowRes.getCell(2).font = { bold: true, size: 12, color: { argb: colorTexto } };
+    rowRes.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorBg } };
+    rowRes.getCell(2).border = bordeDobleInferior;
+
+    ws1.mergeCells(`D${rIdx}:E${rIdx}`);
+    const celdaMontoRes = ws1.getCell(`D${rIdx}`);
+    celdaMontoRes.value = Number(montoRes);
+    celdaMontoRes.numFmt = '₡#,##0.00';
+    celdaMontoRes.font = { bold: true, size: 13, color: { argb: colorTexto } };
+    celdaMontoRes.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorBg } };
+    celdaMontoRes.border = bordeDobleInferior;
+    celdaMontoRes.alignment = { horizontal: 'right', vertical: 'middle' };
+    rowRes.height = 30;
+
+    rIdx += 2;
+    ws1.getCell(`B${rIdx}`).value = 'ⓘ Nota: Este documento constituye una conciliación y auditoría previa. El contribuyente debe ingresar a ovitribucr.hacienda.go.cr para verificar el prellenado oficial y presionar "Presentar".';
+    ws1.getCell(`B${rIdx}`).font = { italic: true, size: 8, color: { argb: 'FF64748B' } };
+
+    // =========================================================================
+    // HOJA 2: DETALLE DE DOCUMENTOS QUE RESPALDAN LA DECLARACIÓN
+    // =========================================================================
+    const docs = resultado.documentos || [];
+    const ws2 = wb.addWorksheet('Comprobantes del Período', {
+      views: [{ state: 'frozen', ySplit: 1, showGridLines: true }],
+    });
+
+    ws2.columns = [
+      { header: 'Operación', key: 'tipo', width: 14 },
+      { header: 'Tipo Doc', key: 'tipoDoc', width: 12 },
+      { header: 'Fecha', key: 'fecha', width: 14 },
+      { header: 'Proveedor / Cliente', key: 'tercero', width: 34 },
+      { header: 'Cédula', key: 'cedula', width: 18 },
+      { header: 'N° Factura / Consecutivo', key: 'consecutivo', width: 28 },
+      { header: 'Clave Hacienda (50 dígitos)', key: 'claveNumerica', width: 56 },
+      { header: 'Subtotal (₡)', key: 'subtotal', width: 18 },
+      { header: 'IVA (₡)', key: 'iva', width: 16 },
+      { header: 'Total (₡)', key: 'total', width: 18 },
+      { header: 'Tasa IVA (%)', key: 'tasaIVA', width: 14 },
+      { header: 'Deducible', key: 'esDeducible', width: 12 },
+    ];
+
+    const hRow2 = ws2.getRow(1);
+    hRow2.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+    hRow2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + COLOR_PRIMARIO } };
+    hRow2.alignment = { vertical: 'middle', horizontal: 'center' };
+    hRow2.height = 28;
+    ws2.autoFilter = { from: 'A1', to: 'L1' };
+
+    let fNum = 2;
+    docs.forEach((d, idx) => {
+      const row = ws2.addRow({
+        tipo: d.tipo,
+        tipoDoc: d.tipoDoc,
+        fecha: d.fecha,
+        tercero: d.tercero,
+        cedula: d.cedula ? String(d.cedula).trim() : '',
+        consecutivo: d.consecutivo ? String(d.consecutivo).trim() : '',
+        claveNumerica: d.claveNumerica ? String(d.claveNumerica).trim() : '',
+        subtotal: Number(d.subtotal || 0),
+        iva: Number(d.iva || 0),
+        total: Number(d.total || 0),
+        tasaIVA: Number(d.tasaIVA || 0) / 100,
+        esDeducible: d.esDeducible || 'Sí',
+      });
+
+      const bg = idx % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC';
+
+      // Estricto formato texto '@' para Cédula, Consecutivo y Clave
+      const cCed = row.getCell('cedula');
+      cCed.value = String(d.cedula || '').trim();
+      cCed.numFmt = '@';
+      cCed.alignment = { horizontal: 'left' };
+
+      const cCons = row.getCell('consecutivo');
+      cCons.value = String(d.consecutivo || '').trim();
+      cCons.numFmt = '@';
+      cCons.alignment = { horizontal: 'left' };
+
+      const cClave = row.getCell('claveNumerica');
+      cClave.value = String(d.claveNumerica || '').trim();
+      cClave.numFmt = '@';
+      cClave.alignment = { horizontal: 'left' };
+
+      // Moneda
+      row.getCell('subtotal').numFmt = '₡#,##0.00';
+      row.getCell('iva').numFmt = '₡#,##0.00';
+      row.getCell('total').numFmt = '₡#,##0.00';
+      row.getCell('tasaIVA').numFmt = '0.0%';
+
+      row.getCell('tipo').alignment = { horizontal: 'center' };
+      row.getCell('tipoDoc').alignment = { horizontal: 'center' };
+      row.getCell('fecha').alignment = { horizontal: 'center' };
+      row.getCell('tasaIVA').alignment = { horizontal: 'center' };
+      row.getCell('esDeducible').alignment = { horizontal: 'center' };
+
+      if (d.tipo === 'VENTA') {
+        row.getCell('tipo').font = { bold: true, color: { argb: 'FF15803D' } };
+      } else {
+        row.getCell('tipo').font = { color: { argb: 'FF1E3A8A' } };
+      }
+
+      for (let c = 1; c <= 12; c++) {
+        row.getCell(c).border = bordeFino;
+        if (!row.getCell(c).fill) {
+          row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        }
+      }
+      row.height = 20;
+      fNum++;
+    });
+
+    // Fila total en Hoja 2
+    if (docs.length > 0) {
+      const totRow2 = ws2.addRow({
+        tipo: 'TOTALES',
+        tipoDoc: '',
+        fecha: '',
+        tercero: '',
+        cedula: '',
+        consecutivo: '',
+        claveNumerica: '',
+        subtotal: { formula: `SUM(H2:H${fNum - 1})`, result: docs.reduce((s, d) => s + Number(d.subtotal || 0), 0) },
+        iva: { formula: `SUM(I2:I${fNum - 1})`, result: docs.reduce((s, d) => s + Number(d.iva || 0), 0) },
+        total: { formula: `SUM(J2:J${fNum - 1})`, result: docs.reduce((s, d) => s + Number(d.total || 0), 0) },
+        tasaIVA: null,
+        esDeducible: '',
+      });
+
+      totRow2.font = { bold: true, size: 10 };
+      totRow2.getCell('subtotal').numFmt = '₡#,##0.00';
+      totRow2.getCell('iva').numFmt = '₡#,##0.00';
+      totRow2.getCell('total').numFmt = '₡#,##0.00';
+      totRow2.getCell('tipo').alignment = { horizontal: 'center' };
+
+      for (let c = 1; c <= 12; c++) {
+        totRow2.getCell(c).border = bordeDobleInferior;
+      }
+      totRow2.height = 24;
     }
-
-    ws.addRow([]);
-    ws.addRow(['Nota: Este reporte es de auditoría interna. Debe presentarse la declaración en la OVI de TRIBU-CR.']).font = { italic: true, color: { argb: '888888' } };
 
     await wb.xlsx.write(res);
     res.end();

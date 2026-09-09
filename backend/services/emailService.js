@@ -471,11 +471,19 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
 
     // Buscar archivos .xml explícitamente
     if (nombre.endsWith('.xml') || tipo.includes('xml') || tipo.includes('text/xml') || tipo.includes('application/xml')) {
-      // Filtrar XMLs que NO son facturas (confirmaciones de Hacienda, respuestas, etc.)
-      if (!nombre.startsWith('confirmacion') && !nombre.includes('mensajehacienda') && !nombre.includes('respuesta')) {
+      // Filtrar XMLs que NO son facturas (confirmaciones de Hacienda, acuses AHC, respuestas, etc.)
+      const esMensajeHacienda = 
+        nombre.startsWith('confirmacion') ||
+        nombre.includes('mensajehacienda') ||
+        nombre.includes('respuesta') ||
+        nombre.includes('ahc') ||
+        nombre.includes('ah-') ||
+        nombre.startsWith('res-');
+
+      if (!esMensajeHacienda) {
         xmlsEncontrados.push(adjunto);
       } else {
-        console.log(`  ⏩ Adjunto "${adjunto.filename}" es confirmación de Hacienda, omitiendo.`);
+        console.log(`  ⏩ Adjunto "${adjunto.filename}" es confirmación/acuse de Hacienda, omitiendo.`);
       }
     }
 
@@ -529,6 +537,12 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
     console.log(`  💾 XML guardado: ${rutaAbsolutaXML}`);
 
     let datosFactura;
+
+    // Si el contenido XML es un MensajeHacienda (acuse de recibo), no es una factura
+    if (xmlString.includes('<MensajeHacienda') || xmlString.includes(':MensajeHacienda')) {
+      console.log(`  ⏩ XML "${xmlAdjunto.filename}" es un MensajeHacienda (acuse), omitiendo.`);
+      continue;
+    }
 
     try {
       datosFactura = parsearFacturaXML(xmlString);

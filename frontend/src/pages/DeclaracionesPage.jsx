@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Settings, TrendingUp, Receipt, Percent, Calculator, Download,
-  Save, CheckCircle, XCircle, AlertTriangle, FileText, Landmark,
+  Save, CheckCircle, XCircle, AlertTriangle, FileText, FileSpreadsheet, Landmark,
   Plus, Trash2, Archive, Eye, Send, RotateCcw, History
 } from 'lucide-react';
 import Modal from '../components/common/Modal';
@@ -261,24 +261,31 @@ export default function DeclaracionesPage() {
     }
   };
 
-  const descargarCSV = async () => {
+  const descargarExportacion = async (formato = 'excel') => {
     try {
-      const res = await exportarDatosAPI({ anio, cuatrimestre, formato: 'csv' });
-      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const esExcel = formato === 'excel';
+      const res = await exportarDatosAPI({ anio, cuatrimestre, formato: esExcel ? 'excel' : 'csv' });
+      const mime = esExcel
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'text/csv;charset=utf-8;';
+      const extension = esExcel ? 'xlsx' : 'csv';
+      const blob = new Blob([res.data], { type: mime });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `declaracion_${anio}_Q${cuatrimestre}.csv`;
+      a.download = `declaracion_${anio}_Q${cuatrimestre}.${extension}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      mostrarMensaje('exito', 'Archivo descargado');
+      mostrarMensaje('exito', `Archivo ${esExcel ? 'Excel (.xlsx)' : 'CSV'} descargado con éxito`);
     } catch (err) {
       console.error(err);
       mostrarMensaje('error', 'Error exportando datos');
     }
   };
+
+  const descargarCSV = () => descargarExportacion('csv');
 
   const agregarActivo = () => {
     const nuevos = [...(config.depreciacionActivos || []), {
@@ -952,15 +959,20 @@ export default function DeclaracionesPage() {
               <div className="exportar-preview">
                 <h4>Vista previa de columnas</h4>
                 <div className="exportar-columns">
-                  {['Tipo', 'Fecha', 'Proveedor/Comprador', 'Cédula', 'Descripción', 'Categoría', 'Subtotal', 'IVA', 'Total', 'N° Comprobante', 'Es Deducible', 'Tasa IVA'].map((c) => (
+                  {['Tipo', 'Fecha', 'Proveedor/Comprador', 'Cédula', 'Descripción', 'Categoría', 'Subtotal', 'IVA', 'Total', 'N° Consecutivo', 'Clave Hacienda (50 dígitos)', 'Es Deducible', 'Tasa IVA'].map((c) => (
                     <span className="badge badge-secundario" key={c}>{c}</span>
                   ))}
                 </div>
               </div>
 
-              <button className="btn-primary btn-large" onClick={descargarCSV}>
-                <FileText size={18} /> Descargar CSV para Excel
-              </button>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+                <button className="btn-primary btn-large" onClick={() => descargarExportacion('excel')}>
+                  <FileSpreadsheet size={18} /> Descargar Excel (.xlsx)
+                </button>
+                <button className="btn-secundario btn-large" onClick={() => descargarExportacion('csv')}>
+                  <FileText size={18} /> Descargar CSV
+                </button>
+              </div>
             </div>
           )}
         </>

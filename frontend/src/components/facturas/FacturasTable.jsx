@@ -80,13 +80,18 @@ export default function FacturasTable({
                 {new Date(f.fechaEmision).toLocaleDateString('es-CR')}
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex flex-col gap-0.5">
                   <span className="font-medium text-white text-sm">{f.emisor?.nombre || '—'}</span>
-                  {f.carpetaOrigen && f.carpetaOrigen !== 'INBOX' && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-800 border-slate-700 text-slate-400">
-                      {f.carpetaOrigen.replace('[Gmail]/', '')}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {f.consecutivo && (
+                      <span className="text-[11px] font-mono text-emerald-400/90 font-medium">#{f.consecutivo}</span>
+                    )}
+                    {f.carpetaOrigen && f.carpetaOrigen !== 'INBOX' && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-800 border-slate-700 text-slate-400">
+                        {f.carpetaOrigen.replace('[Gmail]/', '')}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </TableCell>
               <TableCell className="font-mono font-semibold text-white whitespace-nowrap">
@@ -157,8 +162,9 @@ export default function FacturasTable({
               <TableRow key={`${f._id}-detail`} className="bg-slate-950/60 hover:bg-slate-950/70 border-b border-slate-800">
                 <TableCell colSpan={9} className="p-4">
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs bg-slate-900/90 p-3 rounded-lg border border-slate-800">
-                      <div><strong className="text-slate-400">Clave:</strong> <span className="font-mono text-slate-200 text-[11px] block truncate">{f.claveNumerica || 'N/A'}</span></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 text-xs bg-slate-900/90 p-3 rounded-lg border border-slate-800">
+                      <div><strong className="text-slate-400">Consecutivo:</strong> <span className="font-mono text-emerald-300 text-[11px] block">{f.consecutivo || 'N/A'}</span></div>
+                      <div><strong className="text-slate-400">Clave:</strong> <span className="font-mono text-slate-200 text-[11px] block truncate" title={f.claveNumerica}>{f.claveNumerica || 'N/A'}</span></div>
                       <div><strong className="text-slate-400">Esquema:</strong> <span className="text-slate-200 ml-1">{f.versionEsquema || 'v4.4'}</span></div>
                       <div><strong className="text-slate-400">Moneda:</strong> <span className="text-slate-200 ml-1">{f.moneda || 'CRC'}</span></div>
                       <div><strong className="text-slate-400">Carpeta:</strong> <span className="text-slate-200 ml-1">{f.carpetaOrigen || 'INBOX'}</span></div>

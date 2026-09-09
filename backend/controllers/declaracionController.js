@@ -2,7 +2,7 @@ const Usuario = require('../models/Usuario');
 const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
 const Declaracion = require('../models/Declaracion');
-const { generarDatosExportacion, generarCSV } = require('../services/declaracionService');
+const { generarDatosExportacion, generarExcel, generarCSV } = require('../services/declaracionService');
 const { calcularIVACuatrimestral, calcularRentaAnual } = require('../services/impuestoService');
 
 // === CONFIGURACIÓN FISCAL ===
@@ -258,15 +258,22 @@ const exportarDatos = async (req, res, next) => {
     const { anio, cuatrimestre, formato } = req.query;
     const anioNum = Number(anio || new Date().getFullYear());
     const cuatNum = cuatrimestre ? Number(cuatrimestre) : null;
-    const formatoExp = formato || 'csv';
+    const formatoExp = (formato || 'excel').toLowerCase();
 
     const datos = await generarDatosExportacion(req.usuario._id, anioNum, cuatNum);
+    const sufijoArchivo = `declaracion_${anioNum}${cuatNum ? '_Q' + cuatNum : ''}`;
 
-    if (formatoExp === 'csv') {
+    if (formatoExp === 'excel' || formatoExp === 'xlsx') {
+      const workbook = await generarExcel(datos, { anio: anioNum, cuatrimestre: cuatNum, usuario: req.usuario });
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${sufijoArchivo}.xlsx"`);
+      await workbook.xlsx.write(res);
+      res.end();
+    } else if (formatoExp === 'csv') {
       const csv = generarCSV(datos);
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="declaracion_${anioNum}${cuatNum ? '_Q' + cuatNum : ''}.csv"`);
-      // BOM para Excel reconozca UTF-8
+      res.setHeader('Content-Disposition', `attachment; filename="${sufijoArchivo}.csv"`);
+      // BOM para que Excel reconozca UTF-8
       res.send('\uFEFF' + csv);
     } else {
       res.json({ datos, totalRegistros: datos.length });
