@@ -233,12 +233,12 @@ const reporteExcel = async (req, res, next) => {
 
     let rIdx = 7;
 
-    // --- SECCIÓN 1: DÉBITO FISCAL (VENTAS) ---
-    ws1.getCell(`B${rIdx}`).value = '1. DÉBITO FISCAL — VENTAS Y PRESTACIÓN DE SERVICIOS';
+    // --- PASO 1: VENTAS GENERALES ---
+    ws1.getCell(`B${rIdx}`).value = 'PASO 1: VENTAS GENERALES (DÉBITO FISCAL)';
     ws1.getCell(`B${rIdx}`).font = { bold: true, size: 11, color: { argb: 'FF' + COLOR_PRIMARIO } };
     rIdx++;
 
-    const cabVentas = ['Tarifa de IVA / Casilla', 'Documentos', 'Base Imponible (₡)', 'IVA Débito (₡)', 'NC Aplicadas (₡)'];
+    const cabVentas = ['Tarifa de IVA / Casilla TRIBU-CR', 'Documentos', 'Total importe ventas (₡)', 'Impuesto devengado (₡)', 'NC Aplicadas (₡)'];
     const rowCabV = ws1.getRow(rIdx);
     cabVentas.forEach((h, i) => {
       const col = ['B', 'C', 'D', 'E', 'F'][i];
@@ -265,12 +265,12 @@ const reporteExcel = async (req, res, next) => {
       row.getCell(3).border = bordeFino;
       row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
 
-      row.getCell(4).value = Number(d.baseImponible);
+      row.getCell(4).value = Number(d.totalImporte ?? d.baseImponible);
       row.getCell(4).numFmt = '₡#,##0.00';
       row.getCell(4).border = bordeFino;
       row.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
 
-      row.getCell(5).value = Number(d.ivaDebitoFiscal);
+      row.getCell(5).value = Number(d.impuestoDevengado ?? d.ivaDebitoFiscal);
       row.getCell(5).numFmt = '₡#,##0.00';
       row.getCell(5).border = bordeFino;
       row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
@@ -308,12 +308,16 @@ const reporteExcel = async (req, res, next) => {
     rowTotV.height = 22;
     rIdx += 2;
 
-    // --- SECCIÓN 2: CRÉDITO FISCAL (COMPRAS) ---
-    ws1.getCell(`B${rIdx}`).value = '2. CRÉDITO FISCAL — COMPRAS Y GASTOS CON DERECHO A CRÉDITO';
+    // --- PASO 2: COMPRAS TOTALES ---
+    ws1.getCell(`B${rIdx}`).value = 'PASO 2: COMPRAS TOTALES (CRÉDITO FISCAL)';
     ws1.getCell(`B${rIdx}`).font = { bold: true, size: 11, color: { argb: 'FF' + COLOR_PRIMARIO } };
     rIdx++;
 
-    const cabCompras = ['Tarifa de IVA / Casilla', 'Documentos', 'Base Imponible (₡)', 'IVA Crédito (₡)', ''];
+    ws1.getCell(`B${rIdx}`).value = 'En esta sección debe introducir las compras realizadas en este periodo a cada tarifa. El formulario calcula de forma automática el impuesto soportado para cada una de ellas.';
+    ws1.getCell(`B${rIdx}`).font = { italic: true, size: 8.5, color: { argb: 'FF64748B' } };
+    rIdx++;
+
+    const cabCompras = ['Sección TRIBU-CR / Tarifa', 'Documentos', 'Total importe compras (₡)', 'Impuesto soportado (₡)', ''];
     const rowCabC = ws1.getRow(rIdx);
     cabCompras.forEach((h, i) => {
       const col = ['B', 'C', 'D', 'E', 'F'][i];
@@ -339,12 +343,12 @@ const reporteExcel = async (req, res, next) => {
       row.getCell(3).border = bordeFino;
       row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
 
-      row.getCell(4).value = Number(d.baseImponible);
+      row.getCell(4).value = Number(d.totalImporte ?? d.baseImponible);
       row.getCell(4).numFmt = '₡#,##0.00';
       row.getCell(4).border = bordeFino;
       row.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
 
-      row.getCell(5).value = Number(d.ivaCreditoFiscal);
+      row.getCell(5).value = Number(d.impuestoSoportado ?? d.ivaCreditoFiscal);
       row.getCell(5).numFmt = '₡#,##0.00';
       row.getCell(5).border = bordeFino;
       row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
@@ -379,18 +383,18 @@ const reporteExcel = async (req, res, next) => {
     rowTotC.height = 22;
     rIdx += 2;
 
-    // --- SECCIÓN 3: PRORRATA Y RETENCIONES ---
-    ws1.getCell(`B${rIdx}`).value = '3. PRORRATA DE CRÉDITO FISCAL Y RETENCIONES';
+    // --- PASO 3: CRÉDITO FISCAL (PROPORCIONALIDAD / PRORRATA) ---
+    ws1.getCell(`B${rIdx}`).value = 'PASO 3: CRÉDITO FISCAL (PROPORCIONALIDAD / PRORRATA)';
     ws1.getCell(`B${rIdx}`).font = { bold: true, size: 11, color: { argb: 'FF' + COLOR_PRIMARIO } };
     rIdx++;
 
     const filasProrrata = [
+      ['Ventas con derecho a crédito (Gravadas)', resultado.prorrata.ventasGravadas, 'MONEDA'],
+      ['Ventas sin derecho a crédito (Exentas)', resultado.prorrata.ventasExentas, 'MONEDA'],
       ['Porcentaje de Prorrata Aplicable (% Deducible)', `${resultado.prorrata.porcentajeDeducible}%`, ''],
-      ['Crédito Fiscal Total Soportado', resultado.prorrata.creditoTotal, 'MONEDA'],
+      ['Crédito Fiscal Total Soportado (Compras)', resultado.prorrata.creditoTotal, 'MONEDA'],
       ['Crédito Fiscal DEDUCIBLE (aplicable en D-150)', resultado.prorrata.creditoDeducible, 'MONEDA_VERDE'],
       ['Crédito Fiscal NO Deducible', resultado.prorrata.creditoNoDeducible, 'MONEDA_ROJO'],
-      ['Retenciones de Tarjetas / Datáfonos Bancarios', resultado.retencionesTarjeta.total, 'MONEDA'],
-      ['IVA Retenido por Terceros o Entidades Públicas', resultado.ivaRetenidoPorTerceros, 'MONEDA'],
     ];
 
     filasProrrata.forEach(([concepto, valor, fmt]) => {
@@ -419,16 +423,16 @@ const reporteExcel = async (req, res, next) => {
 
     rIdx++;
 
-    // --- SECCIÓN 4: LIQUIDACIÓN FINAL ---
-    ws1.getCell(`B${rIdx}`).value = '4. DETERMINACIÓN DEL RESULTADO DEL PERÍODO';
+    // --- PASO 4: CÁLCULO DEL IMPUESTO (LIQUIDACIÓN FINAL) ---
+    ws1.getCell(`B${rIdx}`).value = 'PASO 4: CÁLCULO DEL IMPUESTO (LIQUIDACIÓN FINAL)';
     ws1.getCell(`B${rIdx}`).font = { bold: true, size: 11, color: { argb: 'FF' + COLOR_PRIMARIO } };
     rIdx++;
 
     const liquidacion = [
-      ['Débito Fiscal (IVA Facturado)', resultado.resultadoFinal.debitoFiscal, false],
-      ['(-) Crédito Fiscal Deducible', -resultado.resultadoFinal.creditoDeducible, false],
-      ['(-) Retenciones de Tarjeta', -resultado.resultadoFinal.totalRetencionesTarjeta, false],
-      ['(-) IVA Retenido por Terceros', -resultado.resultadoFinal.ivaRetenidoPorTerceros, false],
+      ['Débito Fiscal (IVA Facturado en Paso 1)', resultado.resultadoFinal.debitoFiscal, false],
+      ['(-) Crédito Fiscal Deducible (Paso 3)', -resultado.resultadoFinal.creditoDeducible, false],
+      ['(-) Retenciones de Tarjeta (Datáfonos Bancarios)', -resultado.resultadoFinal.totalRetencionesTarjeta, false],
+      ['(-) IVA Retenido por Terceros o Entidades Públicas', -resultado.resultadoFinal.ivaRetenidoPorTerceros, false],
     ];
 
     liquidacion.forEach(([concepto, valor, esResultado]) => {

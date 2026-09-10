@@ -21,20 +21,23 @@ const Factura = require('../models/Factura'); // facturas recibidas por IMAP
 const Ingreso = require('../models/Ingreso'); // ingresos y ventas registradas
 
 //Cuadros CI = credito fiscal soportado (compras), DC = debito fiscal (ventas)
+// Alineados con los 4 pasos del Formulario 150 oficial de TRIBU-CR
 const CUADROS_VENTAS = [
-  { tarifa: 13, label: 'Tarifa general 13%' },
-  { tarifa: 4, label: 'Tarifa reducida 4% (salud privada)' },
-  { tarifa: 2, label: 'Tarifa reducida 2% (medicamentos)' },
-  { tarifa: 1, label: 'Tarifa reducida 1% (canasta basica / agropecuario)' },
-  { tarifa: 0, label: 'Ventas exentas / transitorio 0%' },
+  { tarifa: 13, label: 'Ventas a 13%', sublabel: 'Tarifa general 13%', campoImporte: 'Total importe ventas a 13%', campoImpuesto: 'Impuesto devengado a 13%' },
+  { tarifa: 4, label: 'Ventas a 4%', sublabel: 'Tarifa reducida 4%', campoImporte: 'Total importe ventas a 4%', campoImpuesto: 'Impuesto devengado a 4%' },
+  { tarifa: 2, label: 'Ventas a 2%', sublabel: 'Tarifa reducida 2%', campoImporte: 'Total importe ventas a 2%', campoImpuesto: 'Impuesto devengado a 2%' },
+  { tarifa: 1, label: 'Ventas a 1%', sublabel: 'Tarifa reducida 1% (agropecuario/canasta básica)', campoImporte: 'Total importe ventas a 1%', campoImpuesto: 'Impuesto devengado a 1%' },
+  { tarifa: 0.5, label: 'Ventas a 0.5%', sublabel: 'Tarifa reducida 0.5%', campoImporte: 'Total importe ventas a 0.5%', campoImpuesto: 'Impuesto devengado a 0.5%' },
+  { tarifa: 0, label: 'Ventas exentas / no sujetas', sublabel: 'Sin IVA / Exentas', campoImporte: 'Ventas exentas / no sujetas', campoImpuesto: 'Sin impuesto' },
 ];
 
 const CUADROS_COMPRAS = [
-  { tarifa: 13, label: 'Compras grabadas al 13%' },
-  { tarifa: 4, label: 'Compras grabadas al 4%' },
-  { tarifa: 2, label: 'Compras grabadas al 2%' },
-  { tarifa: 1, label: 'Compras grabadas al 1% (insumos agropecuarios)' },
-  { tarifa: 0, label: 'Compras exentas' },
+  { tarifa: 0.5, label: 'Compras a 0.5%', campoImporte: 'Total importe compras a 0.5%', campoImpuesto: 'Impuesto soportado a 0.5%' },
+  { tarifa: 1, label: 'Compras a 1%', campoImporte: 'Total importe compras a 1%', campoImpuesto: 'Impuesto soportado a 1%' },
+  { tarifa: 2, label: 'Compras a 2%', campoImporte: 'Total importe compras a 2%', campoImpuesto: 'Impuesto soportado a 2%' },
+  { tarifa: 4, label: 'Compras a 4%', campoImporte: 'Total importe compras a 4%', campoImpuesto: 'Impuesto soportado a 4%' },
+  { tarifa: 13, label: 'Compras a 13%', campoImporte: 'Total importe compras a 13%', campoImpuesto: 'Impuesto soportado a 13%' },
+  { tarifa: 0, label: 'Compras sin IVA soportado o no acreditable', campoImporte: 'Compras sin IVA soportado o no acreditable', campoImpuesto: 'Sin crédito fiscal' },
 ];
 
 /**
@@ -93,13 +96,12 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
     fechaEmision: { $gte: inicio, $lte: fin },
   }).lean();
 
-  // 2) Facturas recibidas (IMAP) válidas de proveedores con FE (excluyendo no deducibles y errores)
+  // 2) Facturas recibidas (IMAP) válidas de proveedores con FE
   let comprasRecibidas = [];
   try {
     comprasRecibidas = await Factura.find({
       usuario: usuarioId,
       estado: { $ne: 'error' },
-      esDeducible: { $ne: false },
       'emisor.cedula.numero': { $exists: true },
       fechaEmision: { $gte: inicio, $lte: fin },
     }).lean();
@@ -156,24 +158,33 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
 
   // Acumular compras recibidas por correo (IMAP)
   for (const f of comprasRecibidas) {
-    // Si la factura tiene desglose por líneas de detalle, usar sus tarifas exactas
+    const esDeducible = f.esDeducible !== false;
+
+    // Si NO es deducible, se asigna a "Compras sin IVA soportado o no acreditable" (tarifa 0)
+    if (!esDeducible) {
+      const subtotalNoDed = Number(f.resumenFactura?.totalVentaNeta || f.resumenFactura?.totalVenta || 0);
+      acumular(comprasPorTarifa, 0, subtotalNoDed, 0);
+      continue;
+    }
+
+    // Si ES deducible, acumular por tarifa (0.5%, 1%, 2%, 4%, 13% o 0% exentas)
     if (Array.isArray(f.lineaDetalle) && f.lineaDetalle.length > 0) {
       for (const l of f.lineaDetalle) {
-        const tarifa = l.impuesto?.tarifa != null ? l.impuesto.tarifa : (f.tasaIVA || 13);
-        const base = l.subtotal || l.baseImponible || 0;
-        const iva = l.impuesto?.monto != null ? l.impuesto.monto : (tarifa > 0 ? (base * tarifa) / 100 : 0);
+        const tarifa = l.impuesto?.tarifa != null ? Number(l.impuesto.tarifa) : (Number(f.tasaIVA) || 13);
+        const base = Number(l.subtotal || l.baseImponible || 0);
+        const iva = Number(l.impuesto?.monto != null ? l.impuesto.monto : (tarifa > 0 ? (base * tarifa) / 100 : 0));
         acumular(comprasPorTarifa, tarifa, base, iva);
       }
     } else {
       // Fallback a resumenFactura
       const resumen = f.resumenFactura || {};
-      const base = resumen.totalVentaNeta || resumen.totalVenta || 0;
-      const iva = resumen.totalImpuesto || 0;
-      let tarifa = f.tasaIVA != null ? f.tasaIVA : 0;
+      const base = Number(resumen.totalVentaNeta || resumen.totalVenta || 0);
+      const iva = Number(resumen.totalImpuesto || 0);
+      let tarifa = f.tasaIVA != null ? Number(f.tasaIVA) : 0;
       if (iva > 0 && base > 0 && tarifa === 0) {
         const ratio = Math.round((iva / base) * 1000) / 10;
-        const estandar = [13, 4, 2, 1];
-        tarifa = estandar.find((t) => Math.abs(ratio - t) <= 0.5) || Math.round(ratio);
+        const estandar = [13, 4, 2, 1, 0.5];
+        tarifa = estandar.find((t) => Math.abs(ratio - t) <= 0.25) || Math.round(ratio);
       }
       acumular(comprasPorTarifa, tarifa, base, iva);
     }
@@ -229,15 +240,20 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
   const ivaAPagar = Math.max(baseImponible, 0);
   const saldoAFavor = baseImponible < 0 ? Math.abs(baseImponible) : 0;
 
-  // ============ Detalle por cuadro ============
+  // ============ Detalle por cuadro (alineado a TRIBU-CR) ============
   const detalleVentas = CUADROS_VENTAS.map((c) => {
     const key = String(c.tarifa);
     const b = ventasPorTarifa[key] || { base: 0, iva: 0, count: 0, ncMonto: 0 };
     return {
       tarifa: c.tarifa,
       label: c.label,
+      sublabel: c.sublabel,
+      campoImporte: c.campoImporte,
+      campoImpuesto: c.campoImpuesto,
       cantidadDocumentos: b.count,
+      totalImporte: round2(b.base),
       baseImponible: round2(b.base),
+      impuestoDevengado: round2(b.iva),
       ivaDebitoFiscal: round2(b.iva),
       notasCreditoAplicadas: round2(b.ncMonto),
     };
@@ -249,8 +265,12 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
     return {
       tarifa: c.tarifa,
       label: c.label,
+      campoImporte: c.campoImporte,
+      campoImpuesto: c.campoImpuesto,
       cantidadDocumentos: b.count,
+      totalImporte: round2(b.base),
       baseImponible: round2(b.base),
+      impuestoSoportado: round2(b.iva),
       ivaCreditoFiscal: round2(b.iva),
     };
   });

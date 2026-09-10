@@ -117,10 +117,22 @@ describe('declaracionService - Generación de Excel y CSV seguro', () => {
     const buffer = await wb.xlsx.writeBuffer();
     expect(buffer.length).toBeGreaterThan(1000);
 
-    // Verificar que tiene 2 hojas (Resumen y Detalle)
-    expect(wb.worksheets.length).toBe(2);
+    // Verificar que tiene 3 hojas (Resumen Contable, Guía TRIBU-CR y Detalle de Comprobantes)
+    expect(wb.worksheets.length).toBe(3);
     expect(wb.worksheets[0].name).toBe('Resumen Contable');
-    expect(wb.worksheets[1].name).toBe('Detalle de Comprobantes');
+    expect(wb.worksheets[1].name).toBe('Guía TRIBU-CR Formulario 150');
+    expect(wb.worksheets[2].name).toBe('Detalle de Comprobantes');
+
+    // Verificar hoja de Guía TRIBU-CR Formulario 150
+    const wsTribu = wb.getWorksheet('Guía TRIBU-CR Formulario 150');
+    expect(wsTribu.getCell('B2').value).toContain('TRIBU-CR');
+    // Verificar que contiene los 4 pasos clave de TRIBU-CR
+    const tribuText = JSON.stringify(wsTribu.getSheetValues());
+    expect(tribuText).toContain('PASO 1: VENTAS GENERALES');
+    expect(tribuText).toContain('PASO 2: COMPRAS TOTALES');
+    expect(tribuText).toContain('PASO 3: CRÉDITO FISCAL');
+    expect(tribuText).toContain('PASO 4: CÁLCULO DEL IMPUESTO');
+    expect(tribuText).toContain('Compras sin IVA soportado o no acreditable');
 
     // Verificar hoja de Detalle
     const wsDetalle = wb.getWorksheet('Detalle de Comprobantes');

@@ -83,3 +83,259 @@
     border-color: var(--color-borde-fuerte) !important;
   }
 }
+
+/* ==========================================================================
+   ESTILOS OFICIALES TRIBU-CR WIZARD (Formulario 150 IVA)
+   ========================================================================== */
+
+.tribu-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+/* Stepper de 4 Pasos */
+.tribu-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--color-superficie);
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radio-md);
+  border: 1px solid var(--color-borde);
+  overflow-x: auto;
+}
+
+.tribu-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radio-md);
+  color: var(--color-texto-sec);
+  font-family: var(--font-headers);
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tribu-step-btn:hover {
+  background: var(--color-superficie-2);
+  color: var(--color-texto);
+}
+
+.tribu-step-btn--active {
+  background: rgba(76, 175, 80, 0.15);
+  color: #81C784;
+  border: 1px solid rgba(76, 175, 80, 0.35);
+}
+
+.tribu-step-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--color-superficie-2);
+  color: var(--color-texto-sec);
+  border: 2px solid var(--color-borde-fuerte);
+  transition: all 0.2s ease;
+}
+
+.tribu-step-btn--active .tribu-step-dot {
+  background: #4CAF50;
+  color: #fff;
+  border-color: #81C784;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+.tribu-step-line {
+  flex: 1;
+  height: 2px;
+  min-width: 12px;
+  background: var(--color-borde);
+}
+
+/* Banner de ayuda del paso */
+.tribu-helper-banner {
+  background: rgba(41, 128, 185, 0.08);
+  border-left: 4px solid #3498DB;
+  border-radius: var(--radio-md);
+  padding: 1rem 1.25rem;
+  color: var(--color-texto-sec);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.tribu-helper-banner strong {
+  color: var(--color-texto);
+}
+
+/* Acordeones por Tarifa */
+.tribu-accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tribu-accordion-card {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.tribu-accordion-card:hover {
+  border-color: var(--color-borde-hover);
+}
+
+.tribu-accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-texto);
+  text-align: left;
+  font-family: var(--font-headers);
+  font-size: 1.02rem;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.tribu-accordion-header:hover {
+  background: var(--color-superficie-2);
+}
+
+.tribu-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.tribu-badge-docs {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: var(--color-superficie-2);
+  color: var(--color-texto-sec);
+  border: 1px solid var(--color-borde);
+  font-weight: 500;
+}
+
+.tribu-badge-monto {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #81C784;
+}
+
+.tribu-accordion-body {
+  padding: 1rem 1.25rem 1.25rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-top: 1px solid var(--color-borde);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* Casillas tipo TRIBU-CR (Input-Card) */
+.tribu-input-card {
+  background: var(--color-superficie-2);
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio-md);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.tribu-input-card:hover {
+  border-color: #4CAF50;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tribu-input-label {
+  font-size: 0.82rem;
+  color: var(--color-texto-sec);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tribu-input-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tribu-input-value {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+.tribu-btn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radio-sm);
+  background: var(--color-superficie-3);
+  border: 1px solid var(--color-borde-fuerte);
+  color: var(--color-texto);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tribu-btn-copy:hover {
+  background: #4CAF50;
+  color: #fff;
+  border-color: #4CAF50;
+}
+
+.tribu-btn-copy--copied {
+  background: #2E7D32;
+  color: #fff;
+  border-color: #4CAF50;
+}
+
+.tribu-tabs-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .tribu-stepper {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .tribu-step-line {
+    display: none;
+  }
+  .tribu-accordion-body {
+    grid-template-columns: 1fr;
+  }
+}
+

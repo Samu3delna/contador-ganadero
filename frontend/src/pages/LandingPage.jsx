@@ -20,41 +20,55 @@ const CARACTERISTICAS = [
     icono: Mail,
     titulo: 'Importación por correo',
     descripcion: 'Conecta tu correo y descargamos automáticamente tus facturas electrónicas (XML/PDF) vía IMAP.',
+    tag: 'Automático',
   },
   {
     icono: Sparkles,
     titulo: 'Categorización con IA',
     descripcion: 'La inteligencia artificial clasifica tus gastos automáticamente en las categorías correctas.',
+    tag: 'IA Avanzada',
   },
   {
     icono: Warehouse,
     titulo: 'Control de inventario',
     descripcion: 'Bovinos, aves de postura, peces (acuicultura) y abejas (apicultura) en un solo lugar.',
+    tag: '4 Especies',
   },
   {
     icono: TrendingUp,
     titulo: 'Costos de producción',
     descripcion: 'Calcula el costo por kg de carne, cartón de huevos, FCA y conoce tus márgenes reales.',
+    tag: 'Rentabilidad',
   },
   {
     icono: Calculator,
     titulo: 'Impuestos Costa Rica',
     descripcion: 'IVA Cuatrimestral (D-135-1) y Renta Anual (D-101) con lógica tributaria 2026.',
+    tag: 'D-135-1 & D-101',
   },
   {
     icono: Receipt,
     titulo: 'Facturación REA',
     descripcion: 'Facturación electrónica con tarifa reducida del 1% de IVA, en cumplimiento Hacienda/MAG.',
+    tag: 'Tarifa 1%',
   },
   {
     icono: LayoutDashboard,
     titulo: 'Dashboard analítico',
     descripcion: 'Visualiza ingresos, gastos y rentabilidad de tu finca con gráficos en tiempo real.',
+    tag: 'Métricas Vivas',
   },
   {
     icono: Calendar,
     titulo: 'Calendario fiscal',
     descripcion: 'Nunca pierdas una fecha de declaración con el calendario fiscal integrado.',
+    tag: 'Fechas Límite',
+  },
+  {
+    icono: ShieldCheck,
+    titulo: 'Conciliación D-150 TRIBU-CR',
+    descripcion: 'Guía oficial paso a paso con totales de importes e impuestos soportados lista para declarar.',
+    tag: 'TRIBU-CR 2026',
   },
 ];
 
@@ -460,16 +474,25 @@ export default function LandingPage() {
                   inert={slideIndex !== safeIndex}
                 >
                   <div className="landing-caracteristicas-grid">
-                    {slide.map(({ icono: Icono, titulo, descripcion }) => (
-                      <Card key={titulo} className="landing-caracteristica border-slate-800 bg-slate-900/70 hover:border-emerald-500/40 hover:shadow-xl transition-all duration-300">
-                        <CardHeader className="p-6">
-                          <div className="landing-caracteristica-icono mb-2">
-                            <Icono size={22} className="text-emerald-400" />
+                    {slide.map(({ icono: Icono, titulo, descripcion, tag }) => (
+                      <Card key={titulo} className="landing-caracteristica border-slate-800 bg-slate-900/80 hover:border-emerald-500/50 hover:shadow-2xl transition-all duration-300">
+                        <CardHeader className="p-6 flex flex-col justify-between h-full">
+                          <div>
+                            <div className="landing-caracteristica-top mb-4">
+                              <div className="landing-caracteristica-icono">
+                                <Icono size={22} className="text-emerald-400" />
+                              </div>
+                              {tag && <span className="landing-caracteristica-tag">{tag}</span>}
+                            </div>
+                            <CardTitle className="text-xl font-bold font-heading text-white">{titulo}</CardTitle>
+                            <CardDescription className="text-slate-300 text-sm mt-2.5 leading-relaxed">
+                              {descripcion}
+                            </CardDescription>
                           </div>
-                          <CardTitle className="text-xl font-bold font-heading">{titulo}</CardTitle>
-                          <CardDescription className="text-slate-400 text-sm mt-2 leading-relaxed">
-                            {descripcion}
-                          </CardDescription>
+                          <div className="pt-4 mt-auto flex items-center text-xs font-semibold text-emerald-400/90 gap-1.5 border-t border-slate-800/60">
+                            <span>Integrado al sistema</span>
+                            <ArrowRight size={13} />
+                          </div>
                         </CardHeader>
                       </Card>
                     ))}
