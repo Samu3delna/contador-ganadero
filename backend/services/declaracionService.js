@@ -40,6 +40,17 @@ async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null) {
     const consecutivo = String(f.consecutivo || '').trim();
     const claveNumerica = String(f.claveNumerica || '').trim();
 
+    // Determinar la tasa de IVA adecuada respetando tasa 0% (combustibles, exentos)
+    let tasaIVA = f.tasaIVA != null ? Number(f.tasaIVA) : (iva === 0 ? 0 : 13);
+    if (iva === 0 && subtotal > 0) {
+      tasaIVA = 0;
+    } else if (subtotal > 0 && iva > 0 && (tasaIVA === 0 || f.tasaIVA == null)) {
+      const ratio = Math.round((iva / subtotal) * 1000) / 10;
+      const estandar = [13, 4, 2, 1, 0.5];
+      const match = estandar.find((t) => Math.abs(ratio - t) <= 0.25);
+      if (match !== undefined) tasaIVA = match;
+    }
+
     return {
       tipo: 'GASTO',
       fecha: f.fechaEmision ? new Date(f.fechaEmision).toISOString().split('T')[0] : '',
@@ -55,7 +66,8 @@ async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null) {
       numComprobante: consecutivo || claveNumerica || '',
       esDeducible: f.esDeducible ? 'Sí' : 'No',
       motivoNoDeducible: f.motivoNoDeducible || '',
-      tasaIVA: f.tasaIVA || 13,
+      tasaIVA,
+      lineas: f.lineaDetalle || [],
     };
   });
 
@@ -395,14 +407,31 @@ async function generarExcel(datos, periodoInfo = {}) {
       comprasTribu[0].count += 1;
       return;
     }
-    let t = Number(g.tasaIVA != null ? g.tasaIVA : 13);
-    if (comprasTribu[t] === undefined) {
-      const match = TARIFAS_TRIBU.find(tar => Math.abs(tar - t) <= 0.25);
-      t = match !== undefined ? match : (t > 0 ? 13 : 0);
+
+    if (Array.isArray(g.lineas) && g.lineas.length > 0) {
+      g.lineas.forEach(l => {
+        let t = l.impuesto?.tarifa != null ? Number(l.impuesto.tarifa) : (g.tasaIVA != null ? Number(g.tasaIVA) : 13);
+        if (comprasTribu[t] === undefined) {
+          const match = TARIFAS_TRIBU.find(tar => Math.abs(tar - t) <= 0.25);
+          t = match !== undefined ? match : (t > 0 ? 13 : 0);
+        }
+        const baseLinea = Number(l.subtotal || l.baseImponible || 0);
+        const ivaLinea = Number(l.impuesto?.monto != null ? l.impuesto.monto : (t > 0 ? (baseLinea * t) / 100 : 0));
+        comprasTribu[t].base += baseLinea;
+        comprasTribu[t].iva += ivaLinea;
+      });
+      const tPrincipal = g.tasaIVA != null && comprasTribu[g.tasaIVA] ? g.tasaIVA : 13;
+      comprasTribu[tPrincipal].count += 1;
+    } else {
+      let t = Number(g.tasaIVA != null ? g.tasaIVA : 0);
+      if (comprasTribu[t] === undefined) {
+        const match = TARIFAS_TRIBU.find(tar => Math.abs(tar - t) <= 0.25);
+        t = match !== undefined ? match : (t > 0 ? 13 : 0);
+      }
+      comprasTribu[t].base += Number(g.subtotal || 0);
+      comprasTribu[t].iva += Number(g.iva || 0);
+      comprasTribu[t].count += 1;
     }
-    comprasTribu[t].base += Number(g.subtotal || 0);
-    comprasTribu[t].iva += Number(g.iva || 0);
-    comprasTribu[t].count += 1;
   });
 
   let tRow = 7;
