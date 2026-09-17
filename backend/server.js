@@ -89,6 +89,8 @@ const haciendaConfigRoutes = require('./routes/haciendaConfigRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const stripeWebhookRoutes = require('./routes/stripeWebhookRoutes');
 const stripeRoutes = require('./routes/stripeRoutes');
+const emailWebhookRoutes = require('./routes/emailWebhookRoutes');
+const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes');
 
 // Importar middleware de errores
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
@@ -156,11 +158,11 @@ const authLimiter = rateLimit({
   message: { error: 'Demasiados intentos. Intente de nuevo en 15 minutos.' },
 });
 
-// Rate limiting general para la API (excluye webhook Stripe)
+// Rate limiting general para la API (excluye webhooks externos)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
-  skip: (req) => req.path === '/api/stripe/webhook',
+  skip: (req) => req.path === '/api/stripe/webhook' || req.path.startsWith('/api/webhooks/'),
 });
 
 app.use('/api/auth', authLimiter);
@@ -218,6 +220,8 @@ app.use('/api/hacienda', haciendaRoutes);
 app.use('/api/hacienda', haciendaConfigRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/webhooks/email', emailWebhookRoutes);
+app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes);
 
 console.log('📋 Rutas registradas:');
 console.log('   /api/auth (incluye /refresh, /logout)');
@@ -232,6 +236,8 @@ console.log('   /api/facturacion');
 console.log('   /api/hacienda (v4.4 nativa + config multi-tenant)');
 console.log('   /api/chat (incluye /stream)');
 console.log('   /api/stripe (checkout, portal, estado, webhook)');
+console.log('   /api/webhooks/email (Cloudflare Email Routing)');
+console.log('   /api/webhooks/whatsapp (Meta Cloud API)');
 
 // Middleware para rutas no encontradas
 app.use(notFound);

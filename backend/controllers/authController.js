@@ -52,7 +52,7 @@ const clearRefreshCookie = (res) => {
  */
 const registro = async (req, res, next) => {
   try {
-    const { nombre, email, password, cedula, nombreFinca, cantidadHijos, tieneConyuge } = req.body;
+    const { nombre, email, password, cedula, nombreFinca, cantidadHijos, tieneConyuge, telefono } = req.body;
 
     const existe = await Usuario.findOne({ email });
     if (existe) {
@@ -72,6 +72,7 @@ const registro = async (req, res, next) => {
       password,
       cedula,
       nombreFinca,
+      telefono,
       cantidadHijos,
       tieneConyuge,
       tenantId: tenant._id,

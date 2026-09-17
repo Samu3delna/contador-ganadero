@@ -42,6 +42,12 @@ const usuarioSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  telefono: {
+    type: String,
+    trim: true,
+    index: true,
+    sparse: true,
+  },
   // Datos para créditos fiscales de Renta
   cantidadHijos: {
     type: Number,

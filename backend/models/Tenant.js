@@ -130,6 +130,17 @@ const tenantSchema = new mongoose.Schema({
     maxlength: [120, 'El nombre de la finca no puede exceder 120 caracteres'],
   },
 
+  // Alias de correo electrónico para recepción automática vía Cloudflare Email Routing
+  // ej: "finca-el-roble" -> finca-el-roble@contadorganandero.com
+  emailAlias: {
+    type: String,
+    lowercase: true,
+    trim: true,
+    unique: true,
+    sparse: true,
+    index: true,
+  },
+
   // === Suscripción ===
   plan: {
     type: String,
