@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginForm({ form, setForm, handleSubmit, error, cargando, esRegistro }) {
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   return (
@@ -47,16 +49,27 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
       </div>
       <div className="space-y-1.5 text-left">
         <Label htmlFor="password" className="text-xs text-slate-300">Contraseña</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          placeholder="••••••••"
-          value={form.password}
-          onChange={handleChange}
-          required
-          minLength={6}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={mostrarPassword ? 'text' : 'password'}
+            placeholder="••••••••"
+            value={form.password}
+            onChange={handleChange}
+            required
+            minLength={6}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setMostrarPassword(!mostrarPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+            aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          >
+            {mostrarPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
+        </div>
       </div>
 
       {error && (
