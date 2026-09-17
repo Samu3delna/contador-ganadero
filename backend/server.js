@@ -141,6 +141,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Compatibilidad: si la petición llega sin /api (ej: /auth/login), enrutar a /api/auth/login
+app.use((req, res, next) => {
+  if (!req.url.startsWith('/api') && req.url !== '/' && !req.url.startsWith('/favicon')) {
+    req.url = `/api${req.url}`;
+  }
+  next();
+});
+
 // Rate limiting para endpoints de autenticación
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
