@@ -103,11 +103,26 @@ app.use(morgan('dev'));
 // CORS — configuración dinámica para evitar bloqueos
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permitir si no hay origen (postman, mobile, etc), localhost o el dominio de vercel
-    if (!origin || origin.includes('localhost') || origin.includes('contador-ganadero.vercel.app')) {
+    if (!origin) return callback(null, true);
+
+    const allowed = [
+      process.env.FRONTEND_URL,
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ].filter(Boolean);
+
+    const isAllowed =
+      allowed.some((url) => origin.startsWith(url)) ||
+      origin.includes('localhost') ||
+      origin.includes('pages.dev') ||
+      origin.includes('workers.dev') ||
+      origin.includes('vercel.app') ||
+      (process.env.DOMAIN && origin.includes(process.env.DOMAIN));
+
+    if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   credentials: true,
