@@ -219,7 +219,12 @@ const obtenerPerfil = async (req, res, next) => {
     const usuario = await Usuario.findById(req.usuario._id).select('-password');
     let tenantInfo = null;
     if (usuario?.tenantId) {
-      tenantInfo = await Tenant.findById(usuario.tenantId).select('nombreFinca plan estado limites consumoActual');
+      tenantInfo = await Tenant.findById(usuario.tenantId).select('nombreFinca plan estado limites consumoActual emailAlias');
+      if (tenantInfo && !tenantInfo.emailAlias) {
+        const slug = (tenantInfo.nombreFinca || 'finca').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20);
+        tenantInfo.emailAlias = `${slug}-${usuario._id.toString().slice(-4)}`;
+        await Tenant.updateOne({ _id: tenantInfo._id }, { emailAlias: tenantInfo.emailAlias });
+      }
     }
     res.json({ ...usuario.toObject(), tenant: tenantInfo });
   } catch (error) {
@@ -234,7 +239,7 @@ const obtenerPerfil = async (req, res, next) => {
  */
 const actualizarPerfil = async (req, res, next) => {
   try {
-    const { nombre, nombreFinca, cantidadHijos, tieneConyuge, cedula } = req.body;
+    const { nombre, nombreFinca, cantidadHijos, tieneConyuge, cedula, telefono } = req.body;
 
     const usuario = await Usuario.findById(req.usuario._id);
     if (!usuario) {
@@ -253,6 +258,7 @@ const actualizarPerfil = async (req, res, next) => {
     if (cantidadHijos !== undefined) usuario.cantidadHijos = cantidadHijos;
     if (tieneConyuge !== undefined) usuario.tieneConyuge = tieneConyuge;
     if (cedula) usuario.cedula = cedula;
+    if (telefono !== undefined) usuario.telefono = telefono;
 
     const actualizado = await usuario.save();
 
@@ -260,6 +266,8 @@ const actualizarPerfil = async (req, res, next) => {
       _id: actualizado._id,
       nombre: actualizado.nombre,
       email: actualizado.email,
+      telefono: actualizado.telefono,
+      cedula: actualizado.cedula,
       nombreFinca: actualizado.nombreFinca,
       cantidadHijos: actualizado.cantidadHijos,
       tieneConyuge: actualizado.tieneConyuge,
