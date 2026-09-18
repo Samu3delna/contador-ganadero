@@ -66,13 +66,25 @@ const registro = async (req, res, next) => {
       plan: 'free',
     });
 
+    let telefonoNormalizado = telefono ? String(telefono).trim() : undefined;
+    if (telefonoNormalizado) {
+      const digits = telefonoNormalizado.replace(/\D/g, '');
+      if (digits.length === 8) {
+        telefonoNormalizado = `+506${digits}`;
+      } else if (digits.startsWith('506') && digits.length === 11) {
+        telefonoNormalizado = `+${digits}`;
+      } else if (!telefonoNormalizado.startsWith('+')) {
+        telefonoNormalizado = `+506${digits}`;
+      }
+    }
+
     const usuario = await Usuario.create({
       nombre,
       email,
       password,
       cedula,
       nombreFinca,
-      telefono,
+      telefono: telefonoNormalizado,
       cantidadHijos,
       tieneConyuge,
       tenantId: tenant._id,
@@ -257,8 +269,20 @@ const actualizarPerfil = async (req, res, next) => {
     }
     if (cantidadHijos !== undefined) usuario.cantidadHijos = cantidadHijos;
     if (tieneConyuge !== undefined) usuario.tieneConyuge = tieneConyuge;
-    if (cedula) usuario.cedula = cedula;
-    if (telefono !== undefined) usuario.telefono = telefono;
+    if (telefono !== undefined) {
+      let telLimpio = String(telefono).trim();
+      if (telLimpio) {
+        const digits = telLimpio.replace(/\D/g, '');
+        if (digits.length === 8) {
+          telLimpio = `+506${digits}`;
+        } else if (digits.startsWith('506') && digits.length === 11) {
+          telLimpio = `+${digits}`;
+        } else if (!telLimpio.startsWith('+')) {
+          telLimpio = `+506${digits}`;
+        }
+      }
+      usuario.telefono = telLimpio || undefined;
+    }
 
     const actualizado = await usuario.save();
 

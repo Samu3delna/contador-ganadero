@@ -33,7 +33,18 @@ export default function LoginPage() {
     setCargando(true);
     try {
       if (esRegistro) {
-        await registro(form);
+        let datosRegistro = { ...form };
+        if (datosRegistro.telefono) {
+          const digits = datosRegistro.telefono.replace(/\D/g, '');
+          if (digits.length === 8) {
+            datosRegistro.telefono = `+506${digits}`;
+          } else if (digits.startsWith('506') && digits.length === 11) {
+            datosRegistro.telefono = `+${digits}`;
+          } else if (!datosRegistro.telefono.startsWith('+')) {
+            datosRegistro.telefono = `+506${digits}`;
+          }
+        }
+        await registro(datosRegistro);
       } else {
         await login(form.email, form.password);
       }

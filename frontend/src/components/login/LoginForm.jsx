@@ -36,13 +36,20 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5 text-left">
               <Label htmlFor="telefono" className="text-xs text-slate-300">WhatsApp / Celular (opcional)</Label>
-              <Input
-                id="telefono"
-                name="telefono"
-                placeholder="50688888888"
-                value={form.telefono || ''}
-                onChange={handleChange}
-              />
+              <div className="flex rounded-lg overflow-hidden border border-slate-700/80 bg-slate-900/90 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all">
+                <span className="inline-flex items-center px-2.5 bg-slate-800/90 text-slate-300 text-xs font-semibold border-r border-slate-700/80 select-none">
+                  🇨🇷 +506
+                </span>
+                <Input
+                  id="telefono"
+                  name="telefono"
+                  type="tel"
+                  placeholder="8888-8888"
+                  value={form.telefono || ''}
+                  onChange={handleChange}
+                  className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder:text-slate-500 text-sm h-9 rounded-none"
+                />
+              </div>
             </div>
             <div className="space-y-1.5 text-left">
               <Label htmlFor="cedula" className="text-xs text-slate-300">Cédula física o jurídica</Label>
