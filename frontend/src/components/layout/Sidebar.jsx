@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
@@ -37,6 +37,7 @@ const menuSections = [
   {
     titulo: 'PLAN & CUENTA',
     items: [
+      { path: '/perfil', label: 'Mi Perfil', icon: User },
       { path: '/planes', label: 'Planes & Precios', icon: Crown },
       { path: '/billing', label: 'Mi Suscripción', icon: CreditCard },
     ]
@@ -173,7 +174,11 @@ export default function Sidebar() {
 
         <div className="sidebar-footer">
           <div className="sidebar-user">
-            <Avatar className="h-9 w-9 border-emerald-500/40">
+            <Avatar
+              className="h-9 w-9 border-emerald-500/40 cursor-pointer"
+              onClick={() => { cerrar(); navigate('/perfil'); }}
+              title="Ver mi perfil"
+            >
               <AvatarFallback className="bg-emerald-950 text-emerald-300 font-bold">
                 {inicialUsuario}
               </AvatarFallback>

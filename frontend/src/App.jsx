@@ -26,6 +26,7 @@ const HaciendaPage = lazy(() => import('./pages/HaciendaPage'));
 const D150Page = lazy(() => import('./pages/D150Page'));
 const PlanesPage = lazy(() => import('./pages/PlanesPage'));
 const BillingPage = lazy(() => import('./pages/BillingPage'));
+const PerfilPage = lazy(() => import('./pages/PerfilPage'));
 
 function PageLoader() {
   return <div className="loader-center"><div className="loader" /></div>;
@@ -59,6 +60,7 @@ function AppLayout() {
             <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/planes" element={<PlanesPage />} />
             <Route path="/billing" element={<BillingPage />} />
+            <Route path="/perfil" element={<PerfilPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>
