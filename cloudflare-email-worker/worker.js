@@ -8,8 +8,11 @@
 export default {
   async email(message, env, ctx) {
     try {
+      console.log(`📥 [CF Worker] Recibiendo correo para: ${message.to} de: ${message.from}`);
+
       // 1. Leer el contenido MIME del correo completo como buffer
       const rawEmail = await new Response(message.raw).arrayBuffer();
+      console.log(`📦 [CF Worker] Tamaño MIME: ${rawEmail.byteLength} bytes`);
 
       // 2. URL de tu backend en Render
       const webhookUrl = env.BACKEND_WEBHOOK_URL || 'https://contador-ganadero.onrender.com/api/webhooks/email';
@@ -26,14 +29,14 @@ export default {
         body: rawEmail,
       });
 
+      const responseText = await response.text();
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error del backend (${response.status}): ${errorText}`);
+        console.error(`❌ [CF Worker] Error del backend (${response.status}): ${responseText}`);
       } else {
-        console.log(`Email procesado exitosamente para: ${message.to}`);
+        console.log(`✅ [CF Worker] Éxito (${response.status}): ${responseText}`);
       }
     } catch (err) {
-      console.error('Error al procesar correo en Cloudflare Worker:', err.message);
+      console.error('❌ [CF Worker] Error al procesar correo:', err.message);
     }
   },
 };

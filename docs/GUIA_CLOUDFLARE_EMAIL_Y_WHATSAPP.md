@@ -21,19 +21,32 @@ Con este canal, cualquier factura enviada a `finca-nombre@contadorganandero.com`
    ```javascript
    export default {
      async email(message, env, ctx) {
-       const rawEmail = await new Response(message.raw).arrayBuffer();
-       const webhookUrl = env.BACKEND_WEBHOOK_URL || 'https://contador-ganadero.onrender.com/api/webhooks/email';
+       try {
+         console.log(`📥 [CF Worker] Recibiendo correo para: ${message.to} de: ${message.from}`);
+         const rawEmail = await new Response(message.raw).arrayBuffer();
+         console.log(`📦 [CF Worker] Tamaño MIME: ${rawEmail.byteLength} bytes`);
+         const webhookUrl = env.BACKEND_WEBHOOK_URL || 'https://contador-ganadero.onrender.com/api/webhooks/email';
 
-       await fetch(webhookUrl, {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'message/rfc822',
-           'X-Email-To': message.to,
-           'X-Email-From': message.from,
-           'X-Email-Webhook-Secret': env.EMAIL_WEBHOOK_SECRET || '',
-         },
-         body: rawEmail,
-       });
+         const response = await fetch(webhookUrl, {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'message/rfc822',
+             'X-Email-To': message.to,
+             'X-Email-From': message.from,
+             'X-Email-Webhook-Secret': env.EMAIL_WEBHOOK_SECRET || '',
+           },
+           body: rawEmail,
+         });
+
+         const responseText = await response.text();
+         if (!response.ok) {
+           console.error(`❌ [CF Worker] Error del backend (${response.status}): ${responseText}`);
+         } else {
+           console.log(`✅ [CF Worker] Éxito (${response.status}): ${responseText}`);
+         }
+       } catch (err) {
+         console.error('❌ [CF Worker] Error al procesar correo:', err.message);
+       }
      },
    };
    ```
