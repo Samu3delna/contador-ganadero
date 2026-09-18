@@ -32,29 +32,74 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
     }
   }
 
-  // 2. Por Cédula del receptor (crucial en XML costarricense)
+  // 2. Por alias de email del Tenant o sufijo (Cloudflare Email Routing)
+  if (emailDestino) {
+    const alias = emailDestino.split('@')[0].toLowerCase().trim();
+
+    // 2a. Coincidencia exacta con emailAlias del Tenant
+    let tenant = await Tenant.findOne({ emailAlias: alias });
+
+    // 2b. Coincidencia por sufijo de 4 caracteres (ej: "finca-af2e", "pepe-af2e", "af2e")
+    if (!tenant) {
+      const matchSuffix = alias.match(/-?([a-f0-9]{4})$/i);
+      if (matchSuffix) {
+        const suffix = matchSuffix[1].toLowerCase();
+        // Buscar tenant cuyo emailAlias termine con ese sufijo
+        tenant = await Tenant.findOne({ emailAlias: { $regex: suffix + '$', $options: 'i' } });
+
+        // Si no, buscar tenant cuyo ID termine con ese sufijo
+        if (!tenant) {
+          const allTenants = await Tenant.find({}, '_id');
+          const matchedTenant = allTenants.find(t => t._id.toString().toLowerCase().endsWith(suffix));
+          if (matchedTenant) tenant = await Tenant.findById(matchedTenant._id);
+        }
+
+        // Si no, buscar usuario cuyo ID termine con ese sufijo
+        if (!tenant) {
+          const allUsers = await Usuario.find({}, '_id tenantId');
+          const matchedUser = allUsers.find(u => u._id.toString().toLowerCase().endsWith(suffix));
+          if (matchedUser) {
+            const u = await Usuario.findById(matchedUser._id);
+            if (u) return { usuario: u, tenantId: u.tenantId };
+          }
+        }
+      }
+    }
+
+    // 2c. Si el alias coincide con el nombre/slug de la finca
+    if (!tenant) {
+      const cleanAlias = alias.replace(/^finca-/, '');
+      tenant = await Tenant.findOne({
+        emailAlias: { $regex: cleanAlias, $options: 'i' },
+      });
+    }
+
+    if (tenant) {
+      const u = await Usuario.findOne({ tenantId: tenant._id, rol: 'dueño' }) || await Usuario.findOne({ tenantId: tenant._id });
+      if (u) return { usuario: u, tenantId: tenant._id };
+    }
+
+    // 2d. Coincidencia por prefijo del correo registrado del usuario (ej: samu3delgado@...)
+    const uByEmail = await Usuario.findOne({ email: { $regex: '^' + alias + '@', $options: 'i' } });
+    if (uByEmail) {
+      return { usuario: uByEmail, tenantId: uByEmail.tenantId };
+    }
+  }
+
+  // 3. Por Cédula del receptor (crucial en XML costarricense)
   if (cedulaReceptor) {
-    // Normalizar: remover guiones y espacios
     const cedulaLimpia = String(cedulaReceptor).replace(/[-\s]/g, '').trim();
-    // Buscar usuario con esa cédula
+    const cedulaSinCeros = cedulaLimpia.replace(/^0+/, '');
     const u = await Usuario.findOne({
       $or: [
         { 'cedula.numero': cedulaLimpia },
+        { 'cedula.numero': cedulaSinCeros },
+        { 'cedula.numero': '0' + cedulaSinCeros },
         { 'cedula.numero': String(cedulaReceptor).trim() },
       ],
     });
     if (u) {
       return { usuario: u, tenantId: u.tenantId };
-    }
-  }
-
-  // 3. Por alias de email del Tenant (Cloudflare Email Routing)
-  if (emailDestino) {
-    const alias = emailDestino.split('@')[0].toLowerCase().trim();
-    const tenant = await Tenant.findOne({ emailAlias: alias });
-    if (tenant) {
-      const u = await Usuario.findOne({ tenantId: tenant._id, rol: 'dueño' }) || await Usuario.findOne({ tenantId: tenant._id });
-      if (u) return { usuario: u, tenantId: tenant._id };
     }
   }
 
@@ -74,6 +119,7 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
 
   return { usuario: null, tenantId: null };
 }
+
 
 /**
  * Procesa un XML de factura electrónica y lo guarda en la base de datos
@@ -105,12 +151,13 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
   });
 
   if (!usuario) {
+    console.warn(`⚠️ [Ingesta Email] Factura no asignada. Clave: ${datosFactura.claveNumerica}, Receptor: ${cedulaReceptor || 'N/A'}, Destino: ${opciones.emailDestino || 'N/A'}`);
     return {
       exito: false,
       noAsignada: true,
       claveNumerica: datosFactura.claveNumerica,
       cedulaReceptor: cedulaReceptor || 'No indicada',
-      mensaje: `No se encontró ningún usuario o finca registrada con la cédula receptor ${cedulaReceptor || 'desconocida'}.`,
+      mensaje: `No se encontró ningún usuario o finca registrada con la cédula receptor ${cedulaReceptor || 'desconocida'} ni con el correo destino ${opciones.emailDestino || ''}.`,
     };
   }
 

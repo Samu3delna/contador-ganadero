@@ -103,10 +103,19 @@ const registro = async (req, res, next) => {
       _id: usuario._id,
       nombre: usuario.nombre,
       email: usuario.email,
+      telefono: usuario.telefono,
+      cedula: usuario.cedula,
       nombreFinca: usuario.nombreFinca,
       tenantId: tenant._id,
       plan: tenant.plan,
       rol: usuario.rol,
+      tenant: {
+        _id: tenant._id,
+        nombreFinca: tenant.nombreFinca,
+        plan: tenant.plan,
+        estado: tenant.estado,
+        emailAlias: tenant.emailAlias,
+      },
       token: accessToken,
     });
   } catch (error) {
@@ -153,6 +162,12 @@ const login = async (req, res, next) => {
       throw new Error('Tenant asociado no encontrado. Contacta soporte.');
     }
 
+    if (!tenant.emailAlias) {
+      const slug = (tenant.nombreFinca || 'finca').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20);
+      tenant.emailAlias = `${slug}-${usuario._id.toString().slice(-4)}`;
+      await Tenant.updateOne({ _id: tenant._id }, { emailAlias: tenant.emailAlias });
+    }
+
     const accessToken = generarToken(usuario, tenant._id);
     const refreshToken = generarRefreshToken(usuario, tenant._id);
     setRefreshCookie(res, refreshToken);
@@ -161,11 +176,20 @@ const login = async (req, res, next) => {
       _id: usuario._id,
       nombre: usuario.nombre,
       email: usuario.email,
+      telefono: usuario.telefono,
+      cedula: usuario.cedula,
       nombreFinca: usuario.nombreFinca,
       tenantId: tenant._id,
       plan: tenant.plan,
       estadoTenant: tenant.estado,
       rol: usuario.rol,
+      tenant: {
+        _id: tenant._id,
+        nombreFinca: tenant.nombreFinca,
+        plan: tenant.plan,
+        estado: tenant.estado,
+        emailAlias: tenant.emailAlias,
+      },
       token: accessToken,
     });
   } catch (error) {
@@ -282,9 +306,28 @@ const actualizarPerfil = async (req, res, next) => {
         }
       }
       usuario.telefono = telLimpio || undefined;
+    if (cedula !== undefined) {
+      if (typeof cedula === 'string') {
+        const numLimpio = cedula.replace(/[-\s]/g, '').trim();
+        usuario.cedula = {
+          tipo: numLimpio.length === 10 ? 'juridica' : 'fisica',
+          numero: numLimpio,
+        };
+      } else if (typeof cedula === 'object' && cedula !== null) {
+        const numLimpio = String(cedula.numero || '').replace(/[-\s]/g, '').trim();
+        usuario.cedula = {
+          tipo: cedula.tipo || (numLimpio.length === 10 ? 'juridica' : 'fisica'),
+          numero: numLimpio,
+        };
+      }
     }
 
     const actualizado = await usuario.save();
+
+    let tenantInfo = null;
+    if (actualizado.tenantId) {
+      tenantInfo = await Tenant.findById(actualizado.tenantId).select('nombreFinca plan estado limites consumoActual emailAlias');
+    }
 
     res.json({
       _id: actualizado._id,
@@ -296,6 +339,7 @@ const actualizarPerfil = async (req, res, next) => {
       cantidadHijos: actualizado.cantidadHijos,
       tieneConyuge: actualizado.tieneConyuge,
       tenantId: actualizado.tenantId,
+      tenant: tenantInfo,
     });
   } catch (error) {
     next(error);
