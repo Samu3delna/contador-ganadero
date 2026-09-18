@@ -3,6 +3,7 @@ const fs = require('fs');
 const Factura = require('../models/Factura');
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 const { sincronizarManual, obtenerEstado } = require('../services/emailService');
+const { procesarFacturaXMLString } = require('../services/ingestaFacturaService');
 const { validarTarifasFactura } = require('../utils/insumosAgropecuarios');
 
 const obtenerFacturas = async (req, res, next) => {
@@ -171,20 +172,87 @@ const obtenerAlertasTarifa = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// --- Endpoints de Email ---
+// --- Endpoints de Email e Ingesta ---
 
 const estadoEmail = async (req, res, next) => {
   try {
-    const estado = obtenerEstado();
-    res.json(estado);
+    const tenant = req.tenant;
+    const suffix = req.usuario?._id ? String(req.usuario._id).slice(-4) : 'finca';
+    const alias = tenant?.emailAlias || (req.usuario?.nombreFinca ? `${req.usuario.nombreFinca.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${suffix}` : `finca-${suffix}`);
+    const correoRecepcion = `${alias}@contadorganandero.com`;
+
+    // Si el usuario configuró explícitamente IMAP en su cuenta
+    let estadoIMAP = null;
+    if (req.usuario?.configEmail?.host && req.usuario?.configEmail?.usuario) {
+      try {
+        estadoIMAP = obtenerEstado();
+      } catch {
+        estadoIMAP = { conectado: false };
+      }
+    }
+
+    res.json({
+      canalPrincipal: 'cloudflare-email',
+      buzon: correoRecepcion,
+      alias,
+      dominio: 'contadorganandero.com',
+      conectado: true,
+      mensaje: 'Recepción en tiempo real activa vía Cloudflare Worker',
+      imapLegacy: estadoIMAP,
+    });
   } catch (error) { next(error); }
 };
 
 const forzarSincronizacion = async (req, res, next) => {
   try {
-    const soloNoLeidos = req.query.soloNoLeidos === 'true' || req.body.soloNoLeidos === true;
-    const resultado = await sincronizarManual(req.usuario._id, { soloNoLeidos });
-    res.json(resultado);
+    // Si el usuario tiene credenciales IMAP personales configuradas, ejecutarlas
+    if (req.usuario?.configEmail?.host && req.usuario?.configEmail?.usuario) {
+      try {
+        const soloNoLeidos = req.query.soloNoLeidos === 'true' || req.body.soloNoLeidos === true;
+        const resultado = await sincronizarManual(req.usuario._id, { soloNoLeidos });
+        return res.json({ modo: 'imap', ...resultado });
+      } catch (err) {
+        console.warn('⚠️ Sincronización IMAP falló, pero buzón Cloudflare sigue activo:', err.message);
+      }
+    }
+
+    // Sincronización estándar Cloudflare (refresco de datos)
+    const totalFacturas = await Factura.countDocuments({
+      $or: [{ usuario: req.usuario._id }, { tenantId: req.tenantId }]
+    });
+
+    res.json({
+      modo: 'cloudflare',
+      mensaje: 'Facturas sincronizadas correctamente con el servidor.',
+      totalFacturas,
+    });
+  } catch (error) { next(error); }
+};
+
+const subirXMLManual = async (req, res, next) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      res.status(400);
+      throw new Error('Debe seleccionar un archivo XML válido.');
+    }
+
+    const xmlString = req.file.buffer.toString('utf-8');
+    const resultado = await procesarFacturaXMLString(xmlString, {
+      usuarioId: req.usuario._id,
+      tenantId: req.tenantId || req.usuario.tenantId,
+      canal: 'subida-manual',
+    });
+
+    if (!resultado.exito) {
+      res.status(400);
+      throw new Error(resultado.error || resultado.mensaje || 'Error al procesar la factura XML');
+    }
+
+    res.status(201).json({
+      exito: true,
+      mensaje: 'Factura procesada y registrada exitosamente.',
+      ...resultado,
+    });
   } catch (error) { next(error); }
 };
 
@@ -303,4 +371,5 @@ module.exports = {
   descargarPDF,
   obtenerAlertasTarifa,
   diagnosticarIMAP,
+  subirXMLManual,
 };

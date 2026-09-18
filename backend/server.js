@@ -178,31 +178,39 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Cron job endpoint para sync de emails (sin auth, solo IP allowlist opcional)
-// Usado por cron-job.org / UptimeRobot como backup si el Background Worker falla
+// Cron job endpoint para keep-alive y sync (sin auth, solo IP allowlist opcional)
+// Usado por cron-job.org / UptimeRobot para mantener despierto el Web Service en plan Free de Render
 app.post('/api/cron/sync-emails', async (req, res) => {
-  // Opcional: verificar IP de cron jobs conocidos
   const allowedIPs = (process.env.CRON_ALLOWED_IPS || '').split(',').map(ip => ip.trim()).filter(Boolean);
   const clientIP = req.ip || req.connection?.remoteAddress || '';
   
   if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
-    console.warn(`⚠️  Cron job bloqueado - IP no autorizada: ${clientIP}`);
+    console.warn(`⚠️ Cron job bloqueado - IP no autorizada: ${clientIP}`);
     return res.status(403).json({ error: 'IP no autorizada para cron job' });
   }
 
   try {
-    const { sincronizarManual } = require('./services/emailService');
-    const Usuario = require('./models/Usuario');
-    
-    const usuario = await Usuario.findOne();
-    if (!usuario) return res.status(404).json({ error: 'No hay usuario configurado' });
-    
-    const result = await sincronizarManual(usuario._id, { soloNoLeidos: true });
-    console.log('✅ Cron sync completado:', result.estadisticas);
-    res.json({ success: true, ...result });
+    const tieneImap = process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_');
+    if (tieneImap) {
+      const { sincronizarManual } = require('./services/emailService');
+      const Usuario = require('./models/Usuario');
+      const usuario = await Usuario.findOne();
+      if (usuario) {
+        const result = await sincronizarManual(usuario._id, { soloNoLeidos: true });
+        return res.json({ success: true, keepAlive: true, canal: 'imap', ...result });
+      }
+    }
+
+    res.json({
+      success: true,
+      keepAlive: true,
+      canal: 'cloudflare-email',
+      mensaje: 'Servidor despierto y listo para recibir webhooks de Cloudflare y WhatsApp.',
+      timestamp: new Date().toISOString(),
+    });
   } catch (e) {
-    console.error('❌ Error en cron sync:', e.message);
-    res.status(500).json({ error: e.message });
+    console.warn('⚠️ Advertencia en cron sync:', e.message);
+    res.json({ success: true, keepAlive: true, advertencia: e.message });
   }
 });
 

@@ -240,8 +240,8 @@ export default function PerfilPage() {
             <Dato icon={Link2} label="Cuenta de Google">
               {usuario.googleId ? 'Vinculada' : 'No vinculada'}
             </Dato>
-            <Dato icon={Inbox} label="Correo IMAP configurado">
-              {usuario.configEmail?.host ? `Sí (${usuario.configEmail.host})` : 'No configurado'}
+            <Dato icon={Inbox} label="Canales de recepción de facturas">
+              Cloudflare Email + WhatsApp (Tiempo real)
             </Dato>
             <Dato icon={Users} label="Rol en la finca">{ROL_NOMBRES[usuario.rol] || usuario.rol}</Dato>
           </div>

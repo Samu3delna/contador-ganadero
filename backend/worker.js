@@ -17,17 +17,13 @@ const { iniciarListener, sincronizarManual, detenerListener } = require('./servi
 const haciendaWorker = require('./services/haciendaWorker');
 const Usuario = require('./models/Usuario');
 
-console.log('🔧 Iniciando Background Worker IMAP + Hacienda — Contador Ganadero');
-console.log('==================================================================');
+console.log('🔧 Iniciando Background Worker — Contador Ganadero');
+console.log('====================================================');
 
 async function main() {
-  // Verificar variables críticas
-  const requeridas = ['MONGODB_URI', 'IMAP_USER', 'IMAP_PASSWORD'];
-  const faltantes = requeridas.filter(k => !process.env[k] || process.env[k].includes('tu_'));
-  
-  if (faltantes.length > 0) {
-    console.error('❌ Variables de entorno faltantes:', faltantes.join(', '));
-    console.error('   Configura estas variables en Render Background Worker');
+  // Verificar variable crítica de base de datos
+  if (!process.env.MONGODB_URI || process.env.MONGODB_URI.includes('tu_usuario')) {
+    console.error('❌ MONGODB_URI no configurado en variables de entorno');
     process.exit(1);
   }
 
@@ -36,23 +32,24 @@ async function main() {
     await conectarDB();
     console.log('✅ MongoDB conectado');
 
-    // Buscar usuario (el primero en BD)
-    const usuario = await Usuario.findOne();
-    if (!usuario) {
-      console.error('❌ No hay usuario en la base de datos');
-      console.error('   Registra un usuario desde el frontend primero');
-      process.exit(1);
+    // Iniciar listener IMAP únicamente si las credenciales están configuradas
+    const tieneImap = process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_');
+    if (tieneImap) {
+      const usuario = await Usuario.findOne();
+      if (usuario) {
+        console.log(`📧 Credenciales IMAP detectadas para: ${process.env.IMAP_USER}`);
+        try {
+          await iniciarListener(usuario._id);
+          console.log('📧 Listener IMAP iniciado correctamente');
+          const result = await sincronizarManual(usuario._id, { soloNoLeidos: true });
+          console.log('📊 Stats IMAP:', result.estadisticas);
+        } catch (err) {
+          console.warn('⚠️ No se pudo conectar a IMAP:', err.message);
+        }
+      }
+    } else {
+      console.log('ℹ️ IMAP no configurado. La ingesta principal opera en tiempo real vía Cloudflare Email Worker y WhatsApp.');
     }
-    console.log(`👤 Usuario encontrado: ${usuario.email} (${usuario._id})`);
-
-    // Iniciar listener IMAP
-    await iniciarListener(usuario._id);
-    console.log('📧 Listener IMAP iniciado correctamente');
-
-    // Sync inicial rápido (solo no leídos)
-    console.log('🔄 Ejecutando sincronización inicial (solo no leídos)...');
-    const result = await sincronizarManual(usuario._id, { soloNoLeidos: true });
-    console.log('📊 Stats:', result.estadisticas);
 
     // Iniciar worker asíncrono de envío a Hacienda (facturación v4.4)
     const ambienteHacienda = process.env.HACIENDA_AMBIENTE || 'local';
