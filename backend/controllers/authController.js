@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const Usuario = require('../models/Usuario');
 const Tenant = require('../models/Tenant');
+const { esEmailSuperAdmin } = require('../middleware/adminGuard');
 
 const DUMMY_HASH = '$2a$12$e8Ov5y2ZJ7m6V3QvX7fX9.kX6f8oFzN0zJz5t1Z5V3m6V3QvX7fX9';
 
@@ -109,6 +110,7 @@ const registro = async (req, res, next) => {
       tenantId: tenant._id,
       plan: tenant.plan,
       rol: usuario.rol,
+      esSuperAdmin: esEmailSuperAdmin(usuario.email),
       tenant: {
         _id: tenant._id,
         nombreFinca: tenant.nombreFinca,
@@ -151,6 +153,11 @@ const login = async (req, res, next) => {
       throw new Error('Credenciales incorrectas');
     }
 
+    if (usuario.suspendido) {
+      res.status(403);
+      throw new Error('Tu cuenta está suspendida. Contacta a soporte.');
+    }
+
     if (!usuario.tenantId) {
       res.status(403);
       throw new Error('Usuario sin tenant asociado. Ejecuta migrate:tenant para reparar.');
@@ -183,6 +190,7 @@ const login = async (req, res, next) => {
       plan: tenant.plan,
       estadoTenant: tenant.estado,
       rol: usuario.rol,
+      esSuperAdmin: esEmailSuperAdmin(usuario.email),
       tenant: {
         _id: tenant._id,
         nombreFinca: tenant.nombreFinca,
@@ -220,6 +228,11 @@ const refrescarToken = async (req, res, next) => {
     if (!usuario) {
       res.status(401);
       throw new Error('Usuario no encontrado');
+    }
+
+    if (usuario.suspendido) {
+      res.status(403);
+      throw new Error('Usuario suspendido');
     }
 
     const tenant = await Tenant.findById(decoded.tenantId);
@@ -262,7 +275,7 @@ const obtenerPerfil = async (req, res, next) => {
         await Tenant.updateOne({ _id: tenantInfo._id }, { emailAlias: tenantInfo.emailAlias });
       }
     }
-    res.json({ ...usuario.toObject(), tenant: tenantInfo });
+    res.json({ ...usuario.toObject(), tenant: tenantInfo, esSuperAdmin: esEmailSuperAdmin(usuario.email) });
   } catch (error) {
     next(error);
   }

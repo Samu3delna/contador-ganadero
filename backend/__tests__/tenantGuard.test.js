@@ -95,9 +95,9 @@ describe('middleware/tenantGuard - extraerTenant', () => {
   test('(e) Tenant activo -> next(), req.tenant, filtrarPorTenant y aplicarTenant', async () => {
     const activo = await Tenant.create({
       nombreFinca: 'Finca Activa',
-      plan: 'agro',
+      plan: 'pro',
       estado: 'activo',
-      limites: Tenant.obtenerLimitesPlan('agro'),
+      limites: Tenant.obtenerLimitesPlan('pro'),
     });
 
     const req = mockReq({ usuario: { tenantId: activo._id } });
@@ -121,9 +121,9 @@ describe('middleware/tenantGuard - extraerTenant', () => {
   test('(f) Tenant periodo_gracia -> next() acceso permitido', async () => {
     const gracia = await Tenant.create({
       nombreFinca: 'Finca en Gracia',
-      plan: 'agro',
+      plan: 'pro',
       estado: 'periodo_gracia',
-      limites: Tenant.obtenerLimitesPlan('agro'),
+      limites: Tenant.obtenerLimitesPlan('pro'),
     });
 
     const req = mockReq({ usuario: { tenantId: gracia._id } });

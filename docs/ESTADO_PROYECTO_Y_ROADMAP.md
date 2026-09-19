@@ -29,7 +29,7 @@
 | 📅 **Calendario Fiscal** | Alertas y cronograma de vencimientos ante el Ministerio de Hacienda (IVA, Renta, D-151, D-150). | ✅ 100% |
 | 📦 **Inventario Multiespecie** | • **Bovinos:** Pesajes, reproducción, producción de leche y sanidad.<br>• **Aves:** Postura, mortalidad y postura diaria.<br>• **Peces:** Biomasa, calidad de agua y fecha de cosecha.<br>• **Apicultura:** Colmenas, cuadros y extracciones de miel. | ✅ 100% |
 | 📈 **Costos y Rentabilidad** | Centros de costo por lote/estanque/colmena. Cálculo de **FCA**, costo por kg/litro/cartón y margen operativo real. | ✅ 100% |
-| 💳 **Suscripciones y Billing** | Integración con ONVO Pay: planes Gratis, Pro y Agro. Cargos recurrentes con SDK web, cuotas de tokens y conteos. | ✅ 100% |
+| 💳 **Suscripciones y Billing** | Integración con ONVO Pay: planes Gratis y Pro ($10/mes). Cargos recurrentes con SDK web, cuotas de tokens y conteos. | ✅ 100% |
 | 💬 **Asistente Virtual IA** | Chatbot agropecuario con contexto financiero e inventario en tiempo real, sanitización PII y modo offline heurístico. | ✅ 100% |
 | 🧾 **Hacienda CR v4.4 (Emisión)** | Generación de clave 50 dígitos, XML v4.4, firma digital XAdES-EPES (.p12), autenticación OAuth2 y polling de estado. | 🟡 75% *(FE lista; faltan NC/TE/FEC)* |
 

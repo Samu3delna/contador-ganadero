@@ -30,6 +30,10 @@ const protegerRuta = async (req, res, next) => {
         throw new Error('Usuario no encontrado');
       }
 
+      if (usuario.suspendido) {
+        return res.status(403).json({ error: 'USUARIO_SUSPENDIDO', mensaje: 'Tu cuenta está suspendida. Contacta a soporte.' });
+      }
+
       if (!usuario.tenantId && decoded.tenantId) {
         usuario.tenantId = decoded.tenantId;
       }

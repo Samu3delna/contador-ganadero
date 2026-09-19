@@ -23,6 +23,21 @@ const esDueñoTenant = (req, res, next) => {
 };
 
 /**
+ * Determina si un email pertenece a un Super Admin.
+ * Fuente de verdad: process.env.SUPER_ADMIN_EMAILS (CSV).
+ * @param {string|undefined} email
+ * @returns {boolean}
+ */
+const esEmailSuperAdmin = (email) => {
+  const csv = process.env.SUPER_ADMIN_EMAILS || '';
+  const permitidos = csv
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return permitidos.includes((email || '').toString().toLowerCase());
+};
+
+/**
  * Valida que el usuario sea Super Admin.
  * Cumple si su email esta en process.env.SUPER_ADMIN_EMAILS (CSV)
  * o si tiene el flag futuro req.usuario.isSuperAdmin === true.
@@ -32,14 +47,7 @@ const esDueñoTenant = (req, res, next) => {
  */
 const esSuperAdmin = (req, res, next) => {
   const usuario = req.usuario;
-  const csv = process.env.SUPER_ADMIN_EMAILS || '';
-  const permitidos = csv
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-  const emailUsuario = (usuario?.email || '').toString().toLowerCase();
-  const enLista = permitidos.includes(emailUsuario);
+  const enLista = esEmailSuperAdmin(usuario?.email);
   const flagFuturo = usuario?.isSuperAdmin === true;
 
   if (!enLista && !flagFuturo) {
@@ -49,4 +57,4 @@ const esSuperAdmin = (req, res, next) => {
   next();
 };
 
-module.exports = { esDueñoTenant, esSuperAdmin };
+module.exports = { esDueñoTenant, esSuperAdmin, esEmailSuperAdmin };

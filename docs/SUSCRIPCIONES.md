@@ -1,26 +1,25 @@
-# Suscripciones — modelo de 3 planes (freemium con anuncios)
+# Suscripciones — modelo de 2 planes (freemium con anuncios)
 
-> Fecha: 2026-09-18
+> Fecha: 2026-09-19
 > Estado: implementado en backend + frontend con **ONVO Pay** (migrado desde Stripe).
 > Pendiente: configurar productos/precios en ONVO y activar el proveedor de anuncios.
 
 ## Idea de negocio
 
-La web tendrá anuncios para financiar la cuenta gratuita. Los planes de pago eliminan
-los anuncios y aumentan límites/features:
+La web tendrá anuncios para financiar la cuenta gratuita. El plan de pago elimina
+los anuncios y aumenta límites/features:
 
 | Plan | Precio | Anuncios | Conteos IA/mes | Usuarios | Almacenamiento | VLM | D-150 | Soporte |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Gratis** (`free`) | $0 | Sí | 10 | 1 | 2 GB | No | No | Comunidad |
-| **Pro** (`pro`) | $19/mes | No | 300 | 3 | 25 GB | Sí | Sí | Email |
-| **Agro** (`agro`) | $49/mes | No | 3.000 | 10 | 200 GB | Sí | Sí | Prioritario |
+| **Pro** (`pro`) | $10/mes | No | 300 | 3 | 25 GB | Sí | Sí | Email |
 
 ## Dónde está definido
 
 - **Fuente de verdad backend:** `backend/config/planes.js`
   - `LIMITES_POR_PLAN` → límites aplicados por el servidor (Tenant).
   - `CATALOGO_PLANES` → precios/features que sirve `GET /api/onvo/planes`.
-- **Modelo Tenant:** `backend/models/Tenant.js` (enum `free|pro|agro` + método `aplicarPlan`).
+- **Modelo Tenant:** `backend/models/Tenant.js` (enum `free|pro` + método `aplicarPlan`).
 - **ONVO Pay:** `backend/controllers/onvoController.js`, `backend/services/onvoService.js`
   y `backend/routes/onvoRoutes.js` / `onvoWebhookRoutes.js`
   (checkout con SDK web, cancelación, estado, catálogo público y webhook idempotente).
@@ -30,19 +29,19 @@ los anuncios y aumentan límites/features:
 
 ## Lo que ya está implementado
 
-1. Catálogo único de 3 planes (back y front) con flag `anunciosHabilitados`.
-2. Suscripción ONVO para `pro` y `agro`: el backend crea el cargo recurrente
+1. Catálogo único de 2 planes (back y front) con flag `anunciosHabilitados`.
+2. Suscripción ONVO para `pro`: el backend crea el cargo recurrente
    (`paymentBehavior: allow_incomplete`) y el frontend lo confirma con el SDK web
    (`onvo.pay` con `paymentType: 'subscription'`). El `free` se gestiona al cancelar
    desde "Mi Suscripción" (`POST /api/onvo/cancelar`).
 3. Webhooks ONVO que aplican plan, estado (`activo`, `periodo_gracia`, `cancelado`)
    y resetean consumo.
 4. `GET /api/onvo/planes` público para que la landing/web de precios no duplique datos.
-5. UI: tarjetas de 3 planes, badge *Con anuncios / Sin anuncios*, página de suscripción
+5. UI: tarjetas de 2 planes, badge *Con anuncios / Sin anuncios*, página de suscripción
    y sidebar con el nombre del plan.
 6. Ranura de anuncios `frontend/src/components/ads/AdvertisingSlot.jsx` que solo se
    muestra en el plan Gratis (placeholder listo para AdSense).
-7. Script de migración para tenants que aún tengan `bronce|oro|corporativo`.
+7. Script de migración para tenants que aún tengan `bronce|oro|corporativo|agro`.
 
 ## Pendiente para dejarlo 100% operativo
 
@@ -55,7 +54,6 @@ los anuncios y aumentan límites/features:
   ONVO_WEBHOOK_SECRET=webhook_secret_...
   ONVO_PRICE_FREE=                  # normalmente no se necesita para suscripción free
   ONVO_PRICE_PRO=cl...
-  ONVO_PRICE_AGRO=cl...
   ```
 - Registrar el webhook en el Dashboard de ONVO (sección Desarrolladores) hacia
   `POST /api/onvo/webhook` y copiar el `X-Webhook-Secret` generado a `ONVO_WEBHOOK_SECRET`.
@@ -77,7 +75,7 @@ cd backend
 npm run migrate:planes   # o: node scripts/migratePlanes.js
 node scripts/migratePlanes.js --dry-run   # revisar antes de aplicar
 ```
-Mapeo: `bronce -> pro`, `oro -> agro`, `corporativo -> agro`.
+Mapeo: `bronce|oro|corporativo|agro -> pro`.
 
 ### 3. Publicidad real
 - Conseguir cuenta Google AdSense y aprobar el sitio.

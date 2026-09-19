@@ -3,7 +3,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Tractor, Mail, Sparkles, LayoutDashboard, Warehouse,
   Receipt, TrendingUp, Calendar, Calculator, ArrowRight, Check,
-  ChevronLeft, ChevronRight, ChevronDown, Share2, ShieldCheck, Zap
+  ChevronLeft, ChevronRight, ChevronDown, Share2, ShieldCheck, Zap,
+  MessageSquare
 } from 'lucide-react';
 import { PLANES } from '../data/planes';
 import PlanCard from '../components/billing/PlanCard';
@@ -12,62 +13,63 @@ import { Badge } from '../components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { useReveal, useCarousel } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
+import AdvertisingSlot from '../components/ads/AdvertisingSlot';
 import fondoLogin from '../assets/videos/fondo_login.webm';
 import './LandingPage.css';
 
 const CARACTERISTICAS = [
   {
     icono: Mail,
-    titulo: 'Importación por correo',
-    descripcion: 'Conecta tu correo y descargamos automáticamente tus facturas electrónicas (XML/PDF) vía IMAP.',
-    tag: 'Automático',
+    titulo: 'Buzón Cloudflare instantáneo',
+    descripcion: 'Tu finca recibe un correo exclusivo (tu-finca@contadorganandero.com). Pide a tus proveedores que envíen las facturas ahí y entran al instante.',
+    tag: 'Automático & Seguro',
+  },
+  {
+    icono: MessageSquare,
+    titulo: 'Bot de WhatsApp para la finca',
+    descripcion: 'Reenvía archivos XML, PDFs o fotos de tiquetes directamente por WhatsApp mientras estás en el potrero o la veterinaria.',
+    tag: 'Móvil & WhatsApp',
   },
   {
     icono: Sparkles,
     titulo: 'Categorización con IA',
-    descripcion: 'La inteligencia artificial clasifica tus gastos automáticamente en las categorías correctas.',
-    tag: 'IA Avanzada',
+    descripcion: 'Modelos de inteligencia artificial de última generación clasifican automáticamente cada gasto e insumo en tu contabilidad.',
+    tag: 'IA Nemotron',
   },
   {
     icono: Warehouse,
-    titulo: 'Control de inventario',
-    descripcion: 'Bovinos, aves de postura, peces (acuicultura) y abejas (apicultura) en un solo lugar.',
+    titulo: 'Control de inventario multiespecie',
+    descripcion: 'Bovinos, aves de postura, peces (acuicultura) y abejas (apicultura) en un solo lugar con pesajes y conteo visual.',
     tag: '4 Especies',
   },
   {
     icono: TrendingUp,
     titulo: 'Costos de producción',
-    descripcion: 'Calcula el costo por kg de carne, cartón de huevos, FCA y conoce tus márgenes reales.',
-    tag: 'Rentabilidad',
+    descripcion: 'Calcula el costo por kg de carne, cartón de huevos, FCA y conoce tus márgenes reales sin enredos de hojas de cálculo.',
+    tag: 'Rentabilidad Real',
   },
   {
     icono: Calculator,
     titulo: 'Impuestos Costa Rica',
-    descripcion: 'IVA Cuatrimestral (D-135-1) y Renta Anual (D-101) con lógica tributaria 2026.',
+    descripcion: 'IVA Cuatrimestral (D-135-1) y Renta Anual (D-101) con tramos y reglas tributarias actualizadas de Hacienda.',
     tag: 'D-135-1 & D-101',
   },
   {
     icono: Receipt,
-    titulo: 'Facturación REA',
-    descripcion: 'Facturación electrónica con tarifa reducida del 1% de IVA, en cumplimiento Hacienda/MAG.',
-    tag: 'Tarifa 1%',
+    titulo: 'Facturas y Acuses v4.4',
+    descripcion: 'Lectura completa de FacturaElectronica y MensajeHacienda. Auditoría automática del beneficio IVA al 1% en insumos agropecuarios.',
+    tag: 'Hacienda v4.4',
   },
   {
     icono: LayoutDashboard,
     titulo: 'Dashboard analítico',
-    descripcion: 'Visualiza ingresos, gastos y rentabilidad de tu finca con gráficos en tiempo real.',
+    descripcion: 'Visualiza ingresos, compras, alertas fiscales y rentabilidad de tu finca con gráficos actualizados en tiempo real.',
     tag: 'Métricas Vivas',
-  },
-  {
-    icono: Calendar,
-    titulo: 'Calendario fiscal',
-    descripcion: 'Nunca pierdas una fecha de declaración con el calendario fiscal integrado.',
-    tag: 'Fechas Límite',
   },
   {
     icono: ShieldCheck,
     titulo: 'Conciliación D-150 TRIBU-CR',
-    descripcion: 'Guía oficial paso a paso con totales de importes e impuestos soportados lista para declarar.',
+    descripcion: 'Guía oficial paso a paso con totales de importes e impuestos soportados lista para declarar ante la Administración Tributaria.',
     tag: 'TRIBU-CR 2026',
   },
 ];
@@ -75,29 +77,31 @@ const CARACTERISTICAS = [
 const PASOS = [
   {
     numero: '1',
-    titulo: 'Conecta tu correo',
-    descripcion: 'Vincula tu correo y recibimos las facturas electrónicas automáticamente.',
+    titulo: 'Pasa tu correo o envía por WhatsApp',
+    descripcion: 'Da a tus proveedores tu dirección de finca (@contadorganandero.com) o reenvía tus facturas al bot de WhatsApp.',
   },
   {
     numero: '2',
-    titulo: 'La IA categoriza tus gastos',
-    descripcion: 'Nuestra IA clasifica compras y gastos sin que tengas que digitar nada.',
+    titulo: 'La IA procesa y categoriza',
+    descripcion: 'Extraemos el XML, auditamos las tarifas del 1% de Hacienda y clasificamos los insumos automáticamente en segundos.',
   },
   {
     numero: '3',
     titulo: 'Reportes y declaraciones listas',
-    descripcion: 'Genera los reportes y declaraciones que Hacienda exige, con un clic.',
+    descripcion: 'Consulta tus costos por kilo, inventarios y genera tus declaraciones D-135-1, D-101 y D-150 con un solo clic.',
   },
 ];
 
 // Tabla comparativa (contabilidad manual vs ContadorGanadero)
 const COMPARATIVA = [
-  { tarea: 'Descargar facturas de proveedores', manual: 'Manual (abrir cada correo)', app: 'Automático vía IMAP' },
-  { tarea: 'Clasificar gastos', manual: 'A mano, una por una', app: 'Automatizado con IA' },
-  { tarea: 'IVA cuatrimestral (D-135-1)', manual: 'Cálculo en hojas de cálculo', app: 'Calculado y listo para declarar' },
-  { tarea: 'Renta anual (D-101)', manual: 'Contador externo', app: 'Con tramos progresivos actualizados' },
-  { tarea: 'Costo real de producción', manual: 'Difícil de estimar', app: 'Por kg, cartón o kilo de tilapia' },
-  { tarea: 'Facturación electrónica', manual: 'Software aparte', app: 'Integrada (v4.4 Hacienda)' },
+  { tarea: 'Recepción de facturas de proveedores', manual: 'Manual (descargar una a una de correos)', app: 'Automático vía Cloudflare Email & WhatsApp' },
+  { tarea: 'Acuses de Hacienda (MensajeHacienda)', manual: 'Buscar el estado a mano en Hacienda', app: 'Lectura oficial de acuses y facturas en tiempo real' },
+  { tarea: 'Clasificar gastos de la finca', manual: 'A mano, factura por factura en libretas', app: 'Automatizado con Inteligencia Artificial' },
+  { tarea: 'Auditoría de IVA al 1% en insumos', manual: 'Riesgo de pagar de más (13% en vez de 1%)', app: 'Detección automática de errores en tarifas MAG' },
+  { tarea: 'IVA cuatrimestral (D-135-1)', manual: 'Cálculo en hojas de cálculo complejas', app: 'Calculado y listo para declarar' },
+  { tarea: 'Renta anual (D-101)', manual: 'Contador externo o cálculo tardío', app: 'Con tramos progresivos y deducciones REA' },
+  { tarea: 'Costo real de producción', manual: 'Estimaciones a ojo', app: 'Por kg de carne, cartón de huevos o tilapia' },
+  { tarea: 'Facturación electrónica', manual: 'Sistemas genéricos no agrícolas', app: 'Especializada en agropecuarios (v4.4 Hacienda)' },
 ];
 
 // FAQ (se usa también para el schema FAQPage)
@@ -105,17 +109,17 @@ const FAQ = [
   {
     pregunta: '¿Necesito estar inscrito en Hacienda para usar ContadorGanadero?',
     respuesta:
-      'Para emitir facturas electrónicas y presentar declaraciones necesitas estar inscrito como contribuyente. Los productores agropecuarios de Costa Rica suelen estar en el Régimen Especial Agropecuario (REA), con inscripción ante el MAG. Para registrar gastos e ingresos internos puedes empezar sin estar al día con Hacienda.',
+      'Para emitir facturas electrónicas y presentar declaraciones ante Hacienda necesitas estar inscrito como contribuyente (usualmente en el Régimen Especial Agropecuario REA ante el MAG). Para llevar tu control de gastos, inventario, costos por kilo y recepción de facturas puedes empezar desde el primer día.',
   },
   {
-    pregunta: '¿Cómo se descargan mis facturas electrónicas automáticamente?',
+    pregunta: '¿Cómo se reciben mis facturas electrónicas automáticamente?',
     respuesta:
-      'Conectas una cuenta de correo (Gmail, Outlook u otro con IMAP) donde recibís las facturas de tus proveedores. La plataforma lee los correos, descarga los archivos XML y PDF, extrae los datos y los categoriza con inteligencia artificial. No tenés que digitar nada.',
+      'Al crear tu cuenta, tu finca recibe una dirección de correo exclusiva (por ejemplo: tu-finca@contadorganandero.com) impulsada por Cloudflare y un bot de WhatsApp. Pides a tus proveedores que envíen las facturas ahí o las reenvías por WhatsApp. La plataforma recibe el XML, extrae los datos, valida la clave de Hacienda y categoriza todo con IA al instante, sin configurar contraseñas ni IMAP.',
   },
   {
     pregunta: '¿Funciona con facturas del 1% de IVA del régimen agropecuario?',
     respuesta:
-      'Sí. ContadorGanadero está diseñado específicamente para la tarifa reducida del 1% del Régimen Especial Agropecuario (REA) y para la facturación electrónica v4.4 de Hacienda, incluyendo la clave numérica de 50 dígitos y la firma digital.',
+      'Sí. ContadorGanadero está diseñado específicamente para la tarifa reducida del 1% del Régimen Especial Agropecuario (REA) y para la facturación electrónica v4.4 de Hacienda, auditando que tus proveedores te cobren el 1% en alimentos, medicinas y fertilizantes y no el 13%.',
   },
   {
     pregunta: '¿Qué impuestos calcula la plataforma?',
@@ -125,12 +129,12 @@ const FAQ = [
   {
     pregunta: '¿Puedo controlar bovinos, aves, peces y abejas?',
     respuesta:
-      'Sí. El módulo de inventario multiespecie registra pesos de bovinos, ciclos de postura de aves, biomasa de peces y extracciones de miel de colmenas. También calcula el costo real de producción por kilo, cartón de huevos o kilo de tilapia.',
+      'Sí. El módulo de inventario multiespecie registra pesajes de bovinos, ciclos de postura de aves, biomasa de peces y cosechas de miel. También calcula el costo real de producción por kilo, cartón de huevos o kilo de pescado.',
   },
   {
     pregunta: '¿Cuánto cuesta? ¿Hay plan gratuito?',
     respuesta:
-      'Hay un plan Gratis sin costo y sin tarjeta para probar la plataforma (con anuncios en la web) y un plan Pro de $10/mes. El plan Pro elimina los anuncios y suma más conteos, VLM, módulo D-150 y soporte por email. Podés cancelar cuando quieras.',
+      'Ofrecemos un plan Gratis sin costo (sostenido con anuncios de Google AdSense) y un plan Pro de $10/mes sin anuncios, con más conteos IA, visión computacional (VLM), módulo D-150 y soporte por email. Puedes usar el plan gratuito todo el tiempo que desees.',
   },
 ];
 
@@ -150,8 +154,8 @@ const NEGOCIO_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'ProfessionalService',
   name: 'ContadorGanadero',
-  url: 'https://contadorganadero.com',
-  image: 'https://contadorganadero.com/favicon.svg',
+  url: 'https://contadorganandero.com',
+  image: 'https://contadorganandero.com/favicon.svg',
   description:
     'Contabilidad, inventario y facturación electrónica para productores agropecuarios de Costa Rica bajo el Régimen Especial Agropecuario (REA).',
   areaServed: { '@type': 'Country', name: 'Costa Rica' },
@@ -376,7 +380,7 @@ export default function LandingPage() {
           </h1>
           <p className="landing-hero-subtitulo text-slate-300">
             ContadorGanadero es la plataforma para pequeños productores agropecuarios
-            de Costa Rica: importa facturas por correo, categoriza gastos con IA y
+            de Costa Rica: recibe facturas al instante por correo y WhatsApp, categoriza gastos con IA y
             genera tus declaraciones de Hacienda sin esfuerzo.
           </p>
           <div className="landing-hero-ctas flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full max-w-xs sm:max-w-none mx-auto pt-2">
@@ -410,7 +414,7 @@ export default function LandingPage() {
           <ul className="landing-tldr-lista space-y-3.5 my-6 text-slate-200">
             <li className="flex items-start gap-3">
               <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
-              <span><strong>Automatiza tu contabilidad:</strong> las facturas llegan solas desde tu correo y la IA las clasifica.</span>
+              <span><strong>Automatiza tu contabilidad:</strong> las facturas llegan solas vía correo Cloudflare o WhatsApp y la IA las clasifica.</span>
             </li>
             <li className="flex items-start gap-3">
               <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
@@ -655,6 +659,11 @@ export default function LandingPage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Espacio publicitario Google AdSense (solo visible si AdSense está activo) */}
+      <div className="max-w-4xl mx-auto px-4 my-8">
+        <AdvertisingSlot mostrarPublico={true} tamaño="banner" />
+      </div>
 
       {/* Footer */}
       <footer ref={footerRef} className={`landing-footer ${footerVisible ? 'landing-footer--visible' : ''}`}>

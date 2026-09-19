@@ -39,12 +39,25 @@
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "ContadorGanadero",
-      "url": "https://contadorganadero.com",
-      "logo": "https://contadorganadero.com/favicon.svg",
+      "url": "https://contadorganandero.com",
+      "logo": "https://contadorganandero.com/favicon.svg",
       "description": "Plataforma de contabilidad y facturación electrónica para productores agropecuarios de Costa Rica bajo el Régimen Especial Agropecuario (REA).",
       "areaServed": "CR",
       "sameAs": []
     }
+    </script>
+    <!-- Google AdSense -->
+    <script>
+      (function() {
+        var client = '%VITE_ADSENSE_CLIENT%';
+        if (client && client.indexOf('ca-pub-') === 0 && client.indexOf('tu_') === -1) {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + client;
+          s.crossOrigin = 'anonymous';
+          document.head.appendChild(s);
+        }
+      })();
     </script>
   </head>
   <body>

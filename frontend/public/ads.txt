@@ -1,0 +1,4 @@
+# Google AdSense ads.txt — ContadorGanadero
+# Reemplaza pub-XXXXXXXXXXXXXXXX con tu Publisher ID de Google AdSense cuando tu cuenta esté aprobada.
+# Formato oficial: google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

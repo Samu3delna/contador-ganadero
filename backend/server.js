@@ -91,6 +91,7 @@ const onvoWebhookRoutes = require('./routes/onvoWebhookRoutes');
 const onvoRoutes = require('./routes/onvoRoutes');
 const emailWebhookRoutes = require('./routes/emailWebhookRoutes');
 const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Importar middleware de errores
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');

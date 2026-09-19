@@ -28,6 +28,15 @@ const usuarioSchema = new mongoose.Schema({
     enum: ['dueño', 'contador', 'peon'],
     default: 'dueño',
   },
+  // Suspensión individual (gestionada por Super Admin). Bloquea login, refresh y API.
+  suspendido: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
+  suspendidoEn: {
+    type: Date,
+  },
   password: {
     type: String,
     required: [true, 'La contraseña es obligatoria'],

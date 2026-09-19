@@ -10,7 +10,6 @@ process.env.ONVO_PUBLISHABLE_KEY = 'onvo_test_publishable_key_123';
 process.env.ONVO_WEBHOOK_SECRET = 'webhook_secret_test_123';
 process.env.ONVO_PRICE_FREE = 'price_free';
 process.env.ONVO_PRICE_PRO = 'price_pro';
-process.env.ONVO_PRICE_AGRO = 'price_agro';
 process.env.FRONTEND_URL = 'http://localhost:5173';
 
 // === Mock del servicio ONVO (no se llama a la API real) ===
@@ -128,7 +127,7 @@ describe('controllers/onvoController - webhookOnvo', () => {
     const tenant = await crearTenantPrueba();
     const event = buildEventoRenovacion();
     event.data.metadata.tenantId = tenant._id.toString();
-    event.data.metadata.planId = 'agro';
+    event.data.metadata.planId = 'pro';
     const eventoId = `${event.type}:${event.data.id}`;
 
     const { req: req1, res: res1 } = buildReqRes(event);
@@ -138,7 +137,7 @@ describe('controllers/onvoController - webhookOnvo', () => {
     );
 
     const t = await Tenant.findById(tenant._id);
-    expect(t.plan).toBe('agro');
+    expect(t.plan).toBe('pro');
 
     // Segunda vez con el mismo evento
     const { req: req2, res: res2 } = buildReqRes(event);
@@ -159,7 +158,7 @@ describe('controllers/onvoController - webhookOnvo', () => {
     const event = buildEventoRenovacion();
     event.data.subscriptionId = 'clsub_nueva_456';
     event.data.metadata.tenantId = tenant._id.toString();
-    event.data.metadata.planId = 'agro';
+    event.data.metadata.planId = 'pro';
 
     const { req, res } = buildReqRes(event);
     await webhookOnvo(req, res);
@@ -170,7 +169,7 @@ describe('controllers/onvoController - webhookOnvo', () => {
     expect(onvoService.cancelarSuscripcion).toHaveBeenCalledWith('clsub_vieja_123');
 
     const t = await Tenant.findById(tenant._id);
-    expect(t.plan).toBe('agro');
+    expect(t.plan).toBe('pro');
     expect(t.onvoSubscriptionId).toBe('clsub_nueva_456');
   });
 

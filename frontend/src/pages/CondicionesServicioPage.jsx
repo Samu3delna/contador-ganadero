@@ -89,18 +89,18 @@ export default function CondicionesServicioPage() {
       <section id="seccion-4" className="legal-section">
         <div className="legal-section-heading">
           <span className="legal-section-number">04.</span>
-          <h2 className="legal-section-title">Integración con Correo Electrónico (IMAP)</h2>
+          <h2 className="legal-section-title">Recepción de Facturas (Correo Cloudflare y WhatsApp)</h2>
         </div>
         <p>
-          Para habilitar la descarga automática de comprobantes electrónicos, el usuario puede vincular su cuenta de correo mediante protocolo IMAP.
+          Para facilitar el procesamiento de comprobantes electrónicos, cada finca dispone de una dirección de correo exclusiva (<code>@contadorganandero.com</code>) administrada mediante Cloudflare Email Routing, además de un bot de WhatsApp para el reenvío directo de facturas.
         </p>
         <div className="legal-alert legal-alert--info">
           <MailCheck size={22} className="legal-alert-icon" />
           <div className="legal-alert-content">
-            <h4>Privacidad del Correo</h4>
+            <h4>Privacidad del Correo y Mensajería</h4>
             <p>
-              Nuestro sincronizador únicamente analiza y descarga correos que contengan archivos adjuntos con extensión <code>.xml</code> o <code>.pdf</code>
-              correspondientes a facturas electrónicas de Hacienda. <strong>No leemos, almacenamos ni compartimos su correspondencia personal o comercial ajena a la facturación.</strong>
+              Nuestro motor de ingesta analiza exclusivamente correos y mensajes que contengan comprobantes electrónicos con extensión <code>.xml</code> o <code>.pdf</code>
+              correspondientes a facturas y acuses (MensajeHacienda). <strong>No leemos, almacenamos ni compartimos correspondencia personal o comercial ajena a la facturación tributaria.</strong>
             </p>
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function CondicionesServicioPage() {
           <h2 className="legal-section-title">Soporte Técnico y Atención al Productor</h2>
         </div>
         <p>
-          Ofrecemos soporte técnico continuo para resolver incidencias de acceso, sincronización IMAP o dudas sobre la visualización de reportes:
+          Ofrecemos soporte técnico continuo para resolver incidencias de acceso, recepción de facturas o dudas sobre la visualización de reportes:
         </p>
         <ul>
           <li><strong>Plan Gratis:</strong> Soporte vía asistente virtual con IA y comunidad.</li>
