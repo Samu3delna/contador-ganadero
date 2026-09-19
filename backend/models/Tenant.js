@@ -7,7 +7,7 @@ const { encrypt, decrypt } = require('../utils/crypto');
  *
  * Cada Tenant representa una finca/organización cliente del SaaS.
  * Contiene: plan de suscripción, estado, límites del plan, consumo actual,
- * relación con Stripe, y lista de usuarios miembros (con roles).
+ * relación con ONVO Pay, y lista de usuarios miembros (con roles).
  *
  * Hoy: 1 Tenant = 1 Usuario dueño. Mañana: esqueleto preparado para RBAC
  * multi-usuario sin reescribir el esquema.
@@ -114,7 +114,7 @@ const limitesSchema = new mongoose.Schema({
   soporte: { type: String, default: 'Comunidad' },     // Comunidad | Email | Prioritario
 }, { _id: false });
 
-// === Consumo actual (se resetea mensualmente con cron o webhook Stripe) ===
+// === Consumo actual (se resetea mensualmente con cron o webhook ONVO) ===
 const consumoActualSchema = new mongoose.Schema({
   conteosMes: { type: Number, default: 0 },
   tokensChatMes: { type: Number, default: 0 },
@@ -163,14 +163,14 @@ const tenantSchema = new mongoose.Schema({
     },
   },
 
-  // === Stripe ===
-  stripeCustomerId: {
+  // === ONVO Pay ===
+  onvoCustomerId: {
     type: String,
   },
-  stripeSubscriptionId: {
+  onvoSubscriptionId: {
     type: String,
   },
-  stripePriceId: {
+  onvoPriceId: {
     type: String,
     trim: true,
   },
@@ -214,12 +214,12 @@ const tenantSchema = new mongoose.Schema({
 });
 
 // === ÍNDICES ===
-tenantSchema.index({ stripeCustomerId: 1 }, { unique: true, sparse: true });
-tenantSchema.index({ stripeSubscriptionId: 1 }, { unique: true, sparse: true });
+tenantSchema.index({ onvoCustomerId: 1 }, { unique: true, sparse: true });
+tenantSchema.index({ onvoSubscriptionId: 1 }, { unique: true, sparse: true });
 
 // === MÉTODO ESTÁTICO: limites por plan ===
 // (la definición de límites vive en config/planes.js para que backend y
-// el catálogo público /api/stripe/planes no diverjan)
+// el catálogo público /api/onvo/planes no diverjan)
 
 /**
  * Devuelve los límites correspondientes a un plan
@@ -241,7 +241,7 @@ tenantSchema.methods.aplicarPlan = function (plan) {
 };
 
 /**
- * Resetea el consumo mensual (llamado por webhook Stripe o cron)
+ * Resetea el consumo mensual (llamado por webhook ONVO o cron)
  */
 tenantSchema.methods.resetearConsumo = function () {
   const ahora = new Date();

@@ -12,7 +12,7 @@
 
 ### Nivel de Madurez Actual: ~88% Completado
 - **Frontend (React 19 + Vite):** 100% operativo y compila sin errores (`vite build` exitoso). Cuenta con 14 páginas funcionales, interfaz moderna, modo oscuro/claro, gráficos interactivos y chatbot integrado.
-- **Backend (Node.js + Express + Mongoose):** Arquitectura multi-tenant con planes de suscripción (Stripe), seguridad con sanitización y rate-limiting, motor de firma digital XAdES-EPES, categorización con IA y lector IMAP de correos.
+- **Backend (Node.js + Express + Mongoose):** Arquitectura multi-tenant con planes de suscripción (ONVO Pay), seguridad con sanitización y rate-limiting, motor de firma digital XAdES-EPES, categorización con IA y lector IMAP de correos.
 - **Base de Datos (MongoDB):** 12 colecciones estructuradas con soporte multi-inquilino (`tenantId`), cuotas mensuales y control de acceso basado en planes.
 
 ---
@@ -29,7 +29,7 @@
 | 📅 **Calendario Fiscal** | Alertas y cronograma de vencimientos ante el Ministerio de Hacienda (IVA, Renta, D-151, D-150). | ✅ 100% |
 | 📦 **Inventario Multiespecie** | • **Bovinos:** Pesajes, reproducción, producción de leche y sanidad.<br>• **Aves:** Postura, mortalidad y postura diaria.<br>• **Peces:** Biomasa, calidad de agua y fecha de cosecha.<br>• **Apicultura:** Colmenas, cuadros y extracciones de miel. | ✅ 100% |
 | 📈 **Costos y Rentabilidad** | Centros de costo por lote/estanque/colmena. Cálculo de **FCA**, costo por kg/litro/cartón y margen operativo real. | ✅ 100% |
-| 💳 **Suscripciones y Billing** | Integración con Stripe: planes Free, Bronce, Oro y Corporativo. Portal de cliente, cuotas de tokens y conteos. | ✅ 100% |
+| 💳 **Suscripciones y Billing** | Integración con ONVO Pay: planes Gratis, Pro y Agro. Cargos recurrentes con SDK web, cuotas de tokens y conteos. | ✅ 100% |
 | 💬 **Asistente Virtual IA** | Chatbot agropecuario con contexto financiero e inventario en tiempo real, sanitización PII y modo offline heurístico. | ✅ 100% |
 | 🧾 **Hacienda CR v4.4 (Emisión)** | Generación de clave 50 dígitos, XML v4.4, firma digital XAdES-EPES (.p12), autenticación OAuth2 y polling de estado. | 🟡 75% *(FE lista; faltan NC/TE/FEC)* |
 
@@ -49,9 +49,9 @@ Para operar el sistema en **desarrollo local** y posteriormente en **producción
    - En Gmail: Activar *Verificación en 2 pasos* y crear una **Contraseña de Aplicación** (16 caracteres).
 4. **API Key de Inteligencia Artificial:**
    - **NVIDIA NIM API** (gratis con créditos en [build.nvidia.com](https://build.nvidia.com/) para modelo `nvidia/nemotron-3-ultra-550b-a55b` o Llama 3) O **OpenRouter** O **OpenAI**.
-5. **Stripe (Modo Test):**
-   - Cuenta gratuita en [Stripe Dashboard](https://dashboard.stripe.com/) para llaves de prueba (`pk_test_...` y `sk_test_...`).
-   - [Stripe CLI](https://stripe.com/docs/stripe-cli) para probar webhooks en local.
+5. **ONVO Pay (Modo Test):**
+   - Cuenta en [ONVO Pay](https://www.onvopay.com) para llaves de prueba (`onvo_test_...`).
+   - Webhook de prueba apuntando a `POST /api/onvo/webhook` (validación por header `X-Webhook-Secret`).
 
 ### B. Para Producción y Facturación Oficial (Hacienda CR)
 1. **Llave Criptográfica (`.p12`):** Descargada desde el portal [TRIBU-CR / ATV](https://ovitribucr.hacienda.go.cr).

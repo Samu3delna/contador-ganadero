@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { obtenerEstadoSuscripcionAPI, crearPortalAPI } from '../services/api';
+import { obtenerEstadoSuscripcionAPI, cancelarSuscripcionAPI } from '../services/api';
 import UsageBar from '../components/billing/UsageBar';
 import { CreditCard, Crown, RefreshCw, ArrowRight, AlertTriangle } from 'lucide-react';
 import './BillingPage.css';
@@ -33,7 +33,7 @@ export default function BillingPage() {
   const navigate = useNavigate();
   const [estado, setEstado] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [abriendoPortal, setAbriendoPortal] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -55,20 +55,24 @@ export default function BillingPage() {
     run();
   }, [cargar]);
 
-  const handlePortal = async () => {
-    setAbriendoPortal(true);
-    const toastId = toast.loading('Abriendo portal de Stripe...');
+  const handleCancelar = async () => {
+    const confirmado = window.confirm(
+      '¿Seguro que deseas cancelar tu suscripción? Tu cuenta pasará al plan Gratis (con anuncios) de inmediato.'
+    );
+    if (!confirmado) return;
+
+    setCancelando(true);
+    const toastId = toast.loading('Cancelando suscripción...');
     try {
-      const res = await crearPortalAPI();
+      await cancelarSuscripcionAPI();
       toast.dismiss(toastId);
-      const url = res.data?.url;
-      if (url) window.location.href = url;
-      else toast.error('No se recibió la URL del portal.');
+      toast.success('Suscripción cancelada. Pasaste al plan Gratis.');
+      await cargar();
     } catch (err) {
       toast.dismiss(toastId);
-      toast.error(err.response?.data?.error || 'Error al abrir el portal de Stripe.');
+      toast.error(err.response?.data?.error || 'Error al cancelar la suscripción.');
     } finally {
-      setAbriendoPortal(false);
+      setCancelando(false);
     }
   };
 
@@ -177,11 +181,11 @@ export default function BillingPage() {
               <CreditCard size={16} /> Cambiar de plan
             </button>
             <button
-              className="btn btn-primary"
-              onClick={handlePortal}
-              disabled={abriendoPortal}
+              className="btn btn-danger"
+              onClick={handleCancelar}
+              disabled={cancelando}
             >
-              <Crown size={16} /> Administrar suscripción (Stripe Portal)
+              <Crown size={16} /> {cancelando ? 'Cancelando...' : 'Cancelar suscripción'}
             </button>
           </>
         )}

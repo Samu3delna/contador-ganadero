@@ -1,7 +1,8 @@
 # Suscripciones — modelo de 3 planes (freemium con anuncios)
 
-> Fecha: 2026-08-24
-> Estado: implementado en backend + frontend. Pendiente: configurar productos en Stripe y activar el proveedor de anuncios.
+> Fecha: 2026-09-18
+> Estado: implementado en backend + frontend con **ONVO Pay** (migrado desde Stripe).
+> Pendiente: configurar productos/precios en ONVO y activar el proveedor de anuncios.
 
 ## Idea de negocio
 
@@ -18,21 +19,25 @@ los anuncios y aumentan límites/features:
 
 - **Fuente de verdad backend:** `backend/config/planes.js`
   - `LIMITES_POR_PLAN` → límites aplicados por el servidor (Tenant).
-  - `CATALOGO_PLANES` → precios/features que sirve `GET /api/stripe/planes`.
+  - `CATALOGO_PLANES` → precios/features que sirve `GET /api/onvo/planes`.
 - **Modelo Tenant:** `backend/models/Tenant.js` (enum `free|pro|agro` + método `aplicarPlan`).
-- **Stripe:** `backend/controllers/stripeController.js` y `backend/routes/stripeRoutes.js`
-  (checkout, portal, estado, catálogo público y webhook idempotente).
+- **ONVO Pay:** `backend/controllers/onvoController.js`, `backend/services/onvoService.js`
+  y `backend/routes/onvoRoutes.js` / `onvoWebhookRoutes.js`
+  (checkout con SDK web, cancelación, estado, catálogo público y webhook idempotente).
 - **Frontend:** `frontend/src/data/planes.js` (fallback) + `PlanesPage`, `BillingPage`,
-  `Sidebar`, `PlanCard`, `AdvertisingSlot`.
+  `Sidebar`, `PlanCard`, `OnvoCheckoutModal`, `AdvertisingSlot`.
 - **Migración:** `backend/scripts/migratePlanes.js`.
 
 ## Lo que ya está implementado
 
 1. Catálogo único de 3 planes (back y front) con flag `anunciosHabilitados`.
-2. Checkout Stripe para `pro` y `agro`; el `free` se gestiona al cancelar (Stripe Portal).
-3. Webhooks Stripe que aplican plan, estado (`activo`, `periodo_gracia`, `cancelado`)
+2. Suscripción ONVO para `pro` y `agro`: el backend crea el cargo recurrente
+   (`paymentBehavior: allow_incomplete`) y el frontend lo confirma con el SDK web
+   (`onvo.pay` con `paymentType: 'subscription'`). El `free` se gestiona al cancelar
+   desde "Mi Suscripción" (`POST /api/onvo/cancelar`).
+3. Webhooks ONVO que aplican plan, estado (`activo`, `periodo_gracia`, `cancelado`)
    y resetean consumo.
-4. `GET /api/stripe/planes` público para que la landing/web de precios no duplique datos.
+4. `GET /api/onvo/planes` público para que la landing/web de precios no duplique datos.
 5. UI: tarjetas de 3 planes, badge *Con anuncios / Sin anuncios*, página de suscripción
    y sidebar con el nombre del plan.
 6. Ranura de anuncios `frontend/src/components/ads/AdvertisingSlot.jsx` que solo se
@@ -41,24 +46,24 @@ los anuncios y aumentan límites/features:
 
 ## Pendiente para dejarlo 100% operativo
 
-### 1. Stripe
-- Crear tres *Products* y *Prices* en Stripe (o usar el catálogo).
+### 1. ONVO Pay
+- Crear los *Products* y *Prices* recurrentes (mensuales) en el Dashboard de ONVO.
 - Configurar en `.env`:
   ```env
-  STRIPE_SECRET_KEY=sk_live_...
-  STRIPE_WEBHOOK_SECRET=whsec_...
-  STRIPE_PRICE_FREE=price_...      # normalmente no se necesita para suscripción free
-  STRIPE_PRICE_PRO=price_...
-  STRIPE_PRICE_AGRO=price_...
-  STRIPE_SUCCESS_URL=https://tu-dominio/planes?status=success
-  STRIPE_CANCEL_URL=https://tu-dominio/planes?status=cancel
+  ONVO_SECRET_KEY=onvo_live_secret_key_...
+  ONVO_PUBLISHABLE_KEY=onvo_live_publishable_key_...
+  ONVO_WEBHOOK_SECRET=webhook_secret_...
+  ONVO_PRICE_FREE=                  # normalmente no se necesita para suscripción free
+  ONVO_PRICE_PRO=cl...
+  ONVO_PRICE_AGRO=cl...
   ```
-- Crear el webhook en Stripe hacia `POST /api/stripe/webhook` con los eventos:
-  - `checkout.session.completed`
-  - `customer.subscription.updated`
-  - `customer.subscription.deleted`
-  - `invoice.payment_succeeded`
-  - `invoice.payment_failed`
+- Registrar el webhook en el Dashboard de ONVO (sección Desarrolladores) hacia
+  `POST /api/onvo/webhook` y copiar el `X-Webhook-Secret` generado a `ONVO_WEBHOOK_SECRET`.
+  Eventos relevantes:
+  - `subscription.renewal.succeeded` (alta y renovación: activa plan y resetea consumo)
+  - `subscription.renewal.failed` (pago fallido: pasa a `periodo_gracia`)
+- Nota: ONVO no tiene portal de clientes ni webhook de cancelación; la cancelación
+  se hace desde la app (`DELETE /v1/subscriptions/{id}` vía `POST /api/onvo/cancelar`).
 
 ### 2. Migración de tenants existentes
 ```bash
@@ -81,5 +86,5 @@ Mapeo: `bronce -> pro`, `oro -> agro`, `corporativo -> agro`.
   conviene además bloquear el módulo D-150 en `free` (existe `moduloD150` en límites).
 - **Overrides por entorno**: poner precio/periodicidad en variables, no hardcodeados,
   si se desea facturar en colonas o con impuestos locales.
-- **Pruebas de regresión** de `stripeController`, `tenantGuard` y `quotaGuard`
+- **Pruebas de regresión** de `onvoController`, `tenantGuard` y `quotaGuard`
   (requieren `mongodb-memory-server` con cache de Mongod disponible).

@@ -1,28 +1,28 @@
 const mongoose = require('mongoose');
 
 /**
- * Modelo SubscriptionEvent — Log idempotente de webhooks Stripe
+ * Modelo SubscriptionEvent — Log idempotente de webhooks ONVO
  *
- * Garantiza que si Stripe reenvía un evento (lo hace habitualmente),
+ * Garantiza que si ONVO reenvía un evento (lo hace habitualmente),
  * el sistema no lo procese dos veces.
  *
  * Flujo:
- * 1. Stripe envía webhook a /api/stripe/webhook (raw body)
- * 2. Controller valida firma
- * 3. Busca SubscriptionEvent por stripeEventId
+ * 1. ONVO envía webhook a /api/onvo/webhook (JSON)
+ * 2. Controller valida el header X-Webhook-Secret
+ * 3. Busca SubscriptionEvent por eventoId (`<tipo>:<id del objeto>`)
  *    - Si existe → responde 200 {received:true, duplicate:true} y no procesa
  *    - Si no existe → guarda evento, procesa lógica, responde 200 {received:true}
  */
 const subscriptionEventSchema = new mongoose.Schema({
-  // ID único del evento en Stripe (evt_xxx) — usado para idempotencia
-  stripeEventId: {
+  // Llave única del evento (tipo + id del objeto ONVO) — usada para idempotencia
+  eventoId: {
     type: String,
     required: true,
     unique: true,
     index: true,
   },
 
-  // Tipo de evento (ej: checkout.session.completed, invoice.payment_succeeded)
+  // Tipo de evento (ej: subscription.renewal.succeeded, subscription.renewal.failed)
   type: {
     type: String,
     required: true,
@@ -36,14 +36,14 @@ const subscriptionEventSchema = new mongoose.Schema({
     index: true,
   },
 
-  // Cliente Stripe asociado (cus_xxx) — útil para asociar tenant aún no creado
-  stripeCustomerId: {
+  // Cliente ONVO asociado — útil para asociar tenant aún no creado
+  customerId: {
     type: String,
     index: true,
   },
 
-  // Subscription Stripe asociada (sub_xxx)
-  stripeSubscriptionId: {
+  // Cargo recurrente ONVO asociado
+  subscriptionId: {
     type: String,
     index: true,
   },
@@ -72,11 +72,11 @@ const subscriptionEventSchema = new mongoose.Schema({
 
 /**
  * Registra un evento si no existe aún (idempotente)
- * @param {object} params - { stripeEventId, type, data, stripeCustomerId?, stripeSubscriptionId? }
+ * @param {object} params - { eventoId, type, data, customerId?, subscriptionId? }
  * @returns {Promise<{created:boolean, event:object}>}
  */
 subscriptionEventSchema.statics.registrarSiNoExiste = async function (params) {
-  const existente = await this.findOne({ stripeEventId: params.stripeEventId });
+  const existente = await this.findOne({ eventoId: params.eventoId });
   if (existente) {
     return { created: false, event: existente };
   }

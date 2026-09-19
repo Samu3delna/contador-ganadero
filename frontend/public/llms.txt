@@ -24,7 +24,7 @@ ContadorGanadero es una aplicación web (MERN) que actúa como contador personal
 
 - Frontend: React 19 + Vite (SPA).
 - Backend: Node.js, Express, Mongoose (MongoDB).
-- Servicios: lector IMAP, IA (NVIDIA NIM API), Stripe (suscripciones), firma digital Hacienda v4.4.
+- Servicios: lector IMAP, IA (NVIDIA NIM API), ONVO Pay (suscripciones), firma digital Hacienda v4.4.
 
 ## Páginas públicas
 

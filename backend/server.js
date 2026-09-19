@@ -87,8 +87,8 @@ const facturaEmisionRoutes = require('./routes/facturaEmisionRoutes');
 const haciendaRoutes = require('./routes/haciendaRoutes');
 const haciendaConfigRoutes = require('./routes/haciendaConfigRoutes');
 const chatRoutes = require('./routes/chatRoutes');
-const stripeWebhookRoutes = require('./routes/stripeWebhookRoutes');
-const stripeRoutes = require('./routes/stripeRoutes');
+const onvoWebhookRoutes = require('./routes/onvoWebhookRoutes');
+const onvoRoutes = require('./routes/onvoRoutes');
 const emailWebhookRoutes = require('./routes/emailWebhookRoutes');
 const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes');
 
@@ -132,12 +132,13 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 /**
- * Webhook Stripe — DEBE montarse ANTES de express.json() para recibir raw body.
- * Stripe firma el body crudo; si se parsea a JSON primero, la firma falla.
+ * Webhook ONVO — se monta ANTES de express.json() global porque el router
+ * aplica su propio express.json(). ONVO autentica con X-Webhook-Secret,
+ * no con firma del body crudo.
  * Rate limiters globales NO aplican a este router (específicamente excluido)
- * porque Stripe necesita entregar el webhook sin límites.
+ * porque ONVO necesita entregar el webhook sin límites.
  */
-app.use('/api/stripe/webhook', stripeWebhookRoutes);
+app.use('/api/onvo/webhook', onvoWebhookRoutes);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -162,7 +163,7 @@ const authLimiter = rateLimit({
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
-  skip: (req) => req.path === '/api/stripe/webhook' || req.path.startsWith('/api/webhooks/'),
+  skip: (req) => req.path === '/api/onvo/webhook' || req.path.startsWith('/api/webhooks/'),
 });
 
 app.use('/api/auth', authLimiter);
@@ -227,7 +228,7 @@ app.use('/api/facturacion', facturaEmisionRoutes);
 app.use('/api/hacienda', haciendaRoutes);
 app.use('/api/hacienda', haciendaConfigRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api/stripe', stripeRoutes);
+app.use('/api/onvo', onvoRoutes);
 app.use('/api/webhooks/email', emailWebhookRoutes);
 app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes);
 
@@ -243,7 +244,7 @@ console.log('   /api/costos');
 console.log('   /api/facturacion');
 console.log('   /api/hacienda (v4.4 nativa + config multi-tenant)');
 console.log('   /api/chat (incluye /stream)');
-console.log('   /api/stripe (checkout, portal, estado, webhook)');
+console.log('   /api/onvo (checkout, cancelar, estado, webhook)');
 console.log('   /api/webhooks/email (Cloudflare Email Routing)');
 console.log('   /api/webhooks/whatsapp (Meta Cloud API)');
 

@@ -1,6 +1,6 @@
 // Definición de respaldo (fallback) de los planes SaaS.
 // La fuente de verdad está en backend/config/planes.js y se sirve por
-// GET /api/stripe/planes. Si la API responde, el frontend usa ese catálogo;
+// GET /api/onvo/planes. Si la API responde, el frontend usa ese catálogo;
 // acá se mantiene copia para no romper la Landing si falla la petición.
 export const PLANES = [
   {

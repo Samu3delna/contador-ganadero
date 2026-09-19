@@ -124,7 +124,7 @@ export default function PoliticaPrivacidadPage() {
           Únicamente se comparte información con los siguientes proveedores estrictamente necesarios para la ejecución del servicio:
         </p>
         <ul>
-          <li><strong>Stripe:</strong> Procesamiento seguro de pagos con tarjetas de crédito/débito bajo certificación PCI-DSS.</li>
+          <li><strong>ONVO Pay:</strong> Procesamiento seguro de pagos con tarjetas de crédito/débito bajo certificación PCI-DSS.</li>
           <li><strong>Proveedores de Infraestructura en la Nube:</strong> Servidores de base de datos y cómputo que cumplen con estándares internacionales de seguridad (SOC 2, ISO 27001).</li>
           <li><strong>Ministerio de Hacienda de Costa Rica:</strong> Envío de comprobantes XML a solicitud del usuario cuando utiliza el módulo de emisión de facturación electrónica.</li>
         </ul>

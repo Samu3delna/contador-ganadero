@@ -82,7 +82,7 @@ function construirFeatures(id) {
   return [...base, ...soporte];
 }
 
-// Catálogo público que también sirve la API /api/stripe/planes
+// Catálogo público que también sirve la API /api/onvo/planes
 const CATALOGO_PLANES = [
   {
     id: 'free',

@@ -80,7 +80,7 @@ export default function CondicionesServicioPage() {
           <h2 className="legal-section-title">Facturación, Precios y Pasarelas de Pago</h2>
         </div>
         <p>
-          Los pagos de las suscripciones pagas (Pro y Agro) se procesan a través de la pasarela segura <strong>Stripe</strong>.
+          Los pagos de las suscripciones pagas (Pro y Agro) se procesan a través de la pasarela segura <strong>ONVO Pay</strong>.
         </p>
         <ul>
           <li><strong>Ciclos de Cobro:</strong> Las suscripciones se cobran por adelantado en ciclos mensuales o anuales, según la opción seleccionada.</li>

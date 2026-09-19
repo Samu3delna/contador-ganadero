@@ -146,11 +146,11 @@ export const eliminarDeclaracionAPI = (id) => api.delete(`/declaraciones/${id}`)
 // === Deducibilidad ===
 export const actualizarDeducibilidadAPI = (id, datos) => api.put(`/facturas/${id}/deducibilidad`, datos);
 
-// === Stripe / SaaS ===
-export const crearCheckoutAPI = (planId) => api.post('/stripe/checkout', { planId });
-export const crearPortalAPI = () => api.post('/stripe/portal');
-export const obtenerEstadoSuscripcionAPI = () => api.get('/stripe/estado');
-export const obtenerPlanesAPI = () => api.get('/stripe/planes');
+// === ONVO Pay / SaaS ===
+export const crearCheckoutAPI = (planId) => api.post('/onvo/checkout', { planId });
+export const cancelarSuscripcionAPI = () => api.post('/onvo/cancelar');
+export const obtenerEstadoSuscripcionAPI = () => api.get('/onvo/estado');
+export const obtenerPlanesAPI = () => api.get('/onvo/planes');
 // refrescarTokenAPI: usa la misma instancia axios (withCredentials: true) para que la cookie httpOnly viaje
 export const refrescarTokenAPI = () => api.post('/auth/refresh');
 export const logoutAPI = () => api.post('/auth/logout');

@@ -306,6 +306,7 @@ const actualizarPerfil = async (req, res, next) => {
         }
       }
       usuario.telefono = telLimpio || undefined;
+    }
     if (cedula !== undefined) {
       if (typeof cedula === 'string') {
         const numLimpio = cedula.replace(/[-\s]/g, '').trim();
