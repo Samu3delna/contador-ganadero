@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const Usuario = require('../models/Usuario');
 const Tenant = require('../models/Tenant');
 const { encrypt } = require('../utils/crypto');
+const { esEmailSuperAdmin } = require('../middleware/adminGuard');
 
 const generarToken = (usuario, tenantId) => {
   return jwt.sign(
@@ -120,7 +121,9 @@ const googleCallback = async (req, res, next) => {
     const refreshToken = generarRefreshToken(usuario, tenant._id);
     setRefreshCookie(res, refreshToken);
 
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${accessToken}`);
+    // Super Admin aterriza directo en el panel de administración
+    const destino = esEmailSuperAdmin(email) ? '/admin' : '/dashboard';
+    res.redirect(`${process.env.FRONTEND_URL}${destino}?token=${accessToken}`);
   } catch (error) {
     next(error);
   }

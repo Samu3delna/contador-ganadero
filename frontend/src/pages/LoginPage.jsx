@@ -32,6 +32,7 @@ export default function LoginPage() {
     setError('');
     setCargando(true);
     try {
+      let datosSesion;
       if (esRegistro) {
         let datosRegistro = { ...form };
         if (datosRegistro.telefono) {
@@ -44,13 +45,14 @@ export default function LoginPage() {
             datosRegistro.telefono = `+506${digits}`;
           }
         }
-        await registro(datosRegistro);
+        datosSesion = await registro(datosRegistro);
       } else {
-        await login(form.email, form.password);
+        datosSesion = await login(form.email, form.password);
       }
-      navigate('/dashboard');
+      // Super Admin aterriza directo en el panel de administración
+      navigate(datosSesion?.esSuperAdmin ? '/admin' : '/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Error de conexión');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Error de conexión');
     } finally {
       setCargando(false);
     }
