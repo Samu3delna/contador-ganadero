@@ -316,8 +316,9 @@ const listarTenants = async (req, res, next) => {
     if (req.query.estado && ESTADOS_TENANT_VALIDOS.includes(req.query.estado)) filtro.estado = req.query.estado;
 
     const [tenants, total] = await Promise.all([
+      // Nota: certificadoP12Base64/pinCertificado/passwordHacienda ya tienen
+      // select:false a nivel de schema — excluirlos aquí choca con esa proyección.
       Tenant.find(filtro)
-        .select('-configuracionHacienda')
         .populate('owner', 'nombre email suspendido')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -339,7 +340,8 @@ const listarTenants = async (req, res, next) => {
 const obtenerTenant = async (req, res, next) => {
   try {
     const tenant = await Tenant.findById(req.params.id)
-      .select('-configuracionHacienda.certificadoP12Base64 -configuracionHacienda.pinCertificado -configuracionHacienda.passwordHacienda')
+      // Los secretos de Hacienda (certificado, PIN, contraseña) tienen select:false
+      // en el schema, así que nunca viajan en esta respuesta.
       .populate('owner', 'nombre email suspendido createdAt')
       .populate('usuarios.usuarioId', 'nombre email rol suspendido');
 

@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User } from 'lucide-react';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User, Shield, Users, Building, Activity } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
@@ -49,8 +49,19 @@ const PLAN_NOMBRES = {
   pro: 'Pro',
 };
 
+// Sección exclusiva del Super Admin (flag esSuperAdmin del perfil)
+const SECCION_ADMIN = {
+  titulo: 'ADMINISTRACIÓN',
+  items: [
+    { path: '/admin', label: 'Panel Global', icon: Shield },
+    { path: '/admin/usuarios', label: 'Usuarios', icon: Users },
+    { path: '/admin/tenants', label: 'Tenants & Planes', icon: Building },
+    { path: '/admin/monitoreo', label: 'Monitoreo', icon: Activity },
+  ]
+};
+
 // Título legible de la ruta actual, para mostrarlo en la barra superior móvil.
-const TITULOS_RUTA = menuSections
+const TITULOS_RUTA = [...menuSections, SECCION_ADMIN]
   .flatMap((s) => s.items)
   .reduce((acc, item) => ({ ...acc, [item.path]: item.label }), {});
 
@@ -98,6 +109,11 @@ export default function Sidebar() {
   }, []);
 
   const inicialUsuario = (usuario?.nombre || 'U').charAt(0).toUpperCase();
+
+  // Menú con sección de administración sólo si el usuario es super admin
+  const seccionesVisibles = usuario?.esSuperAdmin
+    ? [...menuSections, SECCION_ADMIN]
+    : menuSections;
 
   return (
     <>
@@ -150,7 +166,7 @@ export default function Sidebar() {
         </div>
 
         <nav className="sidebar-nav" aria-label="Navegación principal">
-          {menuSections.map((seccion) => (
+          {seccionesVisibles.map((seccion) => (
             <div key={seccion.titulo} className="sidebar-section">
               <span className="sidebar-section-title">{seccion.titulo}</span>
               <div className="sidebar-section-items">

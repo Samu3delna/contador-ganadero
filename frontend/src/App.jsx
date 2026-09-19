@@ -28,6 +28,12 @@ const PlanesPage = lazy(() => import('./pages/PlanesPage'));
 const BillingPage = lazy(() => import('./pages/BillingPage'));
 const PerfilPage = lazy(() => import('./pages/PerfilPage'));
 
+// Páginas de Super Admin
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminUsuariosPage = lazy(() => import('./pages/admin/AdminUsuariosPage'));
+const AdminTenantsPage = lazy(() => import('./pages/admin/AdminTenantsPage'));
+const AdminMonitoreoPage = lazy(() => import('./pages/admin/AdminMonitoreoPage'));
+
 function PageLoader() {
   return <div className="loader-center"><div className="loader" /></div>;
 }
@@ -36,6 +42,13 @@ function RutaProtegida({ children }) {
   const { usuario, cargando } = useAuth();
   if (cargando) return <PageLoader />;
   return usuario ? children : <Navigate to="/login" />;
+}
+
+// Guard de rutas Super Admin: además de autenticado, requiere flag esSuperAdmin
+function RutaAdmin({ children }) {
+  const { usuario, cargando } = useAuth();
+  if (cargando) return <PageLoader />;
+  return usuario?.esSuperAdmin ? children : <Navigate to="/dashboard" replace />;
 }
 
 function AppLayout() {
@@ -61,6 +74,13 @@ function AppLayout() {
             <Route path="/planes" element={<PlanesPage />} />
             <Route path="/billing" element={<BillingPage />} />
             <Route path="/perfil" element={<PerfilPage />} />
+
+            {/* Rutas Super Admin */}
+            <Route path="/admin" element={<RutaAdmin><AdminDashboardPage /></RutaAdmin>} />
+            <Route path="/admin/usuarios" element={<RutaAdmin><AdminUsuariosPage /></RutaAdmin>} />
+            <Route path="/admin/tenants" element={<RutaAdmin><AdminTenantsPage /></RutaAdmin>} />
+            <Route path="/admin/monitoreo" element={<RutaAdmin><AdminMonitoreoPage /></RutaAdmin>} />
+
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

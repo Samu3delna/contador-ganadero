@@ -1,4 +1,4 @@
-import LegalLayout from '../components/layout/LegalLayout';
+.import LegalLayout from '../components/layout/LegalLayout';
 import useSeo from '../hooks/useSeo';
 import { MailCheck } from 'lucide-react';
 

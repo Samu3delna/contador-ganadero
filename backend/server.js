@@ -232,6 +232,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/onvo', onvoRoutes);
 app.use('/api/webhooks/email', emailWebhookRoutes);
 app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes);
+app.use('/api/admin', adminRoutes);
 
 console.log('📋 Rutas registradas:');
 console.log('   /api/auth (incluye /refresh, /logout)');
@@ -248,6 +249,7 @@ console.log('   /api/chat (incluye /stream)');
 console.log('   /api/onvo (checkout, cancelar, estado, webhook)');
 console.log('   /api/webhooks/email (Cloudflare Email Routing)');
 console.log('   /api/webhooks/whatsapp (Meta Cloud API)');
+console.log('   /api/admin (panel super admin: usuarios, tenants, monitoreo)');
 
 // Middleware para rutas no encontradas
 app.use(notFound);
