@@ -7,7 +7,7 @@ import './AdvertisingSlot.css';
  *
  * Regla por plan:
  *   - free -> muestra el espacio publicitario (placeholder para AdSense / proveedor).
- *   - pro / agro (y entornos sin sesión, salvo que se pase `mostrarPublico`) -> no muestra nada.
+ *   - pro (y entornos sin sesión, salvo que se pase `mostrarPublico`) -> no muestra nada.
  *
  * Cuando se integre Google AdSense, basta reemplazar el contenido del slot por:
  *   <ins class="adsbygoogle"
@@ -43,7 +43,7 @@ export default function AdvertisingSlot({ mostrarPublico = false, tamaño = 'ban
           <div className="advertising-slot-adsense">Slot configurado ({adsenseSlot})</div>
         ) : (
           <div className="advertising-slot-placeholder">
-            Espacio publicitario reservado. Los planes Pro y Agro no lo muestran.
+            Espacio publicitario reservado. El plan Pro no lo muestra.
           </div>
         )}
       </div>

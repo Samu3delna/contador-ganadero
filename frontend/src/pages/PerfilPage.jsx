@@ -20,7 +20,6 @@ import './PerfilPage.css';
 const PLAN_NOMBRES = {
   free: 'Gratis',
   pro: 'Pro',
-  agro: 'Agro',
 };
 
 const ROL_NOMBRES = {

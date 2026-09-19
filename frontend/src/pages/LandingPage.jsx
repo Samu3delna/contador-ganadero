@@ -130,7 +130,7 @@ const FAQ = [
   {
     pregunta: '¿Cuánto cuesta? ¿Hay plan gratuito?',
     respuesta:
-      'Hay un plan Gratis sin costo y sin tarjeta para probar la plataforma (con anuncios en la web), y dos planes de pago: Pro ($19/mes) y Agro ($49/mes). Los planes de pago eliminan los anuncios y suman más conteos, VLM y soporte. Podés cancelar cuando quieras.',
+      'Hay un plan Gratis sin costo y sin tarjeta para probar la plataforma (con anuncios en la web) y un plan Pro de $10/mes. El plan Pro elimina los anuncios y suma más conteos, VLM, módulo D-150 y soporte por email. Podés cancelar cuando quieras.',
   },
 ];
 
@@ -590,7 +590,7 @@ export default function LandingPage() {
         <div className="landing-seccion-head">
           <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Planes y precios</h2>
           <p className="landing-seccion-subtitulo text-slate-400">
-            Empezá gratis y subí de plan cuando tu finca lo necesite. Pro y Agro no muestran anuncios.
+            Empezá gratis y subí a Pro ($10/mes) cuando tu finca lo necesite. El plan Pro no muestra anuncios.
           </p>
         </div>
         <div className="landing-planes-grid">

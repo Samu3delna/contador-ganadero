@@ -47,7 +47,6 @@ const menuSections = [
 const PLAN_NOMBRES = {
   free: 'Gratis',
   pro: 'Pro',
-  agro: 'Agro',
 };
 
 // Título legible de la ruta actual, para mostrarlo en la barra superior móvil.

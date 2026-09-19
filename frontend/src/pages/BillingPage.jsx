@@ -9,7 +9,6 @@ import './BillingPage.css';
 const PLAN_NOMBRES = {
   free: 'Gratis',
   pro: 'Pro',
-  agro: 'Agro',
 };
 
 const ESTADO_LABEL = {
@@ -169,7 +168,7 @@ export default function BillingPage() {
           <div className="billing-cta">
             <div>
               <h3>Sube de plan y desbloquea todo</h3>
-              <p>Más conteos, VLM, soporte prioritario y sin anuncios.</p>
+              <p>Por $10/mes: sin anuncios, más conteos, VLM y soporte por email.</p>
             </div>
             <button className="btn btn-primary" onClick={() => navigate('/planes')}>
               Haz upgrade <ArrowRight size={16} />

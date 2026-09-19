@@ -64,6 +64,12 @@ los anuncios y aumentan límites/features:
   - `subscription.renewal.failed` (pago fallido: pasa a `periodo_gracia`)
 - Nota: ONVO no tiene portal de clientes ni webhook de cancelación; la cancelación
   se hace desde la app (`DELETE /v1/subscriptions/{id}` vía `POST /api/onvo/cancelar`).
+- Limpieza de la base de datos (campos e índices legados de Stripe):
+  ```bash
+  cd backend
+  npm run migrate:onvo -- --dry-run   # simulación
+  npm run migrate:onvo                # aplica (ya ejecutada 2026-09-18)
+  ```
 
 ### 2. Migración de tenants existentes
 ```bash

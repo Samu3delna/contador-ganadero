@@ -89,7 +89,7 @@ export default function PlanesPage() {
         <div>
           <h1 className="page-title">Planes</h1>
           <p className="page-subtitle">
-            Tres planes pensados para tu finca. El plan Gratis tiene anuncios; Pro y Agro no.
+            Dos planes pensados para tu finca: Gratis tiene anuncios; Pro ($10/mes) los quita y desbloquea todo.
           </p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, AlertTriangle, Loader2, Upload } from 'lucide-react';
 import {
-  obtenerFacturasAPI, estadoEmailAPI, sincronizarEmailAPI,
+  obtenerFacturasAPI, estadoEmailAPI,
   descargarXML_API, descargarPDF_API, obtenerAlertasTarifaAPI,
   subirFacturaXML_API
 } from '../services/api';
@@ -57,13 +57,11 @@ export default function FacturasPage() {
   async function handleSincronizar() {
     setSincronizando(true);
     try {
-      await sincronizarEmailAPI().catch(() => null);
       await cargar();
       toast.success('Facturas actualizadas');
     } catch(err) {
       console.error(err);
-      await cargar();
-      toast.success('Facturas actualizadas');
+      toast.error('Error al recargar facturas');
     } finally {
       setSincronizando(false);
     }

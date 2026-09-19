@@ -12,8 +12,8 @@ const { encrypt, decrypt } = require('../utils/crypto');
  * Hoy: 1 Tenant = 1 Usuario dueño. Mañana: esqueleto preparado para RBAC
  * multi-usuario sin reescribir el esquema.
  *
- * Planes vigentes (3): free (Gratis + anuncios) | pro (Pro sin anuncios) |
- * agro (Agro sin anuncios). Los límites se centralizan en config/planes.js.
+ * Planes vigentes (2): free (Gratis + anuncios) | pro (Pro $10 sin anuncios).
+ * Los límites se centralizan en config/planes.js.
  */
 
 // === Usuario miembro del tenant (subdoc embebido) ===
@@ -223,7 +223,7 @@ tenantSchema.index({ onvoSubscriptionId: 1 }, { unique: true, sparse: true });
 
 /**
  * Devuelve los límites correspondientes a un plan
- * @param {string} plan - free|pro|agro
+ * @param {string} plan - free|pro
  * @returns {object} limites
  */
 tenantSchema.statics.obtenerLimitesPlan = function (plan) {

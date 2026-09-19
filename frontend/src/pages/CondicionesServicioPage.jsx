@@ -55,7 +55,7 @@ export default function CondicionesServicioPage() {
           <h2 className="legal-section-title">Planes y Modelos de Suscripción</h2>
         </div>
         <p>
-          ContadorGanadero opera bajo un modelo freemium estructurado en tres niveles para adaptarse al tamaño de su finca:
+          ContadorGanadero opera bajo un modelo freemium con dos planes simples:
         </p>
         <ul>
           <li>
@@ -63,12 +63,8 @@ export default function CondicionesServicioPage() {
             publicitarios patrocinados de empresas del sector agropecuario y un límite mensual de facturas procesadas por IA.
           </li>
           <li>
-            <strong>Plan Pro:</strong> Eliminación total de publicidad, mayor cuota de procesamiento de facturas, reportes avanzados de costos
-            y generación de declaraciones cuatrimestrales y anuales.
-          </li>
-          <li>
-            <strong>Plan Agro (Empresarial):</strong> Procesamiento ilimitado o de alto volumen, soporte multi-finca, multi-especie, emisión directa
-            de comprobantes REA y soporte técnico prioritario por WhatsApp / Teléfono.
+            <strong>Plan Pro ($10/mes, Sin Anuncios):</strong> Eliminación total de publicidad, mayor cuota de procesamiento de facturas, conteos
+            por visión (VLM), módulo D-150 / conciliación REA, más usuarios y almacenamiento, y soporte por email.
           </li>
         </ul>
       </section>
@@ -166,8 +162,8 @@ export default function CondicionesServicioPage() {
           Ofrecemos soporte técnico continuo para resolver incidencias de acceso, sincronización IMAP o dudas sobre la visualización de reportes:
         </p>
         <ul>
-          <li><strong>Plan Gratis:</strong> Soporte vía correo electrónico y asistente virtual con IA.</li>
-          <li><strong>Plan Pro / Agro:</strong> Soporte prioritario vía ticket, correo y canal de mensajería directa en días hábiles.</li>
+          <li><strong>Plan Gratis:</strong> Soporte vía asistente virtual con IA y comunidad.</li>
+          <li><strong>Plan Pro:</strong> Soporte por correo electrónico en días hábiles.</li>
         </ul>
       </section>
     </LegalLayout>
