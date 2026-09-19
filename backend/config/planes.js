@@ -1,16 +1,15 @@
 /**
  * Catálogo central de planes de ContadorGanadero.
  *
- * Tres planes (freemium con anuncios):
- *  - free  : Gratis, con anuncios web (limita conteos IA / almacenamiento / VLM).
- *  - pro   : Pago, sin anuncios, para fincas en crecimiento.
- *  - agro  : Pago, sin anuncios, para operaciones grandes / cooperativas.
+ * Dos planes (freemium con anuncios):
+ *  - free  : Gratis, con anuncios web y límites básicos.
+ *  - pro   : $10/mes, sin anuncios, más conteos, VLM y soporte por email.
  *
  * `LIMITES_POR_PLAN` es la fuente de verdad para el backend (Tenant)
  * y `CATALOGO_PLANES` es la vista pública (precio, features, anuncios).
  */
 
-const PLANES_VALIDOS = ['free', 'pro', 'agro'];
+const PLANES_VALIDOS = ['free', 'pro'];
 
 // Límites aplicados realmente por el backend
 const LIMITES_POR_PLAN = {
@@ -36,17 +35,6 @@ const LIMITES_POR_PLAN = {
     anunciosHabilitados: false,
     soporte: 'Email',
   },
-  agro: {
-    conteosMes: 3000,
-    usuariosTenant: 10,
-    almacenamientoMB: 204800, // 200 GB
-    vlmHabilitado: true,
-    tokensChatMes: 5000000,
-    moduloContable: true,
-    moduloD150: true,
-    anunciosHabilitados: false,
-    soporte: 'Prioritario',
-  },
 };
 
 function formatearAlmacenamiento(mb) {
@@ -61,25 +49,20 @@ function formatearNumero(n) {
   return n.toLocaleString('es-CR');
 }
 
+// Lista simple de beneficios por plan (se construye desde los límites
+// para que la web nunca diverja de lo que el backend realmente aplica).
 function construirFeatures(id) {
   const l = LIMITES_POR_PLAN[id] || LIMITES_POR_PLAN.free;
-  const base = [
+  return [
     { texto: `${formatearNumero(l.conteosMes)} conteos visuales IA al mes`, incluido: true },
     { texto: `${l.usuariosTenant} ${l.usuariosTenant === 1 ? 'usuario' : 'usuarios'}`, incluido: true },
     { texto: `${formatearAlmacenamiento(l.almacenamientoMB)} de almacenamiento`, incluido: true },
-    { texto: `${formatearNumero(l.tokensChatMes)} tokens del chat IA al mes`, incluido: true },
+    { texto: 'Conteos por visión (VLM)', incluido: l.vlmHabilitado },
     { texto: 'Módulo contable y fiscal (IVA, Renta)', incluido: l.moduloContable },
     { texto: 'Módulo D-150 / conciliación REA', incluido: l.moduloD150 },
-    { texto: 'Conteos por visión (VLM)', incluido: l.vlmHabilitado },
+    { texto: l.anunciosHabilitados ? 'Con anuncios' : 'Sin anuncios', incluido: !l.anunciosHabilitados },
+    { texto: 'Soporte por email', incluido: l.soporte === 'Email' },
   ];
-
-  const soporte = [
-    { texto: 'Soporte por comunidad', incluido: true },
-    { texto: 'Soporte por email', incluido: l.soporte === 'Email' || l.soporte === 'Prioritario' },
-    { texto: 'Soporte prioritario', incluido: l.soporte === 'Prioritario' },
-  ];
-
-  return [...base, ...soporte];
 }
 
 // Catálogo público que también sirve la API /api/onvo/planes
@@ -103,10 +86,10 @@ const CATALOGO_PLANES = [
   {
     id: 'pro',
     nombre: 'Pro',
-    precio: 19,
+    precio: 10,
     moneda: 'USD',
     periodicidad: 'mes',
-    descripcion: 'Fincas en crecimiento: más conteos, VLM y sin anuncios.',
+    descripcion: 'Sin anuncios y con todo desbloqueado: más conteos, VLM y soporte por email.',
     destacado: true,
     anuncios: false,
     limiteConteos: LIMITES_POR_PLAN.pro.conteosMes,
@@ -115,22 +98,6 @@ const CATALOGO_PLANES = [
     vlm: LIMITES_POR_PLAN.pro.vlmHabilitado,
     limites: LIMITES_POR_PLAN.pro,
     caracteristicas: construirFeatures('pro'),
-  },
-  {
-    id: 'agro',
-    nombre: 'Agro',
-    precio: 49,
-    moneda: 'USD',
-    periodicidad: 'mes',
-    descripcion: 'Grandes operaciones y cooperativas con soporte prioritario.',
-    destacado: false,
-    anuncios: false,
-    limiteConteos: LIMITES_POR_PLAN.agro.conteosMes,
-    limiteUsuarios: LIMITES_POR_PLAN.agro.usuariosTenant,
-    almacenamiento: formatearAlmacenamiento(LIMITES_POR_PLAN.agro.almacenamientoMB),
-    vlm: LIMITES_POR_PLAN.agro.vlmHabilitado,
-    limites: LIMITES_POR_PLAN.agro,
-    caracteristicas: construirFeatures('agro'),
   },
 ];
 

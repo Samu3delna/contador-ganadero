@@ -197,11 +197,16 @@ router.post(
       const exitoCount = resultados.filter(r => r.exito).length;
       console.log(`✅ [Webhook Email] Procesamiento finalizado: ${exitoCount}/${resultados.length} guardadas.`);
 
+      const mensajeResumen = exitoCount > 0
+        ? `✅ ${exitoCount} factura(s) guardada(s) con éxito`
+        : `⚠️ 0 facturas guardadas: ${resultados[0]?.mensaje || resultados[0]?.error || 'No se pudo procesar el XML'}`;
+
       return res.status(200).json({
+        resumen: mensajeResumen,
+        procesadas: exitoCount,
         recibido: true,
         remitente: fromLimpio,
         destinatario: toLimpio,
-        procesadas: exitoCount,
         detalles: resultados,
       });
     } catch (error) {

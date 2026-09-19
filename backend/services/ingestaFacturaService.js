@@ -129,12 +129,7 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
 
   const xmlString = typeof xmlContent === 'string' ? xmlContent : xmlContent.toString('utf-8');
 
-  // Ignorar acuses de recibo de Hacienda (MensajeHacienda)
-  if (xmlString.includes('<MensajeHacienda') || xmlString.includes(':MensajeHacienda')) {
-    return { ignorada: true, motivo: 'MensajeHacienda (acuse de recibo, no es factura)' };
-  }
-
-  // Parsear el XML
+  // Parsear el XML (soporta FacturaElectronica, TiqueteElectronico, NotaCredito, y MensajeHacienda)
   const datosFactura = parsearFacturaXML(xmlString);
   if (!datosFactura || !datosFactura.claveNumerica) {
     throw new Error('El XML no contiene una factura electrónica válida con Clave de Hacienda.');
@@ -168,6 +163,21 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
   });
 
   if (yaExiste) {
+    // Si la factura existente provenía de un acuse y ahora llegó el XML completo con líneas de detalle:
+    if (!datosFactura.esMensajeHacienda && (!yaExiste.lineaDetalle || yaExiste.lineaDetalle.length <= 1)) {
+      yaExiste.lineaDetalle = datosFactura.lineaDetalle || yaExiste.lineaDetalle;
+      yaExiste.resumenFactura = datosFactura.resumenFactura || yaExiste.resumenFactura;
+      yaExiste.alertasTarifa = datosFactura.alertasTarifa || yaExiste.alertasTarifa;
+      yaExiste.resumenValidacionTarifa = datosFactura.resumenValidacionTarifa || yaExiste.resumenValidacionTarifa;
+      await yaExiste.save();
+      return {
+        exito: true,
+        actualizada: true,
+        factura: yaExiste,
+        mensaje: `Factura ${datosFactura.claveNumerica} enriquecida con detalle de líneas completo.`,
+      };
+    }
+
     return {
       exito: true,
       duplicada: true,

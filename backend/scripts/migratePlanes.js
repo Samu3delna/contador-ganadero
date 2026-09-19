@@ -7,19 +7,18 @@ const { LIMITES_POR_PLAN } = require('../config/planes');
 
 /**
  * Migración de planes viejos (free|bronce|oro|corporativo) al nuevo modelo
- * de 3 planes (free|pro|agro), pensado para el freemium con anuncios:
+ * de 2 planes (free|pro), pensado para el freemium con anuncios:
  *
- *   bronce      -> pro   (mismo punto de precio $19)
- *   oro         -> agro  (mantiene rango alto; $49)
- *   corporativo -> agro  (el tier superior ahora es agro)
+ *   bronce / oro / corporativo -> pro (único plan de pago, $10/mes)
  *
  * Los planes free se dejan igual (se actualizan sus límites al catálogo nuevo).
  */
 
 const MAPEO_LEGADO = {
   bronce: 'pro',
-  oro: 'agro',
-  corporativo: 'agro',
+  oro: 'pro',
+  corporativo: 'pro',
+  agro: 'pro',
 };
 
 const NUEVOS_PLANES = Object.keys(LIMITES_POR_PLAN);
@@ -28,7 +27,7 @@ async function main(options = {}) {
   const dryRun = options.dryRun !== undefined ? options.dryRun : process.argv.includes('--dry-run');
   await conectarDB();
 
-  console.log('=== Migración de planes a 3 tiers (free | pro | agro) ===');
+  console.log('=== Migración de planes a 2 tiers (free | pro) ===');
   console.log(`Modo: ${dryRun ? 'DRY-RUN (no escribe)' : 'APLICANDO CAMBIOS'}`);
 
   const tenants = await Tenant.find();

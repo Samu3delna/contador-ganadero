@@ -84,7 +84,7 @@ export default function EmailStatus({ estadoEmail }) {
           <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 text-xs">
             <span className="text-slate-400 truncate">
               {telefonoUsuario ? (
-                <span>Vinculado a: <strong className="text-emerald-400 font-mono">+{telefonoUsuario}</strong></span>
+                <span>Vinculado a: <strong className="text-emerald-400 font-mono">+{telefonoUsuario.replace(/^\+/, '')}</strong></span>
               ) : (
                 <span className="text-amber-400">Sin teléfono vinculado</span>
               )}

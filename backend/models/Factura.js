@@ -61,8 +61,6 @@ const facturaSchema = new mongoose.Schema({
   // === Datos del XML de Hacienda CR ===
   claveNumerica: {
     type: String,
-    unique: true,
-    sparse: true, // Permitir null para facturas manuales
     index: true,
   },
   consecutivo: String,
@@ -223,5 +221,9 @@ facturaSchema.index({ tenantId: 1, periodoFiscal: 1, cuatrimestre: 1 });
 facturaSchema.index({ tenantId: 1, fechaEmision: -1 });
 facturaSchema.index({ tenantId: 1, 'resumenValidacionTarifa.alertasError': -1 });
 facturaSchema.index({ tenantId: 1, usuario: 1 });
+facturaSchema.index(
+  { claveNumerica: 1, tenantId: 1 },
+  { unique: true, partialFilterExpression: { claveNumerica: { $type: 'string' } } }
+);
 
 module.exports = mongoose.model('Factura', facturaSchema);

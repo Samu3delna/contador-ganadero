@@ -39,6 +39,17 @@ function parsearFacturaXML(xmlString) {
   try {
     const parsed = parser.parse(xmlString);
 
+    // Si es un acuse de recibo de Hacienda (MensajeHacienda)
+    const mensajeHacienda =
+      parsed.MensajeHacienda ||
+      parsed['MensajeHacienda'] ||
+      parsed['https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/mensajeHacienda'] ||
+      parsed['https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/mensajeHacienda'];
+
+    if (mensajeHacienda) {
+      return procesarNodoMensajeHacienda(mensajeHacienda);
+    }
+
     // El nodo raíz puede ser FacturaElectronica, NotaCreditoElectronica, etc.
     // Con removeNSPrefix: true, ya no hay prefijos de namespace
     let rootTagName = 'FacturaElectronica';
@@ -141,6 +152,100 @@ function procesarNodoFactura(nodo, rootTagName = '') {
     // Validación de tarifas agropecuarias
     alertasTarifa: alertas,
     resumenValidacionTarifa: resumenValidacion,
+  };
+}
+
+/**
+ * Procesa un nodo MensajeHacienda (acuse de recibo oficial con montos certificados)
+ */
+function procesarNodoMensajeHacienda(mh) {
+  const clave = String(mh.Clave || '').trim();
+  const total = Number(mh.TotalFactura || 0);
+  const impuesto = Number(mh.MontoTotalImpuesto || 0);
+  const subtotal = Math.max(0, total - impuesto);
+  const estado = String(mh.EstadoMensaje || mh.Mensaje || 'Aceptado').trim();
+
+  let fechaEmision = new Date();
+  let consecutivo = '';
+  if (clave.length === 50) {
+    const dia = clave.substring(3, 5);
+    const mes = clave.substring(5, 7);
+    const anio = '20' + clave.substring(7, 9);
+    fechaEmision = new Date(`${anio}-${mes}-${dia}T12:00:00-06:00`);
+    consecutivo = clave.substring(21, 41);
+  }
+
+  const emisor = {
+    nombre: String(mh.NombreEmisor || 'Emisor').trim(),
+    nombreComercial: '',
+    cedula: {
+      tipo: String(mh.TipoIdentificacionEmisor || '02').padStart(2, '0'),
+      numero: String(mh.NumeroCedulaEmisor || '').trim(),
+    },
+    telefono: '',
+    correo: '',
+    ubicacion: '',
+  };
+
+  const receptor = {
+    nombre: String(mh.NombreReceptor || '').trim(),
+    cedula: {
+      tipo: String(mh.TipoIdentificacionReceptor || '01').padStart(2, '0'),
+      numero: String(mh.NumeroCedulaReceptor || '').trim(),
+    },
+    correo: '',
+  };
+
+  const lineas = [
+    {
+      numeroLinea: 1,
+      detalle: `Factura autorizada por Hacienda (${mh.NombreEmisor || 'Proveedor'})`,
+      cantidad: 1,
+      unidadMedida: 'Unid',
+      precioUnitario: subtotal,
+      montoTotal: subtotal,
+      subtotal: subtotal,
+      montoTotalLinea: total,
+      impuestos: impuesto > 0 ? [{ codigo: '01', codigoTarifa: '08', tarifa: 13, monto: impuesto }] : [],
+    },
+  ];
+
+  return {
+    esMensajeHacienda: true,
+    claveNumerica: clave,
+    consecutivo: consecutivo || '0010000101' + clave.slice(-10),
+    fechaEmision,
+    emisor,
+    receptor,
+    lineaDetalle: lineas,
+    resumenFactura: {
+      totalServGravados: 0,
+      totalServExentos: 0,
+      totalMercanciasGravadas: subtotal,
+      totalMercanciasExentas: 0,
+      totalGravado: subtotal,
+      totalExento: 0,
+      totalVenta: subtotal,
+      totalDescuentos: 0,
+      totalVentaNeta: subtotal,
+      totalImpuesto: impuesto,
+      totalComprobante: total,
+    },
+    moneda: 'CRC',
+    tipoCambio: 1,
+    versionEsquema: '4.4',
+    tipoDocumento: 'Factura Electrónica (Acuse Hacienda)',
+    estadoHacienda: estado,
+    cuatrimestre: obtenerCuatrimestre(fechaEmision),
+    periodoFiscal: fechaEmision.getFullYear(),
+    alertasTarifa: [],
+    resumenValidacionTarifa: {
+      totalLineas: 1,
+      alertasError: 0,
+      alertasAdvertencia: 0,
+      lineasOk: 1,
+      ahorrosPerdidos: 0,
+    },
   };
 }
 

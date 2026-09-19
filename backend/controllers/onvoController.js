@@ -11,7 +11,6 @@ const onvo = require('../services/onvoService');
 const PLAN_TO_PRICE = {
   free: process.env.ONVO_PRICE_FREE,
   pro: process.env.ONVO_PRICE_PRO,
-  agro: process.env.ONVO_PRICE_AGRO,
 };
 
 /**
@@ -24,9 +23,9 @@ const PLAN_TO_PRICE = {
 const crearSesionCheckout = async (req, res, next) => {
   try {
     const { planId } = req.body;
-    if (!['pro', 'agro'].includes(planId)) {
+    if (planId !== 'pro') {
       res.status(400);
-      throw new Error('planId inválido. Debe ser: pro o agro');
+      throw new Error('planId inválido. El único plan de pago es: pro');
     }
 
     const priceId = PLAN_TO_PRICE[planId];
