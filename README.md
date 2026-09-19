@@ -4,8 +4,8 @@ Aplicación MERN full-stack para funcionar como contador personal automatizado p
 
 ## Características Principales
 
-1. **Integración de Correo Electrónico:** Escucha activa vía IMAP para descargar facturas electrónicas XML y PDF.
-2. **Procesamiento Inteligente:** Utiliza IA (OpenRouter) para categorizar automáticamente los gastos extraídos de las facturas (ej. insumos veterinarios vs gastos generales).
+1. **Recepción Automática de Facturas:** Ingesta instantánea de comprobantes electrónicos vía Cloudflare Email Routing (buzón exclusivo `@contadorganandero.com`) y Bot oficial de WhatsApp para archivos XML, acuses (`MensajeHacienda`) y PDFs.
+2. **Procesamiento Inteligente:** Utiliza IA (OpenRouter / NVIDIA) para categorizar automáticamente los gastos extraídos de las facturas (ej. insumos veterinarios vs gastos generales).
 3. **Módulo de Ingresos:** Registro manual de venta de ganado, leche y otros productos.
 4. **Lógica Tributaria Costarricense (2026):**
    - Cálculo del **IVA Cuatrimestral** (Formulario D-135-1).
@@ -42,8 +42,8 @@ Aplicación MERN full-stack para funcionar como contador personal automatizado p
    ```
 
 ## Estructura
-- `/backend`: Servidor Node.js, Express, Mongoose, servicios IMAP y de IA.
-- `/frontend`: Aplicación React construida con Vite.
+- `/backend`: Servidor Node.js, Express, Mongoose, webhooks de Cloudflare Email, bot de WhatsApp y servicios de IA.
+- `/frontend`: Aplicación React construida con Vite y soporte para Google AdSense.
 
 ## Nuevos Módulos (2026)
 
@@ -75,6 +75,6 @@ Configuración del proyecto para el frontend en Vercel:
 | **Root Directory** | `frontend` |
 | **Build Command** | `npm run build` |
 | **Output Directory** | `dist` |
-| **Variables de Entorno** | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID` |
+| **Variables de Entorno** | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`, `VITE_ADSENSE_CLIENT`, `VITE_ADSENSE_SLOT` |
 
 El archivo [`frontend/vercel.json`](frontend/vercel.json) gestiona automáticamente la reescritura de rutas para Single Page Application (SPA).

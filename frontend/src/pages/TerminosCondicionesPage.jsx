@@ -140,7 +140,7 @@ export default function TerminosCondicionesPage() {
         <p>
           La plataforma se proporciona &quot;tal cual&quot; (<em>as is</em>) y &quot;según disponibilidad&quot;. Si bien implementamos las mejores prácticas
           de seguridad y alta disponibilidad, no garantizamos que el servicio sea ininterrumpido o esté 100% libre de errores ante caídas de
-          servicios externos (como la plataforma ATV de Hacienda, servidores de correo IMAP o pasarelas bancarias).
+          servicios externos (como la plataforma ATV de Hacienda, enrutamiento de correos de Cloudflare, mensajería de WhatsApp o pasarelas bancarias).
         </p>
         <p>
           En ningún caso ContadorGanadero responderá por lucro cesante, pérdidas indirectas, multas o recargos impuestos por la Dirección
@@ -181,8 +181,8 @@ export default function TerminosCondicionesPage() {
             <h4>¿Dudas sobre nuestros términos legales?</h4>
             <p>Escríbenos a nuestro equipo legal y de cumplimiento tributario.</p>
           </div>
-          <a href="mailto:soporte@contadorganadero.cr" className="btn btn-secondary btn-sm">
-            soporte@contadorganadero.cr
+          <a href="mailto:soporte@contadorganandero.com" className="btn btn-secondary btn-sm">
+            soporte@contadorganandero.com
           </a>
         </div>
       </section>

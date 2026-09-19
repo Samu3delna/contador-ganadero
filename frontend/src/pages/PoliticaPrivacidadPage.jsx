@@ -58,7 +58,7 @@ export default function PoliticaPrivacidadPage() {
           <li><strong>Datos de Identificación del Titular:</strong> Nombre completo, correo electrónico, número de identificación (cédula física, jurídica, DIMEX o NITE) y teléfono.</li>
           <li><strong>Datos de la Finca / Explotación:</strong> Nombre de la finca, ubicación geográfica general, tipo de actividad pecuaria o agrícola (bovinos de cría/engorde/leche, aves, acuicultura, apicultura, agricultura).</li>
           <li><strong>Datos Fiscales y Comprobantes Electrónicos:</strong> Archivos XML y PDF de facturas electrónicas de compra y venta, montos, tarifas de IVA (1%, 13%, exento), líneas de detalle de insumos y claves numéricas de Hacienda.</li>
-          <li><strong>Credenciales Técnicas para Integraciones:</strong> Datos de acceso IMAP (servidor, usuario, contraseña de aplicación cifrada) y llaves criptográficas <code>.p12</code> y PIN de Hacienda para la emisión autorizada de comprobantes.</li>
+          <li><strong>Credenciales Técnicas y Canales de Recepción:</strong> Dirección de correo electrónico asignada a la finca (<code>@contadorganandero.com</code>) para recepción de facturas, número de teléfono vinculado al bot de WhatsApp para reenvío de comprobantes, y llaves criptográficas <code>.p12</code> y PIN de Hacienda para la emisión autorizada de comprobantes. <em>(ContadorGanadero no solicita ni almacena contraseñas de cuentas de correo externas ni accesos IMAP).</em></li>
           <li><strong>Datos de Inventario y Producción:</strong> Pesos de animales, registros de lotes, consumos de insumos, parámetros de producción y costos asociados.</li>
         </ul>
       </section>
@@ -108,7 +108,7 @@ export default function PoliticaPrivacidadPage() {
         <p>Aplicamos medidas técnicas, organizativas y físicas para proteger sus datos contra acceso no autorizado, alteración o pérdida:</p>
         <ul>
           <li><strong>Cifrado en Tránsito:</strong> Toda comunicación entre su navegador y nuestros servidores utiliza protocolos seguros SSL/TLS (HTTPS).</li>
-          <li><strong>Cifrado de Credenciales:</strong> Las contraseñas de usuario se almacenan con algoritmos de hashing unidireccional (bcrypt con salt seguro). Las llaves criptográficas y contraseñas de correo IMAP se almacenan en reposo mediante cifrado AES-256.</li>
+          <li><strong>Cifrado de Credenciales y Llaves:</strong> Las contraseñas de usuario se almacenan con algoritmos de hashing unidireccional (bcrypt con salt criptográfico seguro). Las llaves criptográficas oficiales de Hacienda (<code>.p12</code>) y PINs se almacenan en reposo mediante cifrado simétrico AES-256.</li>
           <li><strong>Bases de Datos Aisladas:</strong> El acceso a la base de datos se realiza bajo principios de mínimo privilegio con autenticación estricta y firewalls de red.</li>
         </ul>
       </section>
@@ -125,8 +125,11 @@ export default function PoliticaPrivacidadPage() {
         </p>
         <ul>
           <li><strong>ONVO Pay:</strong> Procesamiento seguro de pagos con tarjetas de crédito/débito bajo certificación PCI-DSS.</li>
+          <li><strong>Cloudflare:</strong> Enrutamiento seguro y entrega instantánea de correos electrónicos entrantes con comprobantes hacia la dirección de la finca.</li>
+          <li><strong>Meta (WhatsApp Cloud API):</strong> Infraestructura de mensajería para la recepción de comprobantes y fotos de tiquetes reenviados voluntariamente por el usuario.</li>
+          <li><strong>Google AdSense:</strong> Red de anuncios publicitarios para usuarios suscritos al plan gratuito (sin compartir datos fiscales privados ni comprobantes tributarios).</li>
           <li><strong>Proveedores de Infraestructura en la Nube:</strong> Servidores de base de datos y cómputo que cumplen con estándares internacionales de seguridad (SOC 2, ISO 27001).</li>
-          <li><strong>Ministerio de Hacienda de Costa Rica:</strong> Envío de comprobantes XML a solicitud del usuario cuando utiliza el módulo de emisión de facturación electrónica.</li>
+          <li><strong>Ministerio de Hacienda de Costa Rica:</strong> Envío de comprobantes XML a solicitud expresa del usuario cuando utiliza el módulo de emisión de facturación electrónica.</li>
         </ul>
       </section>
 
@@ -176,8 +179,8 @@ export default function PoliticaPrivacidadPage() {
             <h4>Oficial de Protección de Datos</h4>
             <p>ContadorGanadero — San José, Costa Rica</p>
           </div>
-          <a href="mailto:privacidad@contadorganadero.cr" className="btn btn-secondary btn-sm">
-            privacidad@contadorganadero.cr
+          <a href="mailto:privacidad@contadorganandero.com" className="btn btn-secondary btn-sm">
+            privacidad@contadorganandero.com
           </a>
         </div>
       </section>
