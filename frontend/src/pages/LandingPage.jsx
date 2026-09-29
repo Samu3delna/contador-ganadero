@@ -358,7 +358,7 @@ export default function LandingPage() {
             <Link to="/login">Iniciar Sesión</Link>
           </Button>
           <Button asChild variant="gradient" size="sm" className="landing-nav-cta">
-            <Link to="/login">Comenzar Gratis</Link>
+            <Link to="/login" state={{ registro: true }}>Comenzar Gratis</Link>
           </Button>
         </div>
       </header>
@@ -385,7 +385,7 @@ export default function LandingPage() {
           </p>
           <div className="landing-hero-ctas flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full max-w-xs sm:max-w-none mx-auto pt-2">
             <Button asChild variant="gradient" size="lg" className="h-12 px-7 text-base shadow-xl w-full sm:w-auto">
-              <Link to="/login">
+              <Link to="/login" state={{ registro: true }}>
                 Comenzar Gratis <ArrowRight size={18} className="ml-2" />
               </Link>
             </Button>
@@ -431,7 +431,7 @@ export default function LandingPage() {
           </ul>
           <div className="pt-2">
             <Button asChild variant="gradient" size="default">
-              <Link to="/login">
+              <Link to="/login" state={{ registro: true }}>
                 Empieza hoy, gratis <ArrowRight size={16} className="ml-1.5" />
               </Link>
             </Button>
@@ -652,7 +652,7 @@ export default function LandingPage() {
           </CardHeader>
           <CardContent className="p-0">
             <Button asChild variant="gradient" size="lg" className="h-12 px-8 text-base shadow-xl">
-              <Link to="/login">
+              <Link to="/login" state={{ registro: true }}>
                 Crear cuenta gratis <ArrowRight size={18} className="ml-2" />
               </Link>
             </Button>
@@ -695,7 +695,7 @@ export default function LandingPage() {
       {/* CTA fijo en móvil */}
       <div className="landing-cta-movil">
         <Button asChild variant="gradient" className="w-full shadow-lg">
-          <Link to="/login">
+          <Link to="/login" state={{ registro: true }}>
             Comenzar Gratis <ArrowRight size={16} className="ml-1" />
           </Link>
         </Button>

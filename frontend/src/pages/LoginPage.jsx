@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { API_URL } from '../services/api';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { esAdministrador } from '../utils/adminHelper';
-import { ArrowLeft, ShieldCheck, Scale, FileText } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Scale, FileText, UserPlus, LogIn } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import { Card } from '../components/ui/card';
@@ -15,6 +14,11 @@ import './LoginPage.css';
 export default function LoginPage() {
   const { login, registro, usuario, cargando: authCargando } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Permite abrir directamente en modo registro si viene de enlaces como "Comenzar Gratis" o ruta /registro
+  const searchParams = new URLSearchParams(location.search);
+  const esModoRegistroInicial = location.state?.registro || searchParams.get('registro') === 'true' || searchParams.get('modo') === 'registro' || location.pathname === '/registro';
 
   // Si ya hay una sesión activa, redirigir al panel correspondiente
   useEffect(() => {
@@ -31,7 +35,7 @@ export default function LoginPage() {
     path: '/login',
     robots: 'noindex, follow',
   });
-  const [esRegistro, setEsRegistro] = useState(false);
+  const [esRegistro, setEsRegistro] = useState(Boolean(esModoRegistroInicial));
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
   const [form, setForm] = useState({ nombre: '', email: '', password: '', nombreFinca: '' });
@@ -70,10 +74,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = `${API_URL}/auth/google`;
-  };
-
   return (
     <div className="login-container">
       <video className="login-bg-video" autoPlay muted loop playsInline>
@@ -92,7 +92,7 @@ export default function LoginPage() {
           <span>Volver al inicio</span>
         </Button>
 
-        <LoginHeader />
+        <LoginHeader esRegistro={esRegistro} />
 
         <LoginForm 
           form={form} 
@@ -104,63 +104,49 @@ export default function LoginPage() {
         />
 
         <div className="login-divider my-5">
-          <span>o</span>
+          <span>{esRegistro ? '¿Ya tienes una cuenta?' : '¿Nuevo productor en la plataforma?'}</span>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="btn-google w-full gap-2.5 bg-slate-800/60 hover:bg-slate-800 border-slate-700 text-slate-200"
-          onClick={handleGoogleLogin}
-          disabled={cargando}
-          aria-label="Continuar con Google"
-        >
-          <svg className="google-icon shrink-0" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-            />
-          </svg>
-          <span>Continuar con Google</span>
-        </Button>
+        {esRegistro ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="btn-registro-accion w-full gap-2.5 bg-slate-800/60 hover:bg-slate-800 border-slate-700 text-slate-200"
+            onClick={() => {
+              setEsRegistro(false);
+              setError('');
+            }}
+            disabled={cargando}
+            aria-label="Iniciar sesión con cuenta existente"
+          >
+            <LogIn size={18} className="text-emerald-400 shrink-0" />
+            <span>Iniciar sesión</span>
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="btn-registro-accion w-full gap-2.5 bg-emerald-950/40 hover:bg-emerald-900/60 border-emerald-600/50 text-emerald-300 hover:text-emerald-200"
+            onClick={() => {
+              setEsRegistro(true);
+              setError('');
+            }}
+            disabled={cargando}
+            aria-label="Registrar gratis"
+          >
+            <UserPlus size={18} className="text-emerald-400 shrink-0" />
+            <span>Registrar gratis</span>
+          </Button>
+        )}
 
-        <div className="login-footer mt-4 text-center text-xs text-slate-400">
-          {esRegistro ? (
-            <p>
-              ¿Ya tienes cuenta?{' '}
-              <button
-                type="button"
-                className="text-emerald-400 hover:underline font-semibold"
-                onClick={() => { setEsRegistro(false); setError(''); }}
-              >
-                Inicia sesión
-              </button>
-            </p>
-          ) : (
-            <p>
-              ¿No tienes cuenta?{' '}
-              <button
-                type="button"
-                className="text-emerald-400 hover:underline font-semibold"
-                onClick={() => { setEsRegistro(true); setError(''); }}
-              >
-                Regístrate gratis
-              </button>
-            </p>
-          )}
+        <div className="login-footer mt-3 text-center text-xs text-slate-400">
+          <p className="text-slate-400 text-[11px]">
+            {esRegistro
+              ? 'Tus datos están protegidos y son de uso exclusivo para tu gestión REA.'
+              : 'Acceso inmediato sin tarjeta de crédito. Plan gratuito para pequeños productores.'}
+          </p>
         </div>
 
         {/* Sección Legal Destacada */}

@@ -167,19 +167,16 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
-.btn-google {
+.btn-registro-accion {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   padding: 0.8rem 1.25rem;
   font-size: 0.95rem;
   font-weight: 600;
   font-family: var(--font-body);
-  color: var(--color-texto);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: var(--radio-md);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -189,37 +186,26 @@
   user-select: none;
 }
 
-.btn-google:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.35);
+.btn-registro-accion:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-.btn-google:active:not(:disabled) {
+.btn-registro-accion:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: none;
 }
 
-.btn-google:focus-visible {
+.btn-registro-accion:focus-visible {
   outline: 2px solid var(--color-primario-claro);
   outline-offset: 2px;
 }
 
-.btn-google:disabled {
+.btn-registro-accion:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-
-.google-icon {
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  min-height: 20px;
-  flex-shrink: 0;
-  display: block;
 }
 
 /* --------------------------------------------------------------------------

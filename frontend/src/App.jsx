@@ -98,6 +98,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Suspense fallback={<PageLoader />}><LandingPage /></Suspense>} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/registro" element={<LoginPage />} />
           
           {/* Páginas Legales Públicas */}
           <Route path="/terminos" element={<Suspense fallback={<PageLoader />}><TerminosCondicionesPage /></Suspense>} />
