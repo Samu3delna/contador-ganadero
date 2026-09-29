@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loginAPI, registroAPI, obtenerPerfilAPI, logoutAPI } from '../services/api';
+import { esAdministrador } from '../utils/adminHelper';
 
 const AuthContext = createContext(null);
 
@@ -19,8 +20,12 @@ export function AuthProvider({ children }) {
     if (token) {
       obtenerPerfilAPI()
         .then(res => {
-          setUsuario(res.data);
-          localStorage.setItem('usuario', JSON.stringify(res.data));
+          const datos = {
+            ...res.data,
+            esSuperAdmin: esAdministrador(res.data) || Boolean(res.data?.esSuperAdmin),
+          };
+          setUsuario(datos);
+          localStorage.setItem('usuario', JSON.stringify(datos));
         })
         .catch(() => {
           localStorage.removeItem('token');
@@ -35,27 +40,39 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await loginAPI({ email, password });
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('usuario', JSON.stringify(res.data));
-    setUsuario(res.data);
-    return res.data;
+    const datos = {
+      ...res.data,
+      esSuperAdmin: esAdministrador(res.data, email) || Boolean(res.data?.esSuperAdmin),
+    };
+    localStorage.setItem('token', datos.token);
+    localStorage.setItem('usuario', JSON.stringify(datos));
+    setUsuario(datos);
+    return datos;
   };
 
   const registro = async (datos) => {
     const res = await registroAPI(datos);
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('usuario', JSON.stringify(res.data));
-    setUsuario(res.data);
-    return res.data;
+    const datosNormalizados = {
+      ...res.data,
+      esSuperAdmin: esAdministrador(res.data, datos.email) || Boolean(res.data?.esSuperAdmin),
+    };
+    localStorage.setItem('token', datosNormalizados.token);
+    localStorage.setItem('usuario', JSON.stringify(datosNormalizados));
+    setUsuario(datosNormalizados);
+    return datosNormalizados;
   };
 
   // Recarga el perfil desde el backend y actualiza el estado
   const refrescarSesion = async () => {
     try {
       const res = await obtenerPerfilAPI();
-      setUsuario(res.data);
-      localStorage.setItem('usuario', JSON.stringify(res.data));
-      return res.data;
+      const datos = {
+        ...res.data,
+        esSuperAdmin: esAdministrador(res.data) || Boolean(res.data?.esSuperAdmin),
+      };
+      setUsuario(datos);
+      localStorage.setItem('usuario', JSON.stringify(datos));
+      return datos;
     } catch {
       return null;
     }

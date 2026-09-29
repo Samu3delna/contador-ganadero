@@ -122,7 +122,8 @@ const googleCallback = async (req, res, next) => {
     setRefreshCookie(res, refreshToken);
 
     // Super Admin aterriza directo en el panel de administración
-    const destino = esEmailSuperAdmin(email) ? '/admin' : '/dashboard';
+    const esAdmin = esEmailSuperAdmin(email) || usuario.isSuperAdmin === true || usuario.rol === 'admin' || usuario.rol === 'administrador';
+    const destino = esAdmin ? '/admin' : '/dashboard';
     res.redirect(`${process.env.FRONTEND_URL}${destino}?token=${accessToken}`);
   } catch (error) {
     next(error);

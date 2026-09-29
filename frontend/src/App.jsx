@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { esAdministrador } from './utils/adminHelper';
 import Sidebar from './components/layout/Sidebar';
 import LoginPage from './pages/LoginPage';
 import ChatBot from './components/dashboard/ChatBot';
@@ -44,11 +45,11 @@ function RutaProtegida({ children }) {
   return usuario ? children : <Navigate to="/login" />;
 }
 
-// Guard de rutas Super Admin: además de autenticado, requiere flag esSuperAdmin
+// Guard de rutas Super Admin: además de autenticado, requiere flag esSuperAdmin o cumplir condición de admin
 function RutaAdmin({ children }) {
   const { usuario, cargando } = useAuth();
   if (cargando) return <PageLoader />;
-  return usuario?.esSuperAdmin ? children : <Navigate to="/dashboard" replace />;
+  return (usuario?.esSuperAdmin || esAdministrador(usuario)) ? children : <Navigate to="/dashboard" replace />;
 }
 
 function AppLayout() {

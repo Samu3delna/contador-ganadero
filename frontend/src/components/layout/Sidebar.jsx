@@ -1,6 +1,7 @@
 import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User, Shield, Users, Building, Activity } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { esAdministrador } from '../../utils/adminHelper';
 import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Badge } from '../ui/badge';
@@ -110,8 +111,9 @@ export default function Sidebar() {
 
   const inicialUsuario = (usuario?.nombre || 'U').charAt(0).toUpperCase();
 
-  // Menú con sección de administración sólo si el usuario es super admin
-  const seccionesVisibles = usuario?.esSuperAdmin
+  // Menú con sección de administración si el usuario es super admin o cumple condición de admin
+  const esAdmin = usuario?.esSuperAdmin || esAdministrador(usuario);
+  const seccionesVisibles = esAdmin
     ? [...menuSections, SECCION_ADMIN]
     : menuSections;
 

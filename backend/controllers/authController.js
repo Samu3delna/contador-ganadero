@@ -110,7 +110,7 @@ const registro = async (req, res, next) => {
       tenantId: tenant._id,
       plan: tenant.plan,
       rol: usuario.rol,
-      esSuperAdmin: esEmailSuperAdmin(usuario.email),
+      esSuperAdmin: esEmailSuperAdmin(usuario.email) || usuario.isSuperAdmin === true || usuario.rol === 'admin' || usuario.rol === 'administrador',
       tenant: {
         _id: tenant._id,
         nombreFinca: tenant.nombreFinca,
@@ -190,7 +190,7 @@ const login = async (req, res, next) => {
       plan: tenant.plan,
       estadoTenant: tenant.estado,
       rol: usuario.rol,
-      esSuperAdmin: esEmailSuperAdmin(usuario.email),
+      esSuperAdmin: esEmailSuperAdmin(usuario.email) || usuario.isSuperAdmin === true || usuario.rol === 'admin' || usuario.rol === 'administrador',
       tenant: {
         _id: tenant._id,
         nombreFinca: tenant.nombreFinca,
@@ -275,7 +275,11 @@ const obtenerPerfil = async (req, res, next) => {
         await Tenant.updateOne({ _id: tenantInfo._id }, { emailAlias: tenantInfo.emailAlias });
       }
     }
-    res.json({ ...usuario.toObject(), tenant: tenantInfo, esSuperAdmin: esEmailSuperAdmin(usuario.email) });
+    res.json({
+      ...usuario.toObject(),
+      tenant: tenantInfo,
+      esSuperAdmin: esEmailSuperAdmin(usuario.email) || usuario.isSuperAdmin === true || usuario.rol === 'admin' || usuario.rol === 'administrador',
+    });
   } catch (error) {
     next(error);
   }

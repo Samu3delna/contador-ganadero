@@ -25,8 +25,14 @@ const usuarioSchema = new mongoose.Schema({
   // Rol del usuario dentro del tenant (RBAC prep)
   rol: {
     type: String,
-    enum: ['dueño', 'contador', 'peon'],
+    enum: ['dueño', 'contador', 'peon', 'admin', 'administrador'],
     default: 'dueño',
+  },
+  // Flag explícito de Super Admin
+  isSuperAdmin: {
+    type: Boolean,
+    default: false,
+    index: true,
   },
   // Suspensión individual (gestionada por Super Admin). Bloquea login, refresh y API.
   suspendido: {

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { API_URL } from '../services/api';
+import { esAdministrador } from '../utils/adminHelper';
 import { ArrowLeft, ShieldCheck, Scale, FileText } from 'lucide-react';
 import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
@@ -12,8 +13,16 @@ import fondoLogin from '../assets/videos/fondo_login.webm';
 import './LoginPage.css';
 
 export default function LoginPage() {
-  const { login, registro } = useAuth();
+  const { login, registro, usuario, cargando: authCargando } = useAuth();
   const navigate = useNavigate();
+
+  // Si ya hay una sesión activa, redirigir al panel correspondiente
+  useEffect(() => {
+    if (!authCargando && usuario) {
+      const esAdmin = esAdministrador(usuario);
+      navigate(esAdmin ? '/admin' : '/dashboard', { replace: true });
+    }
+  }, [usuario, authCargando, navigate]);
 
   // La página de login no aporta valor en buscadores: se no-indexa.
   useSeo({
@@ -49,8 +58,11 @@ export default function LoginPage() {
       } else {
         datosSesion = await login(form.email, form.password);
       }
-      // Super Admin aterriza directo en el panel de administración
-      navigate(datosSesion?.esSuperAdmin ? '/admin' : '/dashboard');
+
+      // Variable y condición: Si ingresa como administrador o el correo electrónico es de administrador,
+      // se redirige al panel de administración (/admin) y NO al dashboard de usuario (/dashboard).
+      const esAdmin = esAdministrador(datosSesion, form.email);
+      navigate(esAdmin ? '/admin' : '/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Error de conexión');
     } finally {

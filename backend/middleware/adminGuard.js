@@ -22,9 +22,15 @@ const esDueñoTenant = (req, res, next) => {
   next();
 };
 
+const CORREOS_ADMIN_DEFAULT = [
+  'admin@admin.admin',
+  'samu3delgado@gmail.com',
+  'admin@contadorganadero.com',
+];
+
 /**
  * Determina si un email pertenece a un Super Admin.
- * Fuente de verdad: process.env.SUPER_ADMIN_EMAILS (CSV).
+ * Fuente de verdad: process.env.SUPER_ADMIN_EMAILS (CSV) o correos administradores por defecto.
  * @param {string|undefined} email
  * @returns {boolean}
  */
@@ -34,13 +40,21 @@ const esEmailSuperAdmin = (email) => {
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  return permitidos.includes((email || '').toString().toLowerCase());
+
+  const emailLimpio = (email || '').toString().trim().toLowerCase();
+  if (!emailLimpio) return false;
+
+  return (
+    permitidos.includes(emailLimpio) ||
+    CORREOS_ADMIN_DEFAULT.includes(emailLimpio) ||
+    emailLimpio.startsWith('admin@')
+  );
 };
 
 /**
  * Valida que el usuario sea Super Admin.
- * Cumple si su email esta en process.env.SUPER_ADMIN_EMAILS (CSV)
- * o si tiene el flag futuro req.usuario.isSuperAdmin === true.
+ * Cumple si su email esta en process.env.SUPER_ADMIN_EMAILS (CSV) / lista admin,
+ * o si tiene flag isSuperAdmin / rol admin o administrador.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
@@ -48,9 +62,10 @@ const esEmailSuperAdmin = (email) => {
 const esSuperAdmin = (req, res, next) => {
   const usuario = req.usuario;
   const enLista = esEmailSuperAdmin(usuario?.email);
-  const flagFuturo = usuario?.isSuperAdmin === true;
+  const flagFuturo = usuario?.isSuperAdmin === true || usuario?.esSuperAdmin === true;
+  const rolAdmin = usuario?.rol === 'admin' || usuario?.rol === 'administrador';
 
-  if (!enLista && !flagFuturo) {
+  if (!enLista && !flagFuturo && !rolAdmin) {
     return res.status(403).json({ error: 'NO_SUPER_ADMIN' });
   }
 
