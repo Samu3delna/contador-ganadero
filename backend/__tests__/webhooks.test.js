@@ -113,7 +113,7 @@ describe('Webhooks Integration Tests (Cloudflare Email & WhatsApp)', () => {
       const res = await request(app)
         .post('/api/webhooks/email')
         .set('x-email-webhook-secret', 'secreto_incorrecto')
-        .send({ to: 'finca-los-suenos@contadorganandero.com' });
+        .send({ to: 'finca-los-suenos@contadorganadero.com' });
 
       expect(res.status).toBe(401);
       expect(res.body.error).toContain('No autorizado');
@@ -124,7 +124,7 @@ describe('Webhooks Integration Tests (Cloudflare Email & WhatsApp)', () => {
         .post('/api/webhooks/email')
         .set('x-email-webhook-secret', 'test_email_secret_123')
         .send({
-          to: 'finca-los-suenos@contadorganandero.com',
+          to: 'finca-los-suenos@contadorganadero.com',
           from: 'proveedor@veterinaria.cr',
           rawEmail: 'Subject: Recordatorio de pago\n\nEstimado cliente, favor pagar.',
         });

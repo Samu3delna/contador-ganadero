@@ -66,7 +66,13 @@ export default function LoginPage() {
       // Variable y condición: Si ingresa como administrador o el correo electrónico es de administrador,
       // se redirige al panel de administración (/admin) y NO al dashboard de usuario (/dashboard).
       const esAdmin = esAdministrador(datosSesion, form.email);
-      navigate(esAdmin ? '/admin' : '/dashboard', { replace: true });
+      if (esAdmin) {
+        navigate('/admin', { replace: true });
+      } else if (location.state?.plan === 'pro') {
+        navigate('/planes', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Error de conexión');
     } finally {

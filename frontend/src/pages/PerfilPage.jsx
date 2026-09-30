@@ -93,7 +93,7 @@ export default function PerfilPage() {
 
   const suffix = usuario?._id ? String(usuario._id).slice(-4) : 'finca';
   const aliasCorreo = tenant.emailAlias || (nombreFinca ? `${nombreFinca.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${suffix}` : `finca-${suffix}`);
-  const correoRecepcion = `${aliasCorreo}@contadorganandero.com`;
+  const correoRecepcion = `${aliasCorreo}@contadorganadero.com`;
 
   const abrirModalEdicion = () => {
     setForm({

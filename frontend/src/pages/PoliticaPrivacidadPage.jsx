@@ -58,7 +58,7 @@ export default function PoliticaPrivacidadPage() {
           <li><strong>Datos de Identificación del Titular:</strong> Nombre completo, correo electrónico, número de identificación (cédula física, jurídica, DIMEX o NITE) y teléfono.</li>
           <li><strong>Datos de la Finca / Explotación:</strong> Nombre de la finca, ubicación geográfica general, tipo de actividad pecuaria o agrícola (bovinos de cría/engorde/leche, aves, acuicultura, apicultura, agricultura).</li>
           <li><strong>Datos Fiscales y Comprobantes Electrónicos:</strong> Archivos XML y PDF de facturas electrónicas de compra y venta, montos, tarifas de IVA (1%, 13%, exento), líneas de detalle de insumos y claves numéricas de Hacienda.</li>
-          <li><strong>Credenciales Técnicas y Canales de Recepción:</strong> Dirección de correo electrónico asignada a la finca (<code>@contadorganandero.com</code>) para recepción de facturas, número de teléfono vinculado al bot de WhatsApp para reenvío de comprobantes, y llaves criptográficas <code>.p12</code> y PIN de Hacienda para la emisión autorizada de comprobantes. <em>(ContadorGanadero no solicita ni almacena contraseñas de cuentas de correo externas ni accesos IMAP).</em></li>
+          <li><strong>Credenciales Técnicas y Canales de Recepción:</strong> Dirección de correo electrónico asignada a la finca (<code>@contadorganadero.com</code>) para recepción de facturas, número de teléfono vinculado al bot de WhatsApp para reenvío de comprobantes, y llaves criptográficas <code>.p12</code> y PIN de Hacienda para la emisión autorizada de comprobantes. <em>(ContadorGanadero no solicita ni almacena contraseñas de cuentas de correo externas ni accesos IMAP).</em></li>
           <li><strong>Datos de Inventario y Producción:</strong> Pesos de animales, registros de lotes, consumos de insumos, parámetros de producción y costos asociados.</li>
         </ul>
       </section>
@@ -179,8 +179,8 @@ export default function PoliticaPrivacidadPage() {
             <h4>Oficial de Protección de Datos</h4>
             <p>ContadorGanadero — San José, Costa Rica</p>
           </div>
-          <a href="mailto:privacidad@contadorganandero.com" className="btn btn-secondary btn-sm">
-            privacidad@contadorganandero.com
+          <a href="mailto:privacidad@contadorganadero.com" className="btn btn-secondary btn-sm">
+            privacidad@contadorganadero.com
           </a>
         </div>
       </section>

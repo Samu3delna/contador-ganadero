@@ -1,7 +1,7 @@
 /**
  * Cloudflare Email Worker — ContadorGanadero
  * 
- * Captura todos los correos entrantes en *@contadorganandero.com y los envía
+ * Captura todos los correos entrantes en *@contadorganadero.com y los envía
  * en tiempo real a tu API en Render sin usar IMAP.
  */
 

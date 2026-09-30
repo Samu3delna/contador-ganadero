@@ -131,7 +131,7 @@ const tenantSchema = new mongoose.Schema({
   },
 
   // Alias de correo electrónico para recepción automática vía Cloudflare Email Routing
-  // ej: "finca-el-roble" -> finca-el-roble@contadorganandero.com
+  // ej: "finca-el-roble" -> finca-el-roble@contadorganadero.com
   emailAlias: {
     type: String,
     lowercase: true,

@@ -6,10 +6,10 @@ Esta guía explica cómo activar los dos canales automáticos para recibir factu
 
 ## CANAL 1: Cloudflare Email Routing (Gratis y Automático)
 
-Con este canal, cualquier factura enviada a `finca-nombre@contadorganandero.com` (o `facturas@contadorganandero.com`) se procesa en 2 segundos en tu aplicación.
+Con este canal, cualquier factura enviada a `finca-nombre@contadorganadero.com` (o `facturas@contadorganadero.com`) se procesa en 2 segundos en tu aplicación.
 
 ### Paso 1: Activar Email Routing en Cloudflare
-1. Entra a tu panel de **Cloudflare** y haz clic en tu dominio **`contadorganandero.com`**.
+1. Entra a tu panel de **Cloudflare** y haz clic en tu dominio **`contadorganadero.com`**.
 2. En el menú de la izquierda, haz clic en **Email** > **Email Routing**.
 3. Pulsa el botón **Enable Email Routing** (Habilitar enrutamiento de correo).
 4. Cloudflare te pedirá agregar unos registros DNS (MX y SPF) automáticamente. Haz clic en **Add records and enable**.
@@ -54,11 +54,11 @@ Con este canal, cualquier factura enviada a `finca-nombre@contadorganandero.com`
 
 ### Paso 3: Configurar la regla de captura (Catch-All o Dirección Custom)
 1. En **Email Routing**, ve a la pestaña **Routing rules** (Reglas de enrutamiento).
-2. En la sección **Catch-all rule** (Regla para cualquier dirección `*@contadorganandero.com`):
+2. En la sección **Catch-all rule** (Regla para cualquier dirección `*@contadorganadero.com`):
    - **Action:** Selecciona **Send to a Worker**.
    - **Destination:** Selecciona el Worker que acabas de crear.
    - Guarda los cambios.
-3. ¡Listo! Ahora cualquier correo enviado a `cualquier-finca@contadorganandero.com` viajará en milisegundos a tu servidor en Render, el cual extraerá el XML, leerá la cédula del ganadero y guardará la factura.
+3. ¡Listo! Ahora cualquier correo enviado a `cualquier-finca@contadorganadero.com` viajará en milisegundos a tu servidor en Render, el cual extraerá el XML, leerá la cédula del ganadero y guardará la factura.
 
 ---
 

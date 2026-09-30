@@ -21,7 +21,7 @@ const CARACTERISTICAS = [
   {
     icono: Mail,
     titulo: 'Buzón Cloudflare instantáneo',
-    descripcion: 'Tu finca recibe un correo exclusivo (tu-finca@contadorganandero.com). Pide a tus proveedores que envíen las facturas ahí y entran al instante.',
+    descripcion: 'Tu finca recibe un correo exclusivo (tu-finca@contadorganadero.com). Pide a tus proveedores que envíen las facturas ahí y entran al instante.',
     tag: 'Automático & Seguro',
   },
   {
@@ -78,7 +78,7 @@ const PASOS = [
   {
     numero: '1',
     titulo: 'Pasa tu correo o envía por WhatsApp',
-    descripcion: 'Da a tus proveedores tu dirección de finca (@contadorganandero.com) o reenvía tus facturas al bot de WhatsApp.',
+    descripcion: 'Da a tus proveedores tu dirección de finca (@contadorganadero.com) o reenvía tus facturas al bot de WhatsApp.',
   },
   {
     numero: '2',
@@ -114,7 +114,7 @@ const FAQ = [
   {
     pregunta: '¿Cómo se reciben mis facturas electrónicas automáticamente?',
     respuesta:
-      'Al crear tu cuenta, tu finca recibe una dirección de correo exclusiva (por ejemplo: tu-finca@contadorganandero.com) impulsada por Cloudflare y un bot de WhatsApp. Pides a tus proveedores que envíen las facturas ahí o las reenvías por WhatsApp. La plataforma recibe el XML, extrae los datos, valida la clave de Hacienda y categoriza todo con IA al instante, sin configurar contraseñas ni IMAP.',
+      'Al crear tu cuenta, tu finca recibe una dirección de correo exclusiva (por ejemplo: tu-finca@contadorganadero.com) impulsada por Cloudflare y un bot de WhatsApp. Pides a tus proveedores que envíen las facturas ahí o las reenvías por WhatsApp. La plataforma recibe el XML, extrae los datos, valida la clave de Hacienda y categoriza todo con IA al instante, sin configurar contraseñas ni IMAP.',
   },
   {
     pregunta: '¿Funciona con facturas del 1% de IVA del régimen agropecuario?',
@@ -190,8 +190,8 @@ export default function LandingPage() {
     jsonLd: [NEGOCIO_SCHEMA, FAQ_SCHEMA],
   });
 
-  const handleSeleccionarPlan = () => {
-    navigate('/login');
+  const handleSeleccionarPlan = (planId) => {
+    navigate('/login', { state: { registro: true, plan: planId } });
   };
 
   // Compartir
@@ -592,9 +592,9 @@ export default function LandingPage() {
       {/* Planes y precios */}
       <section ref={pricingRef} id="planes" className={`landing-seccion ${pricingVisible ? 'landing-seccion--visible' : ''}`}>
         <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Planes y precios</h2>
+          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Planes transparentes para tu finca</h2>
           <p className="landing-seccion-subtitulo text-slate-400">
-            Empezá gratis y subí a Pro ($10/mes) cuando tu finca lo necesite. El plan Pro no muestra anuncios.
+            Comienza gratis con todas las herramientas de contabilidad e inventario (financiado con anuncios), o activa Pro ($10/mes) para trabajar sin publicidad, con visión artificial VLM y conciliación D-150.
           </p>
         </div>
         <div className="landing-planes-grid">

@@ -20,7 +20,7 @@ function asegurarDirectorios() {
  * Busca el Usuario y Tenant destinatario usando múltiples estrategias:
  * 1. Cédula del receptor extraída del XML (la más confiable en Costa Rica)
  * 2. ID explícito de usuario o tenant
- * 3. Email alias del tenant (ej: finca-esperanza@contadorganandero.com)
+ * 3. Email alias del tenant (ej: finca-esperanza@contadorganadero.com)
  * 4. Número de teléfono (para WhatsApp)
  */
 async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, emailDestino, telefono }) {

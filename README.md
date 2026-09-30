@@ -4,7 +4,7 @@ Aplicación MERN full-stack para funcionar como contador personal automatizado p
 
 ## Características Principales
 
-1. **Recepción Automática de Facturas:** Ingesta instantánea de comprobantes electrónicos vía Cloudflare Email Routing (buzón exclusivo `@contadorganandero.com`) y Bot oficial de WhatsApp para archivos XML, acuses (`MensajeHacienda`) y PDFs.
+1. **Recepción Automática de Facturas:** Ingesta instantánea de comprobantes electrónicos vía Cloudflare Email Routing (buzón exclusivo `@contadorganadero.com`) y Bot oficial de WhatsApp para archivos XML, acuses (`MensajeHacienda`) y PDFs.
 2. **Procesamiento Inteligente:** Utiliza IA (OpenRouter / NVIDIA) para categorizar automáticamente los gastos extraídos de las facturas (ej. insumos veterinarios vs gastos generales).
 3. **Módulo de Ingresos:** Registro manual de venta de ganado, leche y otros productos.
 4. **Lógica Tributaria Costarricense (2026):**

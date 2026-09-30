@@ -18,11 +18,16 @@ export default function PlanCard({ plan, planActual, onSeleccionar }) {
     textoBoton = 'Plan actual';
     botonVariant = 'outline';
     deshabilitado = true;
-  } else if (esFree && planActual && planActual !== 'free') {
-    textoBoton = 'Downgrade';
-    botonVariant = 'secondary';
-  } else if (!esFree) {
-    textoBoton = planActual && planActual !== 'free' ? 'Hacer upgrade' : 'Suscribirse';
+  } else if (esFree) {
+    if (planActual && planActual !== 'free') {
+      textoBoton = 'Volver al Plan Gratis';
+      botonVariant = 'secondary';
+    } else {
+      textoBoton = 'Comenzar Gratis';
+      botonVariant = 'outline';
+    }
+  } else {
+    textoBoton = planActual && planActual !== 'free' ? 'Hacer upgrade' : 'Suscribirse a Pro';
     botonVariant = esDestacado ? 'amber' : 'gradient';
   }
 

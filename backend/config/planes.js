@@ -49,19 +49,27 @@ function formatearNumero(n) {
   return n.toLocaleString('es-CR');
 }
 
-// Lista simple de beneficios por plan (se construye desde los límites
-// para que la web nunca diverja de lo que el backend realmente aplica).
+// Lista detallada y fidedigna de beneficios por plan según las capacidades reales del proyecto.
 function construirFeatures(id) {
   const l = LIMITES_POR_PLAN[id] || LIMITES_POR_PLAN.free;
+  const esPro = id === 'pro';
+
   return [
-    { texto: `${formatearNumero(l.conteosMes)} conteos visuales IA al mes`, incluido: true },
-    { texto: `${l.usuariosTenant} ${l.usuariosTenant === 1 ? 'usuario' : 'usuarios'}`, incluido: true },
-    { texto: `${formatearAlmacenamiento(l.almacenamientoMB)} de almacenamiento`, incluido: true },
-    { texto: 'Conteos por visión (VLM)', incluido: l.vlmHabilitado },
-    { texto: 'Módulo contable y fiscal (IVA, Renta)', incluido: l.moduloContable },
-    { texto: 'Módulo D-150 / conciliación REA', incluido: l.moduloD150 },
-    { texto: l.anunciosHabilitados ? 'Con anuncios' : 'Sin anuncios', incluido: !l.anunciosHabilitados },
-    { texto: 'Soporte por email', incluido: l.soporte === 'Email' },
+    { texto: 'Buzón Cloudflare Email exclusivo (@contadorganadero.com)', incluido: true },
+    { texto: 'Recepción y reenvío de facturas por Bot de WhatsApp', incluido: true },
+    { texto: 'Lectura oficial Hacienda v4.4 y auditoría de IVA al 1%', incluido: true },
+    { texto: 'Módulo contable: IVA Cuatrimestral y Renta Anual (D-101)', incluido: l.moduloContable },
+    { texto: 'Control de inventario multiespecie (bovinos, aves, peces, abejas)', incluido: true },
+    { texto: 'Costos de producción por kilo y facturación electrónica REA', incluido: true },
+    { texto: 'Calendario fiscal con alertas de vencimientos de Hacienda', incluido: true },
+    { texto: `${formatearNumero(l.conteosMes)} conteos de ganado con IA al mes`, incluido: true },
+    { texto: `Chatbot Asistente Ganadero (${formatearNumero(l.tokensChatMes)} tokens/mes)`, incluido: true },
+    { texto: `${l.usuariosTenant} ${l.usuariosTenant === 1 ? 'usuario (productor)' : 'usuarios con roles (dueño, contador, peón)'}`, incluido: true },
+    { texto: `${formatearAlmacenamiento(l.almacenamientoMB)} de almacenamiento para XMLs y documentos`, incluido: true },
+    { texto: 'Visión artificial avanzada VLM (NVIDIA NIM)', incluido: l.vlmHabilitado },
+    { texto: 'Módulo D-150 / Conciliación anual TRIBU-CR', incluido: l.moduloD150 },
+    { texto: '100% libre de anuncios y publicidad', incluido: esPro },
+    { texto: 'Soporte prioritario por email', incluido: esPro },
   ];
 }
 
@@ -73,7 +81,7 @@ const CATALOGO_PLANES = [
     precio: 0,
     moneda: 'USD',
     periodicidad: 'mes',
-    descripcion: 'Para probar la plataforma con anuncios y límites básicos.',
+    descripcion: 'Gestión contable y agropecuaria completa para pequeños productores, financiada con anuncios.',
     destacado: false,
     anuncios: true,
     limiteConteos: LIMITES_POR_PLAN.free.conteosMes,
@@ -89,7 +97,7 @@ const CATALOGO_PLANES = [
     precio: 10,
     moneda: 'USD',
     periodicidad: 'mes',
-    descripcion: 'Sin anuncios y con todo desbloqueado: más conteos, VLM y soporte por email.',
+    descripcion: 'Sin anuncios, con módulo D-150, visión VLM, 300 conteos IA, 25 GB y acceso para tu contador.',
     destacado: true,
     anuncios: false,
     limiteConteos: LIMITES_POR_PLAN.pro.conteosMes,

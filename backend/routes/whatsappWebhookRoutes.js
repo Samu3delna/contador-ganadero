@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
     if (!usuario) {
       await enviarMensajeWhatsApp(
         fromPhone,
-        `👋 ¡Hola! No encontramos ninguna finca asociada a tu número (+${fromPhone}) en ContadorGanadero.\n\nPor favor inicia sesión en https://contadorganandero.com y registra tu número en tu perfil para empezar a enviar facturas.`
+        `👋 ¡Hola! No encontramos ninguna finca asociada a tu número (+${fromPhone}) en ContadorGanadero.\n\nPor favor inicia sesión en https://contadorganadero.com y registra tu número en tu perfil para empezar a enviar facturas.`
       );
       return;
     }
@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
               `💰 *Total:* ₡${montoFormateado}`,
               `🏷️ *Categoría REA:* ${resultado.factura?.categoriaIA || 'Insumos'}`,
               resultado.alertas > 0 ? `⚠️ *Alerta:* Se detectó posible tarifa de IVA no agropecuaria para revisión.` : null,
-              `\nConsulta el reporte completo en https://contadorganandero.com/facturas`,
+              `\nConsulta el reporte completo en https://contadorganadero.com/facturas`,
             ].filter(Boolean).join('\n');
 
             await enviarMensajeWhatsApp(fromPhone, mensajeRespuesta);
@@ -135,7 +135,7 @@ router.post('/', async (req, res) => {
       const texto = (message.text?.body || '').trim();
       await enviarMensajeWhatsApp(
         fromPhone,
-        `👋 ¡Hola ${usuario.nombre}!\n\nSoy el bot de *ContadorGanadero* para tu finca (*${usuario.nombreFinca || 'Mi Finca'}*).\n\n📌 *¿Cómo usarme?*\n• Reenvíame cualquier archivo *.XML* o *.PDF* de factura que te envíe un proveedor para registrar el gasto al instante.\n• Envíame fotos de recibos o compras físicas.\n\nTambién puedes ver tus números en https://contadorganandero.com`
+        `👋 ¡Hola ${usuario.nombre}!\n\nSoy el bot de *ContadorGanadero* para tu finca (*${usuario.nombreFinca || 'Mi Finca'}*).\n\n📌 *¿Cómo usarme?*\n• Reenvíame cualquier archivo *.XML* o *.PDF* de factura que te envíe un proveedor para registrar el gasto al instante.\n• Envíame fotos de recibos o compras físicas.\n\nTambién puedes ver tus números en https://contadorganadero.com`
       );
     }
   } catch (error) {
