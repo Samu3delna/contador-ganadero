@@ -20,9 +20,10 @@ export function AuthProvider({ children }) {
     if (token) {
       obtenerPerfilAPI()
         .then(res => {
+          const esAdmin = esAdministrador(res.data);
           const datos = {
             ...res.data,
-            esSuperAdmin: esAdministrador(res.data) || Boolean(res.data?.esSuperAdmin),
+            esSuperAdmin: esAdmin,
           };
           setUsuario(datos);
           localStorage.setItem('usuario', JSON.stringify(datos));
@@ -40,9 +41,10 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await loginAPI({ email, password });
+    const esAdmin = esAdministrador(res.data, email);
     const datos = {
       ...res.data,
-      esSuperAdmin: esAdministrador(res.data, email) || Boolean(res.data?.esSuperAdmin),
+      esSuperAdmin: esAdmin,
     };
     localStorage.setItem('token', datos.token);
     localStorage.setItem('usuario', JSON.stringify(datos));
@@ -52,9 +54,10 @@ export function AuthProvider({ children }) {
 
   const registro = async (datos) => {
     const res = await registroAPI(datos);
+    const esAdmin = esAdministrador(res.data, datos.email);
     const datosNormalizados = {
       ...res.data,
-      esSuperAdmin: esAdministrador(res.data, datos.email) || Boolean(res.data?.esSuperAdmin),
+      esSuperAdmin: esAdmin,
     };
     localStorage.setItem('token', datosNormalizados.token);
     localStorage.setItem('usuario', JSON.stringify(datosNormalizados));
@@ -66,9 +69,10 @@ export function AuthProvider({ children }) {
   const refrescarSesion = async () => {
     try {
       const res = await obtenerPerfilAPI();
+      const esAdmin = esAdministrador(res.data);
       const datos = {
         ...res.data,
-        esSuperAdmin: esAdministrador(res.data) || Boolean(res.data?.esSuperAdmin),
+        esSuperAdmin: esAdmin,
       };
       setUsuario(datos);
       localStorage.setItem('usuario', JSON.stringify(datos));

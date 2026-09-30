@@ -53,27 +53,31 @@ function RutaAdmin({ children }) {
 }
 
 function AppLayout() {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.esSuperAdmin || esAdministrador(usuario);
+
   return (
     <div className="app-container">
       <Sidebar />
       <div className="main-content">
-        <AdvertisingSlot />
+        {!esAdmin && <AdvertisingSlot />}
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/facturas" element={<FacturasPage />} />
-            <Route path="/gastos" element={<GastosPage />} />
-            <Route path="/ingresos" element={<IngresosPage />} />
-            <Route path="/impuestos" element={<ImpuestosPage />} />
-            <Route path="/declaraciones" element={<DeclaracionesPage />} />
-            <Route path="/inventario" element={<InventarioPage />} />
-            <Route path="/costos" element={<CostosPage />} />
-            <Route path="/facturacion" element={<FacturacionPage />} />
-            <Route path="/hacienda" element={<HaciendaPage />} />
-            <Route path="/d150" element={<D150Page />} />
-            <Route path="/calendario" element={<CalendarioPage />} />
-            <Route path="/planes" element={<PlanesPage />} />
-            <Route path="/billing" element={<BillingPage />} />
+            {/* Si es Administrador, redirigir rutas de usuario común directamente al panel admin */}
+            <Route path="/dashboard" element={esAdmin ? <Navigate to="/admin" replace /> : <DashboardPage />} />
+            <Route path="/facturas" element={esAdmin ? <Navigate to="/admin" replace /> : <FacturasPage />} />
+            <Route path="/gastos" element={esAdmin ? <Navigate to="/admin" replace /> : <GastosPage />} />
+            <Route path="/ingresos" element={esAdmin ? <Navigate to="/admin" replace /> : <IngresosPage />} />
+            <Route path="/impuestos" element={esAdmin ? <Navigate to="/admin" replace /> : <ImpuestosPage />} />
+            <Route path="/declaraciones" element={esAdmin ? <Navigate to="/admin" replace /> : <DeclaracionesPage />} />
+            <Route path="/inventario" element={esAdmin ? <Navigate to="/admin" replace /> : <InventarioPage />} />
+            <Route path="/costos" element={esAdmin ? <Navigate to="/admin" replace /> : <CostosPage />} />
+            <Route path="/facturacion" element={esAdmin ? <Navigate to="/admin" replace /> : <FacturacionPage />} />
+            <Route path="/hacienda" element={esAdmin ? <Navigate to="/admin" replace /> : <HaciendaPage />} />
+            <Route path="/d150" element={esAdmin ? <Navigate to="/admin" replace /> : <D150Page />} />
+            <Route path="/calendario" element={esAdmin ? <Navigate to="/admin" replace /> : <CalendarioPage />} />
+            <Route path="/planes" element={esAdmin ? <Navigate to="/admin" replace /> : <PlanesPage />} />
+            <Route path="/billing" element={esAdmin ? <Navigate to="/admin" replace /> : <BillingPage />} />
             <Route path="/perfil" element={<PerfilPage />} />
 
             {/* Rutas Super Admin */}
@@ -82,11 +86,11 @@ function AppLayout() {
             <Route path="/admin/tenants" element={<RutaAdmin><AdminTenantsPage /></RutaAdmin>} />
             <Route path="/admin/monitoreo" element={<RutaAdmin><AdminMonitoreoPage /></RutaAdmin>} />
 
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to={esAdmin ? "/admin" : "/dashboard"} replace />} />
           </Routes>
         </Suspense>
       </div>
-      <ChatBot />
+      {!esAdmin && <ChatBot />}
     </div>
   );
 }

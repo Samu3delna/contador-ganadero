@@ -24,8 +24,6 @@ const esDueñoTenant = (req, res, next) => {
 
 const CORREOS_ADMIN_DEFAULT = [
   'admin@admin.admin',
-  'samu3delgado@gmail.com',
-  'admin@contadorganadero.com',
 ];
 
 /**
@@ -46,8 +44,7 @@ const esEmailSuperAdmin = (email) => {
 
   return (
     permitidos.includes(emailLimpio) ||
-    CORREOS_ADMIN_DEFAULT.includes(emailLimpio) ||
-    emailLimpio.startsWith('admin@')
+    CORREOS_ADMIN_DEFAULT.includes(emailLimpio)
   );
 };
 

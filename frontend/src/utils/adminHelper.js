@@ -6,8 +6,6 @@
 // Se puede extender mediante la variable de entorno VITE_ADMIN_EMAILS (separada por comas).
 export const CORREOS_ADMINISTRADOR = [
   'admin@admin.admin',
-  'samu3delgado@gmail.com',
-  'admin@contadorganadero.com',
   ...(import.meta.env.VITE_ADMIN_EMAILS ? import.meta.env.VITE_ADMIN_EMAILS.split(',') : []),
 ]
   .map((c) => c.trim().toLowerCase())
@@ -19,8 +17,7 @@ export const CORREOS_ADMINISTRADOR = [
  * Cumple si:
  * 1. Tiene el flag esSuperAdmin o isSuperAdmin en true.
  * 2. Su rol es 'admin', 'administrador' o 'superadmin'.
- * 3. Su correo electrónico está en la lista de CORREOS_ADMINISTRADOR.
- * 4. Su correo electrónico empieza por 'admin@'.
+ * 3. Su correo electrónico coincide exactamente con la lista de CORREOS_ADMINISTRADOR.
  *
  * @param {object|null} usuario - Objeto de usuario o respuesta de sesión
  * @param {string} [emailFallback] - Correo electrónico ingresado en el formulario de login
@@ -36,7 +33,6 @@ export const esAdministrador = (usuario, emailFallback = '') => {
     rol === 'admin' ||
     rol === 'administrador' ||
     rol === 'superadmin' ||
-    CORREOS_ADMINISTRADOR.includes(email) ||
-    email.startsWith('admin@')
+    (email && CORREOS_ADMINISTRADOR.includes(email))
   );
 };

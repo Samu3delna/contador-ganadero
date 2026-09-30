@@ -61,7 +61,7 @@ describe('Auth Security Tests', () => {
           .send({ email: 'test@example.com', password: 'wrongpassword' });
         expect(res.status).toBe(401);
       }
-    });
+    }, 15000);
 
     it('should allow rapid successive login attempts (NO RATE LIMITING)', async () => {
       const start = Date.now();

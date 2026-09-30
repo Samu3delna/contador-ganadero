@@ -111,10 +111,11 @@ export default function Sidebar() {
 
   const inicialUsuario = (usuario?.nombre || 'U').charAt(0).toUpperCase();
 
-  // Menú con sección de administración si el usuario es super admin o cumple condición de admin
+  // Si es administrador, muestra ÚNICAMENTE las vistas de administración.
+  // Si es usuario normal, muestra las secciones de usuario y NADA de administración.
   const esAdmin = usuario?.esSuperAdmin || esAdministrador(usuario);
   const seccionesVisibles = esAdmin
-    ? [...menuSections, SECCION_ADMIN]
+    ? [SECCION_ADMIN]
     : menuSections;
 
   return (
@@ -154,8 +155,8 @@ export default function Sidebar() {
           </div>
           <div className="sidebar-brand-info">
             <h2 className="sidebar-title">ContadorGanadero</h2>
-            <Badge variant="default" className="text-[10px] px-2 py-0 h-4 font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-              RÉGIMEN REA
+            <Badge variant="default" className={`text-[10px] px-2 py-0 h-4 font-bold tracking-wider uppercase ${esAdmin ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
+              {esAdmin ? 'ADMINISTRACIÓN' : 'RÉGIMEN REA'}
             </Badge>
           </div>
           <button
@@ -201,34 +202,44 @@ export default function Sidebar() {
               </AvatarFallback>
             </Avatar>
             <div className="sidebar-user-info">
-              <span className="sidebar-user-name" title={usuario?.nombre || 'Usuario'}>
-                {usuario?.nombre || 'Usuario'}
+              <span className="sidebar-user-name" title={usuario?.nombre || (esAdmin ? 'Super Admin' : 'Usuario')}>
+                {usuario?.nombre || (esAdmin ? 'Super Admin' : 'Usuario')}
               </span>
-              <span className="sidebar-user-finca" title={usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}>
-                {usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}
-              </span>
-              <div className="sidebar-user-tags">
-                {planNombre && (
-                  <button
-                    type="button"
-                    className="sidebar-user-plan"
-                    onClick={() => { cerrar(); navigate('/billing'); }}
-                    title="Ver mi suscripción"
-                  >
-                    <Crown size={10} /> {planNombre}
-                  </button>
-                )}
-                {estadoTenant && estadoTenant !== 'activo' && (
-                  <button
-                    type="button"
-                    className="sidebar-user-alerta"
-                    onClick={() => { cerrar(); navigate('/billing'); }}
-                    title="Acceso limitado"
-                  >
-                    <AlertTriangle size={10} /> Limitado
-                  </button>
-                )}
-              </div>
+              {esAdmin ? (
+                <div className="sidebar-user-tags">
+                  <span className="sidebar-user-plan border-amber-500/40 text-amber-400 bg-amber-500/10 cursor-default">
+                    <Shield size={10} /> Panel Admin
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <span className="sidebar-user-finca" title={usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}>
+                    {usuario?.nombreFinca || usuario?.tenant?.nombreFinca || 'Mi Finca'}
+                  </span>
+                  <div className="sidebar-user-tags">
+                    {planNombre && (
+                      <button
+                        type="button"
+                        className="sidebar-user-plan"
+                        onClick={() => { cerrar(); navigate('/billing'); }}
+                        title="Ver mi suscripción"
+                      >
+                        <Crown size={10} /> {planNombre}
+                      </button>
+                    )}
+                    {estadoTenant && estadoTenant !== 'activo' && (
+                      <button
+                        type="button"
+                        className="sidebar-user-alerta"
+                        onClick={() => { cerrar(); navigate('/billing'); }}
+                        title="Acceso limitado"
+                      >
+                        <AlertTriangle size={10} /> Limitado
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <button className="sidebar-logout" onClick={logout} title="Cerrar sesión" aria-label="Cerrar sesión">
