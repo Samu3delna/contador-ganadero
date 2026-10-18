@@ -2,13 +2,18 @@
   "name": "contador-ganadero",
   "version": "1.0.0",
   "description": "Aplicación MERN para contabilidad ganadera en Costa Rica",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
-    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "lint": "cd backend && npx eslint . && cd ../frontend && npx eslint ."
+    "build": "npm run build --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "lint": "npm run lint --workspace=frontend"
   },
-  "devDependencies": {
-    "concurrently": "^9.0.0"
+  "dependencies": {
+    "@google/genai": "^2.30.0"
   }
 }

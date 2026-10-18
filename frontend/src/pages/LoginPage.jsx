@@ -8,7 +8,7 @@ import LoginForm from '../components/login/LoginForm';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import useSeo from '../hooks/useSeo';
-import fondoLogin from '../assets/videos/fondo_login.webm';
+const fondoLogin = null;
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -82,9 +82,11 @@ export default function LoginPage() {
 
   return (
     <div className="login-container">
-      <video className="login-bg-video" autoPlay muted loop playsInline>
-        <source src={fondoLogin} type="video/webm" />
-      </video>
+      {fondoLogin && (
+        <video className="login-bg-video" autoPlay muted loop playsInline>
+          <source src={fondoLogin} type="video/webm" />
+        </video>
+      )}
       <Card className="login-card p-8 sm:p-10 border-slate-800/90 bg-slate-900/85 backdrop-blur-xl shadow-2xl animate-slide-up max-w-md w-full">
         <Button
           type="button"

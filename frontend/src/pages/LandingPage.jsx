@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Tractor, Mail, Sparkles, LayoutDashboard, Warehouse,
-  Receipt, TrendingUp, Calendar, Calculator, ArrowRight, Check,
+  Receipt, TrendingUp, Calculator, ArrowRight, Check,
   ChevronLeft, ChevronRight, ChevronDown, Share2, ShieldCheck, Zap,
   MessageSquare
 } from 'lucide-react';
@@ -14,7 +14,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 import { useReveal, useCarousel } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
 import AdvertisingSlot from '../components/ads/AdvertisingSlot';
-import fondoLogin from '../assets/videos/fondo_login.webm';
+const fondoLogin = null;
 import './LandingPage.css';
 
 const CARACTERISTICAS = [
@@ -365,9 +365,11 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section ref={heroRef} className={`landing-hero ${heroVisible ? 'landing-hero--visible' : ''}`}>
-        <video className="landing-hero-video" autoPlay muted loop playsInline preload="auto">
-          <source src={fondoLogin} type="video/webm" />
-        </video>
+        {fondoLogin && (
+          <video className="landing-hero-video" autoPlay muted loop playsInline preload="auto">
+            <source src={fondoLogin} type="video/webm" />
+          </video>
+        )}
         <div className="landing-hero-overlay" />
         <div className="landing-hero-contenido animate-slide-up">
           <div className="inline-flex items-center gap-2 mb-4">

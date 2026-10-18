@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 import {
   monitoreoEventosOnvoAPI, monitoreoChatFeedbackAPI, monitoreoEmailAPI, monitoreoSaludAPI,
@@ -21,7 +21,7 @@ export default function AdminMonitoreoPage() {
   const [error, setError] = useState(null);
   const [cargando, setCargando] = useState(true);
 
-  const cargarTodo = async () => {
+  const cargarTodo = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
@@ -40,9 +40,31 @@ export default function AdminMonitoreoPage() {
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { cargarTodo(); }, []);
+  useEffect(() => {
+    let cancelado = false;
+    Promise.all([
+      monitoreoEventosOnvoAPI(30),
+      monitoreoChatFeedbackAPI(30),
+      monitoreoEmailAPI(),
+      monitoreoSaludAPI(),
+    ]).then(([rOnvo, rFeedback, rEmail, rSalud]) => {
+      if (!cancelado) {
+        setOnvo(rOnvo.data);
+        setFeedback(rFeedback.data);
+        setEmail(rEmail.data);
+        setSalud(rSalud.data);
+        setCargando(false);
+      }
+    }).catch((err) => {
+      if (!cancelado) {
+        setError(err.response?.data?.message || 'Error al cargar el monitoreo');
+        setCargando(false);
+      }
+    });
+    return () => { cancelado = true; };
+  }, []);
 
   return (
     <div className="page-content">

@@ -19,6 +19,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: '0.0.0.0',
     // Permite hosts de preview (Arena/e2b) en desarrollo. No afecta el build de producción.
     allowedHosts: true,
     proxy: {

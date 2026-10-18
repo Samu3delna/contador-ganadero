@@ -11,16 +11,18 @@ const {
   cancelarDocumento,
   consultaMockLocal,
 } = require('../controllers/haciendaController');
+const { obtenerFacturasEmision } = require('../controllers/facturaEmisionController');
 const repController = require('../controllers/repController');
 const fecController = require('../controllers/fecController');
 const d150Controller = require('../controllers/d150Controller');
 
 router.use(protegerRuta);
 
-//_info del ambiente Hacienda
+// Info del ambiente Hacienda
 router.get('/ambiente', infoAmbiente);
 
-//Crear borrador de FE/TE/NC/ND/FEC/REP (con CABYS de 13 digitos)
+// Listar y crear comprobantes de emision
+router.get('/emision', obtenerFacturasEmision);
 router.post('/emision', crearBorrador);
 
 //Firmar documento (genera XML v4.4 + firma XAdES)

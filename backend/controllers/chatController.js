@@ -67,8 +67,11 @@ function inicializarCliente() {
   }
 }
 
+const { streamChatDual, generarChatDual, obtenerEstadoIA } = require('../services/aiProvider');
+
 function estaIADisponible() {
-  return inicializarCliente();
+  const st = obtenerEstadoIA();
+  return st.disponible && st.proveedor !== 'none';
 }
 
 // ============ SYSTEM PROMPT ============
@@ -351,28 +354,25 @@ async function chat(req, res) {
       content: (h.contenido || '').substring(0, 1000),
     }));
 
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT_CHAT },
-      { role: 'system', content: promptContexto },
+    const systemPromptCompleto = `${SYSTEM_PROMPT_CHAT}\n\n${promptContexto}`;
+    const userAndHistory = [
       ...historialRecortado,
       { role: 'user', content: mensajeFiltrado },
     ];
 
-    // Llamada a la IA
-    const respuesta = await clienteIA.chat.completions.create({
-      model: modeloIA,
-      messages,
-      temperature: aiDefaults.temperature,
-      max_tokens: aiDefaults.max_tokens,
+    // Llamada a la IA con soporte dual (Gemini / NVIDIA)
+    const resultadoIA = await generarChatDual({
+      systemPrompt: systemPromptCompleto,
+      messages: userAndHistory,
     });
 
-    const contenido = respuesta.choices[0]?.message?.content || 'No se pudo generar respuesta.';
-    const tokensUsados = respuesta.usage?.total_tokens || 0;
+    const contenido = resultadoIA.contenido || 'No se pudo generar respuesta.';
+    const tokensUsados = resultadoIA.tokensUsados || 0;
 
     const duracion = Date.now() - startTime;
-    console.log(`💬 [${requestId}] Chat: usuario=${usuarioId} tokens=${tokensUsados} tiempo=${duracion}ms modelo=${modeloIA}`);
+    console.log(`💬 [${requestId}] Chat: usuario=${usuarioId} tokens=${tokensUsados} tiempo=${duracion}ms modelo=${resultadoIA.modelo} proveedor=${resultadoIA.proveedor}`);
 
-    res.json({ respuesta: contenido, requestId });
+    res.json({ respuesta: contenido, requestId, proveedor: resultadoIA.proveedor });
   } catch (error) {
     const duracion = Date.now() - startTime;
     console.error(`❌ [${requestId}] Error en chat (${duracion}ms):`, error.message);
@@ -468,37 +468,33 @@ async function chatStream(req, res) {
       content: (h.contenido || '').substring(0, 1000),
     }));
 
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT_CHAT },
-      { role: 'system', content: promptContexto },
+    const systemPromptCompleto = `${SYSTEM_PROMPT_CHAT}\n\n${promptContexto}`;
+    const userAndHistory = [
       ...historialRecortado,
       { role: 'user', content: mensajeFiltrado },
     ];
 
-    // Stream desde la API de NVIDIA
-    const stream = await clienteIA.chat.completions.create({
-      model: modeloIA,
-      messages,
-      temperature: aiDefaults.temperature,
-      max_tokens: aiDefaults.max_tokens,
-      stream: true,
-    });
-
-    let tokensOut = 0;
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        tokensOut++;
+    let chunksCount = 0;
+    await streamChatDual({
+      systemPrompt: systemPromptCompleto,
+      messages: userAndHistory,
+      onChunk: (delta) => {
+        chunksCount++;
         res.write(`data: ${JSON.stringify({ contenido: delta })}\n\n`);
-      }
-    }
-
-    const duracion = Date.now() - startTime;
-    console.log(`💬 [${requestId}] Stream: usuario=${usuarioId} chunks=${tokensOut} tiempo=${duracion}ms`);
-
-    res.write(`data: ${JSON.stringify({ done: true, requestId })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+      },
+      onDone: () => {
+        const duracion = Date.now() - startTime;
+        console.log(`💬 [${requestId}] Stream finalizado: usuario=${usuarioId} chunks=${chunksCount} tiempo=${duracion}ms`);
+        res.write(`data: ${JSON.stringify({ done: true, requestId })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      },
+      onError: (errMsg) => {
+        res.write(`data: ${JSON.stringify({ error: errMsg })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      },
+    });
   } catch (error) {
     const duracion = Date.now() - startTime;
     console.error(`❌ [${requestId}] Error en stream (${duracion}ms):`, error.message);

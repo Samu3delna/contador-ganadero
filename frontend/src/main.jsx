@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Toaster } from 'react-hot-toast'
@@ -15,7 +16,7 @@ if (GA4_ID) {
   document.head.appendChild(script);
 
   window.dataLayer = window.dataLayer || [];
-  function gtag() { window.dataLayer.push(arguments); }
+  const gtag = (...args) => { window.dataLayer.push(args); };
   gtag('js', new Date());
   gtag('config', GA4_ID);
   window.gtag = gtag;

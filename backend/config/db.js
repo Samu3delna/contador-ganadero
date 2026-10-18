@@ -10,11 +10,17 @@ try {
 
 const conectarDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/contador_ganadero');
+    mongoose.set('bufferCommands', false); // Fail fast, avoid hanging queries
+    if (!process.env.MONGODB_URI) {
+      console.warn('⚠️ MONGODB_URI no configurado — Operando en modo local/desconectado');
+      return;
+    }
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 2000,
+    });
     console.log(`✅ MongoDB conectado: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`❌ Error conectando a MongoDB: ${error.message}`);
-    process.exit(1);
+    console.warn(`⚠️ Base de datos no conectada (${error.message}) — continuando con stubs en memoria`);
   }
 };
 

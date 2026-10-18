@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
-export default function EmailStatus({ estadoEmail }) {
+export default function EmailStatus() {
   const { usuario } = useAuth();
   const [copiado, setCopiado] = useState(false);
 

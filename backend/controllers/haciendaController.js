@@ -206,21 +206,58 @@ const consultarEstado = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// ============ CANCELAR (genera NC) — placeholder ============
+// ============ CANCELAR (genera NC) ============
 const cancelarDocumento = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (factura.estado !== 'aceptada') {
-      res.status(400); throw new Error('Solo se pueden cancelar facturas aceptadas; debe emitir NC');
+      res.status(400); throw new Error('Solo se pueden anular mediante NC las facturas aceptadas por Hacienda');
     }
-    res.status(202).json({
-      mensaje: 'Para anular una factura aceptada debe emitir una Nota de Credito (NC) ligada. Use /api/hacienda/emision con tipoDocumento=NC y documentoReferencia.',
-      referencia: {
+
+    const { razon = 'Anulación de factura por acuerdo mutuo' } = req.body || {};
+    const tenant = req.tenant;
+    const hc = tenant?.configuracionHacienda || {};
+    const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
+
+    const fechaEmision = new Date();
+    const cuatrimestre = obtenerCuatrimestre(fechaEmision);
+    const periodoFiscal = fechaEmision.getFullYear();
+    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO.NC}${String(Date.now()).slice(-10)}`;
+
+    const notaCredito = await FacturaEmision.create(req.aplicarTenant({
+      tipoDocumento: 'NC',
+      ambiente: cfg.ambiente,
+      consecutivo: consecutivoTemporal,
+      emisor: factura.emisor,
+      receptor: factura.receptor,
+      lineaDetalle: factura.lineaDetalle,
+      tipoProducto: factura.tipoProducto,
+      condicionVenta: factura.condicionVenta || '01',
+      medioPago: factura.medioPago || ['04'],
+      referencia: `Nota de Crédito por anulación de ${factura.claveNumerica || factura.consecutivo}`,
+      documentoReferencia: {
         tipoDocReferencia: '01',
         numeroReferencia: factura.claveNumerica,
         fechaEmisionReferencia: factura.fechaEmision,
-        codigoReferencia: '01',
+        codigoReferencia: '01', // 01 = Anula documento de referencia
+        razonReferencia: razon,
+      },
+      esFacturaREA: true,
+      fechaEmision,
+      cuatrimestre,
+      periodoFiscal,
+      estado: 'borrador',
+      usuario: req.usuario._id,
+    }));
+
+    res.status(201).json({
+      mensaje: 'Nota de Crédito (NC) generada en borrador',
+      notaCredito,
+      facturaOriginal: {
+        id: factura._id,
+        clave: factura.claveNumerica,
+        consecutivo: factura.consecutivo,
       },
     });
   } catch (error) { next(error); }
