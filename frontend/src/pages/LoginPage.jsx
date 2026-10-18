@@ -8,7 +8,8 @@ import LoginForm from '../components/login/LoginForm';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import useSeo from '../hooks/useSeo';
-const fondoLogin = null;
+// Video de fondo original de la marca (restaurado desde el historial de git)
+import fondoLogin from '../Recursos/fondo_login.webm';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -38,11 +39,16 @@ export default function LoginPage() {
   const [esRegistro, setEsRegistro] = useState(Boolean(esModoRegistroInicial));
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
-  const [form, setForm] = useState({ nombre: '', email: '', password: '', nombreFinca: '' });
+  const [form, setForm] = useState({ nombre: '', email: '', password: '', nombreFinca: '', aceptaTerminos: false });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    // El registro requiere aceptar explícitamente los Términos y Condiciones.
+    if (esRegistro && !form.aceptaTerminos) {
+      setError('Debes aceptar los Términos y Condiciones para crear tu cuenta.');
+      return;
+    }
     setCargando(true);
     try {
       let datosSesion;
