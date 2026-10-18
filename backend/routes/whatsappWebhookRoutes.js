@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { enviarMensajeWhatsApp, descargarMediaMeta } = require('../services/whatsappService');
 const { procesarFacturaXMLString, resolverDestinatario } = require('../services/ingestaFacturaService');
+const {
+  ejecutarEliminacionDatos,
+  handleMetaDataDeletionCallback,
+  infoMetaDataDeletionWebhook,
+  obtenerEstadoEliminacion,
+  crearSolicitudEliminacionPublica,
+} = require('../controllers/dataDeletionController');
 
 /**
  * GET /api/webhooks/whatsapp
@@ -62,7 +69,7 @@ router.post('/', async (req, res) => {
     if (!usuario) {
       await enviarMensajeWhatsApp(
         fromPhone,
-        `👋 ¡Hola! No encontramos ninguna finca asociada a tu número (+${fromPhone}) en ContadorGanadero.\n\nPor favor inicia sesión en https://contadorganadero.com y registra tu número en tu perfil para empezar a enviar facturas.`
+        `👋 ¡Hola! No encontramos ninguna finca asociada a tu número (+${fromPhone}) en ContadorGanadero.\n\nPor favor inicia sesión en https://contadorganandero.com y registra tu número en tu perfil para empezar a enviar facturas.`
       );
       return;
     }
@@ -97,7 +104,7 @@ router.post('/', async (req, res) => {
               `💰 *Total:* ₡${montoFormateado}`,
               `🏷️ *Categoría REA:* ${resultado.factura?.categoriaIA || 'Insumos'}`,
               resultado.alertas > 0 ? `⚠️ *Alerta:* Se detectó posible tarifa de IVA no agropecuaria para revisión.` : null,
-              `\nConsulta el reporte completo en https://contadorganadero.com/facturas`,
+              `\nConsulta el reporte completo en https://contadorganandero.com/facturas`,
             ].filter(Boolean).join('\n');
 
             await enviarMensajeWhatsApp(fromPhone, mensajeRespuesta);
@@ -133,9 +140,28 @@ router.post('/', async (req, res) => {
     // Es un mensaje de texto
     else if (msgType === 'text') {
       const texto = (message.text?.body || '').trim();
+      const textoLower = texto.toLowerCase();
+
+      if (
+        textoLower === 'eliminar mis datos' ||
+        textoLower === 'eliminar datos' ||
+        textoLower === 'borrar mis datos'
+      ) {
+        const eliminacion = await ejecutarEliminacionDatos({
+          telefono: fromPhone,
+          usuarioId: usuario._id,
+          origen: 'whatsapp_bot',
+        });
+        await enviarMensajeWhatsApp(
+          fromPhone,
+          `🗑️ *Solicitud de eliminación de datos completada.*\n\n🔑 *Código de confirmación:* ${eliminacion.confirmation_code}\n🔗 *Estado de la solicitud:* ${eliminacion.url}`
+        );
+        return;
+      }
+
       await enviarMensajeWhatsApp(
         fromPhone,
-        `👋 ¡Hola ${usuario.nombre}!\n\nSoy el bot de *ContadorGanadero* para tu finca (*${usuario.nombreFinca || 'Mi Finca'}*).\n\n📌 *¿Cómo usarme?*\n• Reenvíame cualquier archivo *.XML* o *.PDF* de factura que te envíe un proveedor para registrar el gasto al instante.\n• Envíame fotos de recibos o compras físicas.\n\nTambién puedes ver tus números en https://contadorganadero.com`
+        `👋 ¡Hola ${usuario.nombre}!\n\nSoy el bot de *ContadorGanadero* para tu finca (*${usuario.nombreFinca || 'Mi Finca'}*).\n\n📌 *¿Cómo usarme?*\n• Reenvíame cualquier archivo *.XML* o *.PDF* de factura que te envíe un proveedor para registrar el gasto al instante.\n• Envíame fotos de recibos o compras físicas.\n• Si deseas eliminar tus datos, escribe *ELIMINAR MIS DATOS* o visita https://contadorganandero.com/eliminacion-datos\n\nTambién puedes ver tus números en https://contadorganandero.com`
       );
     }
   } catch (error) {
@@ -143,4 +169,17 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * Devolución de llamada de solicitud de eliminación de datos de Meta (Facebook / WhatsApp)
+ * URL para Meta App Dashboard:
+ *   POST /api/webhooks/whatsapp/data-deletion
+ *   GET  /api/webhooks/whatsapp/data-deletion/status/:code
+ *   POST /api/webhooks/whatsapp/data-deletion/solicitud
+ */
+router.get('/data-deletion', infoMetaDataDeletionWebhook);
+router.post('/data-deletion', handleMetaDataDeletionCallback);
+router.get('/data-deletion/status/:code', obtenerEstadoEliminacion);
+router.post('/data-deletion/solicitud', crearSolicitudEliminacionPublica);
+
 module.exports = router;
+

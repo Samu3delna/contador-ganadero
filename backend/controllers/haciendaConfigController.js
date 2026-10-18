@@ -1,8 +1,6 @@
-const Tenant = require('../models/Tenant');
 const haciendaWorker = require('../services/haciendaWorker');
 const { firmarDocumento } = require('../services/hacienda').signer;
 const { buildXml } = require('../services/hacienda').xmlBuilder;
-const { generarClave } = require('../services/hacienda').clave50;
 const { getToken } = require('../services/hacienda').auth;
 
 /**

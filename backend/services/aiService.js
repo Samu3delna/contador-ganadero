@@ -1,32 +1,8 @@
 /**
  * Servicio de IA para categorización de gastos
- * Usa NVIDIA NIM API (compatible con SDK de OpenAI)
+ * Usa el motor dual de IA (Google Gemini / NVIDIA NIM / Heurística)
  */
 
-const OpenAI = require('openai');
-const { configurarOpenRouter: configurarIA } = require('../config/ai');
-
-let clienteIA = null;
-let modeloIA = null;
-
-/**
- * Inicializar el cliente de IA (NVIDIA NIM)
- */
-function inicializarCliente() {
-  if (clienteIA) return;
-  const config = configurarIA();
-  if (!config.apiKey) {
-    console.warn('⚠️  Servicio de IA no inicializado: falta AI_API_KEY');
-    return;
-  }
-  clienteIA = new OpenAI({
-    apiKey: config.apiKey,
-    baseURL: config.baseURL,
-    defaultHeaders: config.headers,
-  });
-  modeloIA = config.modelo;
-  console.log(`🤖 Servicio de IA inicializado (modelo: ${modeloIA})`);
-}
 
 // Prompt del sistema base para categorización
 const SYSTEM_PROMPT_BASE = `Eres un asistente contable especializado en el sector ganadero de Costa Rica.

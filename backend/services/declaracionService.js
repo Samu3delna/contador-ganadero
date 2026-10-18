@@ -129,7 +129,6 @@ async function generarExcel(datos, periodoInfo = {}) {
   // Estilos y paleta de colores
   const COLOR_PRIMARIO = '1B4332'; // Verde bosque oscuro
   const COLOR_SECUNDARIO = '2D6A4F';
-  const COLOR_GRIS_FONDO = 'F8FAFC';
   const COLOR_BORDE = 'E2E8F0';
 
   const bordeFino = {

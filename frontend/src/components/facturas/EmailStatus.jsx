@@ -13,7 +13,7 @@ export default function EmailStatus() {
   // Alias asignado a la finca (ej: "pepe-af2e" o "finca-af2e")
   const suffix = usuario?._id ? String(usuario._id).slice(-4) : 'finca';
   const alias = usuario?.tenant?.emailAlias || (usuario?.nombreFinca ? `${usuario.nombreFinca.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${suffix}` : `finca-${suffix}`);
-  const correoRecepcion = `${alias}@contadorganadero.com`;
+  const correoRecepcion = `${alias}@contadorganandero.com`;
   const telefonoUsuario = usuario?.telefono;
 
   const handleCopiarCorreo = () => {

@@ -12,7 +12,8 @@ import {
   ListTree,
   ChevronDown,
   ChevronUp,
-  ArrowUp
+  ArrowUp,
+  Trash2
 } from 'lucide-react';
 import '../../pages/LegalPages.css';
 
@@ -116,6 +117,14 @@ export default function LegalLayout({
           >
             <ShieldCheck size={18} />
             <span>Política de Privacidad</span>
+          </NavLink>
+
+          <NavLink 
+            to="/eliminacion-datos" 
+            className={({ isActive }) => `legal-tab-item ${isActive ? 'active' : ''}`}
+          >
+            <Trash2 size={18} />
+            <span>Eliminación de Datos</span>
           </NavLink>
         </div>
       </nav>
@@ -224,6 +233,7 @@ export default function LegalLayout({
             <Link to="/terminos">Términos y Condiciones</Link>
             <Link to="/condiciones-servicio">Condiciones del Servicio</Link>
             <Link to="/privacidad">Política de Privacidad</Link>
+            <Link to="/eliminacion-datos">Eliminación de Datos</Link>
           </div>
           <p className="legal-footer-copy">
             © {new Date().getFullYear()} ContadorGanadero. Plataforma especializada en el Régimen Especial Agropecuario (REA) de Costa Rica.

@@ -7,15 +7,6 @@
  * XAdES-EPES envolviendo este XML.
  */
 
-const TIPO_DOC_CODIGO = {
-  FE: '01',
-  TE: '02',
-  NC: '03',
-  ND: '04',
-  FEC: '05',
-  REP: '06',
-};
-
 const TIPO_DOC_CONFIG = {
   FE: {
     rootElement: 'FacturaElectronica',
@@ -267,7 +258,6 @@ ${lineasXml}
 
 module.exports = {
   buildXml,
-  TIPO_DOC_CODIGO,
   TIPO_DOC_CONFIG,
   fmtFecha,
   escapeXml,

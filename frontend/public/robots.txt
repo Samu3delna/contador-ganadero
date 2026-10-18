@@ -1,5 +1,5 @@
 # ContadorGanadero — robots.txt
-# https://contadorganadero.com/robots.txt
+# https://contadorganandero.com/robots.txt
 
 User-agent: *
 Allow: /
@@ -24,4 +24,4 @@ Disallow: /billing
 Allow: /login
 Allow: /registro
 
-Sitemap: https://contadorganadero.com/sitemap.xml
+Sitemap: https://contadorganandero.com/sitemap.xml

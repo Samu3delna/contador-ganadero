@@ -48,7 +48,7 @@ const protegerRuta = async (req, res, next) => {
         usuario = {
           _id: decoded.id,
           nombre: 'Productor Ganadero Demo',
-          email: 'demo@contadorganadero.com',
+          email: 'demo@contadorganandero.com',
           cedula: { tipo: 'fisica', numero: '102340567' },
           nombreFinca: 'Hacienda El Cedro (Demo)',
           tenantId,

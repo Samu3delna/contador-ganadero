@@ -84,6 +84,12 @@ const usuarioSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
   },
+  // Facebook / Meta App-Scoped User ID (ASID)
+  facebookId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   googleAccessToken: {
     type: String,
     select: false,

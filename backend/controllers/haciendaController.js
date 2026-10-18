@@ -13,7 +13,6 @@
  */
 
 const FacturaEmision = require('../models/FacturaEmision');
-const Tenant = require('../models/Tenant');
 const haciendaWorker = require('../services/haciendaWorker');
 const hacienda = require('../services/hacienda');
 const mockStore = hacienda.mockStore;

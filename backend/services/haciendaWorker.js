@@ -16,7 +16,7 @@ const Tenant = require('../models/Tenant');
 const hacienda = require('./hacienda');
 const { generarClave } = hacienda.clave50;
 const { buildXml } = hacienda.xmlBuilder;
-const { firmarDocumento, cargarLlaveDesdeBase64, limpiarCacheLlave } = hacienda.signer;
+const { firmarDocumento, limpiarCacheLlave } = hacienda.signer;
 const { enviarComprobante, pollingHastaTerminal } = hacienda.recepcion;
 const { getToken } = hacienda.auth;
 

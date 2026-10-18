@@ -27,8 +27,6 @@ function verificarConfig() {
     { key: 'AI_API_KEY', name: 'API Key de NVIDIA (IA)' },
     { key: 'JWT_SECRET', name: 'JWT Secret (para tokens de autenticación)' },
   ];
-  const opcionales = [
-  ];
 
   let ok = true;
   console.log('🔍 Verificando configuración del servidor...\n');
@@ -40,15 +38,6 @@ function verificarConfig() {
       ok = false;
     } else {
       console.log(`   ✅ ${req.key}: configurado`);
-    }
-  }
-
-  for (const opt of opcionales) {
-    const val = process.env[opt.key];
-    if (!val) {
-      console.warn(`   ⚠️  ${opt.key} (${opt.name}): no configurado (opcional, pero recomendado).`);
-    } else {
-      console.log(`   ✅ ${opt.key}: configurado`);
     }
   }
 
@@ -91,6 +80,7 @@ const onvoWebhookRoutes = require('./routes/onvoWebhookRoutes');
 const onvoRoutes = require('./routes/onvoRoutes');
 const emailWebhookRoutes = require('./routes/emailWebhookRoutes');
 const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes');
+const metaDataDeletionRoutes = require('./routes/metaDataDeletionRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 // Importar middleware de errores
@@ -232,6 +222,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/onvo', onvoRoutes);
 app.use('/api/webhooks/email', emailWebhookRoutes);
 app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes);
+app.use('/api/webhooks/meta-data-deletion', metaDataDeletionRoutes);
 app.use('/api/admin', adminRoutes);
 
 console.log('📋 Rutas registradas:');
@@ -248,7 +239,8 @@ console.log('   /api/hacienda (v4.4 nativa + config multi-tenant)');
 console.log('   /api/chat (incluye /stream)');
 console.log('   /api/onvo (checkout, cancelar, estado, webhook)');
 console.log('   /api/webhooks/email (Cloudflare Email Routing)');
-console.log('   /api/webhooks/whatsapp (Meta Cloud API)');
+console.log('   /api/webhooks/whatsapp (Meta Cloud API + /data-deletion)');
+console.log('   /api/webhooks/meta-data-deletion (Meta Data Deletion Callback)');
 console.log('   /api/admin (panel super admin: usuarios, tenants, monitoreo)');
 
 // Servir frontend SPA compilado (Vite dist)

@@ -12,8 +12,5 @@
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
     "lint": "npm run lint --workspace=frontend"
-  },
-  "dependencies": {
-    "@google/genai": "^2.30.0"
   }
 }

@@ -159,13 +159,13 @@ const login = async (req, res, next) => {
 
     if (!usuario) {
       // Si la base de datos está offline o es usuario demo, dar acceso demo
-      const esDemo = email === 'demo@contadorganadero.com' || !process.env.MONGODB_URI;
+      const esDemo = email === 'demo@contadorganandero.com' || !process.env.MONGODB_URI;
       if (esDemo) {
         const demoTenantId = '66554433221100aabbccddff';
         const demoUsuario = {
           _id: '66554433221100aabbccddee',
           nombre: 'Productor Ganadero Demo',
-          email: email || 'demo@contadorganadero.com',
+          email: email || 'demo@contadorganandero.com',
           telefono: '+50688888888',
           cedula: { tipo: 'fisica', numero: '102340567' },
           nombreFinca: 'Hacienda El Cedro (Demo)',

@@ -45,7 +45,5 @@ const configurarIA = () => {
   };
 };
 
-// Alias por compatibilidad
-const configurarOpenRouter = configurarIA;
+module.exports = { configurarIA };
 
-module.exports = { configurarIA, configurarOpenRouter };

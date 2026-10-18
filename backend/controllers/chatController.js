@@ -1,6 +1,4 @@
-const OpenAI = require('openai');
 const { v4: uuidv4 } = require('uuid');
-const { configurarOpenRouter: configurarIA } = require('../config/ai');
 const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
 const Inventario = require('../models/Inventario');
@@ -9,13 +7,10 @@ const ChatFeedback = require('../models/ChatFeedback');
 const { encoding_for_model } = require('tiktoken');
 const { contextCache } = require('../utils/chatCache');
 const { sanitizarInput, filtrarPII, sanitizarContexto } = require('../utils/sanitizer');
+const { streamChatDual, generarChatDual, obtenerEstadoIA } = require('../services/aiProvider');
 
-// ============ INICIALIZACIÓN DEL CLIENTE IA ============
+// ============ TOKENIZER Y DISPONIBILIDAD IA ============
 
-let clienteIA = null;
-let modeloIA = null;
-let aiDefaults = null;
-let clienteInicializado = false;
 let tiktokenEncoder = null;
 
 function obtenerEncoder() {
@@ -38,36 +33,6 @@ function contarTokens(texto) {
     return Math.ceil(texto.length / 4);
   }
 }
-
-function inicializarCliente() {
-  if (clienteInicializado) return !!clienteIA;
-  clienteInicializado = true;
-
-  const config = configurarIA();
-  if (!config.apiKey) {
-    console.warn('⚠️  Servicio de IA no inicializado: falta AI_API_KEY');
-    return false;
-  }
-  try {
-    clienteIA = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
-      defaultHeaders: config.headers,
-      timeout: config.defaults.timeout,
-      maxRetries: config.defaults.maxRetries,
-      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
-    });
-    modeloIA = config.modelo;
-    aiDefaults = config.defaults;
-    console.log(`🤖 Chat IA inicializado (modelo: ${modeloIA})`);
-    return true;
-  } catch (error) {
-    console.error('❌ Error inicializando cliente IA:', error.message);
-    return false;
-  }
-}
-
-const { streamChatDual, generarChatDual, obtenerEstadoIA } = require('../services/aiProvider');
 
 function estaIADisponible() {
   const st = obtenerEstadoIA();
@@ -528,7 +493,7 @@ async function enviarFeedback(req, res) {
       respuestaIA: respuestaIA.substring(0, 10000),
       feedback,
       comentario: comentario?.substring(0, 500),
-      modelo: modeloIA,
+      modelo: obtenerEstadoIA().modelo,
     }));
 
     console.log(`📊 Feedback ${feedback}: usuario=${usuarioId} id=${feedbackDoc._id}`);

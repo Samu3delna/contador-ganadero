@@ -75,22 +75,14 @@ export const loginAPI = (datos) => api.post('/auth/login', datos);
 export const registroAPI = (datos) => api.post('/auth/registro', datos);
 export const obtenerPerfilAPI = () => api.get('/auth/perfil');
 export const actualizarPerfilAPI = (datos) => api.put('/auth/perfil', datos);
-export const cambiarPasswordAPI = (datos) => api.put('/auth/cambiar-password', datos);
 
 // === Ingresos ===
 export const obtenerIngresosAPI = (params) => api.get('/ingresos', { params });
 export const crearIngresoAPI = (datos) => api.post('/ingresos', datos);
-export const actualizarIngresoAPI = (id, datos) => api.put(`/ingresos/${id}`, datos);
 export const eliminarIngresoAPI = (id) => api.delete(`/ingresos/${id}`);
 
 // === Facturas ===
 export const obtenerFacturasAPI = (params) => api.get('/facturas', { params });
-export const obtenerFacturaAPI = (id) => api.get(`/facturas/${id}`);
-export const actualizarCategoriaAPI = (id, datos) => api.put(`/facturas/${id}/categoria`, datos);
-export const eliminarFacturaAPI = (id) => api.delete(`/facturas/${id}`);
-export const estadoEmailAPI = () => api.get('/facturas/email/estado');
-export const sincronizarEmailAPI = (soloNoLeidos = true) => api.post('/facturas/email/sincronizar', { soloNoLeidos });
-export const sincronizarEmailCompletoAPI = () => api.post('/facturas/email/sincronizar', { soloNoLeidos: false });
 export const subirFacturaXML_API = (formData) => api.post('/facturas/upload', formData, {
   headers: { 'Content-Type': 'multipart/form-data' },
 });
@@ -126,7 +118,6 @@ export const crearGastoManualAPI = (datos) => api.post('/facturas/manual', datos
 // === Impuestos ===
 export const calcularIVA_API = (cuatrimestre, anio) => api.get(`/impuestos/iva/${cuatrimestre}/${anio}`);
 export const calcularRentaAPI = (anio) => api.get(`/impuestos/renta/${anio}`);
-export const proyeccionAPI = () => api.get('/impuestos/proyeccion');
 
 // === Declaraciones ===
 export const obtenerConfigFiscalAPI = () => api.get('/declaraciones/configuracion');
@@ -139,7 +130,6 @@ export const exportarDatosAPI = (params) => api.get('/declaraciones/exportar', {
 // CRUD declaraciones guardadas
 export const listarDeclaracionesAPI = (params) => api.get('/declaraciones', { params });
 export const generarDeclaracionAPI = (datos) => api.post('/declaraciones', datos);
-export const obtenerDeclaracionAPI = (id) => api.get(`/declaraciones/${id}`);
 export const actualizarEstadoDeclaracionAPI = (id, datos) => api.put(`/declaraciones/${id}/estado`, datos);
 export const eliminarDeclaracionAPI = (id) => api.delete(`/declaraciones/${id}`);
 
@@ -151,8 +141,6 @@ export const crearCheckoutAPI = (planId) => api.post('/onvo/checkout', { planId 
 export const cancelarSuscripcionAPI = () => api.post('/onvo/cancelar');
 export const obtenerEstadoSuscripcionAPI = () => api.get('/onvo/estado');
 export const obtenerPlanesAPI = () => api.get('/onvo/planes');
-// refrescarTokenAPI: usa la misma instancia axios (withCredentials: true) para que la cookie httpOnly viaje
-export const refrescarTokenAPI = () => api.post('/auth/refresh');
 export const logoutAPI = () => api.post('/auth/logout');
 
 // === Dashboard ===
@@ -255,19 +243,11 @@ export const actualizarColmenaAPI = (id, datos) => api.put(`/inventario/colmenas
 export const eliminarColmenaAPI = (id) => api.delete(`/inventario/colmenas/${id}`);
 
 // === Costos de Producción ===
-export const obtenerCostosAPI = (params) => api.get('/costos', { params });
 export const obtenerResumenCostosAPI = (params) => api.get('/costos/resumen', { params });
-export const crearCentroCostoAPI = (datos) => api.post('/costos/centros', datos);
-export const agregarConsumoAPI = (refId, datos) => api.post(`/costos/centros/${refId}/consumo`, datos);
-export const agregarProduccionAPI = (refId, datos) => api.post(`/costos/centros/${refId}/produccion`, datos);
-export const cerrarCentroCostoAPI = (refId) => api.put(`/costos/centros/${refId}/cerrar`);
 
 // === Facturación Electrónica REA ===
 export const obtenerFacturasEmisionAPI = (params) => api.get('/facturacion', { params });
-export const obtenerFacturaEmisionAPI = (id) => api.get(`/facturacion/${id}`);
 export const crearFacturaEmisionAPI = (datos) => api.post('/facturacion', datos);
-export const actualizarEstadoFacturaAPI = (id, datos) => api.put(`/facturacion/${id}/estado`, datos);
-export const anularFacturaAPI = (id) => api.put(`/facturacion/${id}/anular`);
 export const obtenerResumenEmisionAPI = (params) => api.get('/facturacion/resumen', { params });
 
 // === Hacienda v4.4 nativa ===
@@ -282,15 +262,12 @@ export const descargarXmlHaciendaAPI = (id) => descargarArchivoBlob(`/hacienda/e
 // REP (Recibo Electronico de Pago)
 export const crearRepAPI = (datos) => api.post('/hacienda/rep', datos);
 export const listarRepAPI = (params) => api.get('/hacienda/rep', { params });
-export const abonosPorFacturaAPI = (facturaIdOriginal) => api.get(`/hacienda/rep/por-factura/${facturaIdOriginal}`);
 
 // FEC (Factura Electronica de Compra)
 export const crearFecAPI = (datos) => api.post('/hacienda/fec', datos);
 export const listarFecAPI = (params) => api.get('/hacienda/fec', { params });
-export const resumenComprasFecAPI = (params) => api.get('/hacienda/fec/resumen', { params });
 
-// D-150 Conconciliacion tributaria
-export const conciliacionD150API = (params, body) => api.post('/hacienda/d150/conciliacion', body, { params });
+// D-150 Conciliacion tributaria
 export const conciliacionD150GETAPI = (params) => api.get('/hacienda/d150/conciliacion', { params });
 export const reporteD150PDFAPI = (params) => descargarArchivoBlob('/hacienda/d150/reporte/pdf', { params });
 export const reporteD150ExcelAPI = (params) => descargarArchivoBlob('/hacienda/d150/reporte/excel', { params });
@@ -309,4 +286,12 @@ async function descargarArchivoBlob(url, config) {
   }
 }
 
+// === Eliminación de Datos de Usuario (Meta / Ley 8968 CR) ===
+export const consultarEstadoEliminacionAPI = (codigo) =>
+  api.get(`/webhooks/whatsapp/data-deletion/status/${encodeURIComponent(codigo)}`);
+export const solicitarEliminacionDatosPublicaAPI = (datos) =>
+  api.post('/webhooks/whatsapp/data-deletion/solicitud', datos);
+export const eliminarMiCuentaAPI = () => api.delete('/auth/eliminar-cuenta');
+
 export default api;
+

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import LegalLayout from '../components/layout/LegalLayout';
 import useSeo from '../hooks/useSeo';
 import { EyeOff } from 'lucide-react';
@@ -58,7 +59,7 @@ export default function PoliticaPrivacidadPage() {
           <li><strong>Datos de Identificación del Titular:</strong> Nombre completo, correo electrónico, número de identificación (cédula física, jurídica, DIMEX o NITE) y teléfono.</li>
           <li><strong>Datos de la Finca / Explotación:</strong> Nombre de la finca, ubicación geográfica general, tipo de actividad pecuaria o agrícola (bovinos de cría/engorde/leche, aves, acuicultura, apicultura, agricultura).</li>
           <li><strong>Datos Fiscales y Comprobantes Electrónicos:</strong> Archivos XML y PDF de facturas electrónicas de compra y venta, montos, tarifas de IVA (1%, 13%, exento), líneas de detalle de insumos y claves numéricas de Hacienda.</li>
-          <li><strong>Credenciales Técnicas y Canales de Recepción:</strong> Dirección de correo electrónico asignada a la finca (<code>@contadorganadero.com</code>) para recepción de facturas, número de teléfono vinculado al bot de WhatsApp para reenvío de comprobantes, y llaves criptográficas <code>.p12</code> y PIN de Hacienda para la emisión autorizada de comprobantes. <em>(ContadorGanadero no solicita ni almacena contraseñas de cuentas de correo externas ni accesos IMAP).</em></li>
+          <li><strong>Credenciales Técnicas y Canales de Recepción:</strong> Dirección de correo electrónico asignada a la finca (<code>@contadorganandero.com</code>) para recepción de facturas, número de teléfono vinculado al bot de WhatsApp para reenvío de comprobantes, y llaves criptográficas <code>.p12</code> y PIN de Hacienda para la emisión autorizada de comprobantes. <em>(ContadorGanadero no solicita ni almacena contraseñas de cuentas de correo externas ni accesos IMAP).</em></li>
           <li><strong>Datos de Inventario y Producción:</strong> Pesos de animales, registros de lotes, consumos de insumos, parámetros de producción y costos asociados.</li>
         </ul>
       </section>
@@ -154,13 +155,31 @@ export default function PoliticaPrivacidadPage() {
       <section id="seccion-8" className="legal-section">
         <div className="legal-section-heading">
           <span className="legal-section-number">08.</span>
-          <h2 className="legal-section-title">Retención y Eliminación de Datos</h2>
+          <h2 className="legal-section-title">Retención y Eliminación de Datos de Usuario (Meta / WhatsApp)</h2>
         </div>
         <p>
           Conservaremos sus datos mientras mantenga activa su cuenta en ContadorGanadero.
           Si decide cerrar su cuenta, podrá solicitar previamente la exportación de sus facturas e históricos en formato Excel/CSV.
-          Tras el cierre definitivo, los datos serán eliminados de nuestras bases de datos operativas en un plazo máximo de 30 días hábiles.
+          Tras la solicitud de baja, los datos personales y operativos se eliminan de inmediato de nuestras bases de datos activas.
         </p>
+        <p>
+          De acuerdo con las Condiciones de la Plataforma de Meta, usted puede solicitar la eliminación definitiva de sus datos y desvincular su número de WhatsApp o cuenta de Facebook en cualquier momento a través de cualquiera de estos medios:
+        </p>
+        <ul>
+          <li>
+            <strong>Portal de Eliminación y Seguimiento de Código:</strong> Ingresando directamente a{' '}
+            <Link to="/eliminacion-datos" style={{ color: '#4ade80', fontWeight: 600 }}>
+              https://contadorganandero.com/eliminacion-datos
+            </Link>
+            , donde podrá ejecutar la baja inmediata o consultar el estado de su solicitud mediante su código de confirmación (<code>confirmation_code</code>).
+          </li>
+          <li>
+            <strong>Desde Facebook / Meta (Devolución de llamada automática):</strong> En su perfil de Facebook, dirigiéndose a <em>Configuración y privacidad &gt; Configuración &gt; Aplicaciones y sitios web</em>, eliminando la aplicación y pulsando <em>Enviar solicitud</em>. Nuestro servidor procesará automáticamente la solicitud firmada (<code>signed_request</code>) en el endpoint <code>/api/webhooks/whatsapp/data-deletion</code>.
+          </li>
+          <li>
+            <strong>Desde el Bot de WhatsApp o Mi Perfil:</strong> Enviando el mensaje <code>ELIMINAR MIS DATOS</code> a nuestro bot de WhatsApp, o desde el botón <em>Eliminar mi cuenta y datos</em> dentro de la sección <strong>Mi Perfil</strong> de la aplicación.
+          </li>
+        </ul>
       </section>
 
       {/* Sección 9 */}
@@ -179,8 +198,8 @@ export default function PoliticaPrivacidadPage() {
             <h4>Oficial de Protección de Datos</h4>
             <p>ContadorGanadero — San José, Costa Rica</p>
           </div>
-          <a href="mailto:privacidad@contadorganadero.com" className="btn btn-secondary btn-sm">
-            privacidad@contadorganadero.com
+          <a href="mailto:privacidad@contadorganandero.com" className="btn btn-secondary btn-sm">
+            privacidad@contadorganandero.com
           </a>
         </div>
       </section>

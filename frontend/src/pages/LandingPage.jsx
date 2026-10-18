@@ -25,8 +25,8 @@ const NEGOCIO_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'ProfessionalService',
   name: 'ContadorGanadero',
-  url: 'https://contadorganadero.com',
-  image: 'https://contadorganadero.com/favicon.svg',
+  url: 'https://contadorganandero.com',
+  image: 'https://contadorganandero.com/favicon.svg',
   description:
     'Gestión integral de fincas: inventario bovino, pastoreo rotacional, contabilidad y facturación electrónica para productores de Costa Rica bajo el Régimen Especial Agropecuario (REA).',
   areaServed: { '@type': 'Country', name: 'Costa Rica' },
@@ -85,7 +85,7 @@ const PLANES_LANDING = [
     destacado: false,
     cta: 'Comenzar gratis',
     caracteristicas: [
-      'Buzón exclusivo @contadorganadero.com',
+      'Buzón exclusivo @contadorganandero.com',
       'Bot de WhatsApp para facturas',
       'Auditoría del IVA 1% REA',
       'Inventario bovino y multiespecie',
@@ -961,7 +961,7 @@ export default function LandingPage() {
                 <div className="font-heading font-bold text-white tracking-tight">
                   Contador<span className="text-emerald-400">Ganadero</span>
                 </div>
-                <div className="text-xs text-gray-500">Gestión integral de fincas · contadorganadero.com</div>
+                <div className="text-xs text-gray-500">Gestión integral de fincas · contadorganandero.com</div>
               </div>
             </div>
 
@@ -974,6 +974,7 @@ export default function LandingPage() {
               <Link to="/login" className="hover:text-emerald-400 transition-colors">Iniciar Sesión</Link>
               <Link to="/terminos" className="hover:text-emerald-400 transition-colors">Términos</Link>
               <Link to="/privacidad" className="hover:text-emerald-400 transition-colors">Privacidad</Link>
+              <Link to="/eliminacion-datos" className="hover:text-emerald-400 transition-colors">Eliminación de Datos</Link>
             </nav>
 
             {/* Estado del sistema */}
@@ -987,7 +988,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-10 pt-6 border-t border-white/5 text-center text-xs text-gray-500">
-            © {new Date().getFullYear()} ContadorGanadero · contadorganadero.com — Todos los derechos reservados.
+            © {new Date().getFullYear()} ContadorGanadero · contadorganandero.com — Todos los derechos reservados.
             No afiliado directamente con el Ministerio de Hacienda ni el MAG de Costa Rica.
           </div>
         </div>

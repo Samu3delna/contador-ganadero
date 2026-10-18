@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   User, Mail, Phone, CreditCard, Tractor, Users, Baby, Heart,
   Landmark, CalendarDays, AtSign, ShieldCheck, Link2, Inbox, KeyRound,
-  Pencil, Copy, Check, Loader2,
+  Pencil, Copy, Check, Loader2, Trash2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Button } from '../components/ui/button';
@@ -13,7 +13,7 @@ import { Label } from '../components/ui/label';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '../components/ui/dialog';
-import { actualizarPerfilAPI } from '../services/api';
+import { actualizarPerfilAPI, eliminarMiCuentaAPI } from '../services/api';
 import { toast } from 'react-hot-toast';
 import './PerfilPage.css';
 
@@ -64,12 +64,14 @@ function Dato({ icon: Icon, label, children }) {
 }
 
 export default function PerfilPage() {
-  const { usuario, actualizarUsuario } = useAuth();
+  const { usuario, actualizarUsuario, logout } = useAuth();
   const navigate = useNavigate();
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
+  const [eliminandoCuenta, setEliminandoCuenta] = useState(false);
 
   const [form, setForm] = useState({
     nombre: '',
@@ -93,7 +95,7 @@ export default function PerfilPage() {
 
   const suffix = usuario?._id ? String(usuario._id).slice(-4) : 'finca';
   const aliasCorreo = tenant.emailAlias || (nombreFinca ? `${nombreFinca.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${suffix}` : `finca-${suffix}`);
-  const correoRecepcion = `${aliasCorreo}@contadorganadero.com`;
+  const correoRecepcion = `${aliasCorreo}@contadorganandero.com`;
 
   const abrirModalEdicion = () => {
     setForm({
@@ -247,11 +249,89 @@ export default function PerfilPage() {
         </section>
       </div>
 
-      <section className="glass-card perfil-acciones">
-        <button className="btn btn-secondary" onClick={() => navigate('/billing')}>
-          Ver mi suscripción
+      <section className="glass-card perfil-acciones flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button className="btn btn-secondary" onClick={() => navigate('/billing')}>
+            Ver mi suscripción
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate('/eliminacion-datos')}
+          >
+            Centro de Privacidad y Eliminación (Meta)
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setModalEliminarAbierto(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium transition-colors"
+        >
+          <Trash2 size={15} />
+          <span>Eliminar mi cuenta y datos</span>
         </button>
       </section>
+
+      {/* Modal de confirmación de eliminación de cuenta y datos */}
+      <Dialog open={modalEliminarAbierto} onOpenChange={setModalEliminarAbierto}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle className="text-red-400 flex items-center gap-2">
+              <Trash2 size={18} />
+              <span>¿Eliminar permanentemente tu cuenta y datos?</span>
+            </DialogTitle>
+            <DialogDescription className="text-slate-300 text-xs leading-relaxed pt-2">
+              Esta acción eliminará de forma definitiva tu perfil, el vínculo con el bot de WhatsApp,
+              credenciales cifradas, inventario e historial contable en ContadorGanadero. Recibirás un
+              código de confirmación alfanumérico conforme a la Ley N° 8968 y las Condiciones de Meta.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setModalEliminarAbierto(false)}
+              disabled={eliminandoCuenta}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={eliminandoCuenta}
+              onClick={async () => {
+                setEliminandoCuenta(true);
+                try {
+                  const res = await eliminarMiCuentaAPI();
+                  const code = res.data?.confirmation_code || '';
+                  toast.success(`Datos eliminados. Código: ${code}`);
+                  setModalEliminarAbierto(false);
+                  await logout();
+                  navigate(`/eliminacion-datos${code ? `?id=${code}` : ''}`);
+                } catch (err) {
+                  toast.error(err.response?.data?.error || 'No se pudo eliminar la cuenta');
+                } finally {
+                  setEliminandoCuenta(false);
+                }
+              }}
+              className="gap-2 bg-red-600 hover:bg-red-500 text-white"
+            >
+              {eliminandoCuenta ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Eliminando...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 size={16} />
+                  <span>Sí, eliminar mis datos</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de edición de perfil y cédula */}
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
