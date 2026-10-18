@@ -8,7 +8,7 @@ import LoginForm from '../components/login/LoginForm';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import useSeo from '../hooks/useSeo';
-const fondoLogin = null;
+import fondoLogin from '../assets/fondo-ganadero.webm';
 import './LoginPage.css';
 
 export default function LoginPage() {

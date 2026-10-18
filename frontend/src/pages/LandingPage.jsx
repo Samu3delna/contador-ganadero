@@ -1,1311 +1,1400 @@
-import { Link, useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Tractor, Mail, Sparkles, LayoutDashboard, Warehouse,
-  Receipt, TrendingUp, Calculator, ArrowRight, Check,
-  ChevronDown, Share2, ShieldCheck, Zap,
-  MessageSquare, Star, Clock, AlertTriangle, HelpCircle, Lock,
-  FileCheck2, DollarSign, Activity, Building2
+  Tractor,
+  ArrowRight,
+  Check,
+  Wallet,
+  Smartphone,
+  Laptop,
+  Sprout,
+  ChevronRight,
+  Sparkles,
+  Dna,
+  Stethoscope,
 } from 'lucide-react';
-import { PLANES } from '../data/planes';
-import PlanCard from '../components/billing/PlanCard';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Card, CardContent, CardFooter } from '../components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
-import { useReveal } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
-import AdvertisingSlot from '../components/ads/AdvertisingSlot';
+import fondoGanadero from '../assets/fondo-ganadero.webm';
 import './LandingPage.css';
 
-// WhatsApp de contacto para pre-venta y dudas del REA en Costa Rica
-const WHATSAPP_CONTACT_NUMBER = '50688888888';
-const WHATSAPP_DEFAULT_MSG = encodeURIComponent('Hola, vi la plataforma ContadorGanadero y quisiera información sobre cómo automatizar la contabilidad de mi finca bajo el REA.');
-
-const CARACTERISTICAS = [
-  {
-    icono: Mail,
-    titulo: 'Buzón Cloudflare instantáneo',
-    descripcion: 'Tu finca recibe un correo exclusivo (tu-finca@contadorganadero.com). Pide a tus proveedores que envíen las facturas ahí y entran al instante sin configurar IMAP.',
-    tag: 'Automático & Seguro',
+// Datos interactivos para el Mockup del Hero (Lotes de la Finca)
+const LOTES_HERO = {
+  todos: {
+    nombre: 'Hato Completo · Finca La Esmeralda',
+    totalCabezas: 428,
+    desglose: [
+      { categoria: 'Vacas en producción', cantidad: 164, cambio: '+6.2%', color: 'text-emerald-400' },
+      { categoria: 'Novillos de engorde', cantidad: 132, cambio: '+0.94 kg/día', color: 'text-emerald-400' },
+      { categoria: 'Terneros y crías', cantidad: 114, cambio: '96.5% destete', color: 'text-amber-400' },
+      { categoria: 'Toros reproductores', cantidad: 18, cambio: '100% activos', color: 'text-gray-300' },
+    ],
+    gdpPromedio: '0.92 kg/día',
+    pesoPromedio: '442 kg',
+    curvaPeso: [
+      { mes: 'May', peso: 348, meta: 340 },
+      { mes: 'Jun', peso: 369, meta: 360 },
+      { mes: 'Jul', peso: 392, meta: 382 },
+      { mes: 'Ago', peso: 416, meta: 404 },
+      { mes: 'Sep', peso: 442, meta: 425 },
+      { mes: 'Oct', peso: 468, meta: 448 },
+    ],
+    potreros: [
+      { id: 'P-01', nombre: 'El Roble (Brachiaria)', estado: 'En ocupación · Día 2/4', carga: '2.6 UGM/ha', tipo: 'ocupado' },
+      { id: 'P-02', nombre: 'La Quebrada (Estrella)', estado: 'Descanso · Día 24/28', carga: 'Óptimo en 4d', tipo: 'optimo' },
+      { id: 'P-03', nombre: 'Los Llanos (Mombaza)', estado: 'Listo para pastoreo', carga: '3,400 kg MS/ha', tipo: 'listo' },
+    ],
+    finanzas: {
+      ingresosMes: '₡14,850,000',
+      costosOperativos: '₡6,420,000',
+      margenNeto: '56.8%',
+      costoPorCabeza: '₡15,000 / mes',
+      ahorroIvaRea: '₡412,500',
+    },
   },
-  {
-    icono: MessageSquare,
-    titulo: 'Bot de WhatsApp para la finca',
-    descripcion: 'Reenvía archivos XML, PDFs o fotos de tiquetes directamente por WhatsApp mientras estás en el potrero, la subasta o la veterinaria.',
-    tag: 'Móvil & WhatsApp',
+  engorde: {
+    nombre: 'Lote 01 · Engorde Intensivo',
+    totalCabezas: 132,
+    desglose: [
+      { categoria: 'Novillos Brahman', cantidad: 84, cambio: '+1.08 kg/día', color: 'text-emerald-400' },
+      { categoria: 'Toretes F1 Nelore', cantidad: 48, cambio: '+0.98 kg/día', color: 'text-emerald-400' },
+      { categoria: 'Meta salida subasta', cantidad: 520, cambio: 'kg objetivo', color: 'text-amber-400' },
+      { categoria: 'Conversión alimenticia', cantidad: 6.4, cambio: 'kg MS / kg carne', color: 'text-gray-300' },
+    ],
+    gdpPromedio: '1.04 kg/día',
+    pesoPromedio: '486 kg',
+    curvaPeso: [
+      { mes: 'May', peso: 375, meta: 365 },
+      { mes: 'Jun', peso: 398, meta: 386 },
+      { mes: 'Jul', peso: 421, meta: 408 },
+      { mes: 'Ago', peso: 444, meta: 430 },
+      { mes: 'Sep', peso: 466, meta: 452 },
+      { mes: 'Oct', peso: 486, meta: 472 },
+    ],
+    potreros: [
+      { id: 'P-04', nombre: 'Vega del Río (Mombaza)', estado: 'En ocupación · Día 1/3', carga: '3.1 UGM/ha', tipo: 'ocupado' },
+      { id: 'P-05', nombre: 'Alto Mirador (Toledo)', estado: 'Listo para entrada', carga: '3,800 kg MS/ha', tipo: 'listo' },
+      { id: 'P-06', nombre: 'Corral Viejo (Suplem.)', estado: 'En recuperación · Día 16/25', carga: 'Fertiliz. aplicada', tipo: 'optimo' },
+    ],
+    finanzas: {
+      ingresosMes: '₡8,920,000',
+      costosOperativos: '₡3,610,000',
+      margenNeto: '59.5%',
+      costoPorCabeza: '₡27,348 / mes',
+      ahorroIvaRea: '₡248,000',
+    },
   },
-  {
-    icono: Sparkles,
-    titulo: 'Categorización con IA (Gemini & NVIDIA)',
-    descripcion: 'Inteligencia artificial entrenada en códigos Cabys y agropecuarios clasifica cada gasto e insumo en tu contabilidad de inmediato.',
-    tag: 'Doble Motor IA',
+  lecheria: {
+    nombre: 'Lote 02 · Lechería Alta Producción',
+    totalCabezas: 164,
+    desglose: [
+      { categoria: 'Vacas en ordeño', cantidad: 138, cambio: '18.4 L/día prom.', color: 'text-emerald-400' },
+      { categoria: 'Vacas secas próximas', cantidad: 26, cambio: 'Parto < 30 días', color: 'text-amber-400' },
+      { categoria: 'Sólidos totales', cantidad: 12.8, cambio: '% bonificación', color: 'text-emerald-400' },
+      { categoria: 'Intervalo entre partos', cantidad: 388, cambio: 'días promedio', color: 'text-gray-300' },
+    ],
+    gdpPromedio: '18.4 L/vaca',
+    pesoPromedio: '512 kg',
+    curvaPeso: [
+      { mes: 'May', peso: 410, meta: 400 },
+      { mes: 'Jun', peso: 428, meta: 415 },
+      { mes: 'Jul', peso: 445, meta: 430 },
+      { mes: 'Ago', peso: 468, meta: 450 },
+      { mes: 'Sep', peso: 490, meta: 470 },
+      { mes: 'Oct', peso: 512, meta: 485 },
+    ],
+    potreros: [
+      { id: 'L-01', nombre: 'Aparto Ordeño A (Estrella)', estado: 'Rotación diaria · Franja 4', carga: '3.4 UGM/ha', tipo: 'ocupado' },
+      { id: 'L-02', nombre: 'Aparto Ordeño B (Kikuyo)', estado: 'Listo mañana 6:00 AM', carga: '4,100 kg MS/ha', tipo: 'listo' },
+      { id: 'L-03', nombre: 'Aparto Sombra (Brizantha)', estado: 'Descanso · Día 21/24', carga: 'En rebrote', tipo: 'optimo' },
+    ],
+    finanzas: {
+      ingresosMes: '₡5,930,000',
+      costosOperativos: '₡2,810,000',
+      margenNeto: '52.6%',
+      costoPorCabeza: '₡17,134 / mes',
+      ahorroIvaRea: '₡164,500',
+    },
   },
-  {
-    icono: ShieldCheck,
-    titulo: 'Auditoría de IVA al 1% REA',
-    descripcion: 'Detección automática de errores cuando un comercio o ferretería te factura al 13% en vez de la tarifa reducida del 1% del sector agropecuario.',
-    tag: 'Ahorro Inmediato',
-  },
-  {
-    icono: Calculator,
-    titulo: 'Impuestos Costa Rica (D-135-1 & D-101)',
-    descripcion: 'Cálculo automatizado del IVA Cuatrimestral y Renta Anual con los tramos progresivos y deducciones del Régimen Especial Agropecuario.',
-    tag: 'Hacienda al Día',
-  },
-  {
-    icono: Receipt,
-    titulo: 'Facturas Electrónicas v4.4',
-    descripcion: 'Emisión, firma y validación de Factura Electrónica (FE), Tiquete (TE) y Notas de Crédito (NC) con acuses oficiales de Hacienda en tiempo real.',
-    tag: 'Versión v4.4',
-  },
-  {
-    icono: TrendingUp,
-    titulo: 'Costos reales de producción',
-    descripcion: 'Calcula el costo por kg de carne en canal, cartón de huevos, kilo de tilapia o cosecha de miel sin enredos de hojas de cálculo.',
-    tag: 'Rentabilidad Real',
-  },
-  {
-    icono: Warehouse,
-    titulo: 'Inventario multiespecie',
-    descripcion: 'Bovinos de engorde y leche, aves de postura, acuicultura y apicultura en un solo lugar con registro de pesajes y conteo visual.',
-    tag: '4 Especies',
-  },
-  {
-    icono: LayoutDashboard,
-    titulo: 'Conciliación D-150 TRIBU-CR',
-    descripcion: 'Guía paso a paso con los totales de importes e impuestos soportados lista para declarar con tranquilidad ante el Ministerio de Hacienda.',
-    tag: 'TRIBU-CR 2026',
-  },
-];
-
-const PASOS = [
-  {
-    numero: '1',
-    titulo: 'Pasa tu correo o envía por WhatsApp',
-    descripcion: 'Da a tus proveedores tu dirección de finca (@contadorganadero.com) o reenvía tus facturas y fotos al bot de WhatsApp desde el campo.',
-    icono: Mail,
-  },
-  {
-    numero: '2',
-    titulo: 'La IA audita y categoriza al instante',
-    descripcion: 'El sistema valida la clave ante Hacienda, audita que te apliquen el IVA del 1% en insumos y clasifica los gastos automáticamente.',
-    icono: Sparkles,
-  },
-  {
-    numero: '3',
-    titulo: 'Declaraciones y costos con 1 clic',
-    descripcion: 'Genera tus formularios D-135-1, D-101 y D-150 con cifras exactas y consulta tu costo por kilo sin depender de hojas de cálculo complejas.',
-    icono: FileCheck2,
-  },
-];
-
-const TESTIMONIOS = [
-  {
-    nombre: 'Don Minor Quesada',
-    rol: 'Ganadero de Doble Propósito',
-    lugar: 'San Carlos, Alajuela',
-    foto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80',
-    iniciales: 'MQ',
-    rating: 5,
-    texto: 'Antes pasaba los domingos cuadrando facturas arrugadas y tiquetes de la cooperativa. Ahora le paso el correo a la veterinaria y ContadorGanadero me tiene el IVA cuatrimestral y el costo por kilo al día.',
-    resultado: 'Ahorro de ~18 hrs/mes',
-  },
-  {
-    nombre: 'Doña Xinia Alvarado',
-    rol: 'Productora Avícola y Hortalizas',
-    lugar: 'Pérez Zeledón, San José',
-    foto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    iniciales: 'XA',
-    rating: 5,
-    texto: 'Descubrí que un almacén me estaba cobrando el concentrado al 13% de IVA en vez del 1% del REA. Solo en esa auditoría automática me ahorré más de ₡90,000 el primer cuatrimestre.',
-    resultado: 'Recuperó ₡90,000 en IVA',
-  },
-  {
-    nombre: 'Ing. Roberto Brenes',
-    rol: 'Acuicultura y Ganadería Bovina',
-    lugar: 'Cañas, Guanacaste',
-    foto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    iniciales: 'RB',
-    rating: 5,
-    texto: 'El cálculo del costo por kilo de tilapia y la conciliación anual D-150 de Hacienda son precisos. Mi contador externo me felicitó porque todo le llega estructurado en segundos.',
-    resultado: 'Cero multas en Hacienda',
-  },
-];
-
-const COMPARATIVA = [
-  { tarea: 'Recepción de facturas de proveedores', manual: 'Manual (descargar una a una de correos personales)', app: 'Buzón automático Cloudflare y WhatsApp desde el potrero' },
-  { tarea: 'Auditoría del IVA 1% agropecuario', manual: 'Riesgo de pagar 13% en vez de 1% (pérdida de dinero)', app: 'Alerta inmediata de tarifas incorrectas del MAG' },
-  { tarea: 'Clasificación de insumos y Cabys', manual: 'A mano en libretas o Excel que nadie actualiza', app: 'Categorización automática con Inteligencia Artificial' },
-  { tarea: 'Declaración IVA Cuatrimestral (D-135-1)', manual: 'Cálculo de última hora con riesgo de sanción', app: 'Borrador con casillas oficiales listo para presentar' },
-  { tarea: 'Renta Anual REA (D-101)', manual: 'Contador costoso o cálculos imprecisos', app: 'Tramos progresivos y deducciones legales aplicadas' },
-  { tarea: 'Costo real de producción', manual: 'Estimaciones "a ojo" que ocultan pérdidas', app: 'Costo exacto por kg de carne, cartón de huevos o pez' },
-  { tarea: 'Facturación Electrónica v4.4', manual: 'Sistemas genéricos complejos que cobran por factura', app: 'Especializada para el agro, con Notas de Crédito directas' },
-];
-
-const FAQ = [
-  {
-    pregunta: '¿Necesito estar inscrito en Hacienda para usar ContadorGanadero?',
-    respuesta:
-      'Para emitir facturas electrónicas oficiales necesitas estar inscrito como contribuyente (usualmente en el Régimen Especial Agropecuario REA del MAG/Hacienda). Sin embargo, para llevar tu control de gastos, inventario ganadero, costo por kilo y recepción de facturas puedes empezar desde hoy mismo con el Plan Gratis.',
-  },
-  {
-    pregunta: '¿Cómo funciona la recepción automática de facturas?',
-    respuesta:
-      'Al crear tu cuenta, tu finca recibe un correo exclusivo (ej: tu-finca@contadorganadero.com) con tecnología Cloudflare y un número de bot de WhatsApp. Pides a tus proveedores que envíen sus XMLs ahí o los reenvías por WhatsApp. La plataforma valida la clave de Hacienda, extrae los montos y clasifica todo con IA en segundos.',
-  },
-  {
-    pregunta: '¿Cómo me ayuda la plataforma a ahorrar en el IVA del 1% del REA?',
-    respuesta:
-      'Por ley en Costa Rica, los insumos agropecuarios esenciales (alimentos balanceados, medicinas veterinarias, fertilizantes, semillas) tienen tarifa reducida del 1% o 2%. Muchos comercios cometen el error de facturar al 13%. ContadorGanadero audita automáticamente cada línea y te alerta para que no pagues impuestos de más.',
-  },
-  {
-    pregunta: '¿Cuáles impuestos y declaraciones de Hacienda calcula?',
-    respuesta:
-      'Calcula el IVA cuatrimestral del Régimen Agropecuario (formulario D-135-1), la Renta Anual (D-101) con los tramos progresivos actualizados y la Conciliación Anual de Insumos (D-150 / TRIBU-CR), además de incluir el calendario con las fechas límites de pago.',
-  },
-  {
-    pregunta: '¿Puedo llevar el control de mis animales y cosechas?',
-    respuesta:
-      'Sí. Cuenta con módulos para 4 especies: bovinos (carne y leche), aves de postura (huevos), acuicultura (tilapias/truchas) y apicultura (miel). Registra pesajes, mortandades, tratamientos sanitarios y calcula tu costo de producción por kilo o unidad.',
-  },
-  {
-    pregunta: '¿Es realmente gratis? ¿Piden tarjeta de crédito para empezar?',
-    respuesta:
-      'No pedimos tarjeta de crédito para el Plan Gratis. Puedes usar la plataforma sin costo (sostenido con anuncios no invasivos de Google). Si luego deseas funciones avanzadas como visión artificial VLM, módulo D-150 y trabajar sin publicidad, puedes pasar al plan Pro por solo $10 al mes.',
-  },
-];
-
-const FAQ_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQ.map((f) => ({
-    '@type': 'Question',
-    name: f.pregunta,
-    acceptedAnswer: { '@type': 'Answer', text: f.respuesta },
-  })),
 };
 
-const NEGOCIO_SCHEMA = {
+// Ejemplares para la Tarjeta 1 del Bento Grid (Inventario y Trazabilidad Individual)
+const EJEMPLARES_TRAZABILIDAD = [
+  {
+    arete: 'CR-0482',
+    nombre: 'Sultán del Pacífico',
+    raza: 'Brahman Rojo Puro',
+    categoria: 'Toro Reproductor · Lote Cría',
+    edad: '34 meses',
+    pesoActual: '648 kg',
+    ultimoPesaje: 'Hace 4 días (+24 kg en 30d)',
+    gdp: '+0.89 kg/día',
+    condicionCorporal: '4.2 / 5.0',
+    padre: 'CR-0109 · Monarca Red (Reg. ASocebú)',
+    madre: 'CR-0218 · Emperatriz 44 (Línea Lechera)',
+    sanidad: [
+      { vacuna: 'Ivermectina + Vitamina ADE', fecha: '12 Oct 2026', estado: 'Vigente' },
+      { vacuna: 'Clostridiosis Polivalente 9 Vías', fecha: '04 Ago 2026', estado: 'Vigente' },
+      { vacuna: 'Prueba Brucelosis / Tuberculosis', fecha: '18 Jul 2026', estado: 'Negativo Oficial' },
+    ],
+  },
+  {
+    arete: 'CR-0914',
+    nombre: 'Duquesa de San Carlos',
+    raza: 'Gyrolando F1 Plus',
+    categoria: 'Vaca en Producción · 2° Parto',
+    edad: '42 meses',
+    pesoActual: '524 kg',
+    ultimoPesaje: 'Hace 6 días (+19.8 L/día)',
+    gdp: '19.8 L/día',
+    condicionCorporal: '3.8 / 5.0',
+    padre: 'BR-4410 · Sansão Gyr Lechero',
+    madre: 'CR-0390 · Reina Holstein 12',
+    sanidad: [
+      { vacuna: 'Control Mastitis California (CMT)', fecha: '15 Oct 2026', estado: 'Libre 4 cuartos' },
+      { vacuna: 'Suplementación Mineral Fosforada', fecha: '01 Oct 2026', estado: 'Activa' },
+      { vacuna: 'Refuerzo Reproductivo IBR / DVB', fecha: '22 Jun 2026', estado: 'Vigente' },
+    ],
+  },
+  {
+    arete: 'CR-1108',
+    nombre: 'Relámpago de Guanacaste',
+    raza: 'Nelore Mocho',
+    categoria: 'Novillo de Engorde · Lote 01',
+    edad: '21 meses',
+    pesoActual: '492 kg',
+    ultimoPesaje: 'Ayer (+32 kg en 30d)',
+    gdp: '+1.07 kg/día',
+    condicionCorporal: '4.5 / 5.0',
+    padre: 'CR-0142 · Titán Nelore',
+    madre: 'CR-0512 · Flor de Cañas',
+    sanidad: [
+      { vacuna: 'Implante Promotor + Desparasitante', fecha: '10 Oct 2026', estado: 'En protocolo' },
+      { vacuna: 'Carbón Sintomático Triple', fecha: '19 Ago 2026', estado: 'Vigente' },
+      { vacuna: 'Trazabilidad Salida Subasta', fecha: 'Programada Nov', estado: 'Listo en 24 días' },
+    ],
+  },
+];
+
+// Planes de suscripción (Sección de Precios)
+const PLANES_GANADEROS = [
+  {
+    id: 'free',
+    nombre: 'Finca Pequeña / Productor',
+    subtitulo: 'Ideal para digitalizar tu primer hato bovino y abandonar el cuaderno de apuntes.',
+    precioMensual: 0,
+    precioAnual: 0,
+    destacado: false,
+    ctaTexto: 'Comenzar gratis ahora',
+    caracteristicas: [
+      'Hasta 50 cabezas de ganado con ficha individual',
+      'Control básico de hasta 6 potreros y pesajes',
+      'Recepción de hasta 30 facturas mensuales por correo',
+      'Cálculo de IVA agropecuario 1% REA (D-135-1)',
+      'Acceso desde celular en el corral y computadora',
+    ],
+  },
+  {
+    id: 'pro',
+    nombre: 'Hacienda Profesional',
+    subtitulo: 'Control integral de lotes, pastoreo rotacional, trazabilidad genética y finanzas REA.',
+    precioMensual: 10,
+    precioAnual: 8,
+    destacado: true,
+    etiqueta: 'Más Popular',
+    ctaTexto: 'Probar Hacienda Profesional',
+    caracteristicas: [
+      'Hato bovino y lotes ilimitados con genealogía completa',
+      'Optimizador de rotación de potreros y carga animal (UGM/ha)',
+      'Bot de WhatsApp para registrar pesajes, partos y facturas',
+      'Facturación electrónica Hacienda v4.4 y declaraciones D-135 / D-101',
+      'Costo real por kilo producido y flujo de caja en tiempo real',
+      'Sin anuncios publicitarios y exportación contable en 1 clic',
+    ],
+  },
+  {
+    id: 'agroempresa',
+    nombre: 'Agroempresa',
+    subtitulo: 'Para operaciones multi-finca, lecherías tecnificadas, subastas y asesores agropecuarios.',
+    precioMensual: 29,
+    precioAnual: 24,
+    destacado: false,
+    ctaTexto: 'Contactar para Agroempresa',
+    caracteristicas: [
+      'Gestión multi-finca consolidada desde un único panel',
+      'Accesos por rol para capataces, veterinarios y contador',
+      'Integración con lectores de bastón RFID / aretes electrónicos',
+      'Auditoría tributaria avanzada D-150 y centros de costo por actividad',
+      'Soporte prioritario por WhatsApp e implementación asistida',
+    ],
+  },
+];
+
+const ORGANIZATION_SCHEMA = {
   '@context': 'https://schema.org',
-  '@type': 'ProfessionalService',
-  name: 'ContadorGanadero',
-  url: 'https://contadorganandero.com',
-  image: 'https://contadorganandero.com/favicon.svg',
+  '@type': 'SoftwareApplication',
+  name: 'Contador Ganadero',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web, iOS, Android',
+  url: 'https://contadorganadero.com',
   description:
-    'Contabilidad, inventario y facturación electrónica para productores agropecuarios de Costa Rica bajo el Régimen Especial Agropecuario (REA).',
-  areaServed: { '@type': 'Country', name: 'Costa Rica' },
-  priceRange: '$$',
-  knowsAbout: [
-    'Facturación electrónica Costa Rica v4.4',
-    'Régimen Especial Agropecuario REA',
-    'Declaración IVA D-135-1',
-    'Declaración de renta D-101',
-    'Conciliación D-150 TRIBU-CR',
-  ],
+    'Aplicación web moderna para la gestión integral de fincas, control de inventario bovino, pastoreo rotacional y finanzas agropecuarias.',
+  offers: {
+    '@type': 'AggregateOffer',
+    lowPrice: '0',
+    highPrice: '29',
+    priceCurrency: 'USD',
+    offerCount: '3',
+  },
 };
 
 export default function LandingPage() {
   const navigate = useNavigate();
 
-  // ===== SEO =====
   useSeo({
-    title: 'ContadorGanadero | Contabilidad y Facturación Electrónica REA Costa Rica',
+    title: 'Contador Ganadero | Gestión Integral de Fincas, Inventario Bovino y Finanzas Agropecuarias',
     description:
-      'Plataforma oficial para productores agropecuarios en Costa Rica: recibe facturas por correo y WhatsApp, audita el IVA 1% del REA y genera tus declaraciones D-135-1 y D-101 de Hacienda.',
+      'Gestiona tu hato bovino, optimiza la rotación de potreros, registra pesos, vacunas y controla la rentabilidad de tu finca en tiempo real desde cualquier dispositivo.',
     path: '/',
-    jsonLd: [NEGOCIO_SCHEMA, FAQ_SCHEMA],
+    jsonLd: ORGANIZATION_SCHEMA,
   });
 
-  // Calculadora interactiva de ahorro para el productor
-  const [facturasAlMes, setFacturasAlMes] = useState(40);
-  const calculoAhorro = useMemo(() => {
-    // Estimación basada en promedio de compras agropecuarias en CR:
-    // ~15 min por factura manual + 4 hrs por declaración
-    const horasAhorradas = Math.round((facturasAlMes * 0.25) + 4);
-    // Estimación conservadora de fugas de IVA (facturas al 13% en vez de 1% no detectadas): ~3-5% del gasto
-    const fugaIvaEstimada = Math.round(facturasAlMes * 2800);
-    // Multa Hacienda por no presentar a tiempo (medio salario base aprox ₡231,100)
-    const multaEvitada = 231100;
-    return {
-      horas: horasAhorradas,
-      ahorroDinero: fugaIvaEstimada.toLocaleString('es-CR'),
-      multa: multaEvitada.toLocaleString('es-CR'),
-    };
-  }, [facturasAlMes]);
+  // Estados interactivos para el Mockup y Bento Grid
+  const [loteActivo, setLoteActivo] = useState('todos');
+  const [ejemplarIdx, setEjemplarIdx] = useState(0);
+  const [dispositivoCampo, setDispositivoCampo] = useState('corral');
+  const [cicloAnual, setCicloAnual] = useState(false);
+  const [potreroSeleccionado, setPotreroSeleccionado] = useState(0);
 
-  // Tracking de conversión para Google Ads
-  const trackConversion = (etiqueta = 'inicio_registro', plan = 'free') => {
-    try {
-      if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('event', 'conversion', {
-          send_to: window.GOOGLE_ADS_CONVERSION_ID || 'AW-DEFAULT/conversion',
-          value: plan === 'pro' ? 10.0 : 1.0,
-          currency: 'USD',
-          event_category: 'Google Ads Lead',
-          event_label: etiqueta,
-        });
-      }
-    } catch {
-      // no-op
-    }
-  };
+  const datosLote = useMemo(() => LOTES_HERO[loteActivo] || LOTES_HERO.todos, [loteActivo]);
+  const ejemplarActual = EJEMPLARES_TRAZABILIDAD[ejemplarIdx] || EJEMPLARES_TRAZABILIDAD[0];
 
-  const handleSeleccionarPlan = (planId) => {
-    trackConversion('seleccion_plan_' + planId, planId);
+  const POTREROS_BENTO = [
+    { codigo: 'Potrero 01 · El Roble', pasto: 'Brachiaria brizantha', ocupacion: 3, descansoMeta: 28, descansoActual: 28, ugm: '2.6 UGM/ha', estado: 'En pastoreo (Día 3 de 4)', alerta: false },
+    { codigo: 'Potrero 02 · La Vega', pasto: 'Estrella Africana', ocupacion: 4, descansoMeta: 26, descansoActual: 25, ugm: '2.9 UGM/ha', estado: 'Listo mañana · Aforo alto', alerta: false },
+    { codigo: 'Potrero 03 · Mirador', pasto: 'Panicum Mombaza', ocupacion: 5, descansoMeta: 30, descansoActual: 14, ugm: '2.2 UGM/ha', estado: 'En recuperación (Día 14 de 30)', alerta: true },
+  ];
+
+  const potreroBento = POTREROS_BENTO[potreroSeleccionado] || POTREROS_BENTO[0];
+
+  const irARegistro = (planId = 'free') => {
     navigate('/login', { state: { registro: true, plan: planId } });
   };
 
-  const handleCtaPrincipal = (etiqueta = 'hero_cta') => {
-    trackConversion(etiqueta, 'free');
-    navigate('/login', { state: { registro: true } });
-  };
-
-  // Compartir
-  const [copiado, setCopiado] = useState(false);
-  const handleCompartir = async () => {
-    const url = window.location.href;
-    const titulo = document.title;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: titulo, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setCopiado(true);
-        setTimeout(() => setCopiado(false), 2000);
-      }
-    } catch {
-      /* usuario canceló */
-    }
-  };
-
-  // FAQ acordeón
-  const [faqAbierta, setFaqAbierta] = useState(0);
-
-  // Reveal animations
-  const [heroRef, heroVisible] = useReveal({ rootMargin: '0px 0px -20% 0px' });
-  const [trustRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [calculatorRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [tabsRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [featuresRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [stepsRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [testimonialsRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [comparativaRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [pricingRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [faqRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [ctaRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [footerRef] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-
   return (
-    <div className="landing font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
-      {/* Barra de anuncio superior para Google Ads Quality Score */}
-      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border-b border-emerald-500/20 py-2 px-4 text-center text-xs text-slate-300 flex items-center justify-center gap-2">
-        <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="font-semibold text-emerald-300">Costa Rica 🇨🇷:</span>
-        <span>Alineado con Facturación Electrónica Hacienda v4.4 & Régimen Especial Agropecuario (REA).</span>
-        <span className="hidden md:inline text-slate-400">• Plan Gratis Disponible Sin Tarjeta</span>
+    <div className="min-h-screen bg-[#070B09] text-white font-sans selection:bg-emerald-500/30 selection:text-emerald-200 overflow-x-hidden">
+      {/* =====================================================================
+          1. NAVBAR FLOTANTE (Sticky & Glassmorphism — Top Bar Contract)
+          ===================================================================== */}
+      <div className="fixed top-4 inset-x-0 z-50 mx-auto max-w-6xl px-4 sm:px-6">
+        <header className="rounded-full bg-black/55 backdrop-blur-xl border border-white/10 px-5 sm:px-7 py-3 flex items-center justify-between gap-8 shadow-[0_12px_40px_rgba(0,0,0,0.65)]">
+          {/* Zona 1: Brand Wordmark (una sola línea, sin subtítulos anexos) */}
+          <Link
+            to="/"
+            className="flex items-center gap-2.5 text-base sm:text-lg font-bold tracking-tight text-white whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400">
+              <Tractor size={17} />
+            </span>
+            <span>Contador Ganadero</span>
+          </Link>
+
+          {/* Zona 2: Enlaces de navegación (4 enlaces limpios en una línea) */}
+          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-gray-300" aria-label="Navegación principal">
+            <a
+              href="#funciones"
+              className="hover:text-white transition-colors duration-150 whitespace-nowrap shrink-0 underline-offset-4 hover:underline"
+            >
+              Funciones
+            </a>
+            <a
+              href="#pastoreo"
+              className="hover:text-white transition-colors duration-150 whitespace-nowrap shrink-0 underline-offset-4 hover:underline"
+            >
+              Pastoreo
+            </a>
+            <a
+              href="#finanzas"
+              className="hover:text-white transition-colors duration-150 whitespace-nowrap shrink-0 underline-offset-4 hover:underline"
+            >
+              Finanzas
+            </a>
+            <a
+              href="#precios"
+              className="hover:text-white transition-colors duration-150 whitespace-nowrap shrink-0 underline-offset-4 hover:underline"
+            >
+              Precios
+            </a>
+          </nav>
+
+          {/* Zona 3: Acciones de acceso */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <Link
+              to="/login"
+              className="px-3.5 py-2 text-xs sm:text-sm font-medium text-gray-300 hover:text-white transition-colors duration-150 whitespace-nowrap shrink-0 rounded-full"
+            >
+              Iniciar Sesión
+            </Link>
+            <button
+              type="button"
+              onClick={() => irARegistro('free')}
+              className="px-4 sm:px-5 py-2 rounded-full bg-[#10B981] hover:bg-emerald-400 text-[#070B09] font-semibold text-xs sm:text-sm transition-all duration-150 shadow-[0_0_24px_rgba(16,185,129,0.4)] hover:shadow-[0_0_32px_rgba(16,185,129,0.65)] whitespace-nowrap shrink-0"
+            >
+              Probar Gratis
+            </button>
+          </div>
+        </header>
       </div>
 
-      {/* Navbar con shadcn UI tokens */}
-      <header className={`landing-nav ${heroVisible ? 'landing-nav--scrolled' : ''}`}>
-        <div className="landing-nav-brand">
-          <div className="landing-nav-logo">
-            <Tractor size={24} className="text-white" />
+      {/* =====================================================================
+          2. HERO SECTION DE ALTO IMPACTO (Con Video de Fondo + Mockup Cristal)
+          ===================================================================== */}
+      <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+        {/* Video de fondo original (compartido con Login) */}
+        <video
+          className="landing-hero-video opacity-45"
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-hidden="true"
+        >
+          <source src={fondoGanadero} type="video/webm" />
+        </video>
+
+        {/* Scrim de contraste medido para legibilidad WCAG AA sobre el video */}
+        <div
+          className="
+            absolute inset-0 z-0 pointer-events-none
+            bg-gradient-to-b from-[#070B09]/70 via-[#070B09]/80 to-[#070B09]
+          "
+        />
+
+        {/* Resplandor radial esmeralda difuminado detrás del Hero */}
+        <div
+          className="
+            absolute top-24 left-1/2 -translate-x-1/2 z-0 pointer-events-none
+            w-[820px] h-[420px] rounded-full
+            bg-emerald-500/15 blur-[130px]
+          "
+        />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Encabezado centrado del Hero */}
+          <div className="max-w-3xl mx-auto text-center flex flex-col items-center">
+            {/* Kicker luminoso */}
+            <a
+              href="#funciones"
+              className="group inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-emerald-500/30 hover:border-emerald-400/60 text-xs sm:text-sm text-emerald-300 mb-6 transition-all duration-200 shadow-[0_0_25px_rgba(16,185,129,0.15)]"
+            >
+              <Sparkles size={14} className="text-emerald-400 shrink-0" />
+              <span>Nuevo: Control inteligente de lotes y trazabilidad bovina</span>
+              <ChevronRight size={14} className="text-emerald-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </a>
+
+            {/* Headline H1 */}
+            <h1
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.08] mb-6"
+              style={{ textWrap: 'balance' }}
+            >
+              El control total de tu ganadería,{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-300 to-amber-300">
+                sin papeles ni complicaciones.
+              </span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-base sm:text-lg text-[#9CA3AF] leading-relaxed max-w-2xl mb-9">
+              Gestiona tu hato bovino, optimiza la rotación de potreros, registra pesos, vacunas y controla la rentabilidad de tu finca en tiempo real desde cualquier dispositivo.
+            </p>
+
+            {/* CTAs Primario y Secundario */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3.5 w-full sm:w-auto mb-14">
+              <button
+                type="button"
+                onClick={() => irARegistro('free')}
+                className="group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-[#10B981] hover:bg-emerald-400 text-[#070B09] font-bold text-sm sm:text-base transition-all duration-150 shadow-[0_0_32px_rgba(16,185,129,0.4)] hover:shadow-[0_0_45px_rgba(16,185,129,0.65)] whitespace-nowrap shrink-0"
+              >
+                <span>Comenzar ahora — Es Gratis</span>
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <a
+                href="#mockup-interactivo"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-emerald-500/40 text-white font-semibold text-sm sm:text-base transition-all duration-150 whitespace-nowrap shrink-0"
+              >
+                <span>Ver demostración interactiva</span>
+              </a>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="landing-nav-title font-heading font-black text-lg text-white tracking-tight leading-none">
-              Contador<span className="text-emerald-400">Ganadero</span>
-            </span>
-            <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Costa Rica REA</span>
+
+          {/* =================================================================
+              HERO VISUAL (MOCKUP UI EN MARCO DE CRISTAL INTERACTIVO)
+              ================================================================= */}
+          <div id="mockup-interactivo" className="relative mx-auto max-w-6xl">
+            {/* Resplandor perimetral detrás del Mockup */}
+            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-b from-emerald-500/25 via-emerald-500/5 to-transparent blur-xl pointer-events-none" />
+
+            <div className="relative rounded-2xl bg-[#0D1512]/90 backdrop-blur-xl border border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.75)] overflow-hidden">
+              {/* Barra superior de la ventana del Dashboard + Selector interactivo de Lote */}
+              <div className="px-4 sm:px-6 py-3.5 bg-[#070B09]/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/60" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-medium text-gray-300 truncate">
+                    {datosLote.nombre}
+                  </span>
+                </div>
+
+                {/* Selector funcional de lote para explorar datos en vivo */}
+                <div className="flex items-center gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/10">
+                  {[
+                    { id: 'todos', label: 'Hato Completo (428)' },
+                    { id: 'engorde', label: 'Lote Engorde (132)' },
+                    { id: 'lecheria', label: 'Lechería (164)' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setLoteActivo(tab.id)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 whitespace-nowrap shrink-0 ${
+                        loteActivo === tab.id
+                          ? 'bg-[#10B981] text-[#070B09] font-semibold shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cuerpo del Dashboard Mockup */}
+              <div className="p-5 sm:p-7 space-y-6">
+                {/* Fila 1: Contador total de cabezas y desglose por categoría */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {/* Tarjeta destacada: Total Cabezas */}
+                  <div className="lg:col-span-1 p-4 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/30 flex flex-col justify-between">
+                    <span className="text-xs font-medium text-emerald-300">Total Cabezas</span>
+                    <div className="my-2 text-3xl font-bold font-mono tabular-nums text-white">
+                      {datosLote.totalCabezas}
+                    </div>
+                    <span className="text-xs text-emerald-300/90 font-mono tabular-nums">
+                      Peso prom: {datosLote.pesoPromedio}
+                    </span>
+                  </div>
+
+                  {/* Desglose de las 4 categorías */}
+                  {datosLote.desglose.map((item) => (
+                    <div
+                      key={item.categoria}
+                      className="p-4 rounded-xl bg-white/[0.02] border border-white/10 flex flex-col justify-between"
+                    >
+                      <span className="text-xs text-[#9CA3AF] truncate">{item.categoria}</span>
+                      <div className="my-2 text-2xl font-bold font-mono tabular-nums text-white">
+                        {item.cantidad}
+                      </div>
+                      <span className={`text-xs font-mono tabular-nums ${item.color}`}>
+                        {item.cambio}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Fila 2: 3 Paneles analíticos (Curva de Ganancia de Peso + Estado de Potreros + Flujo de Caja Mensual) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                  {/* Panel 1: Gráfica de Ganancia de Peso (5 cols) */}
+                  <div className="lg:col-span-5 p-5 rounded-xl bg-white/[0.02] border border-white/10 flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      <div>
+                        <h2 className="text-sm font-semibold text-white">Curva de Ganancia de Peso</h2>
+                        <p className="text-xs text-[#9CA3AF]">Evolución últimos 6 meses vs. objetivo</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-[#9CA3AF] block">GDP Promedio</span>
+                        <span className="text-sm font-bold font-mono tabular-nums text-emerald-400">
+                          {datosLote.gdpPromedio}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Barras comparativas de crecimiento */}
+                    <div className="grid grid-cols-6 gap-2.5 items-end h-36 pt-4 px-1 border-b border-white/10">
+                      {datosLote.curvaPeso.map((punto) => {
+                        const alturaReal = Math.min(100, Math.max(28, Math.round((punto.peso / 540) * 100)));
+                        const alturaMeta = Math.min(100, Math.max(24, Math.round((punto.meta / 540) * 100)));
+                        return (
+                          <div key={punto.mes} className="flex flex-col items-center gap-1.5 h-full justify-end group">
+                            <span className="text-[10px] font-mono tabular-nums text-emerald-300 opacity-85 group-hover:opacity-100">
+                              {punto.peso}
+                            </span>
+                            <div className="w-full flex items-end justify-center gap-1 h-24">
+                              <div
+                                className="w-2.5 rounded-t bg-white/15 transition-all duration-300"
+                                style={{ height: `${alturaMeta}%` }}
+                                title={`Meta: ${punto.meta} kg`}
+                              />
+                              <div
+                                className="w-3.5 rounded-t bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.35)] transition-all duration-300"
+                                style={{ height: `${alturaReal}%` }}
+                                title={`Peso real: ${punto.peso} kg`}
+                              />
+                            </div>
+                            <span className="text-[11px] text-[#9CA3AF] font-mono pb-1">{punto.mes}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-[#9CA3AF] pt-3">
+                      <span>Unidad: kilogramos (kg) en pie</span>
+                      <span className="text-emerald-400 font-medium">+4.2% sobre meta proyectada</span>
+                    </div>
+                  </div>
+
+                  {/* Panel 2: Estado de Potreros y Rotación (4 cols) */}
+                  <div className="lg:col-span-4 p-5 rounded-xl bg-white/[0.02] border border-white/10 flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h2 className="text-sm font-semibold text-white">Estado de Potreros</h2>
+                        <p className="text-xs text-[#9CA3AF]">Rotación Voisin y aforo de pasturas</p>
+                      </div>
+                      <Sprout size={16} className="text-emerald-400 shrink-0" />
+                    </div>
+
+                    <div className="space-y-2.5 my-auto">
+                      {datosLote.potreros.map((pot) => (
+                        <div
+                          key={pot.id}
+                          className="p-3 rounded-lg bg-[#070B09]/70 border border-white/10 flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-white truncate">
+                              {pot.id} · {pot.nombre}
+                            </div>
+                            <div className="text-[11px] text-[#9CA3AF] truncate">{pot.estado}</div>
+                          </div>
+                          <span
+                            className={`text-xs font-mono tabular-nums shrink-0 font-semibold ${
+                              pot.tipo === 'listo'
+                                ? 'text-emerald-400'
+                                : pot.tipo === 'ocupado'
+                                ? 'text-amber-400'
+                                : 'text-gray-300'
+                            }`}
+                          >
+                            {pot.carga}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-3 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-[#9CA3AF]">
+                      <span>Descanso promedio: 27 días</span>
+                      <span className="text-white font-mono tabular-nums">Aforo óptimo</span>
+                    </div>
+                  </div>
+
+                  {/* Panel 3: Flujo de Caja Mensual y Rentabilidad (3 cols) */}
+                  <div className="lg:col-span-3 p-5 rounded-xl bg-white/[0.02] border border-white/10 flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h2 className="text-sm font-semibold text-white">Flujo de Caja Mensual</h2>
+                        <p className="text-xs text-[#9CA3AF]">Rentabilidad y auditoría REA</p>
+                      </div>
+                      <Wallet size={16} className="text-amber-400 shrink-0" />
+                    </div>
+
+                    <div className="space-y-3 my-auto">
+                      <div className="p-3 rounded-lg bg-[#070B09]/70 border border-white/10">
+                        <span className="text-[11px] text-[#9CA3AF] block">Ingresos (Venta / Leche)</span>
+                        <span className="text-base font-bold font-mono tabular-nums text-emerald-400">
+                          {datosLote.finanzas.ingresosMes}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-lg bg-[#070B09]/70 border border-white/10">
+                        <span className="text-[11px] text-[#9CA3AF] block">Costos de Suplementación y Vet.</span>
+                        <span className="text-base font-bold font-mono tabular-nums text-white">
+                          {datosLote.finanzas.costosOperativos}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
+                          <span className="text-[10px] text-emerald-300 block">Margen Operativo</span>
+                          <span className="text-sm font-bold font-mono tabular-nums text-white">
+                            {datosLote.finanzas.margenNeto}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25">
+                          <span className="text-[10px] text-amber-300 block">IVA 1% Ahorrado</span>
+                          <span className="text-sm font-bold font-mono tabular-nums text-amber-300">
+                            {datosLote.finanzas.ahorroIvaRea}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-[#9CA3AF]">
+                      <span>Costo/cabeza:</span>
+                      <span className="font-mono tabular-nums text-white font-semibold">
+                        {datosLote.finanzas.costoPorCabeza}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
 
-        <nav className="landing-nav-links" aria-label="Navegación principal">
-          <a href="#como-funciona" className="hover:text-emerald-400 transition-colors">Cómo funciona</a>
-          <a href="#calculadora" className="hover:text-emerald-400 transition-colors">Calculadora</a>
-          <a href="#demostracion" className="hover:text-emerald-400 transition-colors">Demostración</a>
-          <a href="#testimonios" className="hover:text-emerald-400 transition-colors">Testimonios</a>
-          <a href="#planes" className="hover:text-emerald-400 transition-colors">Planes</a>
-          <a href="#faq" className="hover:text-emerald-400 transition-colors">Preguntas</a>
-        </nav>
-
-        <div className="landing-nav-actions flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden sm:inline-flex text-slate-300 hover:text-white"
-            onClick={handleCompartir}
-            title="Compartir enlace"
-          >
-            <Share2 size={16} className="mr-1" /> {copiado ? '¡Copiado!' : ''}
-          </Button>
-
-          <Button asChild variant="outline" size="sm" className="landing-nav-login border-slate-700 bg-slate-900/60 text-slate-200 hover:bg-slate-800">
-            <Link to="/login">Iniciar Sesión</Link>
-          </Button>
-
-          <Button
-            variant="gradient"
-            size="sm"
-            className="landing-nav-cta shadow-md shadow-emerald-950/50"
-            onClick={() => handleCtaPrincipal('nav_cta')}
-            data-conversion="nav_signup"
-          >
-            Comenzar Gratis <ArrowRight size={14} className="ml-1" />
-          </Button>
-        </div>
-      </header>
-
-      {/* HERO SECTION — Split Layout con Mockup de SaaS en vivo */}
-      <section ref={heroRef} className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden">
-        {/* Glow de fondo decorativo */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-emerald-600/10 blur-[130px] rounded-full pointer-events-none -z-10" />
-        <div className="absolute top-1/3 right-10 w-[400px] h-[300px] bg-amber-500/5 blur-[120px] rounded-full pointer-events-none -z-10" />
-
+      {/* =====================================================================
+          3. SECCIÓN DE MÉTRICAS E IMPACTO (Social Proof & Resultados)
+          ===================================================================== */}
+      <section className="py-12 border-y border-white/10 bg-[#0D1512]/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
-            {/* Columna Izquierda: Mensaje de Valor de Alto Rendimiento para Google Ads */}
-            <div className="lg:col-span-7 flex flex-col items-start text-left space-y-6">
-              
-              <div className="inline-flex items-center gap-2">
-                <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-300 px-3.5 py-1 text-xs gap-1.5 backdrop-blur-md shadow-sm">
-                  <ShieldCheck size={14} className="text-emerald-400" />
-                  Régimen Especial Agropecuario (REA) • Hacienda v4.4
-                </Badge>
-                <Badge variant="secondary" className="hidden sm:inline-flex bg-slate-800 text-slate-300 text-xs">
-                  Costa Rica 🇨🇷
-                </Badge>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="space-y-1.5">
+              <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-emerald-400">
+                +100%
               </div>
-
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-white tracking-tight leading-[1.12]">
-                Tu contador personal inteligente para la finca <br className="hidden sm:inline" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
-                  sin hojas de cálculo
-                </span>
-              </h1>
-
-              <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl">
-                ContadorGanadero automatiza tus compras, audita que no te cobren el 13% de IVA en insumos y genera tus declaraciones <strong>D-135-1, D-101 y D-150</strong> al instante recibiendo facturas por correo y WhatsApp.
+              <div className="text-sm font-semibold text-white">
+                Claridad en costos por cabeza
+              </div>
+              <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                Conoce exactamente cuánto inviertes en concentrado, sales minerales y sanidad por cada animal.
               </p>
-
-              {/* Puntos de valor con icono check */}
-              <ul className="space-y-2.5 text-sm sm:text-base text-slate-200">
-                <li className="flex items-center gap-2.5">
-                  <div className="h-5 w-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <Check size={14} />
-                  </div>
-                  <span><strong>Auditoría de IVA al 1%:</strong> detecta de inmediato errores en agroservicios y veterinarias.</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="h-5 w-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <Check size={14} />
-                  </div>
-                  <span><strong>Recepción por WhatsApp:</strong> reenvía PDFs, fotos de tiquetes o XMLs desde el potrero.</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="h-5 w-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <Check size={14} />
-                  </div>
-                  <span><strong>Costos reales por kilo:</strong> margen de rentabilidad en carne, leche, huevos o peces.</span>
-                </li>
-              </ul>
-
-              {/* Botones de acción (CTAs Google Ads) */}
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                <Button
-                  variant="gradient"
-                  size="lg"
-                  className="h-13 px-8 text-base shadow-xl shadow-emerald-950/60 font-bold group"
-                  onClick={() => handleCtaPrincipal('hero_btn_comenzar')}
-                  data-conversion="hero_signup"
-                >
-                  Comenzar Gratis Ahora
-                  <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="h-13 px-6 text-base border-slate-700 bg-slate-900/60 text-slate-200 hover:bg-slate-800"
-                >
-                  <a href="#demostracion">
-                    Ver cómo funciona
-                  </a>
-                </Button>
-              </div>
-
-              {/* Micrométricas de confianza */}
-              <div className="pt-2 flex flex-wrap items-center gap-6 text-xs text-slate-400">
-                <div className="flex items-center gap-1.5">
-                  <Check size={15} className="text-emerald-400" />
-                  <span>Sin tarjeta de crédito requerida</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Check size={15} className="text-emerald-400" />
-                  <span>Configuración en 2 minutos</span>
-                </div>
-                <div className="flex items-center gap-1 text-amber-400">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={13} className="fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <span className="font-semibold text-slate-200 ml-1">4.9/5</span>
-                  <span className="text-slate-400">por productores ticos</span>
-                </div>
-              </div>
-
             </div>
 
-            {/* Columna Derecha: Mockup Interactivo de la Aplicación (shadcn Card) */}
-            <div className="lg:col-span-5">
-              <Card className="relative border-slate-700/80 bg-slate-900/90 shadow-2xl shadow-emerald-950/30 backdrop-blur-xl overflow-hidden hover:border-emerald-500/40 transition-all duration-300">
-                
-                {/* Cabecera del Mockup de Software (estilo ventana SaaS) */}
-                <div className="px-4 py-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-red-500/80" />
-                    <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
-                    <div className="h-3 w-3 rounded-full bg-emerald-500/80" />
-                    <span className="text-xs text-slate-400 font-mono ml-2 truncate">ContadorGanadero v4.4 • Panel Finca</span>
+            <div className="space-y-1.5">
+              <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-white">
+                8.5 hrs
+              </div>
+              <div className="text-sm font-semibold text-white">
+                Ahorro de horas semanales en registros
+              </div>
+              <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                Elimina cuadernos mojados en el corral y hojas de Excel propensas a errores manuales.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-amber-400">
+                99.4%
+              </div>
+              <div className="text-sm font-semibold text-white">
+                Control preciso de natalidad, destetes y pesajes
+              </div>
+              <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                Alertas tempranas de palpación, partos programados, curvas de engorde y calendario sanitario.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="text-3xl sm:text-4xl font-bold font-mono tabular-nums text-emerald-400">
+                1% IVA
+              </div>
+              <div className="text-sm font-semibold text-white">
+                Auditoría REA y Hacienda v4.4 al día
+              </div>
+              <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                Detecta cobros indebidos del 13% en insumos agropecuarios y prepara tus declaraciones D-135-1 y D-101.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          4. BENTO GRID DE CARACTERÍSTICAS PRINCIPALES (Estilo Layers.ai)
+          ===================================================================== */}
+      <section id="funciones" className="relative py-24 md:py-32">
+        {/* Resplandor radial sutil detrás del Bento Grid */}
+        <div
+          className="
+            absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none
+            w-[760px] h-[480px] rounded-full
+            bg-emerald-500/10 blur-[140px]
+          "
+        />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Encabezado de sección */}
+          <div className="max-w-2xl mb-14">
+            <p className="text-xs font-semibold text-emerald-400 tracking-wide mb-2">
+              Plataforma Agro-Tech Integral
+            </p>
+            <h2
+              className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4"
+              style={{ textWrap: 'balance' }}
+            >
+              Diseñada para el ritmo real de la finca y la exigencia contable moderna
+            </h2>
+            <p className="text-base text-[#9CA3AF] leading-relaxed">
+              Cada módulo conecta lo que ocurre en el potrero con el flujo financiero de tu operación ganadera.
+            </p>
+          </div>
+
+          {/* Cuadrícula Asimétrica Bento (3 columnas en desktop) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* ---------------------------------------------------------------
+                TARJETA 1 (Grande - 2 columnas): Inventario y Trazabilidad Individual
+                --------------------------------------------------------------- */}
+            <div className="lg:col-span-2 rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-emerald-500/40 transition-all duration-200 p-6 sm:p-8 flex flex-col justify-between">
+              <div className="mb-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <h3 className="text-xl font-bold text-white tracking-tight">
+                    01. Inventario y Trazabilidad Individual
+                  </h3>
+                  <span className="text-xs text-[#9CA3AF] font-mono">
+                    Arete · Raza · Peso · Sanidad · Genealogía
+                  </span>
+                </div>
+                <p className="text-sm text-[#9CA3AF] leading-relaxed max-w-2xl">
+                  Consulta la hoja de vida completa de cada cabeza de ganado al instante. Selecciona un ejemplar para inspeccionar su historial sanitario, ganancia diaria de peso y árbol genealógico.
+                </p>
+              </div>
+
+              {/* Micro-componente interactivo: Ficha Técnica Individual del Animal */}
+              <div className="rounded-xl bg-[#070B09]/90 border border-white/10 p-4 sm:p-5 space-y-4">
+                {/* Selector de ejemplar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {EJEMPLARES_TRAZABILIDAD.map((animal, idx) => (
+                      <button
+                        key={animal.arete}
+                        type="button"
+                        onClick={() => setEjemplarIdx(idx)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-mono tabular-nums transition-all duration-150 whitespace-nowrap shrink-0 ${
+                          ejemplarIdx === idx
+                            ? 'bg-emerald-500 text-[#070B09] font-bold'
+                            : 'bg-white/[0.04] text-gray-300 hover:text-white border border-white/10'
+                        }`}
+                      >
+                        #{animal.arete} · {animal.raza.split(' ')[0]}
+                      </button>
+                    ))}
                   </div>
-                  <Badge variant="default" className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
-                    <Activity size={10} className="mr-1 animate-pulse" /> REA Activo
-                  </Badge>
+                  <span className="text-xs font-mono text-emerald-400">
+                    Trazabilidad SENASA Activa
+                  </span>
                 </div>
 
-                <CardContent className="p-5 space-y-4">
-                  {/* Fila superior: KPIs de Finca */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-slate-800/70 border border-slate-700/60">
-                      <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-                        <span>Gasto Cuatrimestre</span>
-                        <Receipt size={14} className="text-emerald-400" />
+                {/* Datos principales del ejemplar */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                  <div className="md:col-span-5 space-y-3">
+                    <div>
+                      <div className="text-xs text-[#9CA3AF] font-mono">
+                        Arete Oficial #{ejemplarActual.arete} · {ejemplarActual.edad}
                       </div>
-                      <div className="text-lg font-bold font-heading text-white">₡4,820,000</div>
-                      <div className="text-[11px] text-emerald-400 mt-0.5 flex items-center gap-1">
-                        <TrendingUp size={11} /> 38 facturas procesadas
+                      <div className="text-lg font-bold text-white mt-0.5">
+                        {ejemplarActual.nombre}
+                      </div>
+                      <div className="text-xs text-emerald-400 font-medium">
+                        {ejemplarActual.raza} · {ejemplarActual.categoria}
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-800/70 border border-slate-700/60">
-                      <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-                        <span>Auditoría IVA 1%</span>
-                        <ShieldCheck size={14} className="text-amber-400" />
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="p-3 rounded-lg bg-white/[0.03] border border-white/10">
+                        <span className="text-[11px] text-[#9CA3AF] block">Peso Actual</span>
+                        <span className="text-lg font-bold font-mono tabular-nums text-white">
+                          {ejemplarActual.pesoActual}
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-mono block mt-0.5">
+                          {ejemplarActual.gdp}
+                        </span>
                       </div>
-                      <div className="text-lg font-bold font-heading text-amber-300">₡184,200</div>
-                      <div className="text-[11px] text-slate-300 mt-0.5">
-                        Ahorro evitado en cobro 13%
+                      <div className="p-3 rounded-lg bg-white/[0.03] border border-white/10">
+                        <span className="text-[11px] text-[#9CA3AF] block">Condición Corp.</span>
+                        <span className="text-lg font-bold font-mono tabular-nums text-amber-400">
+                          {ejemplarActual.condicionCorporal}
+                        </span>
+                        <span className="text-[10px] text-[#9CA3AF] block mt-0.5">
+                          Escala 1 a 5
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Genealogía */}
+                    <div className="p-3 rounded-lg bg-white/[0.02] border border-white/10 space-y-1 text-xs">
+                      <div className="flex items-center gap-1.5 text-gray-300 font-semibold mb-1">
+                        <Dna size={13} className="text-emerald-400 shrink-0" />
+                        <span>Genealogía Registrada</span>
+                      </div>
+                      <div className="text-[#9CA3AF] truncate">
+                        <strong className="text-gray-200">Padre:</strong> {ejemplarActual.padre}
+                      </div>
+                      <div className="text-[#9CA3AF] truncate">
+                        <strong className="text-gray-200">Madre:</strong> {ejemplarActual.madre}
                       </div>
                     </div>
                   </div>
 
-                  {/* Facturas entrantes en vivo (Simulación de Feed) */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-400 font-medium px-1">
-                      <span>Últimas facturas procesadas con IA</span>
-                      <span className="text-emerald-400 flex items-center gap-1">
-                        <Zap size={11} /> Tiempo real
+                  {/* Historial Sanitario */}
+                  <div className="md:col-span-7 p-3.5 rounded-lg bg-white/[0.02] border border-white/10 space-y-2.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-white flex items-center gap-1.5">
+                        <Stethoscope size={14} className="text-emerald-400" />
+                        Historial Sanitario y Pesajes Recientes
+                      </span>
+                      <span className="text-[11px] text-[#9CA3AF] font-mono">
+                        {ejemplarActual.ultimoPesaje}
                       </span>
                     </div>
 
-                    {/* Factura 1 */}
-                    <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-8 w-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                          <Receipt size={16} />
+                    <div className="space-y-2">
+                      {ejemplarActual.sanidad.map((evento) => (
+                        <div
+                          key={evento.vacuna}
+                          className="p-2.5 rounded-lg bg-[#0D1512] border border-white/10 flex items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-medium text-white truncate">{evento.vacuna}</div>
+                            <div className="text-[11px] text-[#9CA3AF] font-mono">{evento.fecha}</div>
+                          </div>
+                          <span className="text-xs font-mono text-emerald-400 shrink-0">
+                            {evento.estado}
+                          </span>
                         </div>
-                        <div className="min-w-0">
-                          <div className="font-semibold text-white truncate">CoopeAgri R.L. (Pérez Zeledón)</div>
-                          <div className="text-[11px] text-slate-400 truncate">Alimento Vacuno Engorde • ₡24,500</div>
-                        </div>
-                      </div>
-                      <Badge variant="default" className="text-[10px] shrink-0 bg-emerald-500/20 text-emerald-300">
-                        IVA 1% OK ✓
-                      </Badge>
-                    </div>
-
-                    {/* Factura 2 */}
-                    <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-8 w-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
-                          <MessageSquare size={16} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-semibold text-white truncate">Veterinaria El Colono (San Carlos)</div>
-                          <div className="text-[11px] text-slate-400 truncate">Vía WhatsApp • Vacuna Bovisan 50 dosis</div>
-                        </div>
-                      </div>
-                      <Badge variant="blue" className="text-[10px] shrink-0 bg-sky-500/20 text-sky-300">
-                        IVA 2% Mag ✓
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Estado de Declaración Hacienda */}
-                  <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/50 to-slate-900 border border-emerald-500/30 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-9 w-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                        <Calculator size={18} />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white">Declaración D-135-1 (IVA Cuatrimestral)</div>
-                        <div className="text-[11px] text-emerald-400/90">Crédito fiscal REA calculado: ₡48,200</div>
-                      </div>
-                    </div>
-                    <Badge variant="default" className="bg-emerald-500 text-slate-950 font-bold text-[10px]">
-                      Lista para presentar
-                    </Badge>
-                  </div>
-
-                  {/* Footer del mockup */}
-                  <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80">
-                    <span className="flex items-center gap-1">
-                      <Lock size={12} className="text-emerald-400" /> Cifrado 256-bit seguro
-                    </span>
-                    <span className="text-slate-300 font-medium">Buzón Cloudflare Activo</span>
-                  </div>
-
-                </CardContent>
-              </Card>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* BARRA DE CONFIANZA Y COMPATIBILIDAD OFICIAL (CRITICAL FOR GOOGLE ADS QUALITY SCORE) */}
-      <section ref={trustRef} className="py-8 bg-slate-950/80 border-y border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-400 mb-6">
-            Alineado con las normativas tributarias y estándares tecnológicos oficiales de Costa Rica
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 items-center justify-center text-center">
-            
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col items-center gap-1.5 hover:border-emerald-500/30 transition-all">
-              <Building2 size={22} className="text-emerald-400" />
-              <span className="font-heading font-bold text-xs text-white">Hacienda Costa Rica</span>
-              <span className="text-[10px] text-slate-400">Facturación v4.4 & Acuses</span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col items-center gap-1.5 hover:border-emerald-500/30 transition-all">
-              <Tractor size={22} className="text-emerald-400" />
-              <span className="font-heading font-bold text-xs text-white">MAG / REA</span>
-              <span className="text-[10px] text-slate-400">Canasta Insumos 1% & 2%</span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col items-center gap-1.5 hover:border-emerald-500/30 transition-all">
-              <ShieldCheck size={22} className="text-emerald-400" />
-              <span className="font-heading font-bold text-xs text-white">Cloudflare Ingestion</span>
-              <span className="text-[10px] text-slate-400">Enrutamiento anti-spam</span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col items-center gap-1.5 hover:border-emerald-500/30 transition-all">
-              <Sparkles size={22} className="text-amber-400" />
-              <span className="font-heading font-bold text-xs text-white">Gemini & NVIDIA</span>
-              <span className="text-[10px] text-slate-400">Clasificación IA Cabys</span>
-            </div>
-
-            <div className="col-span-2 md:col-span-1 p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col items-center gap-1.5 hover:border-emerald-500/30 transition-all">
-              <Lock size={22} className="text-emerald-400" />
-              <span className="font-heading font-bold text-xs text-white">Seguridad Criptográfica</span>
-              <span className="text-[10px] text-slate-400">Llaves .p12 protegidas</span>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* CALCULADORA INTERACTIVA DE AHORRO PARA EL PRODUCTOR */}
-      <section ref={calculatorRef} id="calculadora" className="py-16 md:py-24 max-w-5xl mx-auto px-4 sm:px-6">
-        <Card className="border-emerald-500/30 bg-gradient-to-b from-slate-900/90 via-slate-900/95 to-slate-950 shadow-2xl p-6 sm:p-10">
-          <div className="text-center max-w-2xl mx-auto mb-8">
-            <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs px-3 py-1 mb-3">
-              <Calculator size={13} className="mr-1 inline text-amber-400" /> Calculadora de Ahorro Real
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-black font-heading text-white">
-              ¿Cuánto tiempo y dinero pierde tu finca en papeleo?
-            </h2>
-            <p className="text-sm text-slate-400 mt-2">
-              Mueve el selector según la cantidad de facturas o tiquetes que recibes al mes y calcula tu ahorro con ContadorGanadero.
-            </p>
-          </div>
-
-          {/* Selector de facturas */}
-          <div className="max-w-xl mx-auto mb-10 space-y-4">
-            <div className="flex justify-between items-center text-sm font-semibold text-slate-300">
-              <span>Facturas o compras al mes:</span>
-              <span className="text-xl font-bold font-heading text-emerald-400">{facturasAlMes} facturas</span>
-            </div>
-            <input
-              type="range"
-              min="10"
-              max="200"
-              step="5"
-              value={facturasAlMes}
-              onChange={(e) => setFacturasAlMes(Number(e.target.value))}
-              className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 focus:outline-none"
-            />
-            <div className="flex justify-between text-xs text-slate-400">
-              <span>10 (Finca pequeña)</span>
-              <span>50 (Promedio REA)</span>
-              <span>100+ (Cooperativa / Intensivo)</span>
-            </div>
-          </div>
-
-          {/* Resultados de la Calculadora con shadcn Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            
-            <div className="p-5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col items-center text-center">
-              <div className="h-10 w-10 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-3">
-                <Clock size={20} />
-              </div>
-              <div className="text-2xl font-black font-heading text-white">~{calculoAhorro.horas} horas</div>
-              <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wide mt-1">Ahorradas al mes</span>
-              <p className="text-xs text-slate-400 mt-2">
-                Menos noches digitando en hojas de cálculo y buscando papeles perdidos.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-xl bg-slate-950/70 border border-emerald-500/30 flex flex-col items-center text-center">
-              <div className="h-10 w-10 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center mb-3">
-                <DollarSign size={20} />
-              </div>
-              <div className="text-2xl font-black font-heading text-amber-300">₡{calculoAhorro.ahorroDinero}</div>
-              <span className="text-xs font-semibold text-amber-400 uppercase tracking-wide mt-1">Ahorro anual en IVA</span>
-              <p className="text-xs text-slate-400 mt-2">
-                Recupera dinero al evitar cobros indebidos del 13% en fertilizantes y vacunas.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col items-center text-center">
-              <div className="h-10 w-10 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center mb-3">
-                <AlertTriangle size={20} />
-              </div>
-              <div className="text-2xl font-black font-heading text-white">₡{calculoAhorro.multa}</div>
-              <span className="text-xs font-semibold text-red-400 uppercase tracking-wide mt-1">Multa Hacienda evitada</span>
-              <p className="text-xs text-slate-400 mt-2">
-                Medio salario base por declaraciones tardías del D-135-1 o D-101.
-              </p>
-            </div>
-
-          </div>
-
-          <div className="text-center pt-2">
-            <Button
-              variant="gradient"
-              size="lg"
-              className="h-12 px-8 text-base shadow-xl shadow-emerald-950/40"
-              onClick={() => handleCtaPrincipal('calculadora_cta')}
-              data-conversion="calc_signup"
-            >
-              Quiero empezar a ahorrar hoy gratis <ArrowRight size={16} className="ml-2" />
-            </Button>
-          </div>
-        </Card>
-      </section>
-
-      {/* DEMOSTRACIÓN INTERACTIVA POR PESTAÑAS (shadcn Tabs) */}
-      <section ref={tabsRef} id="demostracion" className="py-16 md:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs px-3 py-1 mb-3">
-            <Sparkles size={13} className="mr-1 inline text-emerald-400" /> Diseñado para el Agro Tico
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl font-black font-heading text-white">
-            Así resuelve cada problema de tu finca
-          </h2>
-          <p className="text-slate-400 text-base mt-2">
-            Explora las herramientas que transforman la gestión de compras, impuestos e inventario.
-          </p>
-        </div>
-
-        <Tabs defaultValue="hacienda" className="w-full">
-          <div className="flex justify-center mb-8">
-            <TabsList className="grid grid-cols-2 md:grid-cols-4 max-w-3xl w-full h-auto p-1.5 bg-slate-900 border border-slate-800 rounded-xl">
-              <TabsTrigger value="hacienda" className="py-2.5 text-xs sm:text-sm">
-                <Calculator size={15} className="mr-1.5" /> Impuestos REA
-              </TabsTrigger>
-              <TabsTrigger value="auditoria" className="py-2.5 text-xs sm:text-sm">
-                <ShieldCheck size={15} className="mr-1.5" /> Auditoría IVA 1%
-              </TabsTrigger>
-              <TabsTrigger value="whatsapp" className="py-2.5 text-xs sm:text-sm">
-                <MessageSquare size={15} className="mr-1.5" /> Correo & WhatsApp
-              </TabsTrigger>
-              <TabsTrigger value="inventario" className="py-2.5 text-xs sm:text-sm">
-                <Warehouse size={15} className="mr-1.5" /> Inventario y Costos
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          {/* Contenido Tab 1: Impuestos REA */}
-          <TabsContent value="hacienda">
-            <Card className="border-slate-800 bg-slate-900/80 p-6 sm:p-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge variant="default" className="text-xs">D-135-1 • D-101 • D-150</Badge>
-                  <h3 className="text-2xl font-bold font-heading text-white">
-                    Declaraciones listas para el Ministerio de Hacienda
-                  </h3>
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    Olvídate de sumar facturas la noche anterior al vencimiento. ContadorGanadero agrupa tus compras cuatrimestrales, separa el crédito fiscal del 1% y 2% y genera los borradores con las casillas exactas para el portal de Hacienda.
-                  </p>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Cálculo automático de IVA Cuatrimestral (D-135-1).
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Declaración de Renta Anual (D-101) con tramos progresivos.
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Calendario fiscal con alertas de vencimientos de pago.
-                    </li>
-                  </ul>
-                  <div className="pt-2">
-                    <Button variant="gradient" size="sm" onClick={() => handleCtaPrincipal('tab_impuestos')}>
-                      Probar con mis facturas <ArrowRight size={14} className="ml-1" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <span className="text-xs font-bold text-white uppercase">Resumen D-135-1 (Cuatrimestre 1)</span>
-                    <Badge variant="default" className="text-[10px]">Cuadrado 100%</Badge>
-                  </div>
-                  <div className="space-y-2.5 text-xs">
-                    <div className="flex justify-between text-slate-300">
-                      <span>Base imponible compras insumos 1%:</span>
-                      <span className="font-mono font-bold text-white">₡5,420,000</span>
-                    </div>
-                    <div className="flex justify-between text-slate-300">
-                      <span>Crédito fiscal soportado (1% REA):</span>
-                      <span className="font-mono font-bold text-emerald-400">₡54,200</span>
-                    </div>
-                    <div className="flex justify-between text-slate-300">
-                      <span>Ventas declaradas (Canasta Básica):</span>
-                      <span className="font-mono font-bold text-white">₡7,150,000</span>
-                    </div>
-                    <div className="flex justify-between text-slate-300">
-                      <span>Débito fiscal generado:</span>
-                      <span className="font-mono font-bold text-white">₡71,500</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 flex justify-between font-bold text-emerald-300 text-sm">
-                      <span>Saldo a pagar / crédito a favor:</span>
-                      <span>₡17,300</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Contenido Tab 2: Auditoría IVA 1% */}
-          <TabsContent value="auditoria">
-            <Card className="border-slate-800 bg-slate-900/80 p-6 sm:p-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge variant="amber" className="text-xs">Auditoría en Tiempo Real</Badge>
-                  <h3 className="text-2xl font-bold font-heading text-white">
-                    Protege tu bolsillo de cobros erróneos al 13%
-                  </h3>
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    Muchos agroservicios, ferreterías y cooperativas facturan por error al 13% insumos que están exentos o reducidos al 1% según el Decreto del MAG. Nuestro motor de IA audita cada línea y te avisa al instante para pedir la Nota de Crédito.
-                  </p>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Validación cruzada contra la canasta oficial de insumos REA.
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Emisión directa de Notas de Crédito para anular facturas.
-                    </li>
-                  </ul>
-                  <div className="pt-2">
-                    <Button variant="gradient" size="sm" onClick={() => handleCtaPrincipal('tab_auditoria')}>
-                      Activar auditoría gratis <ArrowRight size={14} className="ml-1" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-xl bg-slate-950 border border-amber-500/30 space-y-4">
-                  <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase">
-                    <AlertTriangle size={16} /> Alerta de Tarifa Detectada
-                  </div>
-                  <div className="p-3 rounded-lg bg-red-950/40 border border-red-500/30 text-xs space-y-1">
-                    <div className="font-semibold text-white">Ferretería Rural S.A. • Factura #0010000100000439</div>
-                    <div className="text-red-300">Línea 2: Fertilizante Triple 15 (50kg) cobrado al 13% (₡4,550 IVA)</div>
-                    <div className="text-slate-400">Tarifa legal según lista MAG: 1% (₡350 IVA). Sobreprecio: ₡4,200.</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-between">
-                    <span>Acción sugerida: Solicitar Nota de Crédito</span>
-                    <Badge variant="default" className="text-[10px]">Plantilla lista</Badge>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Contenido Tab 3: WhatsApp y Correo */}
-          <TabsContent value="whatsapp">
-            <Card className="border-slate-800 bg-slate-900/80 p-6 sm:p-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge variant="blue" className="text-xs">Movilidad Total</Badge>
-                  <h3 className="text-2xl font-bold font-heading text-white">
-                    Facturas procesadas desde el potrero por WhatsApp
-                  </h3>
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    No necesitas sentarte frente a una computadora. Reenvía el archivo XML o toma una foto del comprobante y mándala a nuestro bot de WhatsApp. La inteligencia artificial extrae emisor, montos e insumos al instante.
-                  </p>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Correo exclusivo @contadorganadero.com respaldado por Cloudflare.
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Cero configuración de contraseñas de correo ni servidores IMAP.
-                    </li>
-                  </ul>
-                  <div className="pt-2">
-                    <Button variant="gradient" size="sm" onClick={() => handleCtaPrincipal('tab_whatsapp')}>
-                      Empezar con WhatsApp <ArrowRight size={14} className="ml-1" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-xl bg-slate-950 border border-slate-800 space-y-3 font-sans">
-                  <div className="text-xs text-slate-400 flex items-center gap-1.5 pb-2 border-b border-slate-800">
-                    <MessageSquare size={14} className="text-emerald-400" /> Chat de WhatsApp • ContadorGanadero Bot
-                  </div>
-                  <div className="p-3 rounded-lg bg-slate-900 text-xs text-slate-200 max-w-[85%] ml-auto space-y-1">
-                    <span className="text-[10px] text-slate-400 block">Tú (11:42 AM)</span>
-                    <span>📎 Factura_Electronica_Veterinaria_001.xml</span>
-                  </div>
-                  <div className="p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-xs text-emerald-200 max-w-[90%] space-y-1.5">
-                    <span className="text-[10px] text-emerald-400 font-bold block">Bot ContadorGanadero (11:42 AM)</span>
-                    <p>✅ <strong>Factura procesada con éxito:</strong></p>
-                    <p>• Emisor: Almacén Ganadero San Carlos<br />• Insumo: Vacuna Antrax (50 dosis)<br />• Monto: ₡28,000 + ₡280 IVA (1% REA)<br />• Estado Hacienda: Aceptada</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Contenido Tab 4: Inventario y Costos */}
-          <TabsContent value="inventario">
-            <Card className="border-slate-800 bg-slate-900/80 p-6 sm:p-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                  <Badge variant="purple" className="text-xs">Multiespecie</Badge>
-                  <h3 className="text-2xl font-bold font-heading text-white">
-                    Conoce tu costo real por kilo de carne o huevo
-                  </h3>
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    Saber si ganas o pierdes no puede ser una suposición. Registra pesajes de ganado, lotes de aves de postura, estanques de tilapias y colmenas. ContadorGanadero cruza tus compras de concentrado y forraje para darte el costo real por kilo producido.
-                  </p>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Soporte nativo para 4 especies agropecuarias.
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400" /> Registro de ganancia diaria de peso (GDP) y conversión alimenticia.
-                    </li>
-                  </ul>
-                  <div className="pt-2">
-                    <Button variant="gradient" size="sm" onClick={() => handleCtaPrincipal('tab_inventario')}>
-                      Gestionar mi ganado <ArrowRight size={14} className="ml-1" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between text-xs font-bold text-white border-b border-slate-800 pb-2">
-                    <span>Lote #4 - Novillos Engorde (32 animales)</span>
-                    <Badge variant="default" className="text-[10px]">San Carlos</Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[11px]">Peso promedio:</span>
-                      <span className="text-white font-bold text-sm">435 kg</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-                      <span className="text-slate-400 block text-[11px]">Ganancia Diaria:</span>
-                      <span className="text-emerald-400 font-bold text-sm">+850 g/día</span>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between items-center">
-                    <span className="text-slate-300">Costo acumulado por kg:</span>
-                    <span className="text-white font-mono font-bold text-sm">₡1,120 / kg</span>
-                  </div>
-                  <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs flex justify-between items-center text-emerald-300 font-semibold">
-                    <span>Precio estimado subasta: ₡1,650 / kg</span>
-                    <span>Margen: +32%</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </section>
-
-      {/* CARACTERÍSTICAS COMPLETAS DE LA PLATAFORMA (GRID SHADCN) */}
-      <section ref={featuresRef} id="caracteristicas" className="py-16 md:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-850">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs px-3 py-1 mb-3">
-            Plataforma Integral
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl font-black font-heading text-white">
-            Todo lo que tu finca necesita en un solo lugar
-          </h2>
-          <p className="text-slate-400 text-base mt-2">
-            Diseñado para cumplir con el Ministerio de Hacienda y el MAG sin complicaciones técnicas.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {CARACTERISTICAS.map(({ icono: IconoCaract, titulo, descripcion, tag }) => (
-            <Card key={titulo} className="border-slate-800 bg-slate-900/80 p-6 flex flex-col justify-between hover:border-emerald-500/40 hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-0">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="h-10 w-10 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
-                    <IconoCaract size={22} />
-                  </div>
-                  {tag && (
-                    <Badge variant="secondary" className="text-[10px] bg-slate-800 text-emerald-300 border border-slate-700">
-                      {tag}
-                    </Badge>
-                  )}
-                </div>
-                <h3 className="text-lg font-bold font-heading text-white mb-2">{titulo}</h3>
-                <p className="text-slate-400 text-xs leading-relaxed">{descripcion}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* CÓMO FUNCIONA EN 3 PASOS */}
-      <section ref={stepsRef} id="como-funciona" className="py-16 md:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs px-3 py-1 mb-3">
-            Simple & Rápido
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl font-black font-heading text-white">
-            ¿Cómo funciona en el día a día?
-          </h2>
-          <p className="text-slate-400 text-base mt-2">
-            Tres pasos sencillos para que tu contabilidad trabaje sola en la finca.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PASOS.map(({ numero, titulo, descripcion, icono: IconoPaso }) => (
-            <Card key={numero} className="border-slate-800 bg-slate-900/70 p-6 relative overflow-hidden group hover:border-emerald-500/40 transition-all">
-              <div className="flex items-center justify-between mb-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-white flex items-center justify-center font-heading font-black text-xl shadow-lg shadow-emerald-950/40">
-                  {numero}
-                </div>
-                <IconoPaso size={24} className="text-emerald-400/70 group-hover:scale-110 group-hover:text-emerald-300 transition-all" />
-              </div>
-              <h3 className="text-xl font-bold font-heading text-white mb-2">{titulo}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{descripcion}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* PRUEBA SOCIAL / TESTIMONIOS TICOS (CRITICAL FOR GOOGLE ADS CONVERSION) */}
-      <section ref={testimonialsRef} id="testimonios" className="py-16 md:py-24 bg-slate-950/60 border-y border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs px-3 py-1 mb-3">
-              <Star size={13} className="mr-1 inline text-amber-400" /> Productores que ya no sufren con Hacienda
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-black font-heading text-white">
-              Lo que dicen los ganaderos y agricultores en Costa Rica
-            </h2>
-            <p className="text-slate-400 text-base mt-2">
-              Productores de San Carlos, Pérez Zeledón y Guanacaste cuentan su experiencia real.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIOS.map((t, idx) => (
-              <Card key={idx} className="border-slate-800 bg-slate-900/80 p-6 flex flex-col justify-between hover:border-emerald-500/30 transition-all">
-                <CardContent className="p-0 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex">
-                      {[...Array(t.rating)].map((_, i) => (
-                        <Star key={i} size={15} className="fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <Badge variant="default" className="text-[10px] bg-emerald-500/20 text-emerald-300">
-                      {t.resultado}
-                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ---------------------------------------------------------------
+                TARJETA 2 (1 columna): Rotación de Potreros y Pasturas
+                --------------------------------------------------------------- */}
+            <div
+              id="pastoreo"
+              className="lg:col-span-1 rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-emerald-500/40 transition-all duration-200 p-6 sm:p-8 flex flex-col justify-between"
+            >
+              <div className="mb-5">
+                <h3 className="text-xl font-bold text-white tracking-tight mb-2">
+                  02. Rotación de Potreros y Pasturas
+                </h3>
+                <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                  Equilibra días de ocupación frente a días de descanso del pasto y controla la carga animal por hectárea sin sobrepastoreo.
+                </p>
+              </div>
+
+              {/* Micro-gráfico interactivo de potreros */}
+              <div className="rounded-xl bg-[#070B09]/90 border border-white/10 p-4 space-y-4">
+                <div className="grid grid-cols-3 gap-1.5">
+                  {POTREROS_BENTO.map((p, idx) => (
+                    <button
+                      key={p.codigo}
+                      type="button"
+                      onClick={() => setPotreroSeleccionado(idx)}
+                      className={`p-2 rounded-lg border text-left transition-all duration-150 ${
+                        potreroSeleccionado === idx
+                          ? 'bg-emerald-500/15 border-emerald-500/50 text-white'
+                          : 'bg-white/[0.02] border-white/10 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="text-[11px] font-mono font-bold truncate">
+                        P-0{idx + 1}
+                      </div>
+                      <div className="text-[10px] text-emerald-400 font-mono truncate">
+                        {p.ugm}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="p-3 rounded-lg bg-white/[0.02] border border-white/10 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-white truncate">{potreroBento.codigo}</span>
+                    <span className="text-amber-400 font-mono tabular-nums font-semibold">
+                      {potreroBento.ugm}
+                    </span>
+                  </div>
+                  <div className="text-xs text-[#9CA3AF]">
+                    Forraje: <span className="text-gray-200">{potreroBento.pasto}</span>
                   </div>
 
-                  <p className="text-slate-300 text-sm leading-relaxed italic">
-                    "{t.texto}"
-                  </p>
-                </CardContent>
+                  {/* Barra visual de días de ocupación vs descanso */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex justify-between text-[11px] font-mono tabular-nums">
+                      <span className="text-emerald-400">Ocupación: {potreroBento.ocupacion}d</span>
+                      <span className="text-gray-300">
+                        Descanso: {potreroBento.descansoActual}/{potreroBento.descansoMeta}d
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden flex">
+                      <div
+                        className="bg-amber-400 h-full"
+                        style={{ width: '16%' }}
+                        title="Días de ocupación"
+                      />
+                      <div
+                        className="bg-emerald-500 h-full transition-all duration-300"
+                        style={{
+                          width: `${Math.round((potreroBento.descansoActual / potreroBento.descansoMeta) * 84)}%`,
+                        }}
+                        title="Progreso de descanso de pastura"
+                      />
+                    </div>
+                  </div>
 
-                <CardFooter className="p-0 pt-6 mt-6 border-t border-slate-800 flex items-center gap-3">
-                  <Avatar className="h-11 w-11 border border-slate-700">
-                    <AvatarImage src={t.foto} alt={t.nombre} />
-                    <AvatarFallback>{t.iniciales}</AvatarFallback>
-                  </Avatar>
+                  <div className="text-[11px] text-emerald-300 font-medium pt-1">
+                    {potreroBento.estado}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ---------------------------------------------------------------
+                TARJETA 3 (1 columna): Contabilidad y Finanzas Ganaderas
+                --------------------------------------------------------------- */}
+            <div
+              id="finanzas"
+              className="lg:col-span-1 rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-emerald-500/40 transition-all duration-200 p-6 sm:p-8 flex flex-col justify-between"
+            >
+              <div className="mb-5">
+                <h3 className="text-xl font-bold text-white tracking-tight mb-2">
+                  03. Contabilidad y Finanzas Ganaderas
+                </h3>
+                <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                  Compara ingresos por venta de ganado o leche contra costos de suplementación y veterinaria, con validación de IVA 1% REA.
+                </p>
+              </div>
+
+              {/* Micro-componente financiero */}
+              <div className="rounded-xl bg-[#070B09]/90 border border-white/10 p-4 space-y-3.5">
+                <div className="flex items-center justify-between text-xs pb-2 border-b border-white/10">
+                  <span className="text-gray-300 font-medium">Balance Operativo Trimestral</span>
+                  <span className="text-emerald-400 font-mono tabular-nums font-semibold">+56.8% Margen</span>
+                </div>
+
+                {/* Barras horizontales minimalistas de Ingresos vs Costos */}
+                <div className="space-y-3 text-xs">
                   <div>
-                    <div className="font-bold font-heading text-white text-sm">{t.nombre}</div>
-                    <div className="text-xs text-slate-400">{t.rol} • <span className="text-emerald-400">{t.lugar}</span></div>
+                    <div className="flex justify-between mb-1 font-mono tabular-nums">
+                      <span className="text-gray-300">Venta Ganado y Leche</span>
+                      <span className="text-emerald-400 font-bold">₡14,850,000</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '88%' }} />
+                    </div>
                   </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* COMPARATIVA DETALLADA */}
-      <section ref={comparativaRef} id="comparativa" className="py-16 md:py-24 max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <Badge variant="outline" className="border-slate-700 text-slate-300 text-xs px-3 py-1 mb-3">
-            Comparativa
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl font-black font-heading text-white">
-            Contabilidad tradicional vs. ContadorGanadero
-          </h2>
-          <p className="text-slate-400 text-base mt-2">
-            La diferencia entre perder fines de semana en Excel o tener tu finca automatizada.
-          </p>
-        </div>
+                  <div>
+                    <div className="flex justify-between mb-1 font-mono tabular-nums">
+                      <span className="text-gray-300">Suplementación y Concentrado</span>
+                      <span className="text-amber-400 font-bold">₡4,280,000</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full bg-amber-400 rounded-full" style={{ width: '34%' }} />
+                    </div>
+                  </div>
 
-        <Card className="border-slate-800 bg-slate-900/70 overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-950/80 border-b border-slate-800 text-xs font-heading uppercase text-slate-400">
-                <tr>
-                  <th className="py-4 px-6">Tarea o Proceso</th>
-                  <th className="py-4 px-6 text-slate-400">Forma Tradicional</th>
-                  <th className="py-4 px-6 text-emerald-400 font-bold">Con ContadorGanadero</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {COMPARATIVA.map((fila, i) => (
-                  <tr key={i} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-6 font-medium text-white">{fila.tarea}</td>
-                    <td className="py-3.5 px-6 text-slate-400">{fila.manual}</td>
-                    <td className="py-3.5 px-6 text-emerald-300 font-medium flex items-center gap-2">
-                      <Check size={16} className="text-emerald-400 shrink-0" />
-                      <span>{fila.app}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </section>
+                  <div>
+                    <div className="flex justify-between mb-1 font-mono tabular-nums">
+                      <span className="text-gray-300">Sanidad y Veterinaria (IVA 2%)</span>
+                      <span className="text-gray-200 font-bold">₡2,140,000</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full bg-emerald-300/70 rounded-full" style={{ width: '19%' }} />
+                    </div>
+                  </div>
+                </div>
 
-      {/* PLANES Y PRECIOS TRANSPARENTES */}
-      <section ref={pricingRef} id="planes" className="py-16 md:py-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs px-3 py-1 mb-3">
-            Planes Transparentes
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl font-black font-heading text-white">
-            Precios justos pensados para el productor
-          </h2>
-          <p className="text-slate-400 text-base mt-2">
-            Comienza gratis con todas las herramientas esenciales de contabilidad e inventario, o activa Pro para trabajar sin anuncios y con visión artificial.
-          </p>
-        </div>
+                <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between text-xs">
+                  <span className="text-gray-200">Declaración D-135-1 / D-101</span>
+                  <span className="font-mono text-emerald-300 font-semibold">Lista en 1 clic</span>
+                </div>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
-          {PLANES.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              planActual={undefined}
-              onSeleccionar={handleSeleccionarPlan}
-              disabled={false}
-            />
-          ))}
-        </div>
+            {/* ---------------------------------------------------------------
+                TARJETA 4 (Grande - 2 columnas): Modo Campo & Acceso Multi-dispositivo
+                --------------------------------------------------------------- */}
+            <div className="lg:col-span-2 rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-emerald-500/40 transition-all duration-200 p-6 sm:p-8 flex flex-col justify-between">
+              <div className="mb-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <h3 className="text-xl font-bold text-white tracking-tight">
+                    04. Modo Campo y Acceso Multi-dispositivo
+                  </h3>
 
-        <div className="mt-8 text-center text-xs text-slate-400 max-w-xl mx-auto space-y-1">
-          <p className="flex items-center justify-center gap-1.5 text-slate-300">
-            <Check size={14} className="text-emerald-400" /> No se requiere tarjeta de crédito para el Plan Gratis.
-          </p>
-          <p>Puedes cancelar o actualizar tu plan en cualquier momento desde tu panel de usuario.</p>
-        </div>
-      </section>
+                  {/* Selector interactivo Corral vs Oficina */}
+                  <div className="flex items-center gap-1 p-1 rounded-lg bg-[#070B09] border border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setDispositivoCampo('corral')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all duration-150 whitespace-nowrap shrink-0 ${
+                        dispositivoCampo === 'corral'
+                          ? 'bg-emerald-500 text-[#070B09] font-semibold'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Smartphone size={13} />
+                      <span>Modo Corral (Celular)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDispositivoCampo('oficina')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all duration-150 whitespace-nowrap shrink-0 ${
+                        dispositivoCampo === 'oficina'
+                          ? 'bg-emerald-500 text-[#070B09] font-semibold'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Laptop size={13} />
+                      <span>Modo Oficina (PC)</span>
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm text-[#9CA3AF] leading-relaxed max-w-2xl">
+                  Diseñado con botones táctiles amplios de alta visibilidad bajo el sol del corral, sincronizado al instante con la consola contable de la oficina y el bot de WhatsApp.
+                </p>
+              </div>
 
-      {/* PREGUNTAS FRECUENTES (FAQ ACORDEÓN) */}
-      <section ref={faqRef} id="faq" className="py-16 md:py-24 max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <Badge variant="outline" className="border-slate-700 text-slate-300 text-xs px-3 py-1 mb-3">
-            <HelpCircle size={13} className="mr-1 inline text-slate-400" /> Dudas Comunes
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl font-black font-heading text-white">
-            Preguntas Frecuentes
-          </h2>
-          <p className="text-slate-400 text-base mt-2">
-            Todo lo que necesitas saber antes de empezar a usar ContadorGanadero.
-          </p>
-        </div>
+              {/* Simulación visual de Modo Campo vs Modo Oficina */}
+              <div className="rounded-xl bg-[#070B09]/90 border border-white/10 p-4 sm:p-5">
+                {dispositivoCampo === 'corral' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <div className="space-y-3">
+                      <div className="text-xs font-mono text-emerald-400">
+                        Vista Móvil · Manga de Trabajo / Corral
+                      </div>
+                      <h4 className="text-base font-bold text-white">
+                        Registra pesajes, partos o facturas desde WhatsApp en menos de 10 segundos
+                      </h4>
+                      <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                        Sin menús complicados: digita el número de arete, ingresa el peso en báscula o envía una foto del tiquete de compra del agroservicio.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-300 pt-1">
+                        <span>Botones de 48px para uso en campo</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Buzón automático Cloudflare</span>
+                      </div>
+                    </div>
 
-        <div className="space-y-3">
-          {FAQ.map((item, i) => {
-            const abierta = faqAbierta === i;
-            return (
-              <div
-                key={item.pregunta}
-                className={`rounded-xl border border-slate-800 bg-slate-900/80 overflow-hidden transition-all duration-200 ${
-                  abierta ? 'border-emerald-500/40 shadow-lg' : 'hover:border-slate-700'
-                }`}
-              >
-                <button
-                  className="w-full flex items-center justify-between p-5 text-left"
-                  onClick={() => setFaqAbierta(abierta ? -1 : i)}
-                  aria-expanded={abierta}
-                >
-                  <h3 className="font-semibold text-base text-white pr-4">{item.pregunta}</h3>
-                  <ChevronDown
-                    size={20}
-                    className={`transition-transform duration-200 text-slate-400 shrink-0 ${
-                      abierta ? 'rotate-180 text-emerald-400' : ''
-                    }`}
-                  />
-                </button>
-                {abierta && (
-                  <div className="px-5 pb-5 text-slate-300 text-sm leading-relaxed border-t border-slate-800/60 pt-3">
-                    {item.respuesta}
+                    <div className="p-4 rounded-xl bg-[#0D1512] border border-emerald-500/30 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between text-gray-300 pb-2 border-b border-white/10">
+                        <span className="font-semibold text-white">Registro Rápido en Manga</span>
+                        <span className="font-mono text-emerald-400">Sincronizado</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-black/40 border border-white/10">
+                        <span className="text-[#9CA3AF]">Arete escaneado:</span>
+                        <span className="font-mono font-bold text-white">#CR-1108 (Nelore)</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-black/40 border border-white/10">
+                        <span className="text-[#9CA3AF]">Peso en báscula:</span>
+                        <span className="font-mono font-bold text-emerald-400">492.0 kg (+1.07 kg/d)</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-black/40 border border-white/10">
+                        <span className="text-[#9CA3AF]">Tratamiento aplicado:</span>
+                        <span className="font-mono text-amber-300">Bovisan + Vitamina ADE</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <div className="space-y-3">
+                      <div className="text-xs font-mono text-amber-400">
+                        Vista Escritorio · Administración y Contador
+                      </div>
+                      <h4 className="text-base font-bold text-white">
+                        Reportes ejecutivos, conciliación de Hacienda y centros de costo por lote
+                      </h4>
+                      <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                        Mientras el capataz registra en el corral, la oficina recibe los costos actualizados por kilo producido y los borradores listos para TRIBU-CR.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-300 pt-1">
+                        <span>Exportación Excel y PDF</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Facturación Electrónica v4.4</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#0D1512] border border-white/15 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between text-gray-300 pb-2 border-b border-white/10">
+                        <span className="font-semibold text-white">Cierre Contable y Rentabilidad</span>
+                        <span className="font-mono text-amber-400">Octubre 2026</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-black/40 border border-white/10">
+                        <span className="text-[#9CA3AF]">Costo real por kg carne:</span>
+                        <span className="font-mono font-bold text-white">₡1,185 / kg</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-black/40 border border-white/10">
+                        <span className="text-[#9CA3AF]">Precio venta subasta:</span>
+                        <span className="font-mono font-bold text-emerald-400">₡1,940 / kg (+63.7%)</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-black/40 border border-white/10">
+                        <span className="text-[#9CA3AF]">Crédito Fiscal IVA 1% REA:</span>
+                        <span className="font-mono text-emerald-300">₡412,500 acreditados</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
-            );
-          })}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* CTA FINAL DE ALTA CONVERSIÓN */}
-      <section ref={ctaRef} id="comenzar" className="py-16 md:py-20 max-w-5xl mx-auto px-4 sm:px-6">
-        <Card className="p-8 sm:p-12 text-center border-emerald-500/50 bg-gradient-to-b from-emerald-950/60 via-slate-900 to-slate-950 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 blur-[100px] pointer-events-none" />
-          
-          <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-            <Badge variant="default" className="text-xs px-3 py-1 bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
-              Prueba 100% Gratuita • Sin Compromiso
-            </Badge>
-
-            <h2 className="text-3xl sm:text-4xl font-black font-heading text-white tracking-tight">
-              Empieza hoy mismo a controlar tu finca con tranquilidad
+      {/* =====================================================================
+          5. SECCIÓN DE FLUJO DE TRABAJO ("Cómo funciona en 3 pasos")
+          ===================================================================== */}
+      <section className="py-20 md:py-28 border-t border-white/10 bg-[#0D1512]/35">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto text-center mb-16">
+            <p className="text-xs font-semibold text-emerald-400 tracking-wide mb-2">
+              Implementación Sin Fricción
+            </p>
+            <h2
+              className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4"
+              style={{ textWrap: 'balance' }}
+            >
+              Cómo funciona en 3 pasos
             </h2>
+            <p className="text-base text-[#9CA3AF]">
+              Digitaliza tu operación ganadera hoy mismo sin necesidad de conocimientos técnicos ni contables.
+            </p>
+          </div>
 
-            <p className="text-slate-300 text-base">
-              Crea tu cuenta en menos de 2 minutos y ten tu contabilidad agropecuaria, auditoría del 1% de IVA e inventario al día.
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Línea punteada conectora en desktop */}
+            <div
+              className="hidden md:block absolute top-10 left-[16%] right-[16%] border-t border-dashed border-emerald-500/35 pointer-events-none"
+              aria-hidden="true"
+            />
+
+            {/* Paso 01 */}
+            <div className="relative rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-emerald-500/40 transition-all duration-200 p-7">
+              <div className="w-12 h-12 rounded-xl bg-[#070B09] border border-emerald-500/40 text-emerald-400 font-mono font-bold text-base flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                01
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2.5">
+                01. Registra tu finca y tus lotes
+              </h3>
+              <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                Configura tus potreros, carga tu inventario inicial de animales (toros, vacas, terneros o novillos) y activa tu buzón tributario exclusivo en menos de 2 minutos.
+              </p>
+            </div>
+
+            {/* Paso 02 */}
+            <div className="relative rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-emerald-500/40 transition-all duration-200 p-7">
+              <div className="w-12 h-12 rounded-xl bg-[#070B09] border border-emerald-500/40 text-emerald-400 font-mono font-bold text-base flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                02
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2.5">
+                02. Actualiza eventos en segundos desde el corral
+              </h3>
+              <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                Registra nacimientos, pesajes, cambios de potrero, vacunaciones y ventas desde el celular, o reenvía tus facturas de insumos por WhatsApp y correo electrónico.
+              </p>
+            </div>
+
+            {/* Paso 03 */}
+            <div className="relative rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-emerald-500/40 transition-all duration-200 p-7">
+              <div className="w-12 h-12 rounded-xl bg-[#070B09] border border-amber-500/40 text-amber-400 font-mono font-bold text-base flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(245,158,11,0.18)]">
+                03
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2.5">
+                03. Toma decisiones con reportes automáticos de rentabilidad
+              </h3>
+              <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                Visualiza la ganancia diaria de peso por lote, el costo real por kilo producido, el flujo de caja mensual y tus declaraciones listas para presentar.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          6. SECCIÓN DE PRECIOS (Pricing Cards — 3 Tarjetas Limpias)
+          ===================================================================== */}
+      <section id="precios" className="py-24 md:py-32 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto text-center mb-12">
+            <p className="text-xs font-semibold text-emerald-400 tracking-wide mb-2">
+              Planes Transparentes y Escalables
+            </p>
+            <h2
+              className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4"
+              style={{ textWrap: 'balance' }}
+            >
+              Inversión pensada para cada etapa de tu ganadería
+            </h2>
+            <p className="text-base text-[#9CA3AF] mb-8">
+              Empieza gratis hoy mismo y escala conforme crece el tamaño de tu hato bovino.
             </p>
 
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button
-                variant="gradient"
-                size="lg"
-                className="h-13 px-8 text-base shadow-xl font-bold w-full sm:w-auto"
-                onClick={() => handleCtaPrincipal('cta_final')}
-                data-conversion="bottom_signup"
+            {/* Selector interactivo Mensual / Anual */}
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/10">
+              <button
+                type="button"
+                onClick={() => setCicloAnual(false)}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap shrink-0 ${
+                  !cicloAnual
+                    ? 'bg-[#10B981] text-[#070B09]'
+                    : 'text-gray-400 hover:text-white'
+                }`}
               >
-                Crear cuenta gratis ahora <ArrowRight size={18} className="ml-2" />
-              </Button>
-
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="h-13 px-6 text-base border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-800 w-full sm:w-auto"
+                Facturación Mensual
+              </button>
+              <button
+                type="button"
+                onClick={() => setCicloAnual(true)}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap shrink-0 ${
+                  cicloAnual
+                    ? 'bg-[#10B981] text-[#070B09]'
+                    : 'text-gray-400 hover:text-white'
+                }`}
               >
-                <a
-                  href={`https://wa.me/${WHATSAPP_CONTACT_NUMBER}?text=${WHATSAPP_DEFAULT_MSG}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2"
-                >
-                  <MessageSquare size={18} className="text-emerald-400" />
-                  Consultar por WhatsApp
-                </a>
-              </Button>
-            </div>
-
-            <div className="pt-2 text-xs text-slate-400">
-              Compatible con el Régimen Especial Agropecuario (REA) de Costa Rica.
+                Anual (Ahorra 20%)
+              </button>
             </div>
           </div>
-        </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 items-stretch">
+            {PLANES_GANADEROS.map((plan) => {
+              const precioMostrar = cicloAnual ? plan.precioAnual : plan.precioMensual;
+              return (
+                <div
+                  key={plan.id}
+                  className={`relative rounded-2xl p-7 sm:p-8 flex flex-col justify-between transition-all duration-200 ${
+                    plan.destacado
+                      ? 'bg-[#0D1512] border-2 border-emerald-500/60 shadow-[0_0_50px_-12px_rgba(16,185,129,0.3)]'
+                      : 'bg-white/[0.03] backdrop-blur-md border border-white/10 hover:border-emerald-500/40'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h3 className="text-xl font-bold text-white">{plan.nombre}</h3>
+                      {plan.etiqueta && (
+                        <span className="text-xs font-semibold text-emerald-300 font-mono">
+                          ★ {plan.etiqueta}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-sm text-[#9CA3AF] leading-relaxed mb-6">
+                      {plan.subtitulo}
+                    </p>
+
+                    <div className="flex items-baseline gap-1.5 mb-7 pb-6 border-b border-white/10">
+                      <span className="text-4xl sm:text-5xl font-bold font-mono tabular-nums text-white">
+                        ${precioMostrar}
+                      </span>
+                      <span className="text-sm text-[#9CA3AF]">
+                        / mes {cicloAnual && precioMostrar > 0 ? '(facturado anual)' : ''}
+                      </span>
+                    </div>
+
+                    <ul className="space-y-3.5 mb-8">
+                      {plan.caracteristicas.map((item) => (
+                        <li key={item} className="flex items-start gap-3 text-sm text-gray-200">
+                          <Check size={17} className="text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => irARegistro(plan.id)}
+                    className={`w-full py-3.5 px-5 rounded-xl font-semibold text-sm transition-all duration-150 flex items-center justify-center gap-2 whitespace-nowrap shrink-0 ${
+                      plan.destacado
+                        ? 'bg-[#10B981] hover:bg-emerald-400 text-[#070B09] shadow-[0_0_25px_rgba(16,185,129,0.35)]'
+                        : 'bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/10'
+                    }`}
+                  >
+                    <span>{plan.ctaTexto}</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </section>
 
-      {/* Espacio publicitario Google AdSense (solo visible si AdSense está configurado) */}
-      <div className="max-w-4xl mx-auto px-4 my-8">
-        <AdvertisingSlot mostrarPublico={true} tamaño="banner" />
-      </div>
+      {/* =====================================================================
+          7. CTA FINAL + FOOTER MINIMALISTA
+          ===================================================================== */}
+      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto relative rounded-3xl bg-gradient-to-b from-[#0D1512] to-[#070B09] border border-emerald-500/30 p-8 sm:p-14 text-center overflow-hidden shadow-[0_20px_70px_rgba(0,0,0,0.65)]">
+          {/* Resplandor verde esmeralda de fondo */}
+          <div
+            className="
+              absolute -top-24 left-1/2 -translate-x-1/2 pointer-events-none
+              w-[520px] h-[280px] rounded-full
+              bg-emerald-500/20 blur-[110px]
+            "
+          />
 
-      {/* FOOTER */}
-      <footer ref={footerRef} className="border-t border-slate-800 bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 text-slate-400 text-sm">
+          <div className="relative z-10 max-w-2xl mx-auto space-y-6">
+            <h2
+              className="text-3xl sm:text-4xl font-bold tracking-tight text-white"
+              style={{ textWrap: 'balance' }}
+            >
+              Digitaliza tu finca hoy mismo y lleva el control de cada cabeza de ganado en tu bolsillo
+            </h2>
+            <p className="text-base text-[#9CA3AF] leading-relaxed">
+              Únete a los productores que ya optimizan su pastoreo rotacional, trazabilidad bovina y contabilidad agropecuaria sin hojas de cálculo.
+            </p>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+              <button
+                type="button"
+                onClick={() => irARegistro('free')}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[#10B981] hover:bg-emerald-400 text-[#070B09] font-bold text-base transition-all duration-150 shadow-[0_0_32px_rgba(16,185,129,0.45)] whitespace-nowrap shrink-0"
+              >
+                <span>Comenzar ahora — Es Gratis</span>
+                <ArrowRight size={18} />
+              </button>
+              <Link
+                to="/login"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white font-semibold text-base transition-all duration-150 whitespace-nowrap shrink-0"
+              >
+                <span>Acceder a mi cuenta</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER MINIMALISTA */}
+      <footer className="border-t border-white/10 bg-[#070B09] py-12 px-4 sm:px-6 lg:px-8 text-sm text-[#9CA3AF]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white">
-              <Tractor size={20} />
-            </div>
-            <div>
-              <div className="font-heading font-black text-white text-base">ContadorGanadero</div>
-              <div className="text-xs text-slate-400">Cumplimiento tributario con Hacienda y MAG — Costa Rica</div>
-            </div>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400">
+              <Tractor size={16} />
+            </span>
+            <span className="font-bold text-white tracking-tight">Contador Ganadero</span>
+            <span aria-hidden="true">·</span>
+            <span className="text-xs text-[#9CA3AF]">contadorganadero.com</span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
-            <Link to="/login" className="hover:text-emerald-400 transition-colors">Iniciar Sesión</Link>
-            <a href="#como-funciona" className="hover:text-emerald-400 transition-colors">Cómo funciona</a>
-            <a href="#planes" className="hover:text-emerald-400 transition-colors">Planes</a>
-            <a href="#faq" className="hover:text-emerald-400 transition-colors">Preguntas</a>
-            <Link to="/terminos" className="hover:text-emerald-400 transition-colors">Términos y Condiciones</Link>
-            <Link to="/condiciones-servicio" className="hover:text-emerald-400 transition-colors">Condiciones del Servicio</Link>
-            <Link to="/privacidad" className="hover:text-emerald-400 transition-colors">Política de Privacidad</Link>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs">
+            <a href="#funciones" className="hover:text-white transition-colors">Funciones</a>
+            <a href="#pastoreo" className="hover:text-white transition-colors">Pastoreo</a>
+            <a href="#finanzas" className="hover:text-white transition-colors">Finanzas</a>
+            <a href="#precios" className="hover:text-white transition-colors">Precios</a>
+            <Link to="/terminos" className="hover:text-white transition-colors">Términos</Link>
+            <Link to="/condiciones-servicio" className="hover:text-white transition-colors">Condiciones</Link>
+            <Link to="/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
+          </div>
+
+          <div className="text-xs text-emerald-400 font-mono">
+            ● Todos los sistemas operativos
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-slate-900 text-center text-xs text-slate-400">
-          © {new Date().getFullYear()} ContadorGanadero Costa Rica. Todos los derechos reservados. No afiliado directamente con el Ministerio de Hacienda ni el MAG.
+        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-white/5 text-center text-xs text-gray-500">
+          © {new Date().getFullYear()} contadorganadero.com. Todos los derechos reservados. Gestión de inventario bovino, pastoreo rotacional y finanzas agropecuarias.
         </div>
       </footer>
-
-      {/* BOTÓN FLOTANTE DE WHATSAPP PARA CONVERSIÓN PRE-VENTA (GOOGLE ADS) */}
-      <a
-        href={`https://wa.me/${WHATSAPP_CONTACT_NUMBER}?text=${WHATSAPP_DEFAULT_MSG}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-full bg-emerald-500 text-slate-950 font-bold text-sm shadow-2xl shadow-emerald-500/40 hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all group"
-        aria-label="Hablar con un asesor por WhatsApp"
-      >
-        <MessageSquare size={18} className="text-slate-950" />
-        <span className="hidden sm:inline">¿Dudas? Hablar por WhatsApp</span>
-        <span className="flex h-2.5 w-2.5 relative">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-950 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-900" />
-        </span>
-      </a>
-
-      {/* CTA FIJO EN MÓVIL */}
-      <div className="landing-cta-movil md:hidden">
-        <Button
-          variant="gradient"
-          size="lg"
-          className="w-full font-bold shadow-xl"
-          onClick={() => handleCtaPrincipal('mobile_sticky_cta')}
-          data-conversion="sticky_signup"
-        >
-          Comenzar Gratis (Sin Tarjeta) <ArrowRight size={16} className="ml-1" />
-        </Button>
-      </div>
-
     </div>
   );
 }
