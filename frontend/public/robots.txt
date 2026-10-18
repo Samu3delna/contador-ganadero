@@ -5,7 +5,6 @@ User-agent: *
 Allow: /
 
 # La zona privada de la aplicación no debe indexarse
-Disallow: /login
 Disallow: /dashboard
 Disallow: /facturas
 Disallow: /gastos
@@ -20,5 +19,9 @@ Disallow: /d150
 Disallow: /calendario
 Disallow: /planes
 Disallow: /billing
+
+# Las páginas de autenticación son públicas y deben indexarse
+Allow: /login
+Allow: /registro
 
 Sitemap: https://contadorganadero.com/sitemap.xml
