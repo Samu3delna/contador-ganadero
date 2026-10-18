@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
-import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Loader2, Eye, EyeOff, Check } from 'lucide-react';
 
 export default function LoginForm({ form, setForm, handleSubmit, error, cargando, esRegistro }) {
   const [mostrarPassword, setMostrarPassword] = useState(false);
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const valor = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setForm({ ...form, [e.target.name]: valor });
+  };
 
   return (
     <form onSubmit={handleSubmit} className="login-form space-y-4">
@@ -100,6 +104,34 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
           </button>
         </div>
       </div>
+
+      {esRegistro && (
+        <div className="text-left">
+          <div className="rounded-lg bg-slate-800/40 border border-slate-700/60 p-3">
+            <label htmlFor="aceptaTerminos" className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                id="aceptaTerminos"
+                name="aceptaTerminos"
+                type="checkbox"
+                checked={Boolean(form.aceptaTerminos)}
+                onChange={handleChange}
+                required
+                aria-required="true"
+                className="peer sr-only"
+              />
+              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-slate-600 bg-slate-900/80 transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-500 peer-checked:[&>svg]:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-slate-900">
+                <Check size={12} strokeWidth={3.5} className="text-slate-950 opacity-0 transition-opacity" />
+              </span>
+              <span className="text-xs text-slate-300 leading-relaxed">
+                He leído y acepto los{' '}
+                <Link to="/terminos" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Términos y Condiciones</Link>, las{' '}
+                <Link to="/condiciones-servicio" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Condiciones del Servicio</Link> y la{' '}
+                <Link to="/privacidad" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Política de Privacidad</Link>.
+              </span>
+            </label>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="p-3 rounded-lg bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">

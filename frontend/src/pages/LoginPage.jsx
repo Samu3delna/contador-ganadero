@@ -58,6 +58,7 @@ export default function LoginPage() {
       let datosSesion;
       if (esRegistro) {
         let datosRegistro = { ...form };
+        delete datosRegistro.aceptaTerminos; // Campo solo para validación del formulario, no se envía al backend
         if (datosRegistro.telefono) {
           const digits = datosRegistro.telefono.replace(/\D/g, '');
           if (digits.length === 8) {
