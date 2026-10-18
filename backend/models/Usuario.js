@@ -73,6 +73,11 @@ const usuarioSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  // Respaldo legal: fecha de aceptación de Términos y Condiciones en el registro
+  aceptoTerminosEn: {
+    type: Date,
+    default: null,
+  },
   // Google OAuth
   googleId: {
     type: String,

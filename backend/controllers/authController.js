@@ -56,7 +56,13 @@ const clearRefreshCookie = (res) => {
  */
 const registro = async (req, res, next) => {
   try {
-    const { nombre, email, password, cedula, nombreFinca, cantidadHijos, tieneConyuge, telefono } = req.body;
+    const { nombre, email, password, cedula, nombreFinca, cantidadHijos, tieneConyuge, telefono, aceptaTerminos } = req.body;
+
+    // Validación obligatoria: el registro exige aceptación explícita de los Términos y Condiciones.
+    if (aceptaTerminos !== true) {
+      res.status(400);
+      throw new Error('Debes aceptar los Términos y Condiciones para crear tu cuenta');
+    }
 
     const existe = await Usuario.findOne({ email });
     if (existe) {
@@ -91,6 +97,8 @@ const registro = async (req, res, next) => {
       telefono: telefonoNormalizado,
       cantidadHijos,
       tieneConyuge,
+      // Respaldo legal de la aceptación de Términos y Condiciones
+      aceptoTerminosEn: new Date(),
       tenantId: tenant._id,
       rol: 'dueño',
     });
