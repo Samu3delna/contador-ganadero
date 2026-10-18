@@ -8,8 +8,12 @@ import LoginForm from '../components/login/LoginForm';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import useSeo from '../hooks/useSeo';
+<<<<<<< HEAD
 // Video de fondo original de la marca (restaurado desde el historial de git)
 import fondoLogin from '../Recursos/fondo_login.webm';
+=======
+import fondoLogin from '../assets/fondo-ganadero.webm';
+>>>>>>> 4448ff2448cca2d049b4067003b9c832c7a8b3b8
 import './LoginPage.css';
 
 export default function LoginPage() {

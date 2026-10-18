@@ -159,3 +159,23 @@
     display: none;
   }
 }
+
+/* Animación de escaneo para la demo animada del Hero */
+@keyframes demoScanLine {
+  0% {
+    top: 0%;
+    opacity: 0.7;
+  }
+  50% {
+    top: 88%;
+    opacity: 1;
+  }
+  100% {
+    top: 0%;
+    opacity: 0.7;
+  }
+}
+
+.animate-scanline {
+  animation: demoScanLine 3s ease-in-out infinite;
+}
