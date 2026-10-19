@@ -7,7 +7,6 @@ const Ingreso = require('../models/Ingreso');
 const Inventario = require('../models/Inventario');
 const CostoProduccion = require('../models/CostoProduccion');
 const Declaracion = require('../models/Declaracion');
-const RecordatorioFiscal = require('../models/RecordatorioFiscal');
 const ChatFeedback = require('../models/ChatFeedback');
 const SolicitudEliminacion = require('../models/SolicitudEliminacion');
 
@@ -200,7 +199,6 @@ async function ejecutarEliminacionDatos({
               Inventario.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
               CostoProduccion.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
               Declaracion.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
-              RecordatorioFiscal.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
               ChatFeedback.deleteMany({ tenantId: tenant._id }),
             ]);
             await tenant.deleteOne();
@@ -233,7 +231,6 @@ async function ejecutarEliminacionDatos({
           Inventario.deleteMany({ usuario: usuario._id }),
           CostoProduccion.deleteMany({ usuario: usuario._id }),
           Declaracion.deleteMany({ usuario: usuario._id }),
-          RecordatorioFiscal.deleteMany({ usuario: usuario._id }),
         ]);
       }
 

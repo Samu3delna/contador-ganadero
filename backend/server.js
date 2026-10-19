@@ -434,34 +434,34 @@ const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en http://0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
 
-  // Intentar conectar a MongoDB de forma no bloqueante
-  conectarDB().catch((err) => {
-    console.warn('⚠️ No se pudo conectar a MongoDB:', err.message);
-  });
+  // Conectar a MongoDB de forma no bloqueante e iniciar servicios dependientes
+  conectarDB()
+    .then(async (conectado) => {
+      if (!conectado) return;
 
-  // Iniciar listener IMAP después de que el servidor esté escuchando
-  if (process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_')) {
-    conectarDB().then(async () => {
-      try {
-        const usuario = await Usuario.findOne();
-        if (usuario) {
-          await iniciarListener(usuario._id);
+      // Iniciar listener IMAP después de que MongoDB esté conectado
+      if (process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_')) {
+        try {
+          const usuario = await Usuario.findOne();
+          if (usuario) {
+            await iniciarListener(usuario._id);
+          }
+        } catch (error) {
+          console.error('Error al iniciar listener IMAP:', error.message);
         }
-      } catch (error) {
-        console.error('Error al iniciar listener IMAP:', error.message);
       }
-    });
-  }
 
-  // Iniciar worker asíncrono de Hacienda en el propio servidor (modo dev/test)
-  if (process.env.HACIENDA_WORKER_EMBEDDED === 'true') {
-    conectarDB().then(() => {
-      try {
-        const haciendaWorker = require('./services/haciendaWorker');
-        haciendaWorker.iniciar(Number(process.env.HACIENDA_WORKER_INTERVAL_MS) || 15000);
-      } catch (error) {
-        console.error('Error al iniciar worker de Hacienda:', error.message);
+      // Iniciar worker asíncrono de Hacienda en el propio servidor (modo dev/test)
+      if (process.env.HACIENDA_WORKER_EMBEDDED === 'true') {
+        try {
+          const haciendaWorker = require('./services/haciendaWorker');
+          haciendaWorker.iniciar(Number(process.env.HACIENDA_WORKER_INTERVAL_MS) || 15000);
+        } catch (error) {
+          console.error('Error al iniciar worker de Hacienda:', error.message);
+        }
       }
+    })
+    .catch((err) => {
+      console.warn('⚠️ No se pudo conectar a MongoDB:', err.message);
     });
-  }
 });

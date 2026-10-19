@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
 const Inventario = require('../models/Inventario');

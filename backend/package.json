@@ -37,7 +37,6 @@
     "openai": "^4.35.0",
     "pdfkit": "^0.19.1",
     "tiktoken": "^1.0.22",
-    "uuid": "^14.0.0",
     "xml-crypto": "^6.1.2"
   },
   "devDependencies": {
