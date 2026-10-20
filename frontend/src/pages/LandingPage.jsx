@@ -42,8 +42,67 @@ const NEGOCIO_SCHEMA = {
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Contenido de secciones                                                    */
+/*  Contenido de secciones e interactividad inferior                          */
 /* -------------------------------------------------------------------------- */
+
+const EJEMPLARES_BENTO = [
+  {
+    arete: '#CR-04512',
+    subtitulo: 'Brahman · Cebra · Hembra',
+    ganancia: '+850 g/día',
+    peso: '435 kg',
+    lote: 'Lote A',
+    potrero: 'Potrero 3',
+    edad: '28 meses',
+    sanidad: ['Aftosa ✓', 'Babesiosis ✓', 'Vitamina A ✓', 'Desparasitación ✓'],
+    padre: 'Toro «El Cobre» · CR-0012',
+    madre: 'Vaca «Estrella» · CR-0088',
+  },
+  {
+    arete: '#CR-0482',
+    subtitulo: 'Brahman Rojo · Toro Reproductor',
+    ganancia: '+960 g/día',
+    peso: '648 kg',
+    lote: 'Lote Cría',
+    potrero: 'Potrero 1',
+    edad: '34 meses',
+    sanidad: ['Brucelosis Neg. ✓', 'Clostridiosis ✓', 'Vitamina ADE ✓', 'Ivermectina ✓'],
+    padre: 'Toro «Monarca» · CR-0109',
+    madre: 'Vaca «Emperatriz» · CR-0218',
+  },
+  {
+    arete: '#CR-0914',
+    subtitulo: 'Gyrolando F1 · Vaca Lechera',
+    ganancia: '19.4 L/día',
+    peso: '518 kg',
+    lote: 'Ordeño A',
+    potrero: 'Potrero 4',
+    edad: '40 meses',
+    sanidad: ['CMT Libre ✓', 'Sales Minerales ✓', 'IBR / DVB ✓', 'Desparasitación ✓'],
+    padre: 'Toro «Sansão Gyr» · BR-4410',
+    madre: 'Vaca «Reina» · CR-0390',
+  },
+];
+
+const POTREROS_BENTO = [
+  { nombre: 'Potrero 1', pasto: 'Brachiaria brizantha', ocupacion: 3, descanso: 24, carga: '2.2 UA/ha · en pastoreo' },
+  { nombre: 'Potrero 2', pasto: 'Estrella Africana', ocupacion: 0, descanso: 12, carga: '1.9 UA/ha · recuperación' },
+  { nombre: 'Potrero 3', pasto: 'Panicum Mombaza', ocupacion: 1, descanso: 30, carga: '2.4 UA/ha · óptima' },
+  { nombre: 'Potrero 4', pasto: 'Pasto Toledo', ocupacion: 4, descanso: 18, carga: '2.1 UA/ha · óptima' },
+];
+
+const TRIMESTRES_FINANZAS = [
+  { label: 'Q1', i: 55, c: 40, margen: '+27%', ingresos: '₡8.4M', costos: '₡6.1M' },
+  { label: 'Q2', i: 70, c: 44, margen: '+37%', ingresos: '₡10.6M', costos: '₡6.7M' },
+  { label: 'Q3', i: 62, c: 36, margen: '+42%', ingresos: '₡9.5M', costos: '₡5.5M' },
+  { label: 'Q4', i: 90, c: 48, margen: '+47%', ingresos: '₡13.8M', costos: '₡7.3M' },
+];
+
+const EVENTOS_CAMPO = [
+  { icono: Sparkles, label: 'Nacimiento', color: 'text-amber-300', detalle: 'Cría #CR-0519 registrada en Lote A' },
+  { icono: TrendingUp, label: 'Pesaje', color: 'text-emerald-300', detalle: 'Arete #CR-04512 · 435 kg (+850 g/d)' },
+  { icono: Wallet, label: 'Venta', color: 'text-emerald-300', detalle: 'Factura electrónica v4.4 emitida' },
+];
 
 const METRICAS = [
   { valor: '+100%', texto: 'Claridad en costos por cabeza' },
@@ -133,7 +192,7 @@ const PLANES_LANDING = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  Helper de animación de entrada                                            */
+/*  Helper de animación de entrada (usado de #funciones hacia abajo)          */
 /* -------------------------------------------------------------------------- */
 
 function Reveal({ children, className = '', delay = 0 }) {
@@ -150,7 +209,7 @@ function Reveal({ children, className = '', delay = 0 }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Micro-visual del Hero: Dashboard en marco de cristal                      */
+/*  Micro-visual del Hero: Dashboard en marco de cristal (estático y limpio)  */
 /* -------------------------------------------------------------------------- */
 
 function HeroMockup() {
@@ -171,7 +230,7 @@ function HeroMockup() {
             </span>
           </div>
           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-            <Activity size={10} className="animate-pulse" /> REA Activo
+            <Activity size={10} /> REA Activo
           </span>
         </div>
 
@@ -309,6 +368,17 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Estados interactivos para las animaciones de las secciones inferiores (#funciones)
+  const [ejemplarIdx, setEjemplarIdx] = useState(0);
+  const [potreroActivo, setPotreroActivo] = useState(2);
+  const [trimestreActivo, setTrimestreActivo] = useState(3);
+  const [eventoActivo, setEventoActivo] = useState(1);
+
+  const ejemplar = EJEMPLARES_BENTO[ejemplarIdx] || EJEMPLARES_BENTO[0];
+  const potreroActual = POTREROS_BENTO[potreroActivo] || POTREROS_BENTO[0];
+  const trimestreActual = TRIMESTRES_FINANZAS[trimestreActivo] || TRIMESTRES_FINANZAS[3];
+  const eventoActual = EVENTOS_CAMPO[eventoActivo] || EVENTOS_CAMPO[1];
+
   // Tracking de conversión para Google Ads
   const trackConversion = (etiqueta = 'inicio_registro', plan = 'free') => {
     try {
@@ -397,7 +467,7 @@ export default function LandingPage() {
       </div>
 
       {/* ================================================================== */}
-      {/* HERO SECTION DE ALTO IMPACTO                                       */}
+      {/* HERO SECTION DE ALTO IMPACTO (video limpio sin animación encima)   */}
       {/* ================================================================== */}
       <section className="landing-hero relative overflow-hidden">
         {/* Video de fondo de la marca */}
@@ -406,24 +476,9 @@ export default function LandingPage() {
         </video>
         <div className="landing-hero-overlay" />
 
-        {/* Efecto Aurora WebGL (React Bits) */}
-        <div className="absolute inset-0 z-[2] pointer-events-none" aria-hidden="true">
-          <Aurora
-            colorStops={['#059669', '#10B981', '#34D399', '#F59E0B']}
-            amplitude={1.1}
-            blend={0.55}
-            speed={0.8}
-            height={0.5}
-            opacity={0.65}
-          />
-        </div>
-
-        {/* Resplandores radiales sutiles */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[720px] h-[420px] bg-emerald-500/15 blur-[140px] rounded-full pointer-events-none" aria-hidden="true" />
-
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 sm:pt-36 pb-16 md:pb-24 flex flex-col items-center text-center">
           {/* Badge superior */}
-          <Reveal>
+          <div>
             <a
               href="#funciones"
               className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 backdrop-blur-md px-4 py-1.5 text-xs font-medium text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:border-emerald-400/70 transition-colors"
@@ -432,28 +487,28 @@ export default function LandingPage() {
               Nuevo: Control inteligente de lotes y trazabilidad bovina
               <ArrowRight size={12} />
             </a>
-          </Reveal>
+          </div>
 
           {/* Headline */}
-          <Reveal delay={80}>
+          <div>
             <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-white tracking-tight leading-[1.08] max-w-4xl">
               El control total de tu ganadería,{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
                 sin papeles ni complicaciones.
               </span>
             </h1>
-          </Reveal>
+          </div>
 
           {/* Subheadline */}
-          <Reveal delay={140}>
-            <p className="mt-6 text-base sm:text-lg text-gray-400 leading-relaxed max-w-2xl">
+          <div>
+            <p className="mt-6 text-base sm:text-lg text-gray-300 leading-relaxed max-w-2xl">
               Gestiona tu hato bovino, optimiza la rotación de potreros, registra pesos, vacunas y
               controla la rentabilidad de tu finca en tiempo real desde cualquier dispositivo.
             </p>
-          </Reveal>
+          </div>
 
           {/* CTAs */}
-          <Reveal delay={200}>
+          <div>
             <div className="mt-8 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
               <Button
                 size="lg"
@@ -476,29 +531,40 @@ export default function LandingPage() {
                 </a>
               </Button>
             </div>
-          </Reveal>
+          </div>
 
-          <Reveal delay={240}>
-            <p className="mt-4 text-xs text-gray-500 flex items-center justify-center gap-4">
+          <div>
+            <p className="mt-4 text-xs text-gray-400 flex items-center justify-center gap-4">
               <span className="flex items-center gap-1.5"><Check size={13} className="text-emerald-400" /> Sin tarjeta de crédito</span>
               <span className="flex items-center gap-1.5"><Clock size={13} className="text-emerald-400" /> Listo en 2 minutos</span>
             </p>
-          </Reveal>
+          </div>
 
           {/* Mockup del Dashboard */}
-          <Reveal delay={280} className="w-full mt-14 md:mt-16">
+          <div className="w-full mt-14 md:mt-16">
             <HeroMockup />
-          </Reveal>
+          </div>
         </div>
       </section>
 
       {/* ================================================================== */}
-      {/* BENTO GRID DE CARACTERÍSTICAS (Estilo Layers.ai)                   */}
+      {/* BENTO GRID DE CARACTERÍSTICAS (Animaciones de aquí hacia abajo)    */}
       {/* ================================================================== */}
-      <section id="funciones" className="relative py-16 md:py-24 scroll-mt-20 bg-[#0D1512]">
+      <section id="funciones" className="relative py-16 md:py-24 scroll-mt-20 bg-[#0D1512] overflow-hidden">
+        {/* Efecto Aurora sutil en la sección inferior (sobre fondo sólido, sin chocar con el video) */}
+        <div className="absolute inset-x-0 top-0 h-[420px] z-0 pointer-events-none" aria-hidden="true">
+          <Aurora
+            colorStops={['#064E3B', '#10B981', '#047857']}
+            amplitude={0.85}
+            blend={0.65}
+            speed={0.55}
+            height={0.42}
+            opacity={0.28}
+          />
+        </div>
         <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[600px] h-[380px] bg-emerald-500/[0.08] blur-[130px] rounded-full pointer-events-none" aria-hidden="true" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="text-center max-w-2xl mx-auto mb-12">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-medium text-emerald-300">
@@ -514,10 +580,10 @@ export default function LandingPage() {
           </Reveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Tarjeta 1 (2 columnas): Inventario y Trazabilidad Individual */}
+            {/* Tarjeta 1 (2 columnas): Inventario y Trazabilidad Individual (Interactiva) */}
             <Reveal className="md:col-span-2">
               <article onMouseMove={brilloBento} className="bento-card group h-full rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:shadow-[0_0_40px_rgba(16,185,129,0.12)] transition-all duration-300">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
                       <Beef size={20} />
@@ -529,50 +595,65 @@ export default function LandingPage() {
                       Ficha completa por animal: arete, raza, peso, historial sanitario y genealogía en un solo lugar.
                     </p>
                   </div>
-                  <span className="hidden sm:inline-flex shrink-0 items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-300">
-                    Trazabilidad total
-                  </span>
+
+                  {/* Selector interactivo de ejemplar */}
+                  <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/30 p-1">
+                    {EJEMPLARES_BENTO.map((item, idx) => (
+                      <button
+                        key={item.arete}
+                        type="button"
+                        onClick={() => setEjemplarIdx(idx)}
+                        className={`rounded-lg px-2.5 py-1 text-[11px] font-mono font-semibold transition-all duration-200 ${
+                          ejemplarIdx === idx
+                            ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {item.arete}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Mini-ficha del animal */}
-                <div className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4 sm:p-5">
+                {/* Mini-ficha del animal con transición suave */}
+                <div className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4 sm:p-5 transition-all duration-300">
                   <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
                     <div className="flex items-center gap-3">
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 font-bold font-heading text-sm">
                         CR
                       </span>
                       <div>
-                        <div className="text-sm font-bold text-white">Arete #CR-04512</div>
-                        <div className="text-[11px] text-gray-400">Brahman · Cebra · Hembra</div>
+                        <div className="text-sm font-bold text-white">Arete {ejemplar.arete}</div>
+                        <div className="text-[11px] text-gray-400">{ejemplar.subtitulo}</div>
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-                      <TrendingUp size={11} /> +850 g/día
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 transition-all duration-300">
+                      <TrendingUp size={11} /> {ejemplar.ganancia}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 text-center">
                     <div>
                       <div className="text-[10px] uppercase tracking-wide text-gray-500">Peso actual</div>
-                      <div className="text-sm font-bold text-white">435 kg</div>
+                      <div className="text-sm font-bold text-white tabular-nums">{ejemplar.peso}</div>
                     </div>
                     <div>
                       <div className="text-[10px] uppercase tracking-wide text-gray-500">Lote</div>
-                      <div className="text-sm font-bold text-white">Lote A</div>
+                      <div className="text-sm font-bold text-white">{ejemplar.lote}</div>
                     </div>
                     <div>
                       <div className="text-[10px] uppercase tracking-wide text-gray-500">Potrero</div>
-                      <div className="text-sm font-bold text-emerald-300">Potrero 3</div>
+                      <div className="text-sm font-bold text-emerald-300">{ejemplar.potrero}</div>
                     </div>
                     <div>
                       <div className="text-[10px] uppercase tracking-wide text-gray-500">Edad</div>
-                      <div className="text-sm font-bold text-white">28 meses</div>
+                      <div className="text-sm font-bold text-white">{ejemplar.edad}</div>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-white/10">
                     <span className="text-[10px] text-gray-500 mr-1">Sanidad:</span>
-                    {['Aftosa ✓', 'Babesiosis ✓', 'Vitamina A ✓', 'Desparasitación ✓'].map((v) => (
+                    {ejemplar.sanidad.map((v) => (
                       <span key={v} className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-gray-300">
                         {v}
                       </span>
@@ -580,14 +661,14 @@ export default function LandingPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4 pt-3 mt-3 border-t border-white/10 text-[11px] text-gray-400">
-                    <span>Padre: <span className="text-gray-200 font-medium">Toro «El Cobre» · CR-0012</span></span>
-                    <span>Madre: <span className="text-gray-200 font-medium">Vaca «Estrella» · CR-0088</span></span>
+                    <span>Padre: <span className="text-gray-200 font-medium">{ejemplar.padre}</span></span>
+                    <span>Madre: <span className="text-gray-200 font-medium">{ejemplar.madre}</span></span>
                   </div>
                 </div>
               </article>
             </Reveal>
 
-            {/* Tarjeta 2 (1 columna): Rotación de Potreros y Pasturas */}
+            {/* Tarjeta 2 (1 columna): Rotación de Potreros y Pasturas (Interactiva) */}
             <Reveal delay={80}>
               <article id="pastoreo" onMouseMove={brilloBento} className="bento-card group h-full rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:shadow-[0_0_40px_rgba(16,185,129,0.12)] transition-all duration-300 scroll-mt-24">
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
@@ -600,38 +681,51 @@ export default function LandingPage() {
                   Días de ocupación vs. descanso del pasto y carga animal por hectárea, siempre bajo control.
                 </p>
 
-                {/* Mini-gráfico de rotación */}
-                <div className="mt-6 space-y-3">
-                  {[
-                    { nombre: 'Potrero 1', ocupacion: 3, descanso: 24 },
-                    { nombre: 'Potrero 2', ocupacion: 0, descanso: 12 },
-                    { nombre: 'Potrero 3', ocupacion: 1, descanso: 30 },
-                    { nombre: 'Potrero 4', ocupacion: 4, descanso: 18 },
-                  ].map((p) => (
-                    <div key={p.nombre}>
-                      <div className="flex justify-between text-[11px] text-gray-400 mb-1">
-                        <span className="text-gray-300 font-medium">{p.nombre}</span>
-                        <span>
-                          <span className="text-amber-300">{p.ocupacion}d ocupado</span>
-                          {' · '}
-                          <span className="text-emerald-300">{p.descanso}d descanso</span>
-                        </span>
-                      </div>
-                      <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-black/40">
-                        <div className="h-full rounded-full bg-amber-500/80" style={{ width: `${(p.ocupacion / (p.ocupacion + p.descanso)) * 100}%` }} />
-                        <div className="h-full rounded-full bg-emerald-500/70" style={{ width: `${(p.descanso / (p.ocupacion + p.descanso)) * 100}%` }} />
-                      </div>
-                    </div>
-                  ))}
+                {/* Mini-gráfico interactivo de rotación */}
+                <div className="mt-6 space-y-2.5">
+                  {POTREROS_BENTO.map((p, idx) => {
+                    const activo = potreroActivo === idx;
+                    const pctOcupacion = (p.ocupacion / (p.ocupacion + p.descanso)) * 100;
+                    const pctDescanso = (p.descanso / (p.ocupacion + p.descanso)) * 100;
+                    return (
+                      <button
+                        key={p.nombre}
+                        type="button"
+                        onClick={() => setPotreroActivo(idx)}
+                        className={`w-full text-left rounded-lg p-2 transition-all duration-200 ${
+                          activo ? 'bg-white/[0.06] ring-1 ring-emerald-500/40' : 'hover:bg-white/[0.03]'
+                        }`}
+                      >
+                        <div className="flex justify-between text-[11px] text-gray-400 mb-1">
+                          <span className="text-gray-200 font-medium">{p.nombre}</span>
+                          <span>
+                            <span className="text-amber-300">{p.ocupacion}d ocupado</span>
+                            {' · '}
+                            <span className="text-emerald-300">{p.descanso}d descanso</span>
+                          </span>
+                        </div>
+                        <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-black/40">
+                          <div
+                            className="h-full rounded-full bg-amber-500/80 transition-all duration-500"
+                            style={{ width: `${pctOcupacion}%` }}
+                          />
+                          <div
+                            className="h-full rounded-full bg-emerald-500/70 transition-all duration-500"
+                            style={{ width: `${pctDescanso}%` }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
                   <div className="pt-2 flex items-center justify-between rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[11px]">
-                    <span className="text-gray-400">Carga animal</span>
-                    <span className="font-bold text-white">2.1 UA/ha <span className="text-emerald-400 font-medium">· óptima</span></span>
+                    <span className="text-gray-400 truncate mr-2">{potreroActual.pasto}</span>
+                    <span className="font-bold text-emerald-300 shrink-0">{potreroActual.carga}</span>
                   </div>
                 </div>
               </article>
             </Reveal>
 
-            {/* Tarjeta 3 (1 columna): Contabilidad y Finanzas Ganaderas */}
+            {/* Tarjeta 3 (1 columna): Contabilidad y Finanzas Ganaderas (Interactiva) */}
             <Reveal>
               <article id="finanzas" onMouseMove={brilloBento} className="bento-card group h-full rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:shadow-[0_0_40px_rgba(16,185,129,0.12)] transition-all duration-300 scroll-mt-24">
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
@@ -644,29 +738,55 @@ export default function LandingPage() {
                   Ingresos por venta de ganado y leche contra costos de suplementación y veterinaria.
                 </p>
 
-                {/* Mini-gráfica de ingresos vs costos */}
+                {/* Mini-gráfica interactiva de ingresos vs costos */}
                 <div className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3 text-[10px] text-gray-400">
-                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500" /> Ingresos</span>
-                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500" /> Costos</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500" /> {trimestreActual.ingresos}</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500" /> {trimestreActual.costos}</span>
                     </div>
                     <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-                      Margen +32%
+                      Margen {trimestreActual.margen}
                     </span>
                   </div>
                   <div className="flex items-end justify-between gap-2 h-24">
-                    {[
-                      { i: 55, c: 40 }, { i: 70, c: 44 }, { i: 62, c: 36 }, { i: 90, c: 48 },
-                    ].map(({ i, c }, idx) => (
-                      <div key={idx} className="flex items-end gap-1 flex-1 justify-center">
-                        <div className="w-3 rounded-t bg-emerald-500/80" style={{ height: `${i}%` }} />
-                        <div className="w-3 rounded-t bg-amber-500/70" style={{ height: `${c}%` }} />
-                      </div>
-                    ))}
+                    {TRIMESTRES_FINANZAS.map(({ label, i, c }, idx) => {
+                      const esActivo = trimestreActivo === idx;
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setTrimestreActivo(idx)}
+                          className={`flex items-end gap-1 flex-1 justify-center h-full rounded-lg px-1 pt-2 transition-colors ${
+                            esActivo ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]'
+                          }`}
+                          aria-label={`Ver métricas de ${label}`}
+                        >
+                          <div
+                            className={`w-3 rounded-t transition-all duration-500 ${
+                              esActivo ? 'bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)]' : 'bg-emerald-500/75'
+                            }`}
+                            style={{ height: `${i}%` }}
+                          />
+                          <div
+                            className={`w-3 rounded-t transition-all duration-500 ${
+                              esActivo ? 'bg-amber-400' : 'bg-amber-500/65'
+                            }`}
+                            style={{ height: `${c}%` }}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div className="mt-2 flex justify-between text-[9px] text-gray-500 font-mono">
-                    <span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span>
+                  <div className="mt-2 flex justify-between text-[9px] font-mono px-2">
+                    {TRIMESTRES_FINANZAS.map(({ label }, idx) => (
+                      <span
+                        key={label}
+                        className={trimestreActivo === idx ? 'text-emerald-300 font-bold' : 'text-gray-500'}
+                      >
+                        {label}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
@@ -677,7 +797,7 @@ export default function LandingPage() {
               </article>
             </Reveal>
 
-            {/* Tarjeta 4 (2 columnas): Modo Campo & Acceso Multi-dispositivo */}
+            {/* Tarjeta 4 (2 columnas): Modo Campo & Acceso Multi-dispositivo (Interactiva) */}
             <Reveal delay={80} className="md:col-span-2">
               <article onMouseMove={brilloBento} className="bento-card group h-full rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:shadow-[0_0_40px_rgba(16,185,129,0.12)] transition-all duration-300">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center h-full">
@@ -710,28 +830,36 @@ export default function LandingPage() {
                     </ul>
                   </div>
 
-                  {/* Mini-mockup móvil */}
+                  {/* Mini-mockup móvil interactivo */}
                   <div className="flex justify-center">
-                    <div className="w-52 rounded-[1.6rem] border border-white/15 bg-black/50 p-2.5 shadow-2xl shadow-emerald-950/40 rotate-2 group-hover:rotate-0 transition-transform duration-500">
-                      <div className="rounded-[1.2rem] border border-white/10 bg-[#0D1512] p-3.5 space-y-3">
+                    <div className="w-56 rounded-[1.6rem] border border-white/15 bg-black/50 p-2.5 shadow-2xl shadow-emerald-950/40 rotate-2 group-hover:rotate-0 transition-transform duration-500">
+                      <div className="rounded-[1.2rem] border border-white/10 bg-[#0D1512] p-3.5 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-semibold text-gray-300">Registro rápido</span>
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         </div>
-                        {[
-                          { icono: Sparkles, label: 'Nacimiento', color: 'text-amber-300' },
-                          { icono: TrendingUp, label: 'Pesaje', color: 'text-emerald-300' },
-                          { icono: Wallet, label: 'Venta', color: 'text-emerald-300' },
-                        ].map(({ icono: Icono, label, color }) => (
-                          <div key={label} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
-                            <span className={`flex items-center gap-2 text-[11px] font-medium ${color}`}>
-                              <Icono size={13} /> {label}
-                            </span>
-                            <ArrowRight size={11} className="text-gray-500" />
-                          </div>
-                        ))}
-                        <div className="rounded-lg bg-emerald-500/15 border border-emerald-500/30 px-3 py-2 text-[10px] text-emerald-300 font-medium text-center">
-                          ✓ Sincronizado con la oficina
+                        {EVENTOS_CAMPO.map(({ icono: Icono, label, color }, idx) => {
+                          const activo = eventoActivo === idx;
+                          return (
+                            <button
+                              key={label}
+                              type="button"
+                              onClick={() => setEventoActivo(idx)}
+                              className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 transition-all duration-200 ${
+                                activo
+                                  ? 'border-emerald-500/50 bg-emerald-500/15 shadow-sm'
+                                  : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              <span className={`flex items-center gap-2 text-[11px] font-medium ${color}`}>
+                                <Icono size={13} /> {label}
+                              </span>
+                              <ArrowRight size={11} className={activo ? 'text-emerald-300 translate-x-0.5 transition-transform' : 'text-gray-500'} />
+                            </button>
+                          );
+                        })}
+                        <div className="rounded-lg bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-2 text-[10px] text-emerald-300 font-medium text-center transition-all duration-300">
+                          ✓ {eventoActual.detalle}
                         </div>
                       </div>
                     </div>
@@ -782,8 +910,8 @@ export default function LandingPage() {
           </Reveal>
 
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Línea punteada conectora (desktop) */}
-            <div className="hidden md:block absolute top-10 left-[16%] right-[16%] border-t border-dashed border-white/15" aria-hidden="true" />
+            {/* Línea punteada conectora animada (desktop) */}
+            <div className="hidden md:block absolute top-10 left-[16%] right-[16%] border-t border-dashed border-emerald-500/35 animate-step-line" aria-hidden="true" />
 
             {PASOS.map((paso, idx) => (
               <Reveal key={paso.numero} delay={idx * 100}>
@@ -792,7 +920,7 @@ export default function LandingPage() {
                     <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-heading font-bold text-white text-lg shadow-lg shadow-emerald-500/25 relative z-10">
                       {paso.numero}
                     </span>
-                    <paso.icono size={24} className="text-emerald-400/60 group-hover:text-emerald-300" />
+                    <paso.icono size={24} className="text-emerald-400/60 group-hover:text-emerald-300 transition-colors" />
                   </div>
                   <h3 className="mt-5 text-lg font-bold font-heading text-white tracking-tight">{paso.titulo}</h3>
                   <p className="mt-2 text-sm text-gray-400 leading-relaxed">{paso.descripcion}</p>

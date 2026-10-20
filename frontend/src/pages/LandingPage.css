@@ -17,14 +17,14 @@
 }
 
 /* --------------------------------------------------------------------------
-   ANIMACIONES DE ENTRADA (reveal on scroll)
+   ANIMACIONES DE ENTRADA (reveal on scroll — secciones inferiores)
    -------------------------------------------------------------------------- */
 .reveal {
   opacity: 0;
-  transform: translateY(26px);
+  transform: translateY(24px);
   transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity, transform;
 }
 
@@ -34,7 +34,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   HERO — video de fondo de la marca + overlay
+   HERO — video de fondo de la marca + overlay limpio (sin animaciones encima)
    -------------------------------------------------------------------------- */
 .landing-hero {
   position: relative;
@@ -50,34 +50,29 @@
   height: 100%;
   object-fit: cover;
   pointer-events: none;
-  transform: scale(1.05);
-  transition: transform 20s ease-in-out;
 }
 
-.landing-hero:hover .landing-hero-video {
-  transform: scale(1.09);
-}
-
-/* Degradado que funde el video con el fondo carbón */
+/* Degradado limpio que deja ver el video con nitidez y funde el borde inferior */
 .landing-hero-overlay {
   position: absolute;
   inset: 0;
   z-index: 1;
+  pointer-events: none;
   background:
-    radial-gradient(ellipse 90% 65% at 50% 0%, rgba(7, 11, 9, 0.2) 0%, rgba(7, 11, 9, 0.72) 100%),
+    radial-gradient(ellipse 95% 60% at 50% 22%, rgba(7, 11, 9, 0.25) 0%, rgba(7, 11, 9, 0.68) 100%),
     linear-gradient(
       180deg,
-      rgba(7, 11, 9, 0.68) 0%,
-      rgba(7, 11, 9, 0.8) 45%,
-      rgba(7, 11, 9, 0.94) 78%,
-      #070b09 100%
+      rgba(7, 11, 9, 0.48) 0%,
+      rgba(7, 11, 9, 0.60) 48%,
+      rgba(7, 11, 9, 0.90) 82%,
+      #0d1512 100%
     );
 }
 
 /* Marco de cristal del mockup: leve perspectiva en escritorio */
 @media (min-width: 1024px) {
   .hero-mockup-frame {
-    transform: perspective(1400px) rotateX(2.5deg);
+    transform: perspective(1400px) rotateX(2deg);
     transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -115,6 +110,20 @@
 
 .bento-card:hover::before {
   opacity: 1;
+}
+
+/* Pulso suave para la línea conectora de pasos */
+@keyframes stepLinePulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-step-line {
+  animation: stepLinePulse 3.5s ease-in-out infinite;
 }
 
 /* --------------------------------------------------------------------------
@@ -158,24 +167,8 @@
   .bento-card::before {
     display: none;
   }
-}
 
-/* Animación de escaneo para la demo animada del Hero */
-@keyframes demoScanLine {
-  0% {
-    top: 0%;
-    opacity: 0.7;
+  .animate-step-line {
+    animation: none;
   }
-  50% {
-    top: 88%;
-    opacity: 1;
-  }
-  100% {
-    top: 0%;
-    opacity: 0.7;
-  }
-}
-
-.animate-scanline {
-  animation: demoScanLine 3s ease-in-out infinite;
 }
