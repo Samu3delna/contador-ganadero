@@ -1,0 +1,18 @@
+{
+  "mcp": {
+    "servers": {
+      "memorix": {
+        "type": "local",
+        "command": [
+          "cmd",
+          "/c",
+          "memorix",
+          "serve",
+          "--mode",
+          "lite"
+        ]
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}

@@ -396,14 +396,45 @@ export default function LandingPage() {
     }
   };
 
+  // Estado de transición animada hacia Iniciar Sesión / Registro
+  const [transicionAuth, setTransicionAuth] = useState(null); // null | 'login' | 'registro'
+
+  const navegarConTransicion = (modo = 'login', state = {}) => {
+    if (transicionAuth) return;
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduceMotion) {
+      navigate('/login', { state });
+      return;
+    }
+
+    setTransicionAuth(modo);
+    window.setTimeout(() => {
+      if (typeof document !== 'undefined' && document.startViewTransition) {
+        document.startViewTransition(() => {
+          navigate('/login', { state });
+        });
+      } else {
+        navigate('/login', { state });
+      }
+    }, 310);
+  };
+
+  const handleIniciarSesion = (e) => {
+    if (e) e.preventDefault();
+    navegarConTransicion('login', { registro: false });
+  };
+
   const handleSeleccionarPlan = (planId) => {
     trackConversion('seleccion_plan_' + planId, planId);
-    navigate('/login', { state: { registro: true, plan: planId } });
+    navegarConTransicion('registro', { registro: true, plan: planId });
   };
 
   const handleCtaPrincipal = (etiqueta = 'hero_cta') => {
     trackConversion(etiqueta, 'free');
-    navigate('/login', { state: { registro: true } });
+    navegarConTransicion('registro', { registro: true });
   };
 
   // Brillo radial que sigue el cursor en las tarjetas Bento
@@ -414,7 +445,32 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="landing font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
+    <>
+      {transicionAuth && (
+        <div className="landing-auth-portal" role="status" aria-live="polite">
+          <div className="landing-auth-portal-card flex flex-col items-center gap-3 rounded-2xl border border-emerald-500/35 bg-[#0D1512]/90 px-7 py-6 text-center shadow-2xl shadow-emerald-950/60">
+            <span className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/35">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-xl bg-emerald-400 opacity-35" />
+              <Tractor size={24} className="relative z-10" />
+            </span>
+            <div className="text-sm font-bold font-heading text-white tracking-tight">
+              {transicionAuth === 'registro'
+                ? 'Preparando el registro de tu finca...'
+                : 'Abriendo inicio de sesión...'}
+            </div>
+            <div className="text-[11px] text-emerald-300/90 font-medium">
+              {transicionAuth === 'registro'
+                ? 'Régimen Especial Agropecuario · Cuenta gratuita'
+                : 'Panel de Finca · ContadorGanadero'}
+            </div>
+          </div>
+        </div>
+      )}
+      <div
+        className={`landing font-sans selection:bg-emerald-500/30 selection:text-emerald-200 ${
+          transicionAuth ? 'landing--saliendo' : ''
+        }`}
+      >
       {/* ================================================================== */}
       {/* NAVBAR FLOTANTE (píldora glassmorphism)                            */}
       {/* ================================================================== */}
@@ -452,7 +508,7 @@ export default function LandingPage() {
               size="sm"
               className="hidden sm:inline-flex text-gray-300 hover:text-white hover:bg-white/10"
             >
-              <Link to="/login">Iniciar Sesión</Link>
+              <Link to="/login" onClick={handleIniciarSesion}>Iniciar Sesión</Link>
             </Button>
             <Button
               size="sm"
@@ -1122,7 +1178,7 @@ export default function LandingPage() {
               <a href="#pastoreo" className="hover:text-emerald-400 transition-colors">Pastoreo</a>
               <a href="#finanzas" className="hover:text-emerald-400 transition-colors">Finanzas</a>
               <a href="#precios" className="hover:text-emerald-400 transition-colors">Precios</a>
-              <Link to="/login" className="hover:text-emerald-400 transition-colors">Iniciar Sesión</Link>
+              <Link to="/login" onClick={handleIniciarSesion} className="hover:text-emerald-400 transition-colors">Iniciar Sesión</Link>
               <Link to="/terminos" className="hover:text-emerald-400 transition-colors">Términos</Link>
               <Link to="/privacidad" className="hover:text-emerald-400 transition-colors">Privacidad</Link>
               <Link to="/eliminacion-datos" className="hover:text-emerald-400 transition-colors">Eliminación de Datos</Link>
@@ -1170,6 +1226,7 @@ export default function LandingPage() {
           Comenzar Gratis (Sin Tarjeta) <ArrowRight size={16} className="ml-1" />
         </Button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

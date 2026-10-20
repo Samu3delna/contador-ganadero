@@ -7,7 +7,6 @@ import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import Aurora from '../components/Aurora';
 import useSeo from '../hooks/useSeo';
 // Video de fondo original de la marca (restaurado desde el historial de git)
 import fondoLogin from '../Recursos/fondo_login.webm';
@@ -20,7 +19,11 @@ export default function LoginPage() {
 
   // Permite abrir directamente en modo registro si viene de enlaces como "Comenzar Gratis" o ruta /registro
   const searchParams = new URLSearchParams(location.search);
-  const esModoRegistroInicial = location.state?.registro || searchParams.get('registro') === 'true' || searchParams.get('modo') === 'registro' || location.pathname === '/registro';
+  const esModoRegistroInicial =
+    location.state?.registro ||
+    searchParams.get('registro') === 'true' ||
+    searchParams.get('modo') === 'registro' ||
+    location.pathname === '/registro';
 
   // Si ya hay una sesión activa, redirigir al panel correspondiente
   useEffect(() => {
@@ -37,10 +40,49 @@ export default function LoginPage() {
     path: '/login',
     robots: 'noindex, follow',
   });
+
   const [esRegistro, setEsRegistro] = useState(Boolean(esModoRegistroInicial));
+  const [animandoCambio, setAnimandoCambio] = useState(false);
+  const [saliendoInicio, setSaliendoInicio] = useState(false);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
-  const [form, setForm] = useState({ nombre: '', email: '', password: '', nombreFinca: '', aceptaTerminos: false });
+  const [form, setForm] = useState({
+    nombre: '',
+    email: '',
+    password: '',
+    nombreFinca: '',
+    aceptaTerminos: false,
+  });
+
+  // Cambio animado entre Iniciar Sesión y Registrar Gratis
+  const cambiarModo = (nuevoModoRegistro) => {
+    if (cargando || Boolean(nuevoModoRegistro) === esRegistro) return;
+    setAnimandoCambio(true);
+    setError('');
+    setEsRegistro(Boolean(nuevoModoRegistro));
+    window.setTimeout(() => {
+      setAnimandoCambio(false);
+    }, 380);
+  };
+
+  // Transición suave al volver al inicio
+  const handleVolverInicio = () => {
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      navigate('/');
+      return;
+    }
+    setSaliendoInicio(true);
+    window.setTimeout(() => {
+      if (typeof document !== 'undefined' && document.startViewTransition) {
+        document.startViewTransition(() => navigate('/'));
+      } else {
+        navigate('/');
+      }
+    }, 240);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,23 +136,19 @@ export default function LoginPage() {
           <source src={fondoLogin} type="video/webm" />
         </video>
       )}
-      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
-        <Aurora
-          colorStops={['#059669', '#10B981', '#34D399', '#F59E0B']}
-          amplitude={1.0}
-          blend={0.55}
-          speed={0.7}
-          height={0.45}
-          opacity={0.5}
-        />
-      </div>
-      <Card className="login-card p-8 sm:p-10 border-slate-800/90 bg-slate-900/85 backdrop-blur-xl shadow-2xl animate-slide-up max-w-md w-full">
+      <div className="login-bg-overlay" aria-hidden="true" />
+
+      <Card
+        className={`login-card login-card-enter p-8 sm:p-10 border-slate-800/90 bg-slate-900/85 backdrop-blur-xl shadow-2xl max-w-md w-full ${
+          animandoCambio ? 'login-card--morphing' : ''
+        } ${saliendoInicio ? 'login-card--saliendo' : ''}`}
+      >
         <Button
           type="button"
           variant="ghost"
           size="sm"
           className="login-volver text-slate-400 hover:text-white mb-3 -ml-2 self-start gap-1.5"
-          onClick={() => navigate('/')}
+          onClick={handleVolverInicio}
           aria-label="Volver a la página principal"
         >
           <ArrowLeft size={16} />
@@ -119,12 +157,49 @@ export default function LoginPage() {
 
         <LoginHeader esRegistro={esRegistro} />
 
-        <LoginForm 
-          form={form} 
-          setForm={setForm} 
-          handleSubmit={handleSubmit} 
-          error={error} 
-          cargando={cargando} 
+        {/* Selector segmentado animado: Iniciar Sesión ↔ Registrar Gratis */}
+        <div
+          className="login-mode-tabs mb-5"
+          role="tablist"
+          aria-label="Seleccionar entre iniciar sesión o registrarse"
+        >
+          <span
+            className="login-mode-pill"
+            style={{
+              transform: esRegistro ? 'translateX(100%)' : 'translateX(0%)',
+            }}
+            aria-hidden="true"
+          />
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!esRegistro}
+            onClick={() => cambiarModo(false)}
+            disabled={cargando}
+            className={`login-mode-tab ${!esRegistro ? 'login-mode-tab--active' : ''}`}
+          >
+            <LogIn size={14} />
+            <span>Iniciar sesión</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={esRegistro}
+            onClick={() => cambiarModo(true)}
+            disabled={cargando}
+            className={`login-mode-tab ${esRegistro ? 'login-mode-tab--active' : ''}`}
+          >
+            <UserPlus size={14} />
+            <span>Registrar gratis</span>
+          </button>
+        </div>
+
+        <LoginForm
+          form={form}
+          setForm={setForm}
+          handleSubmit={handleSubmit}
+          error={error}
+          cargando={cargando}
           esRegistro={esRegistro}
         />
 
@@ -138,10 +213,7 @@ export default function LoginPage() {
             variant="outline"
             size="lg"
             className="btn-registro-accion w-full gap-2.5 bg-slate-800/60 hover:bg-slate-800 border-slate-700 text-slate-200"
-            onClick={() => {
-              setEsRegistro(false);
-              setError('');
-            }}
+            onClick={() => cambiarModo(false)}
             disabled={cargando}
             aria-label="Iniciar sesión con cuenta existente"
           >
@@ -154,10 +226,7 @@ export default function LoginPage() {
             variant="outline"
             size="lg"
             className="btn-registro-accion w-full gap-2.5 bg-emerald-950/40 hover:bg-emerald-900/60 border-emerald-600/50 text-emerald-300 hover:text-emerald-200"
-            onClick={() => {
-              setEsRegistro(true);
-              setError('');
-            }}
+            onClick={() => cambiarModo(true)}
             disabled={cargando}
             aria-label="Registrar gratis"
           >
@@ -167,7 +236,7 @@ export default function LoginPage() {
         )}
 
         <div className="login-footer mt-3 text-center text-xs text-slate-400">
-          <p className="text-slate-400 text-[11px]">
+          <p key={esRegistro ? 'foot-reg' : 'foot-log'} className="text-slate-400 text-[11px] login-mode-fade">
             {esRegistro
               ? 'Tus datos están protegidos y son de uso exclusivo para tu gestión REA.'
               : 'Acceso inmediato sin tarjeta de crédito. Plan gratuito para pequeños productores.'}

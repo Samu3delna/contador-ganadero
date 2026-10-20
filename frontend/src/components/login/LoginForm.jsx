@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
-import { AlertCircle, Loader2, Eye, EyeOff, Check } from 'lucide-react';
+import { AlertCircle, Loader2, Eye, EyeOff, Check, LogIn, UserPlus } from 'lucide-react';
 
 export default function LoginForm({ form, setForm, handleSubmit, error, cargando, esRegistro }) {
   const [mostrarPassword, setMostrarPassword] = useState(false);
@@ -13,9 +13,13 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
   };
 
   return (
-    <form onSubmit={handleSubmit} className="login-form space-y-4">
-      {esRegistro && (
-        <>
+    <form onSubmit={handleSubmit} className="login-form">
+      {/* Acordeón animado para los campos exclusivos de Registro */}
+      <div
+        className={`login-collapse-grid ${esRegistro ? 'login-collapse-grid--open' : ''}`}
+        aria-hidden={!esRegistro}
+      >
+        <div className="login-collapse-inner space-y-3.5">
           <div className="space-y-1.5 text-left">
             <Label htmlFor="nombre" className="text-xs text-slate-300">Nombre completo</Label>
             <Input
@@ -24,7 +28,9 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
               placeholder="Juan Pérez"
               value={form.nombre}
               onChange={handleChange}
-              required
+              required={esRegistro}
+              disabled={!esRegistro}
+              tabIndex={esRegistro ? 0 : -1}
             />
           </div>
           <div className="space-y-1.5 text-left">
@@ -35,6 +41,8 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
               placeholder="Hacienda La Esmeralda"
               value={form.nombreFinca}
               onChange={handleChange}
+              disabled={!esRegistro}
+              tabIndex={esRegistro ? 0 : -1}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -51,6 +59,8 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
                   placeholder="8888-8888"
                   value={form.telefono || ''}
                   onChange={handleChange}
+                  disabled={!esRegistro}
+                  tabIndex={esRegistro ? 0 : -1}
                   className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-white placeholder:text-slate-500 text-sm h-9 rounded-none"
                 />
               </div>
@@ -63,11 +73,14 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
                 placeholder="109990888"
                 value={form.cedula || ''}
                 onChange={handleChange}
+                disabled={!esRegistro}
+                tabIndex={esRegistro ? 0 : -1}
               />
             </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
+
       <div className="space-y-1.5 text-left">
         <Label htmlFor="email" className="text-xs text-slate-300">Correo electrónico</Label>
         <Input
@@ -105,36 +118,44 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
         </div>
       </div>
 
-      {esRegistro && (
-        <div className="text-left">
-          <div className="rounded-lg bg-slate-800/40 border border-slate-700/60 p-3">
-            <label htmlFor="aceptaTerminos" className="flex items-start gap-2.5 cursor-pointer select-none">
-              <input
-                id="aceptaTerminos"
-                name="aceptaTerminos"
-                type="checkbox"
-                checked={Boolean(form.aceptaTerminos)}
-                onChange={handleChange}
-                required
-                aria-required="true"
-                className="peer sr-only"
-              />
-              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-slate-600 bg-slate-900/80 transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-500 peer-checked:[&>svg]:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-slate-900">
-                <Check size={12} strokeWidth={3.5} className="text-slate-950 opacity-0 transition-opacity" />
-              </span>
-              <span className="text-xs text-slate-300 leading-relaxed">
-                He leído y acepto los{' '}
-                <Link to="/terminos" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Términos y Condiciones</Link>, las{' '}
-                <Link to="/condiciones-servicio" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Condiciones del Servicio</Link> y la{' '}
-                <Link to="/privacidad" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Política de Privacidad</Link>.
-              </span>
-            </label>
+      {/* Acordeón animado para aceptación de términos en Registro */}
+      <div
+        className={`login-collapse-grid ${esRegistro ? 'login-collapse-grid--open' : ''}`}
+        aria-hidden={!esRegistro}
+      >
+        <div className="login-collapse-inner">
+          <div className="text-left pt-1">
+            <div className="rounded-lg bg-slate-800/40 border border-slate-700/60 p-3">
+              <label htmlFor="aceptaTerminos" className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  id="aceptaTerminos"
+                  name="aceptaTerminos"
+                  type="checkbox"
+                  checked={Boolean(form.aceptaTerminos)}
+                  onChange={handleChange}
+                  required={esRegistro}
+                  disabled={!esRegistro}
+                  tabIndex={esRegistro ? 0 : -1}
+                  aria-required={esRegistro ? 'true' : 'false'}
+                  className="peer sr-only"
+                />
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-slate-600 bg-slate-900/80 transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-500 peer-checked:[&>svg]:opacity-100 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-slate-900">
+                  <Check size={12} strokeWidth={3.5} className="text-slate-950 opacity-0 transition-opacity" />
+                </span>
+                <span className="text-xs text-slate-300 leading-relaxed">
+                  He leído y acepto los{' '}
+                  <Link to="/terminos" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Términos y Condiciones</Link>, las{' '}
+                  <Link to="/condiciones-servicio" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Condiciones del Servicio</Link> y la{' '}
+                  <Link to="/privacidad" className="text-emerald-400 hover:text-emerald-300 underline" target="_blank" rel="noopener noreferrer">Política de Privacidad</Link>.
+                </span>
+              </label>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {error && (
-        <div className="p-3 rounded-lg bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+        <div className="p-3 rounded-lg bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2 login-mode-fade">
           <AlertCircle size={15} className="shrink-0 text-red-400" />
           <span>{error}</span>
         </div>
@@ -143,7 +164,7 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
       <Button
         variant="gradient"
         size="lg"
-        className="w-full text-sm font-semibold shadow-lg shadow-emerald-950/50 mt-2"
+        className="w-full text-sm font-semibold shadow-lg shadow-emerald-950/50 mt-2 transition-all duration-300"
         type="submit"
         disabled={cargando}
       >
@@ -151,10 +172,11 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
           <>
             <Loader2 size={16} className="animate-spin mr-2" /> Procesando...
           </>
-        ) : esRegistro ? (
-          'Crear Cuenta'
         ) : (
-          'Iniciar Sesión'
+          <span key={esRegistro ? 'btn-reg' : 'btn-log'} className="inline-flex items-center gap-2 login-mode-fade">
+            {esRegistro ? <UserPlus size={16} /> : <LogIn size={16} />}
+            {esRegistro ? 'Crear Cuenta' : 'Iniciar Sesión'}
+          </span>
         )}
       </Button>
     </form>

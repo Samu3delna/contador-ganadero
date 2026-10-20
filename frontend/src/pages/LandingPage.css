@@ -9,6 +9,57 @@
   background-color: #070b09;
   color: #ffffff;
   overflow-x: hidden;
+  transition:
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing--saliendo {
+  transform: scale(0.985);
+  filter: blur(6px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Overlay de transición hacia Iniciar Sesión / Registro */
+@keyframes authPortalFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(14px);
+  }
+}
+
+@keyframes authPortalCardPop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.landing-auth-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 45%, rgba(16, 185, 129, 0.16), rgba(7, 11, 9, 0.86) 70%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: authPortalFadeIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.landing-auth-portal-card {
+  animation: authPortalCardPop 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* Anclas con margen superior para no quedar bajo la navbar flotante */
@@ -153,6 +204,13 @@
    ACCESIBILIDAD: reducir movimiento
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
+  .landing,
+  .landing--saliendo {
+    transition: none;
+    transform: none;
+    filter: none;
+  }
+
   .reveal {
     opacity: 1;
     transform: none;
