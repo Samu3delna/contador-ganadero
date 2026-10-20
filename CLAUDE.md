@@ -1,6 +1,30 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) and all agents when working with code in this repository.
+
+## 🚨 Mandatory Skill-First Protocol (All Agents & Subagents)
+
+All agents and subagents working in this repository **MUST** base their analysis, design, and implementation on the project's installed skills located in `.claude/skills/<skill>/SKILL.md` (and mirrored in `.agents/skills/<skill>/SKILL.md`).
+
+Before modifying code or answering technical questions about any area below, **read and follow the corresponding skill**:
+
+| Domain / Module | Required Skill(s) (`.claude/skills/<skill>/SKILL.md`) | Scope & Triggers |
+| :--- | :--- | :--- |
+| **Hacienda CR v4.4 E-Invoicing** | `hacienda-cr-v44` | 50-digit clave, XML v4.4 builders (`FE`, `TE`, `NC`, `ND`, `FEC`, `REP`), XAdES-EPES `.p12` signing (`signer.js`), XML reception (`xmlParserService.js` with `parseTagValue: false`), AES-256 credentials (`EMAIL_ENC_KEY`), `haciendaWorker.js`. |
+| **CR Taxes (REA 2026) & AI Categorization** | `rea-impuestos-cr` | IVA cuatrimestral (D-135-1), progressive Renta (D-101), annual REA reconciliation (D-150), 1% agricultural inputs (`insumos_oficiales.json`), CSV/Excel exports, AI provider cascade (Gemini -> NVIDIA NIM -> local heuristic). |
+| **Multi-Tenancy, Quotas & ONVO Pay** | `multitenant-onvo-billing` | `tenantId` isolation (`req.filtrarPorTenant`, `req.aplicarTenant`), `free` vs `pro` plans (`planes.js`), `quotaGuard.js`, idempotent ONVO Pay webhooks (mounted before `express.json()`), `--dry-run` migrations. |
+| **Invoice Ingestion, Inventory & Production Costs** | `ingesta-facturas-agro-inventario` | Cloudflare Email & WhatsApp webhook ingestion (`ingestaFacturaService.js`), tenant resolution cascade, multi-species inventory (`bovinos`, `aves`, `peces`, `abejas`), production cost KPIs & FCA. |
+| **Cloudflare Email Worker** | `cloudflare-email-service`, `workers-best-practices` | `cloudflare-email-worker/worker.js`, catch-all email routing (`@contadorganandero.com`), raw MIME forwarding. |
+| **Node.js & Express Backend** | `nodejs-backend-patterns` | `routes/ -> controllers/ -> services/ -> models/`, middleware ordering, JWT + refresh cookie auth, error handling, rate limiting. |
+| **MongoDB & Mongoose** | `mongodb-query-optimizer`, `mongodb-connection` | Mongoose schemas, compound indexes, atomic `$inc` counters, connection resilience and offline fallback. |
+| **Backend & JS Testing** | `javascript-testing-patterns` | Jest (`--runInBand`), Supertest, `mongodb-memory-server` unit and integration testing. |
+| **React 19 & Component Architecture** | `vercel-react-best-practices`, `vercel-composition-patterns` | React 19 components, hooks, lazy-loaded routes, `AuthContext.jsx`, single-flight token refresh in `src/services/api.js`. |
+| **UI/UX, Tailwind CSS 3 & shadcn/ui** | `tailwind-design-system`, `frontend-design`, `web-design-guidelines` | Hybrid Tailwind + per-page CSS convention, Radix UI / shadcn primitives (`src/components/ui/`), accessibility, responsive layout. |
+| **Vite 8 & Frontend Build (Cloudflare Prod)** | `vite`, `workers-best-practices` | `frontend/vite.config.js`, `frontend/wrangler.toml`, `/api` proxy, `@/` aliases, bundle optimization, Cloudflare production SPA deployment. |
+
+When spawning subagents, always instruct them in their task prompt to read the relevant `.claude/skills/<skill>/SKILL.md` files first.
+
+---
 
 ## What this is
 
@@ -52,7 +76,10 @@ Layers: `routes/` → `controllers/` → `services/` → `models/`.
 - Data fetching: single axios client `src/services/api.js` — 401 responses trigger a single-flight transparent refresh (`/auth/refresh` via `refreshPromise`), then retry. Add calls as named exports there.
 - Routing: react-router-dom v7; protected `AppLayout` with `RutaProtegida`/`RutaAdmin`; all pages lazy-loaded. Super-admin pages under `src/pages/admin/`.
 - Global state: only `src/context/` (singular) `AuthContext.jsx`. No react-query/redux — plain useEffect + api calls.
-- Frontend deployed on Vercel (`vercel.json` SPA rewrites); backend on Render (serves both API and built SPA from `frontend/dist`). Render free tier spins down — an external cron hits `POST /api/cron/sync-emails` (see `CRON_SETUP.md`).
+- **Production Infrastructure (LIVE)**:
+  - **Frontend in Production → Cloudflare**: Deployed on **Cloudflare** (`frontend/wrangler.toml`, `name = "contador-ganadero"`, serving `./dist` with `not_found_handling = "single-page-application"`). Inbound invoice emails (`*@contadorganandero.com`) are also handled on Cloudflare via `cloudflare-email-worker/worker.js`.
+  - **Backend in Production → Render**: Deployed on **Render** (`render.yaml`: web service `contador-ganadero-api` at `https://contador-ganadero.onrender.com` with `/api/health` check, plus background worker `contador-ganadero-imap-worker` running `node worker.js`). Render free tier spins down — an external cron hits `POST /api/cron/sync-emails` (see `CRON_SETUP.md`).
+  - Always preserve cross-origin compatibility (dynamic CORS in `backend/server.js`, `withCredentials` + refresh token cookies, `VITE_API_URL`, and webhook endpoints) between the Cloudflare frontend and the Render backend.
 
 ## Known gotchas
 

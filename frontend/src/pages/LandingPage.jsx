@@ -9,6 +9,7 @@ import fondoLogin from '../Recursos/fondo_login.webm';
 import { useReveal } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
 import AdvertisingSlot from '../components/ads/AdvertisingSlot';
+import Aurora from '../components/Aurora';
 import { Button } from '../components/ui/button';
 import './LandingPage.css';
 
@@ -404,6 +405,18 @@ export default function LandingPage() {
           <source src={fondoLogin} type="video/webm" />
         </video>
         <div className="landing-hero-overlay" />
+
+        {/* Efecto Aurora WebGL (React Bits) */}
+        <div className="absolute inset-0 z-[2] pointer-events-none" aria-hidden="true">
+          <Aurora
+            colorStops={['#059669', '#10B981', '#34D399', '#F59E0B']}
+            amplitude={1.1}
+            blend={0.55}
+            speed={0.8}
+            height={0.5}
+            opacity={0.65}
+          />
+        </div>
 
         {/* Resplandores radiales sutiles */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[720px] h-[420px] bg-emerald-500/15 blur-[140px] rounded-full pointer-events-none" aria-hidden="true" />
@@ -898,6 +911,16 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <Reveal>
             <div className="relative rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/60 via-[#0D1512] to-[#070B09] p-8 sm:p-14 text-center overflow-hidden">
+              <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+                <Aurora
+                  colorStops={['#047857', '#10B981', '#F59E0B']}
+                  amplitude={0.9}
+                  blend={0.6}
+                  speed={0.6}
+                  height={0.55}
+                  opacity={0.45}
+                />
+              </div>
               <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-emerald-500/20 blur-[110px] rounded-full pointer-events-none" aria-hidden="true" />
 
               <div className="relative z-10 space-y-5">

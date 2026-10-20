@@ -7,6 +7,7 @@
  * XAdES-EPES envolviendo este XML.
  */
 
+const { TIPO_DOC_CODIGO } = require('./clave50');
 const TIPO_DOC_CONFIG = {
   FE: {
     rootElement: 'FacturaElectronica',
@@ -259,6 +260,7 @@ ${lineasXml}
 module.exports = {
   buildXml,
   TIPO_DOC_CONFIG,
+  TIPO_DOC_CODIGO,
   fmtFecha,
   escapeXml,
 };

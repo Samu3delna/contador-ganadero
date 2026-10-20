@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const Usuario = require('../models/Usuario');
 
 /**
@@ -6,7 +7,7 @@ const Usuario = require('../models/Usuario');
  * El JWT ahora se firma con payload { id, tenantId, rol }
  * Carga también tenantId y rol en req.usuario para uso downstream.
  */
-const JWT_SECRET = process.env.JWT_SECRET || 'contador_ganadero_jwt_secret_default_key';
+const getJwtSecret = () => process.env.JWT_SECRET || 'contador_ganadero_jwt_secret_default_key';
 
 const protegerRuta = async (req, res, next) => {
   let token;
@@ -18,47 +19,52 @@ const protegerRuta = async (req, res, next) => {
         res.status(401);
         throw new Error('No autorizado — Formato de token inválido');
       }
-      let decoded;
-      try {
-        decoded = jwt.verify(token, JWT_SECRET);
-      } catch (jwtErr) {
-        // Fallback si el token fue firmado con otro secret o mock
-        try {
-          decoded = jwt.decode(token);
-        } catch {
-          throw jwtErr;
-        }
-      }
+
+      const decoded = jwt.verify(token, getJwtSecret());
 
       if (!decoded || !decoded.id) {
         res.status(401);
         throw new Error('No autorizado — Token inválido');
       }
 
-      const tenantId = decoded.tenantId || '66554433221100aabbccddff';
+      if (!decoded.tenantId) {
+        res.status(401);
+        throw new Error('No autorizado — Token sin tenantId');
+      }
+
+      const tenantId = decoded.tenantId;
+      const dbOffline = mongoose.connection.readyState !== 1;
+      const esUsuarioDemo = String(decoded.id) === '66554433221100aabbccddee';
 
       let usuario = null;
-      try {
-        usuario = await Usuario.findById(decoded.id).select('-password');
-      } catch (dbErr) {
-        console.warn('⚠️ Base de datos no disponible en protegerRuta, usando stub:', dbErr.message);
+      if (!dbOffline) {
+        try {
+          usuario = await Usuario.findById(decoded.id).select('-password');
+        } catch (dbErr) {
+          console.warn('⚠️ Base de datos no disponible en protegerRuta, usando stub:', dbErr.message);
+        }
       }
 
       if (!usuario) {
-        usuario = {
-          _id: decoded.id,
-          nombre: 'Productor Ganadero Demo',
-          email: 'demo@contadorganandero.com',
-          cedula: { tipo: 'fisica', numero: '102340567' },
-          nombreFinca: 'Hacienda El Cedro (Demo)',
-          tenantId,
-          rol: decoded.rol || 'dueño',
-          isSuperAdmin: true,
-          suspendido: false,
-          toObject: function () {
-            return { ...this };
-          },
-        };
+        if (dbOffline || esUsuarioDemo) {
+          usuario = {
+            _id: decoded.id,
+            nombre: 'Productor Ganadero Demo',
+            email: 'demo@contadorganandero.com',
+            cedula: { tipo: 'fisica', numero: '102340567' },
+            nombreFinca: 'Hacienda El Cedro (Demo)',
+            tenantId,
+            rol: decoded.rol || 'dueño',
+            isSuperAdmin: true,
+            suspendido: false,
+            toObject: function () {
+              return { ...this };
+            },
+          };
+        } else {
+          res.status(401);
+          throw new Error('No autorizado — Usuario no encontrado');
+        }
       }
 
       if (usuario.suspendido) {

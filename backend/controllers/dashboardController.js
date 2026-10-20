@@ -9,7 +9,7 @@ const resumen = async (req, res, next) => {
       const ultima = await Factura.findOne(req.filtrarPorTenant()).sort({ fechaEmision: -1 });
       anio = ultima ? ultima.periodoFiscal : new Date().getFullYear();
     }
-    const proyeccion = await calcularProyeccion(req.usuario._id, anio);
+    const proyeccion = await calcularProyeccion(req.usuario._id, anio, req.tenant?._id);
     res.json(proyeccion);
   } catch (error) { next(error); }
 };

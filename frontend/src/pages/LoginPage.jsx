@@ -7,6 +7,7 @@ import LoginHeader from '../components/login/LoginHeader';
 import LoginForm from '../components/login/LoginForm';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import Aurora from '../components/Aurora';
 import useSeo from '../hooks/useSeo';
 // Video de fondo original de la marca (restaurado desde el historial de git)
 import fondoLogin from '../Recursos/fondo_login.webm';
@@ -93,6 +94,16 @@ export default function LoginPage() {
           <source src={fondoLogin} type="video/webm" />
         </video>
       )}
+      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+        <Aurora
+          colorStops={['#059669', '#10B981', '#34D399', '#F59E0B']}
+          amplitude={1.0}
+          blend={0.55}
+          speed={0.7}
+          height={0.45}
+          opacity={0.5}
+        />
+      </div>
       <Card className="login-card p-8 sm:p-10 border-slate-800/90 bg-slate-900/85 backdrop-blur-xl shadow-2xl animate-slide-up max-w-md w-full">
         <Button
           type="button"

@@ -1,7 +1,20 @@
+const Tenant = require('../models/Tenant');
 const haciendaWorker = require('../services/haciendaWorker');
 const { firmarDocumento } = require('../services/hacienda').signer;
 const { buildXml } = require('../services/hacienda').xmlBuilder;
 const { getToken } = require('../services/hacienda').auth;
+
+const SELECT_HACIENDA_CREDS = '+configuracionHacienda.certificadoP12Base64 +configuracionHacienda.pinCertificado +configuracionHacienda.usuarioHacienda +configuracionHacienda.passwordHacienda';
+
+async function cargarTenantConCredenciales(req) {
+  if (!req.tenant?._id) return req.tenant;
+  try {
+    const t = await Tenant.findById(req.tenant._id).select(SELECT_HACIENDA_CREDS);
+    return t || req.tenant;
+  } catch {
+    return req.tenant;
+  }
+}
 
 /**
  * GET /api/hacienda/config
@@ -9,7 +22,7 @@ const { getToken } = require('../services/hacienda').auth;
  */
 const obtenerConfig = async (req, res, next) => {
   try {
-    const tenant = req.tenant;
+    const tenant = await cargarTenantConCredenciales(req);
     const hc = tenant.configuracionHacienda || {};
 
     res.json({
@@ -32,7 +45,7 @@ const obtenerConfig = async (req, res, next) => {
  */
 const guardarConfig = async (req, res, next) => {
   try {
-    const tenant = req.tenant;
+    const tenant = await cargarTenantConCredenciales(req);
     const {
       ambiente,
       certificadoP12Base64,
@@ -76,7 +89,7 @@ const guardarConfig = async (req, res, next) => {
           ? certificadoP12Base64.split('base64,')[1]
           : certificadoP12Base64;
         Buffer.from(base64Data, 'base64');
-      } catch (e) {
+      } catch {
         res.status(400);
         throw new Error('certificadoP12Base64 no es un Base64 válido');
       }
@@ -106,6 +119,9 @@ const guardarConfig = async (req, res, next) => {
     tenant.configuracionHacienda.ultimoError = null;
 
     await tenant.save();
+    if (tenant._id) {
+      haciendaWorker.limpiarCacheLlave(tenant._id.toString());
+    }
 
     res.json({
       mensaje: 'Configuración Hacienda guardada correctamente',
@@ -120,7 +136,7 @@ const guardarConfig = async (req, res, next) => {
  */
 const probarConexion = async (req, res, next) => {
   try {
-    const tenant = req.tenant;
+    const tenant = await cargarTenantConCredenciales(req);
     const hc = tenant.configuracionHacienda || {};
 
     if (!hc.estaConfigurado?.()) {
@@ -280,6 +296,9 @@ const eliminarConfig = async (req, res, next) => {
       codigoActividad: '000000',
     };
     await tenant.save();
+    if (tenant._id) {
+      haciendaWorker.limpiarCacheLlave(tenant._id.toString());
+    }
     res.json({ mensaje: 'Configuración Hacienda eliminada' });
   } catch (error) { next(error); }
 };

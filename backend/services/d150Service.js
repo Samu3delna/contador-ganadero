@@ -66,16 +66,17 @@ function rangoMes(mes, anio) {
  * @param {number[]} [opts.retencionesTarjeta] - lista de montos retenidos por bancos
  * @param {number} [opts.ivaRetenidoPorTerceros] - iva que otros le retiraron al emisor
  */
-async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = [], ivaRetenidoPorTerceros = 0 }) {
-  if (!usuarioId) throw new Error('usuarioId requerido');
+async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, retencionesTarjeta = [], ivaRetenidoPorTerceros = 0 }) {
+  if (!usuarioId && !tenantId) throw new Error('usuarioId requerido');
   if (!mes || !anio) throw new Error('mes y anio son requeridos');
 
   const { inicio, fin } = rangoMes(mes, anio);
+  const scope = tenantId ? { tenantId } : { usuario: usuarioId };
 
   // ============ VENTAS (Debito Fiscal) ============
   // 1) Documentos emitidos electrónicamente por el usuario: FE, TE, REP, NC, ND
   const ventasEmision = await FacturaEmision.find({
-    usuario: usuarioId,
+    ...scope,
     estado: 'aceptada',
     tipoDocumento: { $in: ['FE', 'TE', 'NC', 'ND'] },
     fechaEmision: { $gte: inicio, $lte: fin },
@@ -83,14 +84,14 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
 
   // 2) Ingresos registrados en el sistema (ventas en pie, leche, etc.)
   const ingresosRegistrados = await Ingreso.find({
-    usuario: usuarioId,
+    ...scope,
     fecha: { $gte: inicio, $lte: fin },
   }).lean();
 
   // ============ COMPRAS (Credito Fiscal) ============
   // 1) FEC emitidas por el usuario (compra a no emisores)
   const comprasFec = await FacturaEmision.find({
-    usuario: usuarioId,
+    ...scope,
     estado: 'aceptada',
     tipoDocumento: 'FEC',
     fechaEmision: { $gte: inicio, $lte: fin },
@@ -100,7 +101,7 @@ async function generarConciliacion({ usuarioId, mes, anio, retencionesTarjeta = 
   let comprasRecibidas = [];
   try {
     comprasRecibidas = await Factura.find({
-      usuario: usuarioId,
+      ...scope,
       estado: { $ne: 'error' },
       'emisor.cedula.numero': { $exists: true },
       fechaEmision: { $gte: inicio, $lte: fin },

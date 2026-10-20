@@ -1,13 +1,14 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const Usuario = require('../models/Usuario');
 const Tenant = require('../models/Tenant');
 const { esEmailSuperAdmin } = require('../middleware/adminGuard');
 
 const DUMMY_HASH = '$2a$12$e8Ov5y2ZJ7m6V3QvX7fX9.kX6f8oFzN0zJz5t1Z5V3m6V3QvX7fX9';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'contador_ganadero_jwt_secret_default_key';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'contador_ganadero_jwt_refresh_default_key';
+const getJwtSecret = () => process.env.JWT_SECRET || 'contador_ganadero_jwt_secret_default_key';
+const getJwtRefreshSecret = () => process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'contador_ganadero_jwt_refresh_default_key';
 
 /**
  * Genera access token JWT con claims { id, tenantId, rol }
@@ -15,7 +16,7 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SEC
 const generarToken = (usuario, tenantId) => {
   return jwt.sign(
     { id: usuario._id, tenantId, rol: usuario.rol || 'dueño' },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: process.env.JWT_EXPIRE || '1h' }
   );
 };
@@ -26,7 +27,7 @@ const generarToken = (usuario, tenantId) => {
 const generarRefreshToken = (usuario, tenantId) => {
   return jwt.sign(
     { id: usuario._id, tenantId, rol: usuario.rol || 'dueño', type: 'refresh' },
-    JWT_REFRESH_SECRET,
+    getJwtRefreshSecret(),
     { expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d' }
   );
 };
@@ -151,15 +152,18 @@ const login = async (req, res, next) => {
     }
 
     let usuario = null;
-    try {
-      usuario = await Usuario.findOne({ email }).select('+password');
-    } catch (dbErr) {
-      console.warn('⚠️ Base de datos no disponible en login:', dbErr.message);
+    const dbOffline = mongoose.connection.readyState !== 1;
+    if (!dbOffline) {
+      try {
+        usuario = await Usuario.findOne({ email }).select('+password');
+      } catch (dbErr) {
+        console.warn('⚠️ Base de datos no disponible en login:', dbErr.message);
+      }
     }
 
     if (!usuario) {
-      // Si la base de datos está offline o es usuario demo, dar acceso demo
-      const esDemo = email === 'demo@contadorganandero.com' || !process.env.MONGODB_URI;
+      // Si la base de datos está offline o es usuario demo explícito, dar acceso demo
+      const esDemo = email === 'demo@contadorganandero.com' || dbOffline;
       if (esDemo) {
         const demoTenantId = '66554433221100aabbccddff';
         const demoUsuario = {
@@ -278,7 +282,13 @@ const refrescarToken = async (req, res, next) => {
       throw new Error('No refresh token provided');
     }
 
-    const decoded = jwt.verify(cookieToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(cookieToken, getJwtRefreshSecret());
+    } catch {
+      res.status(401);
+      throw new Error('Refresh token inválido o expirado');
+    }
     if (decoded.type !== 'refresh') {
       res.status(401);
       throw new Error('Token inválido');

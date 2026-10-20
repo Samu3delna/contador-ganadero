@@ -13,16 +13,29 @@
  */
 
 const FacturaEmision = require('../models/FacturaEmision');
+const Tenant = require('../models/Tenant');
 const haciendaWorker = require('../services/haciendaWorker');
 const hacienda = require('../services/hacienda');
 const mockStore = hacienda.mockStore;
 
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 
+const SELECT_HACIENDA_CREDS = '+configuracionHacienda.certificadoP12Base64 +configuracionHacienda.pinCertificado +configuracionHacienda.usuarioHacienda +configuracionHacienda.passwordHacienda';
+
+async function obtenerTenantHacienda(req) {
+  if (!req.tenant?._id) return req.tenant || {};
+  try {
+    const t = await Tenant.findById(req.tenant._id).select(SELECT_HACIENDA_CREDS);
+    return t || req.tenant;
+  } catch {
+    return req.tenant;
+  }
+}
+
 // ============ AMBIENTE ============
 const infoAmbiente = async (req, res, next) => {
   try {
-    const tenant = req.tenant;
+    const tenant = await obtenerTenantHacienda(req);
     const hc = tenant.configuracionHacienda || {};
     const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
 
@@ -63,7 +76,7 @@ const crearBorrador = async (req, res, next) => {
       }
     }
 
-    const tenant = req.tenant;
+    const tenant = await obtenerTenantHacienda(req);
     const hc = tenant.configuracionHacienda || {};
     const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
 
@@ -149,7 +162,7 @@ const enviarAHacienda = async (req, res, next) => {
 // ============ CONSULTAS ============
 const obtenerXml = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
+    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() }).select('+xmlFirmado');
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (!factura.xmlFirmado) { res.status(404); throw new Error('XML no generado aun'); }
 
@@ -161,7 +174,10 @@ const obtenerXml = async (req, res, next) => {
 
 const consultarEstado = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() }).populate('tenantId');
+    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() }).populate({
+      path: 'tenantId',
+      select: SELECT_HACIENDA_CREDS,
+    });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
 
     // Obtener config del tenant
@@ -215,7 +231,7 @@ const cancelarDocumento = async (req, res, next) => {
     }
 
     const { razon = 'Anulación de factura por acuerdo mutuo' } = req.body || {};
-    const tenant = req.tenant;
+    const tenant = await obtenerTenantHacienda(req);
     const hc = tenant?.configuracionHacienda || {};
     const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
 

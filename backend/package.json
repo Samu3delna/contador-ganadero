@@ -8,7 +8,10 @@
     "dev": "nodemon server.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "migrate:tenant": "node scripts/migrateTenant.js",
+    "migrate:planes": "node scripts/migratePlanes.js",
+    "migrate:onvo": "node scripts/migrateOnvo.js"
   },
   "keywords": [],
   "author": "",

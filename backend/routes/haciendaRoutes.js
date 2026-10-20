@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protegerRuta } = require('../middleware/authMiddleware');
+const { extraerTenant } = require('../middleware/tenantGuard');
 const {
   infoAmbiente,
   crearBorrador,
@@ -16,7 +17,11 @@ const repController = require('../controllers/repController');
 const fecController = require('../controllers/fecController');
 const d150Controller = require('../controllers/d150Controller');
 
+// Endpoint interno de consulta para ambiente local (lo usa el mock de recepcion.js)
+router.get('/interno/consulta/:clave', consultaMockLocal);
+
 router.use(protegerRuta);
+router.use(extraerTenant);
 
 // Info del ambiente Hacienda
 router.get('/ambiente', infoAmbiente);
@@ -25,19 +30,19 @@ router.get('/ambiente', infoAmbiente);
 router.get('/emision', obtenerFacturasEmision);
 router.post('/emision', crearBorrador);
 
-//Firmar documento (genera XML v4.4 + firma XAdES)
+// Firmar documento (genera XML v4.4 + firma XAdES)
 router.post('/emision/:id/firmar', firmarDocumento);
 
-//Encolar envio a Hacienda (worker asincrono lo procesa)
+// Encolar envio a Hacienda (worker asincrono lo procesa)
 router.post('/emision/:id/enviar', enviarAHacienda);
 
-//Cancelar/Anular (genera NC en futuro)
+// Cancelar/Anular (genera NC)
 router.post('/emision/:id/cancelar', cancelarDocumento);
 
-//Descargar XML firmado
+// Descargar XML firmado
 router.get('/emision/:id/xml', obtenerXml);
 
-//Consultar estado sincronico contra Hacienda (o mock local)
+// Consultar estado sincronico contra Hacienda (o mock local)
 router.get('/emision/:id/estado', consultarEstado);
 
 // ============ REP (Recibo Electronico de Pago) ============
@@ -55,8 +60,5 @@ router.get('/d150/conciliacion', d150Controller.conciliacion);
 router.post('/d150/conciliacion', d150Controller.conciliacion);
 router.get('/d150/reporte/pdf', d150Controller.reportePDF);
 router.get('/d150/reporte/excel', d150Controller.reporteExcel);
-
-//Endpoint interno de consulta para ambiente local (lo usa el mock de recepcion.js)
-router.get('/interno/consulta/:clave', consultaMockLocal);
 
 module.exports = router;

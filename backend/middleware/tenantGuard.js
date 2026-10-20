@@ -1,4 +1,7 @@
+const mongoose = require('mongoose');
 const Tenant = require('../models/Tenant');
+
+const DEMO_TENANT_ID = '66554433221100aabbccddff';
 
 /**
  * Middleware que extrae y valida el Tenant del request.
@@ -9,27 +12,63 @@ const Tenant = require('../models/Tenant');
  */
 const extraerTenant = async (req, res, next) => {
   try {
-    const tenantId = req.usuario?.tenantId || req.auth?.tenantId || '66554433221100aabbccddff';
+    const tenantId = req.usuario?.tenantId || req.auth?.tenantId;
+    if (!tenantId) {
+      return res.status(401).json({
+        error: 'SIN_TENANT',
+        mensaje: 'El usuario no tiene una finca (tenant) asociada.',
+      });
+    }
+
+    const dbOffline = mongoose.connection.readyState !== 1;
+    const esDemoTenant = String(tenantId) === DEMO_TENANT_ID;
 
     let tenant = null;
-    try {
-      tenant = await Tenant.findById(tenantId);
-    } catch (err) {
-      console.warn('⚠️ Base de datos no disponible en extraerTenant:', err.message);
+    if (!dbOffline) {
+      try {
+        tenant = await Tenant.findById(tenantId);
+      } catch (err) {
+        console.warn('⚠️ Base de datos no disponible en extraerTenant:', err.message);
+      }
     }
 
     if (!tenant) {
-      tenant = {
-        _id: tenantId,
-        nombreFinca: req.usuario?.nombreFinca || 'Hacienda El Cedro (Demo)',
-        plan: req.usuario?.plan || 'pro',
-        estado: 'activo',
-        limites: { facturasMes: 500, usuarios: 5, animales: 1000 },
-        consumoActual: { facturasMes: 12, usuarios: 1, animales: 45 },
-        emailAlias: 'hacienda-el-cedro-demo',
-        estaActivo: () => true,
-        save: async () => {},
-      };
+      if (dbOffline || esDemoTenant) {
+        tenant = {
+          _id: tenantId,
+          nombreFinca: req.usuario?.nombreFinca || 'Hacienda El Cedro (Demo)',
+          plan: req.usuario?.plan || 'pro',
+          estado: 'activo',
+          limites: { facturasMes: 500, usuarios: 5, animales: 1000 },
+          consumoActual: { facturasMes: 12, usuarios: 1, animales: 45 },
+          emailAlias: 'hacienda-el-cedro-demo',
+          estaActivo: () => true,
+          save: async () => {},
+        };
+      } else {
+        return res.status(401).json({
+          error: 'TENANT_INVALIDO',
+          mensaje: 'La finca (tenant) asociada no existe.',
+        });
+      }
+    }
+
+    if (tenant.estado === 'suspendido') {
+      return res.status(402).json({
+        error: 'SUSCRIPCION_SUSPENDIDA',
+        mensaje: 'La suscripción de tu finca está suspendida por falta de pago.',
+        planActual: tenant.plan,
+        estado: tenant.estado,
+      });
+    }
+
+    if (tenant.estado === 'cancelado') {
+      return res.status(402).json({
+        error: 'SUSCRIPCION_CANCELADA',
+        mensaje: 'La suscripción de tu finca ha sido cancelada.',
+        planActual: tenant.plan,
+        estado: tenant.estado,
+      });
     }
 
     req.tenant = tenant;
