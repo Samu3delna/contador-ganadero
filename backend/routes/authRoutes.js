@@ -8,10 +8,9 @@ const {
   obtenerPerfil,
   actualizarPerfil,
   cambiarPassword,
-  googleLogin,
-  googleCallback,
 } = require('../controllers/authController');
 const { googleLogin: googleLoginCtrl, googleCallback: googleCallbackCtrl } = require('../controllers/googleAuthController');
+const { eliminarMiCuentaAutenticada } = require('../controllers/dataDeletionController');
 const { protegerRuta } = require('../middleware/authMiddleware');
 const { extraerTenant } = require('../middleware/tenantGuard');
 
@@ -24,5 +23,7 @@ router.post('/logout', logout);
 router.get('/perfil', protegerRuta, extraerTenant, obtenerPerfil);
 router.put('/perfil', protegerRuta, extraerTenant, actualizarPerfil);
 router.put('/cambiar-password', protegerRuta, cambiarPassword);
+router.delete('/eliminar-cuenta', protegerRuta, eliminarMiCuentaAutenticada);
 
 module.exports = router;
+

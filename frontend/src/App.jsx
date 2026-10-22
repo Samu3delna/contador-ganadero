@@ -13,6 +13,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
 const CondicionesServicioPage = lazy(() => import('./pages/CondicionesServicioPage'));
 const PoliticaPrivacidadPage = lazy(() => import('./pages/PoliticaPrivacidadPage'));
+const EliminacionDatosPage = lazy(() => import('./pages/EliminacionDatosPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const FacturasPage = lazy(() => import('./pages/FacturasPage'));
 const IngresosPage = lazy(() => import('./pages/IngresosPage'));
@@ -111,6 +112,9 @@ function App() {
           <Route path="/condiciones-del-servicio" element={<Suspense fallback={<PageLoader />}><CondicionesServicioPage /></Suspense>} />
           <Route path="/privacidad" element={<Suspense fallback={<PageLoader />}><PoliticaPrivacidadPage /></Suspense>} />
           <Route path="/politica-de-privacidad" element={<Suspense fallback={<PageLoader />}><PoliticaPrivacidadPage /></Suspense>} />
+          <Route path="/eliminacion-datos" element={<Suspense fallback={<PageLoader />}><EliminacionDatosPage /></Suspense>} />
+          <Route path="/eliminacion-de-datos" element={<Suspense fallback={<PageLoader />}><EliminacionDatosPage /></Suspense>} />
+          <Route path="/deletion" element={<Suspense fallback={<PageLoader />}><EliminacionDatosPage /></Suspense>} />
 
           <Route path="/*" element={<RutaProtegida><AppLayout /></RutaProtegida>} />
         </Routes>

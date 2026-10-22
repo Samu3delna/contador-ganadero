@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "memorix": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "memorix",
+        "serve",
+        "--mode",
+        "lite"
+      ],
+      "env": {}
+    }
+  }
+}

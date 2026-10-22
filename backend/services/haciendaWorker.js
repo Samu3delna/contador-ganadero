@@ -16,13 +16,14 @@ const Tenant = require('../models/Tenant');
 const hacienda = require('./hacienda');
 const { generarClave } = hacienda.clave50;
 const { buildXml } = hacienda.xmlBuilder;
-const { firmarDocumento, cargarLlaveDesdeBase64, limpiarCacheLlave } = hacienda.signer;
+const { firmarDocumento, limpiarCacheLlave } = hacienda.signer;
 const { enviarComprobante, pollingHastaTerminal } = hacienda.recepcion;
 const { getToken } = hacienda.auth;
 
 const INTERVALO_TICK_MS = 15000;
 const MAX_DOC_POR_TICK = 5;
 const MAX_TENANTS_POR_TICK = 3;
+const SELECT_HACIENDA_CREDS = '+configuracionHacienda.certificadoP12Base64 +configuracionHacienda.pinCertificado +configuracionHacienda.usuarioHacienda +configuracionHacienda.passwordHacienda';
 
 let _running = false;
 let _timer = null;
@@ -75,7 +76,10 @@ function getGlobalConfig() {
  *  Lanzado por el controller POST /emision.
  */
 async function prepararYFirmar(facturaId) {
-  const factura = await FacturaEmision.findById(facturaId).populate('tenantId');
+  const factura = await FacturaEmision.findById(facturaId).populate({
+    path: 'tenantId',
+    select: SELECT_HACIENDA_CREDS,
+  });
   if (!factura) throw new Error('Factura no encontrada');
   if (factura.estado !== 'borrador') {
     return factura; // ya firmada o en proceso
@@ -83,7 +87,7 @@ async function prepararYFirmar(facturaId) {
 
   // Obtener config del tenant o global (legacy)
   let cfg;
-  if (factura.tenantId && factura.tenantId.configuracionHacienda) {
+  if (factura.tenantId && factura.tenantId.configuracionHacienda?.estaConfigurado?.()) {
     cfg = getTenantConfig(factura.tenantId);
   } else {
     cfg = getGlobalConfig();
@@ -121,8 +125,8 @@ async function prepararYFirmar(facturaId) {
       cacheKey: cfg.tenantId,
       ambiente: cfg.ambiente,
     });
-  } else if (cfg.p12Path && cfg.pin) {
-    // Legacy: archivo en filesystem
+  } else if (cfg.p12Path && cfg.pin || cfg.ambiente === 'local') {
+    // Legacy: archivo en filesystem o mock local
     xmlFirmado = firmarDocumento(xml, {
       p12Path: cfg.p12Path,
       pin: cfg.pin,
@@ -146,9 +150,10 @@ async function enviarPendientes() {
   if (_running) return;
   _running = true;
   try {
-    // Buscar facturas pendientes y poblar tenantId
+    // Buscar facturas pendientes (incluyendo +xmlFirmado que tiene select: false) y poblar tenantId
     const pendientes = await FacturaEmision
       .find({ estado: 'firmada' })
+      .select('+xmlFirmado')
       .populate('tenantId')
       .sort({ createdAt: 1 })
       .limit(MAX_DOC_POR_TICK * MAX_TENANTS_POR_TICK);
@@ -171,12 +176,16 @@ async function enviarPendientes() {
         if (tenantId === 'global') {
           cfg = getGlobalConfig();
         } else {
-          const tenant = await Tenant.findById(tenantId);
+          const tenant = await Tenant.findById(tenantId).select(SELECT_HACIENDA_CREDS);
           if (!tenant || !tenant.configuracionHacienda?.estaConfigurado?.()) {
-            console.warn(`[hacienda worker] Tenant ${tenantId} sin config Hacienda, saltando`);
-            continue;
+            cfg = getGlobalConfig();
+            if (cfg.ambiente !== 'local') {
+              console.warn(`[hacienda worker] Tenant ${tenantId} sin config Hacienda, saltando`);
+              continue;
+            }
+          } else {
+            cfg = getTenantConfig(tenant);
           }
-          cfg = getTenantConfig(tenant);
         }
 
         // Obtener token para este tenant
@@ -273,9 +282,13 @@ async function consultarProcesando() {
       if (tenantId === 'global') {
         cfg = getGlobalConfig();
       } else {
-        const tenant = await Tenant.findById(tenantId);
-        if (!tenant || !tenant.configuracionHacienda?.estaConfigurado?.()) continue;
-        cfg = getTenantConfig(tenant);
+        const tenant = await Tenant.findById(tenantId).select(SELECT_HACIENDA_CREDS);
+        if (!tenant || !tenant.configuracionHacienda?.estaConfigurado?.()) {
+          cfg = getGlobalConfig();
+          if (cfg.ambiente !== 'local') continue;
+        } else {
+          cfg = getTenantConfig(tenant);
+        }
       }
 
       for (const factura of facturas.slice(0, MAX_DOC_POR_TICK)) {

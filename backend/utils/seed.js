@@ -8,7 +8,6 @@
 
 require('dotenv').config({ path: '../.env' });
 const mongoose = require('mongoose');
-const Categoria = require('../models/Categoria');
 const Usuario = require('../models/Usuario');
 
 const categoriasSeed = [
@@ -32,9 +31,10 @@ async function seed() {
     console.log('✅ Conectado a MongoDB Atlas — BD: contador_ganadero');
 
     // Insertar categorías
-    await Categoria.deleteMany({});
-    const cats = await Categoria.insertMany(categoriasSeed);
-    console.log(`🏷️  ${cats.length} categorías creadas`);
+    const categoriasCol = mongoose.connection.db.collection('categorias');
+    await categoriasCol.deleteMany({});
+    const cats = await categoriasCol.insertMany(categoriasSeed);
+    console.log(`🏷️  ${cats.insertedCount} categorías creadas`);
 
     // Crear usuario de prueba solo si se solicita explícitamente
     if (process.env.CREATE_DEMO_USER === 'true') {

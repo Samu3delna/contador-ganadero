@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, AlertTriangle, Loader2, Upload } from 'lucide-react';
 import {
-  obtenerFacturasAPI, estadoEmailAPI,
+  obtenerFacturasAPI,
   descargarXML_API, descargarPDF_API, obtenerAlertasTarifaAPI,
   subirFacturaXML_API
 } from '../services/api';
@@ -15,7 +15,6 @@ import './FacturasPage.css';
 
 export default function FacturasPage() {
   const [facturas, setFacturas] = useState([]);
-  const [estadoEmail, setEstadoEmail] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
   const [subiendoXML, setSubiendoXML] = useState(false);
@@ -30,13 +29,11 @@ export default function FacturasPage() {
       const params = { limit: 50 };
       if (filtroAlertas) params.soloAlertas = 'true';
 
-      const [fRes, eRes, aRes] = await Promise.all([
+      const [fRes, aRes] = await Promise.all([
         obtenerFacturasAPI(params),
-        estadoEmailAPI().catch(() => null),
         obtenerAlertasTarifaAPI().catch(() => null),
       ]);
       setFacturas(fRes.data.facturas);
-      if (eRes) setEstadoEmail(eRes.data);
       if (aRes) setAlertasTarifa(aRes.data);
     } catch(err) { 
       console.error(err); 
@@ -220,7 +217,7 @@ export default function FacturasPage() {
 
       <AlertasPanel alertasTarifa={alertasTarifa} />
 
-      <EmailStatus estadoEmail={estadoEmail} />
+      <EmailStatus />
 
       <FacturasTable 
         cargando={cargando}

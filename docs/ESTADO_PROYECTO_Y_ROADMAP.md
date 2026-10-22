@@ -43,7 +43,7 @@ Para operar el sistema en **desarrollo local** y posteriormente en **producción
 1. **Node.js (v18 o v20 LTS) y NPM:** Entorno de ejecución ya instalado en tu máquina.
 2. **Base de Datos MongoDB:**
    - Opción nube (recomendada): Cluster gratuito M0 en [MongoDB Atlas](https://www.mongodb.com/atlas).
-   - Opción local: [MongoDB Community Server](https://www.mongodb.com/try/download/community) o Docker.
+   - Opción local: [MongoDB Community Server](https://www.mongodb.com/try/download/community).
 3. **Correo Electrónico para Lectura de Facturas (IMAP):**
    - Una cuenta de **Gmail** o **Outlook** dedicada a recibir facturas electrónicas de insumos agropecuarios.
    - En Gmail: Activar *Verificación en 2 pasos* y crear una **Contraseña de Aplicación** (16 caracteres).

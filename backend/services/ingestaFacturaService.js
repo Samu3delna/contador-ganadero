@@ -20,7 +20,7 @@ function asegurarDirectorios() {
  * Busca el Usuario y Tenant destinatario usando múltiples estrategias:
  * 1. Cédula del receptor extraída del XML (la más confiable en Costa Rica)
  * 2. ID explícito de usuario o tenant
- * 3. Email alias del tenant (ej: finca-esperanza@contadorganadero.com)
+ * 3. Email alias del tenant (ej: finca-esperanza@contadorganandero.com)
  * 4. Número de teléfono (para WhatsApp)
  */
 async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, emailDestino, telefono }) {
@@ -231,10 +231,11 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
     lineaDetalle: datosFactura.detalle || [],
     resumenFactura: datosFactura.resumenFactura || {},
     otrosCargos: datosFactura.otrosCargos || [],
-    categoriaIA: categorizacion.categoria,
-    confianzaIA: categorizacion.confianza,
-    justificacionIA: categorizacion.justificacion,
-    categoriaManual: categorizacion.categoria,
+    categoriaIA: categorizacion.categoriaIA || categorizacion.categoria || 'sin_clasificar',
+    subcategoriaIA: categorizacion.subcategoriaIA || undefined,
+    confianzaIA: categorizacion.confianzaIA ?? categorizacion.confianza ?? 0.5,
+    justificacionIA: categorizacion.justificacionIA || categorizacion.justificacion || 'Pendiente de análisis',
+    categoriaManual: categorizacion.categoriaIA || categorizacion.categoria || 'sin_clasificar',
     alertasTarifa,
     resumenValidacionTarifa: resumenTarifa,
     cuatrimestre: datosFactura.cuatrimestre || 1,
@@ -244,7 +245,7 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
     emailUID: opciones.emailUID,
     carpetaOrigen: opciones.canal || 'webhook',
     estado: resumenTarifa.alertasError > 0 ? 'revision' : 'procesada',
-    esDeducible: true,
+    esDeducible: categorizacion.esDeducible !== undefined ? categorizacion.esDeducible : true,
     tenantId: tenantId || usuario.tenantId,
     usuario: usuario._id,
   });

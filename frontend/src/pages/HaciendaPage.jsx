@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, PenTool, Send, Search, FilePlus, Receipt } from 'lucide-react';
+import { FileText, PenTool, Send, Search, FilePlus, Receipt, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
   infoAmbienteHaciendaAPI,
+  obtenerFacturasEmisionAPI,
   crearBorradorHaciendaAPI,
   firmarDocumentoHaciendaAPI,
   enviarAHaciendaAPI,
   consultarEstadoHaciendaAPI,
+  cancelarDocumentoHaciendaAPI,
   descargarXmlHaciendaAPI,
   crearRepAPI,
   listarRepAPI,
@@ -47,7 +49,7 @@ export default function HaciendaPage() {
       setCargando(true);
       const [ambRes, fac, rep, fec] = await Promise.all([
         infoAmbienteHaciendaAPI().catch(() => ({ data: null })),
-        apiLis('/hacienda/emision').catch(() => ({ facturas: [] })),
+        obtenerFacturasEmisionAPI().catch(() => ({ data: { facturas: [] } })),
         listarRepAPI().catch(() => ({ data: { docs: [] } })),
         listarFecAPI().catch(() => ({ data: { docs: [] } })),
       ]);
@@ -147,6 +149,17 @@ export default function HaciendaPage() {
     }
   };
 
+  const handleCancelar = async (id) => {
+    if (!window.confirm('¿Deseas anular esta factura emitida mediante Nota de Crédito (NC)?')) return;
+    try {
+      const res = await cancelarDocumentoHaciendaAPI(id);
+      toast.success(res.data?.mensaje || 'Nota de Crédito generada en borrador');
+      await cargar();
+    } catch (e) {
+      toast.error(e.response?.data?.error || e.message);
+    }
+  };
+
   const abrirModal = (tipo) => {
     setModalTipo(tipo);
     setModalAbierto(true);
@@ -172,6 +185,9 @@ export default function HaciendaPage() {
         <div className="btn-group">
           <button className="btn btn-primary" onClick={() => abrirModal('FE')}>
             <FileText size={18} /> Emitir Factura
+          </button>
+          <button className="btn btn-secondary" onClick={() => abrirModal('TE')}>
+            <FileText size={18} /> Tiquete (TE)
           </button>
           <button className="btn btn-secondary" onClick={() => abrirModal('FEC')}>
             <FilePlus size={18} /> Compra (FEC)
@@ -202,6 +218,7 @@ export default function HaciendaPage() {
         onEnviar={handleEnviar}
         onEstado={handleEstado}
         onXml={handleDescargarXml}
+        onCancelar={handleCancelar}
       />
 
       <EmitirFacturaModalv44
@@ -215,13 +232,7 @@ export default function HaciendaPage() {
   );
 }
 
-// helper local
-async function apiLis(url) {
-  const { default: api } = await import('../services/api');
-  return api.get(url);
-}
-
-function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml }) {
+function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml, onCancelar }) {
   if (!docs || docs.length === 0) {
     return <p className="text-muted">No hay documentos en esta lista. {tipo === 'rep' ? 'Para registrar un abono, debés tener una factura a crédito ya aceptada.' : ''}</p>;
   }
@@ -242,7 +253,12 @@ function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml }) {
         <tbody>
           {docs.map((d) => (
             <tr key={d._id}>
-              <td className="text-mono text-sm" data-label="Clave / Consecutivo">{d.claveNumerica || '—'}<br /><small>{d.consecutivo}</small></td>
+              <td className="text-mono text-sm" data-label="Clave / Consecutivo">
+                {d.tipoDocumento && d.tipoDocumento !== 'FE' && (
+                  <span className="badge badge-info" style={{ marginRight: '6px', fontSize: '10px' }}>{d.tipoDocumento}</span>
+                )}
+                {d.claveNumerica || '—'}<br /><small>{d.consecutivo}</small>
+              </td>
               <td data-label="Receptor">{d.receptor?.nombre || '—'}</td>
               <td data-label="Fecha">{new Date(d.fechaEmision).toLocaleDateString('es-CR')}</td>
               <td className="text-mono" data-label="Total">₡{d.resumenFactura?.totalComprobante?.toLocaleString('es-CR') || 0}</td>
@@ -260,7 +276,10 @@ function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml }) {
                     <button className="btn-icon" title="Consultar estado" onClick={() => onEstado(d._id)}><Search size={14} /></button>
                   )}
                   {d.estado === 'aceptada' && (
-                    <button className="btn-icon" title="Ver estado" onClick={() => onEstado(d._id)}><Search size={14} /></button>
+                    <>
+                      <button className="btn-icon" title="Ver estado" onClick={() => onEstado(d._id)}><Search size={14} /></button>
+                      <button className="btn-icon" style={{ color: '#ef4444' }} title="Anular con Nota de Crédito (NC)" onClick={() => onCancelar(d._id)}><XCircle size={14} /></button>
+                    </>
                   )}
                   {d.xmlFirmado && (
                     <button className="btn-icon" title="Descargar XML" onClick={() => onXml(d._id, d.claveNumerica)}><FileText size={14} /></button>

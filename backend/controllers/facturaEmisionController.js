@@ -32,7 +32,8 @@ const crearFacturaEmision = async (req, res, next) => {
   try {
     const {
       consecutivo, emisor, receptor, lineaDetalle, tipoProducto,
-      condicionVenta, medioPago, plazoCredito, referencia, esPFyAE
+      condicionVenta, medioPago, plazoCredito, referencia, esPFyAE,
+      tipoDocumento = 'FE', documentoReferencia, codigoActividadEmisor,
     } = req.body;
 
     if (!consecutivo || !emisor || !receptor || !lineaDetalle || !tipoProducto) {
@@ -45,6 +46,7 @@ const crearFacturaEmision = async (req, res, next) => {
     const periodoFiscal = fechaEmision.getFullYear();
 
     const nuevaFactura = await FacturaEmision.create(req.aplicarTenant({
+      tipoDocumento,
       consecutivo,
       emisor: { ...emisor, regimen: 'Régimen Especial Agropecuario (REA)' },
       receptor,
@@ -54,6 +56,8 @@ const crearFacturaEmision = async (req, res, next) => {
       medioPago: medioPago || ['04'],
       plazoCredito,
       referencia,
+      documentoReferencia,
+      codigoActividadEmisor,
       esPFyAE: esPFyAE || false,
       esFacturaREA: true,
       fechaEmision,

@@ -40,7 +40,24 @@ export default function AdminUsuariosPage() {
     }
   }, [busqueda, pagina]);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => {
+    let cancelado = false;
+    listarUsuariosAPI({ q: busqueda, page: pagina, limit: LIMITE })
+      .then((res) => {
+        if (!cancelado) {
+          setUsuarios(res.data.usuarios);
+          setTotal(res.data.total);
+          setCargando(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelado) {
+          toast.error(err.response?.data?.message || 'Error al cargar usuarios');
+          setCargando(false);
+        }
+      });
+    return () => { cancelado = true; };
+  }, [busqueda, pagina]);
 
   const abrirDetalle = async (id) => {
     try {

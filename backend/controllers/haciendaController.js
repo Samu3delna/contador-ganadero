@@ -20,10 +20,22 @@ const mockStore = hacienda.mockStore;
 
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 
+const SELECT_HACIENDA_CREDS = '+configuracionHacienda.certificadoP12Base64 +configuracionHacienda.pinCertificado +configuracionHacienda.usuarioHacienda +configuracionHacienda.passwordHacienda';
+
+async function obtenerTenantHacienda(req) {
+  if (!req.tenant?._id) return req.tenant || {};
+  try {
+    const t = await Tenant.findById(req.tenant._id).select(SELECT_HACIENDA_CREDS);
+    return t || req.tenant;
+  } catch {
+    return req.tenant;
+  }
+}
+
 // ============ AMBIENTE ============
 const infoAmbiente = async (req, res, next) => {
   try {
-    const tenant = req.tenant;
+    const tenant = await obtenerTenantHacienda(req);
     const hc = tenant.configuracionHacienda || {};
     const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
 
@@ -64,7 +76,7 @@ const crearBorrador = async (req, res, next) => {
       }
     }
 
-    const tenant = req.tenant;
+    const tenant = await obtenerTenantHacienda(req);
     const hc = tenant.configuracionHacienda || {};
     const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
 
@@ -150,7 +162,7 @@ const enviarAHacienda = async (req, res, next) => {
 // ============ CONSULTAS ============
 const obtenerXml = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
+    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() }).select('+xmlFirmado');
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (!factura.xmlFirmado) { res.status(404); throw new Error('XML no generado aun'); }
 
@@ -162,7 +174,10 @@ const obtenerXml = async (req, res, next) => {
 
 const consultarEstado = async (req, res, next) => {
   try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() }).populate('tenantId');
+    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() }).populate({
+      path: 'tenantId',
+      select: SELECT_HACIENDA_CREDS,
+    });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
 
     // Obtener config del tenant
@@ -206,21 +221,58 @@ const consultarEstado = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// ============ CANCELAR (genera NC) — placeholder ============
+// ============ CANCELAR (genera NC) ============
 const cancelarDocumento = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (factura.estado !== 'aceptada') {
-      res.status(400); throw new Error('Solo se pueden cancelar facturas aceptadas; debe emitir NC');
+      res.status(400); throw new Error('Solo se pueden anular mediante NC las facturas aceptadas por Hacienda');
     }
-    res.status(202).json({
-      mensaje: 'Para anular una factura aceptada debe emitir una Nota de Credito (NC) ligada. Use /api/hacienda/emision con tipoDocumento=NC y documentoReferencia.',
-      referencia: {
+
+    const { razon = 'Anulación de factura por acuerdo mutuo' } = req.body || {};
+    const tenant = await obtenerTenantHacienda(req);
+    const hc = tenant?.configuracionHacienda || {};
+    const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
+
+    const fechaEmision = new Date();
+    const cuatrimestre = obtenerCuatrimestre(fechaEmision);
+    const periodoFiscal = fechaEmision.getFullYear();
+    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO.NC}${String(Date.now()).slice(-10)}`;
+
+    const notaCredito = await FacturaEmision.create(req.aplicarTenant({
+      tipoDocumento: 'NC',
+      ambiente: cfg.ambiente,
+      consecutivo: consecutivoTemporal,
+      emisor: factura.emisor,
+      receptor: factura.receptor,
+      lineaDetalle: factura.lineaDetalle,
+      tipoProducto: factura.tipoProducto,
+      condicionVenta: factura.condicionVenta || '01',
+      medioPago: factura.medioPago || ['04'],
+      referencia: `Nota de Crédito por anulación de ${factura.claveNumerica || factura.consecutivo}`,
+      documentoReferencia: {
         tipoDocReferencia: '01',
         numeroReferencia: factura.claveNumerica,
         fechaEmisionReferencia: factura.fechaEmision,
-        codigoReferencia: '01',
+        codigoReferencia: '01', // 01 = Anula documento de referencia
+        razonReferencia: razon,
+      },
+      esFacturaREA: true,
+      fechaEmision,
+      cuatrimestre,
+      periodoFiscal,
+      estado: 'borrador',
+      usuario: req.usuario._id,
+    }));
+
+    res.status(201).json({
+      mensaje: 'Nota de Crédito (NC) generada en borrador',
+      notaCredito,
+      facturaOriginal: {
+        id: factura._id,
+        clave: factura.claveNumerica,
+        consecutivo: factura.consecutivo,
       },
     });
   } catch (error) { next(error); }

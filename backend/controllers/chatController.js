@@ -1,6 +1,4 @@
-const OpenAI = require('openai');
-const { v4: uuidv4 } = require('uuid');
-const { configurarOpenRouter: configurarIA } = require('../config/ai');
+const { randomUUID: uuidv4 } = require('crypto');
 const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
 const Inventario = require('../models/Inventario');
@@ -9,13 +7,10 @@ const ChatFeedback = require('../models/ChatFeedback');
 const { encoding_for_model } = require('tiktoken');
 const { contextCache } = require('../utils/chatCache');
 const { sanitizarInput, filtrarPII, sanitizarContexto } = require('../utils/sanitizer');
+const { streamChatDual, generarChatDual, obtenerEstadoIA } = require('../services/aiProvider');
 
-// ============ INICIALIZACIÓN DEL CLIENTE IA ============
+// ============ TOKENIZER Y DISPONIBILIDAD IA ============
 
-let clienteIA = null;
-let modeloIA = null;
-let aiDefaults = null;
-let clienteInicializado = false;
 let tiktokenEncoder = null;
 
 function obtenerEncoder() {
@@ -39,36 +34,9 @@ function contarTokens(texto) {
   }
 }
 
-function inicializarCliente() {
-  if (clienteInicializado) return !!clienteIA;
-  clienteInicializado = true;
-
-  const config = configurarIA();
-  if (!config.apiKey) {
-    console.warn('⚠️  Servicio de IA no inicializado: falta AI_API_KEY');
-    return false;
-  }
-  try {
-    clienteIA = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
-      defaultHeaders: config.headers,
-      timeout: config.defaults.timeout,
-      maxRetries: config.defaults.maxRetries,
-      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
-    });
-    modeloIA = config.modelo;
-    aiDefaults = config.defaults;
-    console.log(`🤖 Chat IA inicializado (modelo: ${modeloIA})`);
-    return true;
-  } catch (error) {
-    console.error('❌ Error inicializando cliente IA:', error.message);
-    return false;
-  }
-}
-
 function estaIADisponible() {
-  return inicializarCliente();
+  const st = obtenerEstadoIA();
+  return st.disponible && st.proveedor !== 'none';
 }
 
 // ============ SYSTEM PROMPT ============
@@ -351,28 +319,25 @@ async function chat(req, res) {
       content: (h.contenido || '').substring(0, 1000),
     }));
 
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT_CHAT },
-      { role: 'system', content: promptContexto },
+    const systemPromptCompleto = `${SYSTEM_PROMPT_CHAT}\n\n${promptContexto}`;
+    const userAndHistory = [
       ...historialRecortado,
       { role: 'user', content: mensajeFiltrado },
     ];
 
-    // Llamada a la IA
-    const respuesta = await clienteIA.chat.completions.create({
-      model: modeloIA,
-      messages,
-      temperature: aiDefaults.temperature,
-      max_tokens: aiDefaults.max_tokens,
+    // Llamada a la IA con soporte dual (Gemini / NVIDIA)
+    const resultadoIA = await generarChatDual({
+      systemPrompt: systemPromptCompleto,
+      messages: userAndHistory,
     });
 
-    const contenido = respuesta.choices[0]?.message?.content || 'No se pudo generar respuesta.';
-    const tokensUsados = respuesta.usage?.total_tokens || 0;
+    const contenido = resultadoIA.contenido || 'No se pudo generar respuesta.';
+    const tokensUsados = resultadoIA.tokensUsados || 0;
 
     const duracion = Date.now() - startTime;
-    console.log(`💬 [${requestId}] Chat: usuario=${usuarioId} tokens=${tokensUsados} tiempo=${duracion}ms modelo=${modeloIA}`);
+    console.log(`💬 [${requestId}] Chat: usuario=${usuarioId} tokens=${tokensUsados} tiempo=${duracion}ms modelo=${resultadoIA.modelo} proveedor=${resultadoIA.proveedor}`);
 
-    res.json({ respuesta: contenido, requestId });
+    res.json({ respuesta: contenido, requestId, proveedor: resultadoIA.proveedor });
   } catch (error) {
     const duracion = Date.now() - startTime;
     console.error(`❌ [${requestId}] Error en chat (${duracion}ms):`, error.message);
@@ -468,37 +433,33 @@ async function chatStream(req, res) {
       content: (h.contenido || '').substring(0, 1000),
     }));
 
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT_CHAT },
-      { role: 'system', content: promptContexto },
+    const systemPromptCompleto = `${SYSTEM_PROMPT_CHAT}\n\n${promptContexto}`;
+    const userAndHistory = [
       ...historialRecortado,
       { role: 'user', content: mensajeFiltrado },
     ];
 
-    // Stream desde la API de NVIDIA
-    const stream = await clienteIA.chat.completions.create({
-      model: modeloIA,
-      messages,
-      temperature: aiDefaults.temperature,
-      max_tokens: aiDefaults.max_tokens,
-      stream: true,
-    });
-
-    let tokensOut = 0;
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        tokensOut++;
+    let chunksCount = 0;
+    await streamChatDual({
+      systemPrompt: systemPromptCompleto,
+      messages: userAndHistory,
+      onChunk: (delta) => {
+        chunksCount++;
         res.write(`data: ${JSON.stringify({ contenido: delta })}\n\n`);
-      }
-    }
-
-    const duracion = Date.now() - startTime;
-    console.log(`💬 [${requestId}] Stream: usuario=${usuarioId} chunks=${tokensOut} tiempo=${duracion}ms`);
-
-    res.write(`data: ${JSON.stringify({ done: true, requestId })}\n\n`);
-    res.write('data: [DONE]\n\n');
-    res.end();
+      },
+      onDone: () => {
+        const duracion = Date.now() - startTime;
+        console.log(`💬 [${requestId}] Stream finalizado: usuario=${usuarioId} chunks=${chunksCount} tiempo=${duracion}ms`);
+        res.write(`data: ${JSON.stringify({ done: true, requestId })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      },
+      onError: (errMsg) => {
+        res.write(`data: ${JSON.stringify({ error: errMsg })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
+      },
+    });
   } catch (error) {
     const duracion = Date.now() - startTime;
     console.error(`❌ [${requestId}] Error en stream (${duracion}ms):`, error.message);
@@ -532,7 +493,7 @@ async function enviarFeedback(req, res) {
       respuestaIA: respuestaIA.substring(0, 10000),
       feedback,
       comentario: comentario?.substring(0, 500),
-      modelo: modeloIA,
+      modelo: obtenerEstadoIA().modelo,
     }));
 
     console.log(`📊 Feedback ${feedback}: usuario=${usuarioId} id=${feedbackDoc._id}`);

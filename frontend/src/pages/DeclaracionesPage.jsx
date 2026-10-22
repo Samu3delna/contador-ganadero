@@ -285,8 +285,6 @@ export default function DeclaracionesPage() {
     }
   };
 
-  const descargarCSV = () => descargarExportacion('csv');
-
   const agregarActivo = () => {
     const nuevos = [...(config.depreciacionActivos || []), {
       descripcion: '', valorOriginal: 0, vidaUtilAnios: 5, anioAdquisicion: anio, depreciacionAnual: 0, activo: true,

@@ -1,32 +1,8 @@
 /**
  * Servicio de IA para categorización de gastos
- * Usa NVIDIA NIM API (compatible con SDK de OpenAI)
+ * Usa el motor dual de IA (Google Gemini / NVIDIA NIM / Heurística)
  */
 
-const OpenAI = require('openai');
-const { configurarOpenRouter: configurarIA } = require('../config/ai');
-
-let clienteIA = null;
-let modeloIA = null;
-
-/**
- * Inicializar el cliente de IA (NVIDIA NIM)
- */
-function inicializarCliente() {
-  if (clienteIA) return;
-  const config = configurarIA();
-  if (!config.apiKey) {
-    console.warn('⚠️  Servicio de IA no inicializado: falta AI_API_KEY');
-    return;
-  }
-  clienteIA = new OpenAI({
-    apiKey: config.apiKey,
-    baseURL: config.baseURL,
-    defaultHeaders: config.headers,
-  });
-  modeloIA = config.modelo;
-  console.log(`🤖 Servicio de IA inicializado (modelo: ${modeloIA})`);
-}
 
 // Prompt del sistema base para categorización
 const SYSTEM_PROMPT_BASE = `Eres un asistente contable especializado en el sector ganadero de Costa Rica.
@@ -75,79 +51,16 @@ function getSystemPrompt() {
   return SYSTEM_PROMPT_BASE + INSUMOS_OFICIALES_TEXTO;
 }
 
+const { categorizarFacturaDual, inicializarProveedores } = require('./aiProvider');
+
 /**
- * Categorizar una factura usando IA
+ * Categorizar una factura usando el motor dual de IA (Gemini / NVIDIA / Heurística)
  * @param {object} datosFactura - Datos parseados de la factura
  * @returns {object} Categorización de la IA
  */
 async function categorizarFactura(datosFactura) {
-  inicializarCliente();
-
-  if (!clienteIA) {
-    console.warn('⚠️  Cliente de IA no disponible, retornando categoría por defecto');
-    return categoriaFallback();
-  }
-
   try {
-    // Construir resumen de la factura para el prompt
-    const resumenLineas = (datosFactura.lineaDetalle || [])
-      .map((l, i) => `  ${i + 1}. ${l.descripcion} — ₡${l.subtotal} (IVA: ${l.impuesto?.tarifa || 0}%)`)
-      .join('\n');
-
-    const promptUsuario = `Analiza esta factura y clasifica el gasto:
-
-EMISOR: ${datosFactura.emisor?.nombre || 'Desconocido'}
-CÉDULA EMISOR: ${datosFactura.emisor?.cedula?.numero || 'N/A'}
-FECHA: ${datosFactura.fechaEmision}
-TOTAL: ₡${datosFactura.resumenFactura?.totalComprobante || 0}
-IVA TOTAL: ₡${datosFactura.resumenFactura?.totalImpuesto || 0}
-TASA IVA PREDOMINANTE: ${datosFactura.tasaIVA}%
-
-DETALLE DE LÍNEAS:
-${resumenLineas || '  (sin detalle)'}`;
-
-    const respuesta = await clienteIA.chat.completions.create({
-      model: modeloIA,
-      messages: [
-        { role: 'system', content: getSystemPrompt() },
-        { role: 'user', content: promptUsuario },
-      ],
-      temperature: 0.3,
-      max_tokens: 800,
-      response_format: { type: 'json_object' },
-    });
-
-    const contenido = respuesta.choices[0]?.message?.content;
-    if (!contenido) return categoriaFallback();
-
-    // Si se cortó por limite de tokens, no intentar parsear JSON incompleto
-    if (respuesta.choices[0]?.finish_reason === 'length') {
-      console.warn('⚠️  Categorización IA truncada por max_tokens, usando fallback');
-      return categoriaFallback();
-    }
-
-    const resultado = JSON.parse(contenido);
-
-    // Validar que la categoría sea válida
-    const categoriasValidas = [
-      'veterinaria', 'alimentacion_animal', 'maquinaria_equipo',
-      'transporte', 'servicios_profesionales', 'combustible',
-      'mantenimiento', 'seguros', 'insumos_agropecuarios',
-      'salarios', 'servicios_publicos', 'otros',
-    ];
-
-    if (!categoriasValidas.includes(resultado.categoria)) {
-      resultado.categoria = 'otros';
-      resultado.confianza = Math.min(resultado.confianza || 0.5, 0.5);
-    }
-
-    return {
-      categoriaIA: resultado.categoria,
-      subcategoriaIA: resultado.subcategoria || '',
-      esDeducible: resultado.esDeducible !== false,
-      justificacionIA: resultado.justificacion || '',
-      confianzaIA: Math.min(Math.max(resultado.confianza || 0.5, 0), 1),
-    };
+    return await categorizarFacturaDual(datosFactura, getSystemPrompt());
   } catch (error) {
     console.error('❌ Error en categorización IA:', error.message);
     return categoriaFallback();
@@ -167,4 +80,4 @@ function categoriaFallback() {
   };
 }
 
-module.exports = { categorizarFactura, inicializarCliente };
+module.exports = { categorizarFactura, inicializarCliente: inicializarProveedores };

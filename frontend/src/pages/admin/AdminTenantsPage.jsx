@@ -48,7 +48,24 @@ export default function AdminTenantsPage() {
     }
   }, [busqueda, filtroPlan, filtroEstado, pagina]);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => {
+    let cancelado = false;
+    listarTenantsAPI({
+      q: busqueda, plan: filtroPlan, estado: filtroEstado, page: pagina, limit: LIMITE,
+    }).then((res) => {
+      if (!cancelado) {
+        setTenants(res.data.tenants);
+        setTotal(res.data.total);
+        setCargando(false);
+      }
+    }).catch((err) => {
+      if (!cancelado) {
+        toast.error(err.response?.data?.message || 'Error al cargar tenants');
+        setCargando(false);
+      }
+    });
+    return () => { cancelado = true; };
+  }, [busqueda, filtroPlan, filtroEstado, pagina]);
 
   const abrirDetalle = async (id) => {
     try {

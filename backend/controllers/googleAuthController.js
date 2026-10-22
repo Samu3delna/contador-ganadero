@@ -80,7 +80,6 @@ const googleCallback = async (req, res, next) => {
     const googleId = payload.sub;
     const email = payload.email;
     const nombre = payload.name;
-    const picture = payload.picture;
 
     let usuario = await Usuario.findOne({ $or: [{ googleId }, { email }] });
 

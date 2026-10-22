@@ -1,0 +1,7 @@
+{
+  "name": "ContadorGanadero",
+  "description": "Plataforma de contabilidad, inventario y facturación electrónica para productores agropecuarios del REA en Costa Rica.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

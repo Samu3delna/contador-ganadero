@@ -84,6 +84,7 @@ describe('Auth Security Tests', () => {
           email: 'new@example.com',
           password: 'short',
           cedula: '987654321',
+          aceptaTerminos: true,
         });
       expect(res.status).toBe(400);
     });
@@ -96,6 +97,7 @@ describe('Auth Security Tests', () => {
           email: 'new2@example.com',
           password: 'password123',
           cedula: '987654321',
+          aceptaTerminos: true,
         });
       expect(res.status).toBe(201);
     });
@@ -292,8 +294,38 @@ describe('Auth Security Tests', () => {
           email: 'test@example.com',
           password: 'SecurePass123!',
           cedula: '999999999',
+          aceptaTerminos: true,
         });
       expect(res.status).toBe(400);
+    });
+
+    it('should reject registration without accepting terms and conditions', async () => {
+      const res = await request(app)
+        .post('/api/auth/registro')
+        .send({
+          nombre: 'Sin Terminos',
+          email: 'sinterminos@example.com',
+          password: 'SecurePass123!',
+          cedula: '999999999',
+        });
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error');
+      expect(res.body.error).toMatch(/términos/i);
+    });
+
+    it('should record terms acceptance date on registration', async () => {
+      const res = await request(app)
+        .post('/api/auth/registro')
+        .send({
+          nombre: 'Con Terminos',
+          email: 'conterminos@example.com',
+          password: 'SecurePass123!',
+          cedula: '999999999',
+          aceptaTerminos: true,
+        });
+      expect(res.status).toBe(201);
+      const usuario = await Usuario.findOne({ email: 'conterminos@example.com' });
+      expect(usuario.aceptoTerminosEn).toBeInstanceOf(Date);
     });
 
     it('should create tenant automatically on registration', async () => {
@@ -304,6 +336,7 @@ describe('Auth Security Tests', () => {
           email: 'newuser@example.com',
           password: 'SecurePass123!',
           cedula: '999999999',
+          aceptaTerminos: true,
         });
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty('tenantId');
@@ -318,6 +351,7 @@ describe('Auth Security Tests', () => {
           email: 'role@example.com',
           password: 'SecurePass123!',
           cedula: '999999999',
+          aceptaTerminos: true,
         });
       expect(res.body.rol).toBe('dueño');
     });
@@ -386,6 +420,7 @@ describe('Auth Security Tests', () => {
           email: 'xss@example.com',
           password: 'SecurePass123!',
           cedula: '123456789',
+          aceptaTerminos: true,
         });
       expect(res.status).toBe(201);
       expect(res.body.nombre).toBe('<script>alert(1)</script>');

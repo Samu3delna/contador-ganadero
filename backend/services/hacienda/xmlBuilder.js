@@ -7,15 +7,7 @@
  * XAdES-EPES envolviendo este XML.
  */
 
-const TIPO_DOC_CODIGO = {
-  FE: '01',
-  TE: '02',
-  NC: '03',
-  ND: '04',
-  FEC: '05',
-  REP: '06',
-};
-
+const { TIPO_DOC_CODIGO } = require('./clave50');
 const TIPO_DOC_CONFIG = {
   FE: {
     rootElement: 'FacturaElectronica',
@@ -247,11 +239,11 @@ function buildXml(factura) {
   <CondicionVenta>${factura.condicionVenta || '01'}</CondicionVenta>
   <PlazoCredito>${escapeXml(factura.plazoCredito || '0')}</PlazoCredito>
   <MedioPago>${(factura.medioPago || ['01']).map((m) => escapeXml(m)).slice(0, 4).join('</MedioPago><MedioPago>')}</MedioPago>
-  ${buildInfoReferencia(factura.documentoReferencia)}
   <DetalleServicio>
 ${lineasXml}
   </DetalleServicio>
   ${buildResumen(factura.resumenFactura)}
+  ${buildInfoReferencia(factura.documentoReferencia)}
   <Normativa>
     <NumeroResolucion>DGT-R-48-2016</NumeroResolucion>
     <FechaResolucion>07-10-2016</FechaResolucion>
@@ -267,8 +259,8 @@ ${lineasXml}
 
 module.exports = {
   buildXml,
-  TIPO_DOC_CODIGO,
   TIPO_DOC_CONFIG,
+  TIPO_DOC_CODIGO,
   fmtFecha,
   escapeXml,
 };

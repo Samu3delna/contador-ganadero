@@ -1,37 +1,49 @@
 /**
- * Configuración centralizada del cliente de IA (NVIDIA NIM API)
- * Usa la API de NVIDIA (compatible con el SDK de OpenAI).
- * Incluye defaults para temperature, max_tokens, timeout, y retries.
+ * Configuración centralizada del cliente de IA (Dual: Google Gemini + NVIDIA NIM)
+ * Soporta Google Gemini (@google/genai) como proveedor nativo de primera clase,
+ * y NVIDIA NIM / OpenAI como alternativa configurable.
  */
 
 const configurarIA = () => {
-  const apiKey = process.env.AI_API_KEY || process.env.NVIDIA_API_KEY;
-  const modelo = process.env.AI_MODEL || process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const nvidiaApiKey = process.env.AI_API_KEY || process.env.NVIDIA_API_KEY;
   const frontendUrl = process.env.FRONTEND_URL || 'https://contador-ganadero.vercel.app';
 
-  if (!apiKey) {
-    console.warn('⚠️  AI_API_KEY no configurada. El servicio de IA no funcionará.');
+  // Determinar proveedor activo
+  let proveedor = 'none';
+  if (geminiApiKey) {
+    proveedor = 'gemini';
+  } else if (nvidiaApiKey) {
+    proveedor = 'nvidia';
   }
 
   return {
-    apiKey,
-    modelo,
-    baseURL: process.env.AI_BASE_URL || 'https://integrate.api.nvidia.com/v1',
-    headers: {
-      'HTTP-Referer': frontendUrl,
-      'X-Title': 'Contador Ganadero - Asistente Contable Ganadero CR',
+    proveedor,
+    gemini: {
+      apiKey: geminiApiKey,
+      modelo: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
     },
-    // Defaults para llamadas al modelo
+    nvidia: {
+      apiKey: nvidiaApiKey,
+      modelo: process.env.AI_MODEL || process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b',
+      baseURL: process.env.AI_BASE_URL || 'https://integrate.api.nvidia.com/v1',
+      headers: {
+        'HTTP-Referer': frontendUrl,
+        'X-Title': 'Contador Ganadero - Asistente Contable Ganadero CR',
+      },
+    },
+    // Parámetros por defecto para generación
     defaults: {
-      temperature: 0.2,       // Bajo para respuestas factuales
-      max_tokens: 1500,        // Espacio suficiente para respuestas completas con formato
-      timeout: 60000,          // 60s para consultas complejas
-      maxRetries: 3,           // Reintentos con backoff exponencial
+      temperature: 0.2,
+      max_tokens: 1500,
+      timeout: 45000,
+      maxRetries: 3,
     },
   };
 };
 
-// Alias por compatibilidad con código existente
-const configurarOpenRouter = configurarIA;
+module.exports = { configurarIA };
 
-module.exports = { configurarIA, configurarOpenRouter };

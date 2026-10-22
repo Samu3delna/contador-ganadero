@@ -10,8 +10,8 @@ export default function PlanCard({ plan, planActual, onSeleccionar }) {
   const esFree = plan.id === 'free';
   const esDestacado = plan.destacado;
 
-  let textoBoton = 'Suscribirse';
-  let botonVariant = esDestacado ? 'gradient' : 'default';
+  let textoBoton;
+  let botonVariant;
   let deshabilitado = false;
 
   if (esActual) {

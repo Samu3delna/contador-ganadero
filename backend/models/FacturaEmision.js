@@ -243,7 +243,7 @@ facturaEmisionSchema.pre('save', function () {
     totalImpuesto += linea.impuesto.monto;
 
     //Clasificar servicio vs mercancia, gravado vs exento
-    const tarifa = linea.impuesto?.tarifa || 1;
+    const tarifa = linea.impuesto?.tarifa ?? 1;
     const esServicio = this.tipoProducto === 'leche' || this.tipoProducto === 'huevo';
     if (tarifa === 0) {
       if (esServicio) totalServExentos += linea.subtotal;
@@ -263,7 +263,7 @@ facturaEmisionSchema.pre('save', function () {
     totalServExentos: Math.round(totalServExentos * 100) / 100,
     totalMercanciasGravadas: Math.round(totalMercanciasGravadas * 100) / 100,
     totalMercanciasExentas: Math.round(totalMercanciasExentas * 100) / 100,
-    totalGravado: Math.round(totalVenta * 100) / 100,
+    totalGravado: Math.round((totalServGravados + totalMercanciasGravadas) * 100) / 100,
     totalExento: Math.round((totalServExentos + totalMercanciasExentas) * 100) / 100,
     totalVenta: Math.round(totalVenta * 100) / 100,
     totalDescuentos: Math.round(totalDescuentos * 100) / 100,

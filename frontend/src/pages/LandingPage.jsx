@@ -1,155 +1,27 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Tractor, Mail, Sparkles, LayoutDashboard, Warehouse,
-  Receipt, TrendingUp, Calendar, Calculator, ArrowRight, Check,
-  ChevronLeft, ChevronRight, ChevronDown, Share2, ShieldCheck, Zap,
-  MessageSquare
+  Tractor, ArrowRight, Sparkles, Check, ShieldCheck, Activity, TrendingUp,
+  Receipt, Warehouse, Smartphone, Monitor, Milk, Beef, Sprout, MapPin,
+  Wallet, MessageSquare, Zap, ClipboardList, PlayCircle, Clock
 } from 'lucide-react';
-import { PLANES } from '../data/planes';
-import PlanCard from '../components/billing/PlanCard';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
-import { useReveal, useCarousel } from '../hooks/useReveal';
+import fondoLogin from '../Recursos/fondo_login.webm';
+import { useReveal } from '../hooks/useReveal';
 import useSeo from '../hooks/useSeo';
 import AdvertisingSlot from '../components/ads/AdvertisingSlot';
-import fondoLogin from '../assets/videos/fondo_login.webm';
+import Aurora from '../components/Aurora';
+import { Button } from '../components/ui/button';
 import './LandingPage.css';
 
-const CARACTERISTICAS = [
-  {
-    icono: Mail,
-    titulo: 'Buzón Cloudflare instantáneo',
-    descripcion: 'Tu finca recibe un correo exclusivo (tu-finca@contadorganadero.com). Pide a tus proveedores que envíen las facturas ahí y entran al instante.',
-    tag: 'Automático & Seguro',
-  },
-  {
-    icono: MessageSquare,
-    titulo: 'Bot de WhatsApp para la finca',
-    descripcion: 'Reenvía archivos XML, PDFs o fotos de tiquetes directamente por WhatsApp mientras estás en el potrero o la veterinaria.',
-    tag: 'Móvil & WhatsApp',
-  },
-  {
-    icono: Sparkles,
-    titulo: 'Categorización con IA',
-    descripcion: 'Modelos de inteligencia artificial de última generación clasifican automáticamente cada gasto e insumo en tu contabilidad.',
-    tag: 'IA Nemotron',
-  },
-  {
-    icono: Warehouse,
-    titulo: 'Control de inventario multiespecie',
-    descripcion: 'Bovinos, aves de postura, peces (acuicultura) y abejas (apicultura) en un solo lugar con pesajes y conteo visual.',
-    tag: '4 Especies',
-  },
-  {
-    icono: TrendingUp,
-    titulo: 'Costos de producción',
-    descripcion: 'Calcula el costo por kg de carne, cartón de huevos, FCA y conoce tus márgenes reales sin enredos de hojas de cálculo.',
-    tag: 'Rentabilidad Real',
-  },
-  {
-    icono: Calculator,
-    titulo: 'Impuestos Costa Rica',
-    descripcion: 'IVA Cuatrimestral (D-135-1) y Renta Anual (D-101) con tramos y reglas tributarias actualizadas de Hacienda.',
-    tag: 'D-135-1 & D-101',
-  },
-  {
-    icono: Receipt,
-    titulo: 'Facturas y Acuses v4.4',
-    descripcion: 'Lectura completa de FacturaElectronica y MensajeHacienda. Auditoría automática del beneficio IVA al 1% en insumos agropecuarios.',
-    tag: 'Hacienda v4.4',
-  },
-  {
-    icono: LayoutDashboard,
-    titulo: 'Dashboard analítico',
-    descripcion: 'Visualiza ingresos, compras, alertas fiscales y rentabilidad de tu finca con gráficos actualizados en tiempo real.',
-    tag: 'Métricas Vivas',
-  },
-  {
-    icono: ShieldCheck,
-    titulo: 'Conciliación D-150 TRIBU-CR',
-    descripcion: 'Guía oficial paso a paso con totales de importes e impuestos soportados lista para declarar ante la Administración Tributaria.',
-    tag: 'TRIBU-CR 2026',
-  },
-];
+// WhatsApp de contacto para pre-venta y dudas del REA en Costa Rica
+const WHATSAPP_CONTACT_NUMBER = '50688888888';
+const WHATSAPP_DEFAULT_MSG = encodeURIComponent(
+  'Hola, vi la plataforma ContadorGanadero y quisiera información sobre cómo digitalizar la gestión de mi finca.'
+);
+const WHATSAPP_VENTAS_MSG = encodeURIComponent(
+  'Hola, represento una agroempresa/cooperativa y quisiera una propuesta para múltiples fincas en ContadorGanadero.'
+);
 
-const PASOS = [
-  {
-    numero: '1',
-    titulo: 'Pasa tu correo o envía por WhatsApp',
-    descripcion: 'Da a tus proveedores tu dirección de finca (@contadorganadero.com) o reenvía tus facturas al bot de WhatsApp.',
-  },
-  {
-    numero: '2',
-    titulo: 'La IA procesa y categoriza',
-    descripcion: 'Extraemos el XML, auditamos las tarifas del 1% de Hacienda y clasificamos los insumos automáticamente en segundos.',
-  },
-  {
-    numero: '3',
-    titulo: 'Reportes y declaraciones listas',
-    descripcion: 'Consulta tus costos por kilo, inventarios y genera tus declaraciones D-135-1, D-101 y D-150 con un solo clic.',
-  },
-];
-
-// Tabla comparativa (contabilidad manual vs ContadorGanadero)
-const COMPARATIVA = [
-  { tarea: 'Recepción de facturas de proveedores', manual: 'Manual (descargar una a una de correos)', app: 'Automático vía Cloudflare Email & WhatsApp' },
-  { tarea: 'Acuses de Hacienda (MensajeHacienda)', manual: 'Buscar el estado a mano en Hacienda', app: 'Lectura oficial de acuses y facturas en tiempo real' },
-  { tarea: 'Clasificar gastos de la finca', manual: 'A mano, factura por factura en libretas', app: 'Automatizado con Inteligencia Artificial' },
-  { tarea: 'Auditoría de IVA al 1% en insumos', manual: 'Riesgo de pagar de más (13% en vez de 1%)', app: 'Detección automática de errores en tarifas MAG' },
-  { tarea: 'IVA cuatrimestral (D-135-1)', manual: 'Cálculo en hojas de cálculo complejas', app: 'Calculado y listo para declarar' },
-  { tarea: 'Renta anual (D-101)', manual: 'Contador externo o cálculo tardío', app: 'Con tramos progresivos y deducciones REA' },
-  { tarea: 'Costo real de producción', manual: 'Estimaciones a ojo', app: 'Por kg de carne, cartón de huevos o tilapia' },
-  { tarea: 'Facturación electrónica', manual: 'Sistemas genéricos no agrícolas', app: 'Especializada en agropecuarios (v4.4 Hacienda)' },
-];
-
-// FAQ (se usa también para el schema FAQPage)
-const FAQ = [
-  {
-    pregunta: '¿Necesito estar inscrito en Hacienda para usar ContadorGanadero?',
-    respuesta:
-      'Para emitir facturas electrónicas y presentar declaraciones ante Hacienda necesitas estar inscrito como contribuyente (usualmente en el Régimen Especial Agropecuario REA ante el MAG). Para llevar tu control de gastos, inventario, costos por kilo y recepción de facturas puedes empezar desde el primer día.',
-  },
-  {
-    pregunta: '¿Cómo se reciben mis facturas electrónicas automáticamente?',
-    respuesta:
-      'Al crear tu cuenta, tu finca recibe una dirección de correo exclusiva (por ejemplo: tu-finca@contadorganadero.com) impulsada por Cloudflare y un bot de WhatsApp. Pides a tus proveedores que envíen las facturas ahí o las reenvías por WhatsApp. La plataforma recibe el XML, extrae los datos, valida la clave de Hacienda y categoriza todo con IA al instante, sin configurar contraseñas ni IMAP.',
-  },
-  {
-    pregunta: '¿Funciona con facturas del 1% de IVA del régimen agropecuario?',
-    respuesta:
-      'Sí. ContadorGanadero está diseñado específicamente para la tarifa reducida del 1% del Régimen Especial Agropecuario (REA) y para la facturación electrónica v4.4 de Hacienda, auditando que tus proveedores te cobren el 1% en alimentos, medicinas y fertilizantes y no el 13%.',
-  },
-  {
-    pregunta: '¿Qué impuestos calcula la plataforma?',
-    respuesta:
-      'Calcula el IVA cuatrimestral (formulario D-135-1), la renta anual (D-101) con tramos progresivos y la conciliación anual del REA (D-150). Además incluye un calendario fiscal con los vencimientos de Hacienda.',
-  },
-  {
-    pregunta: '¿Puedo controlar bovinos, aves, peces y abejas?',
-    respuesta:
-      'Sí. El módulo de inventario multiespecie registra pesajes de bovinos, ciclos de postura de aves, biomasa de peces y cosechas de miel. También calcula el costo real de producción por kilo, cartón de huevos o kilo de pescado.',
-  },
-  {
-    pregunta: '¿Cuánto cuesta? ¿Hay plan gratuito?',
-    respuesta:
-      'Ofrecemos un plan Gratis sin costo (sostenido con anuncios de Google AdSense) y un plan Pro de $10/mes sin anuncios, con más conteos IA, visión computacional (VLM), módulo D-150 y soporte por email. Puedes usar el plan gratuito todo el tiempo que desees.',
-  },
-];
-
-// Schema FAQPage generado a partir de las preguntas
-const FAQ_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQ.map((f) => ({
-    '@type': 'Question',
-    name: f.pregunta,
-    acceptedAnswer: { '@type': 'Answer', text: f.respuesta },
-  })),
-};
-
-// Schema de negocio (servicio profesional)
 const NEGOCIO_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'ProfessionalService',
@@ -157,549 +29,1204 @@ const NEGOCIO_SCHEMA = {
   url: 'https://contadorganandero.com',
   image: 'https://contadorganandero.com/favicon.svg',
   description:
-    'Contabilidad, inventario y facturación electrónica para productores agropecuarios de Costa Rica bajo el Régimen Especial Agropecuario (REA).',
+    'Gestión integral de fincas: inventario bovino, pastoreo rotacional, contabilidad y facturación electrónica para productores de Costa Rica bajo el Régimen Especial Agropecuario (REA).',
   areaServed: { '@type': 'Country', name: 'Costa Rica' },
   priceRange: '$$',
   knowsAbout: [
+    'Inventario y trazabilidad bovina',
+    'Pastoreo rotacional y potreros',
     'Facturación electrónica Costa Rica v4.4',
     'Régimen Especial Agropecuario REA',
-    'Declaración IVA D-135-1',
-    'Declaración de renta D-101',
-    'Conciliación D-150',
+    'Costos de producción ganadera',
   ],
 };
 
-const ITEMS_POR_VISTA = { mobile: 1, tablet: 2, desktop: 3 };
+/* -------------------------------------------------------------------------- */
+/*  Contenido de secciones e interactividad inferior                          */
+/* -------------------------------------------------------------------------- */
 
-function getItemsPerView() {
-  if (typeof window === 'undefined') return ITEMS_POR_VISTA.desktop;
-  if (window.innerWidth < 640) return ITEMS_POR_VISTA.mobile;
-  if (window.innerWidth < 1024) return ITEMS_POR_VISTA.tablet;
-  return ITEMS_POR_VISTA.desktop;
+const EJEMPLARES_BENTO = [
+  {
+    arete: '#CR-04512',
+    subtitulo: 'Brahman · Cebra · Hembra',
+    ganancia: '+850 g/día',
+    peso: '435 kg',
+    lote: 'Lote A',
+    potrero: 'Potrero 3',
+    edad: '28 meses',
+    sanidad: ['Aftosa ✓', 'Babesiosis ✓', 'Vitamina A ✓', 'Desparasitación ✓'],
+    padre: 'Toro «El Cobre» · CR-0012',
+    madre: 'Vaca «Estrella» · CR-0088',
+  },
+  {
+    arete: '#CR-0482',
+    subtitulo: 'Brahman Rojo · Toro Reproductor',
+    ganancia: '+960 g/día',
+    peso: '648 kg',
+    lote: 'Lote Cría',
+    potrero: 'Potrero 1',
+    edad: '34 meses',
+    sanidad: ['Brucelosis Neg. ✓', 'Clostridiosis ✓', 'Vitamina ADE ✓', 'Ivermectina ✓'],
+    padre: 'Toro «Monarca» · CR-0109',
+    madre: 'Vaca «Emperatriz» · CR-0218',
+  },
+  {
+    arete: '#CR-0914',
+    subtitulo: 'Gyrolando F1 · Vaca Lechera',
+    ganancia: '19.4 L/día',
+    peso: '518 kg',
+    lote: 'Ordeño A',
+    potrero: 'Potrero 4',
+    edad: '40 meses',
+    sanidad: ['CMT Libre ✓', 'Sales Minerales ✓', 'IBR / DVB ✓', 'Desparasitación ✓'],
+    padre: 'Toro «Sansão Gyr» · BR-4410',
+    madre: 'Vaca «Reina» · CR-0390',
+  },
+];
+
+const POTREROS_BENTO = [
+  { nombre: 'Potrero 1', pasto: 'Brachiaria brizantha', ocupacion: 3, descanso: 24, carga: '2.2 UA/ha · en pastoreo' },
+  { nombre: 'Potrero 2', pasto: 'Estrella Africana', ocupacion: 0, descanso: 12, carga: '1.9 UA/ha · recuperación' },
+  { nombre: 'Potrero 3', pasto: 'Panicum Mombaza', ocupacion: 1, descanso: 30, carga: '2.4 UA/ha · óptima' },
+  { nombre: 'Potrero 4', pasto: 'Pasto Toledo', ocupacion: 4, descanso: 18, carga: '2.1 UA/ha · óptima' },
+];
+
+const TRIMESTRES_FINANZAS = [
+  { label: 'Q1', i: 55, c: 40, margen: '+27%', ingresos: '₡8.4M', costos: '₡6.1M' },
+  { label: 'Q2', i: 70, c: 44, margen: '+37%', ingresos: '₡10.6M', costos: '₡6.7M' },
+  { label: 'Q3', i: 62, c: 36, margen: '+42%', ingresos: '₡9.5M', costos: '₡5.5M' },
+  { label: 'Q4', i: 90, c: 48, margen: '+47%', ingresos: '₡13.8M', costos: '₡7.3M' },
+];
+
+const EVENTOS_CAMPO = [
+  { icono: Sparkles, label: 'Nacimiento', color: 'text-amber-300', detalle: 'Cría #CR-0519 registrada en Lote A' },
+  { icono: TrendingUp, label: 'Pesaje', color: 'text-emerald-300', detalle: 'Arete #CR-04512 · 435 kg (+850 g/d)' },
+  { icono: Wallet, label: 'Venta', color: 'text-emerald-300', detalle: 'Factura electrónica v4.4 emitida' },
+];
+
+const METRICAS = [
+  { valor: '+100%', texto: 'Claridad en costos por cabeza' },
+  { valor: '~18 hrs', texto: 'Ahorro de horas semanales en registros manuales' },
+  { valor: '100%', texto: 'Control preciso de natalidad, destetes y pesajes' },
+  { valor: '4', texto: 'Especies: bovinos, aves, peces y colmenas' },
+];
+
+const PASOS = [
+  {
+    numero: '01',
+    titulo: 'Registra tu finca y tus lotes',
+    descripcion:
+      'Crea tus potreros, lotes y categorías (toros, vacas en producción, terneros) en menos de 5 minutos.',
+    icono: ClipboardList,
+  },
+  {
+    numero: '02',
+    titulo: 'Actualiza eventos en segundos desde el corral',
+    descripcion:
+      'Nacimientos, pesajes, vacunas y ventas directamente desde el celular, incluso con señal débil.',
+    icono: Smartphone,
+  },
+  {
+    numero: '03',
+    titulo: 'Toma decisiones con reportes automáticos',
+    descripcion:
+      'Rentabilidad por animal, flujo de caja mensual y costo por kilo siempre al día, sin hojas de cálculo.',
+    icono: TrendingUp,
+  },
+];
+
+const PLANES_LANDING = [
+  {
+    id: 'free',
+    nombre: 'Finca Pequeña',
+    subtitulo: 'Para el productor que empieza a digitalizar',
+    precio: '$0',
+    periodo: '/mes',
+    destacado: false,
+    cta: 'Comenzar gratis',
+    caracteristicas: [
+      'Buzón exclusivo @contadorganandero.com',
+      'Bot de WhatsApp para facturas',
+      'Auditoría del IVA 1% REA',
+      'Inventario bovino y multiespecie',
+      '10 conteos de ganado con IA al mes',
+      '1 usuario · 2 GB de almacenamiento',
+    ],
+  },
+  {
+    id: 'pro',
+    nombre: 'Hacienda Profesional',
+    subtitulo: 'Ganaderías que viven de su producción',
+    precio: '$10',
+    periodo: '/mes',
+    destacado: true,
+    badge: 'Más Popular',
+    cta: 'Probar Hacienda Pro',
+    caracteristicas: [
+      'Todo lo del plan Finca Pequeña',
+      'Módulo D-150 / Conciliación TRIBU-CR',
+      'Visión artificial VLM para conteos',
+      '300 conteos con IA al mes',
+      '3 usuarios y 25 GB',
+      '100% libre de anuncios',
+    ],
+  },
+  {
+    id: 'agroempresa',
+    nombre: 'Agroempresa',
+    subtitulo: 'Cooperativas y operaciones multi-finca',
+    precio: 'A medida',
+    periodo: '',
+    destacado: false,
+    cta: 'Hablar con ventas',
+    whatsapp: true,
+    caracteristicas: [
+      'Multi-finca con reportes consolidados',
+      'Usuarios y roles por finca',
+      'Facturación electrónica v4.4',
+      'Soporte prioritario dedicado',
+      'Capacitación para tu equipo',
+      'Acompañamiento contable continuo',
+    ],
+  },
+];
+
+/* -------------------------------------------------------------------------- */
+/*  Helper de animación de entrada (usado de #funciones hacia abajo)          */
+/* -------------------------------------------------------------------------- */
+
+function Reveal({ children, className = '', delay = 0 }) {
+  const [ref, visible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
+  return (
+    <div
+      ref={ref}
+      className={`reveal ${visible ? 'reveal--visible' : ''} ${className}`}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
+    >
+      {children}
+    </div>
+  );
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Micro-visual del Hero: Dashboard en marco de cristal (estático y limpio)  */
+/* -------------------------------------------------------------------------- */
+
+function HeroMockup() {
+  return (
+    <div className="hero-mockup relative mx-auto w-full max-w-4xl">
+      {/* Resplandor detrás del mockup */}
+      <div className="absolute -inset-6 bg-emerald-500/15 blur-[90px] rounded-full pointer-events-none" aria-hidden="true" />
+
+      <div className="hero-mockup-frame relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md shadow-2xl shadow-emerald-950/50 overflow-hidden text-left">
+        {/* Barra de título estilo ventana */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/30">
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
+            <span className="ml-2 text-[11px] sm:text-xs text-gray-400 font-mono truncate">
+              ContadorGanadero · Panel de Finca
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+            <Activity size={10} /> REA Activo
+          </span>
+        </div>
+
+        <div className="p-4 sm:p-6 space-y-5">
+          {/* Contador de cabezas de ganado */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-gray-400 mb-1">
+                <Beef size={13} className="text-emerald-400" /> Toros
+              </div>
+              <div className="text-lg sm:text-2xl font-bold font-heading text-white tracking-tight">12</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-gray-400 mb-1">
+                <Milk size={13} className="text-emerald-400" /> Vacas en producción
+              </div>
+              <div className="text-lg sm:text-2xl font-bold font-heading text-white tracking-tight">86</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-gray-400 mb-1">
+                <Sparkles size={13} className="text-amber-400" /> Terneros
+              </div>
+              <div className="text-lg sm:text-2xl font-bold font-heading text-amber-300 tracking-tight">23</div>
+            </div>
+          </div>
+
+          {/* Gráfica de ganancia de peso + estado de potreros */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-3 rounded-xl border border-white/10 bg-black/20 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-gray-300">Ganancia de peso promedio</span>
+                <span className="text-[10px] text-emerald-400 font-semibold">+850 g/día</span>
+              </div>
+              <svg viewBox="0 0 320 90" className="w-full h-20" role="img" aria-label="Gráfica de ganancia de peso">
+                <defs>
+                  <linearGradient id="gradPeso" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10B981" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d="M0,72 L53,64 L106,52 L159,47 L212,32 L265,24 L320,12 L320,90 L0,90 Z" fill="url(#gradPeso)" />
+                <path d="M0,72 L53,64 L106,52 L159,47 L212,32 L265,24 L320,12" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="212" cy="32" r="3.5" fill="#10B981" />
+                <circle cx="320" cy="12" r="3.5" fill="#10B981" />
+              </svg>
+              <div className="flex justify-between text-[9px] text-gray-500 font-mono px-0.5">
+                {['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'].map((m) => (
+                  <span key={m}>{m}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 rounded-xl border border-white/10 bg-black/20 p-4">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-300 mb-3">
+                <MapPin size={13} className="text-emerald-400" /> Estado de potreros
+              </div>
+              <ul className="space-y-2 text-[11px]">
+                <li className="flex items-center justify-between gap-2">
+                  <span className="text-gray-300 truncate">Potrero 1 · Lote A</span>
+                  <span className="shrink-0 inline-flex items-center gap-1 text-amber-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Ocupado 3d
+                  </span>
+                </li>
+                <li className="flex items-center justify-between gap-2">
+                  <span className="text-gray-300 truncate">Potrero 2</span>
+                  <span className="shrink-0 inline-flex items-center gap-1 text-emerald-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Descanso 12d
+                  </span>
+                </li>
+                <li className="flex items-center justify-between gap-2">
+                  <span className="text-gray-300 truncate">Potrero 3 · Lote B</span>
+                  <span className="shrink-0 inline-flex items-center gap-1 text-amber-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Ocupado 1d
+                  </span>
+                </li>
+                <li className="flex items-center justify-between gap-2">
+                  <span className="text-gray-300 truncate">Potrero 4</span>
+                  <span className="shrink-0 inline-flex items-center gap-1 text-emerald-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Listo
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Flujo de caja mensual */}
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-gray-300">Flujo de caja mensual</span>
+              <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500" /> Ingresos</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500" /> Costos</span>
+              </div>
+            </div>
+            <div className="flex items-end justify-between gap-2 h-16">
+              {[
+                { i: 62, c: 38 }, { i: 74, c: 42 }, { i: 55, c: 30 },
+                { i: 88, c: 46 }, { i: 70, c: 36 }, { i: 95, c: 40 },
+              ].map(({ i, c }, idx) => (
+                <div key={idx} className="flex items-end gap-1 flex-1 justify-center">
+                  <div className="w-2.5 sm:w-3 rounded-t bg-emerald-500/80" style={{ height: `${i}%` }} />
+                  <div className="w-2.5 sm:w-3 rounded-t bg-amber-500/70" style={{ height: `${c}%` }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Componente principal                                                      */
+/* -------------------------------------------------------------------------- */
 
 export default function LandingPage() {
   const navigate = useNavigate();
 
   // ===== SEO =====
   useSeo({
-    title: 'ContadorGanadero | Contabilidad Agrícola y Facturación REA en Costa Rica',
+    title: 'ContadorGanadero | Control total de tu ganadería — Costa Rica',
     description:
-      'Plataforma para productores agropecuarios de Costa Rica: importa facturas electrónicas por correo, categoriza gastos con IA y genera tus declaraciones de IVA y Renta del Régimen Especial Agropecuario (REA).',
+      'Gestiona tu hato bovino, optimiza la rotación de potreros, registra pesos, vacunas y controla la rentabilidad de tu finca en tiempo real. Facturación electrónica y REA incluidos.',
     path: '/',
-    jsonLd: [NEGOCIO_SCHEMA, FAQ_SCHEMA],
+    jsonLd: [NEGOCIO_SCHEMA],
   });
 
-  const handleSeleccionarPlan = (planId) => {
-    navigate('/login', { state: { registro: true, plan: planId } });
-  };
+  // Navbar: sombra al hacer scroll
+  const [navScrolled, setNavScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setNavScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-  // Compartir
-  const [copiado, setCopiado] = useState(false);
-  const handleCompartir = async () => {
-    const url = window.location.href;
-    const titulo = document.title;
+  // Estados interactivos para las animaciones de las secciones inferiores (#funciones)
+  const [ejemplarIdx, setEjemplarIdx] = useState(0);
+  const [potreroActivo, setPotreroActivo] = useState(2);
+  const [trimestreActivo, setTrimestreActivo] = useState(3);
+  const [eventoActivo, setEventoActivo] = useState(1);
+
+  const ejemplar = EJEMPLARES_BENTO[ejemplarIdx] || EJEMPLARES_BENTO[0];
+  const potreroActual = POTREROS_BENTO[potreroActivo] || POTREROS_BENTO[0];
+  const trimestreActual = TRIMESTRES_FINANZAS[trimestreActivo] || TRIMESTRES_FINANZAS[3];
+  const eventoActual = EVENTOS_CAMPO[eventoActivo] || EVENTOS_CAMPO[1];
+
+  // Tracking de conversión para Google Ads
+  const trackConversion = (etiqueta = 'inicio_registro', plan = 'free') => {
     try {
-      if (navigator.share) {
-        await navigator.share({ title: titulo, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setCopiado(true);
-        setTimeout(() => setCopiado(false), 2000);
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'conversion', {
+          send_to: window.GOOGLE_ADS_CONVERSION_ID || 'AW-DEFAULT/conversion',
+          value: plan === 'pro' ? 10.0 : 1.0,
+          currency: 'USD',
+          event_category: 'Google Ads Lead',
+          event_label: etiqueta,
+        });
       }
     } catch {
-      /* usuario canceló el share */
+      // no-op
     }
   };
 
-  // FAQ acordeón
-  const [faqAbierta, setFaqAbierta] = useState(0);
+  // Estado de transición animada hacia Iniciar Sesión / Registro
+  const [transicionAuth, setTransicionAuth] = useState(null); // null | 'login' | 'registro'
 
-  // Reveal animations for sections
-  const [heroRef, heroVisible] = useReveal({ rootMargin: '0px 0px -20% 0px' });
-  const [tldrRef, tldrVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [featuresRef, featuresVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [stepsRef, stepsVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [comparativaRef, comparativaVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [pricingRef, pricingVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [faqRef, faqVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [ctaRef, ctaVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
-  const [footerRef, footerVisible] = useReveal({ rootMargin: '0px 0px -10% 0px' });
+  const navegarConTransicion = (modo = 'login', state = {}) => {
+    if (transicionAuth) return;
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-  const carouselRef = useRef(null);
-  const touchStartRef = useRef({ x: 0, y: 0 });
-  const touchEndRef = useRef({ x: 0, y: 0 });
-  const touchMovedRef = useRef(false);
-
-  const [itemsPerView, setItemsPerView] = useState(getItemsPerView);
-
-  const slides = useMemo(() => {
-    const chunks = [];
-    for (let i = 0; i < CARACTERISTICAS.length; i += itemsPerView) {
-      chunks.push(CARACTERISTICAS.slice(i, i + itemsPerView));
-    }
-    return chunks;
-  }, [itemsPerView]);
-
-  const { currentIndex, goTo, next, prev, pause, resume } = useCarousel({
-    items: slides,
-    interval: 5000,
-    autoPlay: true,
-  });
-
-  const safeIndex = Math.min(currentIndex, Math.max(slides.length - 1, 0));
-
-  useEffect(() => {
-    const sync = () => setItemsPerView((actual) => {
-      const siguiente = getItemsPerView();
-      return siguiente === actual ? actual : siguiente;
-    });
-
-    sync();
-
-    const consultas = [
-      window.matchMedia('(max-width: 639px)'),
-      window.matchMedia('(max-width: 1023px)'),
-    ];
-    consultas.forEach((mq) => mq.addEventListener('change', sync));
-    window.addEventListener('orientationchange', sync);
-    return () => {
-      consultas.forEach((mq) => mq.removeEventListener('change', sync));
-      window.removeEventListener('orientationchange', sync);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!carouselRef.current) return;
-      if (!carouselRef.current.contains(document.activeElement) && e.target !== carouselRef.current) {
-        const carouselEl = document.querySelector('.landing-carousel');
-        if (!carouselEl || !carouselEl.contains(document.activeElement)) return;
-      }
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        prev();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        next();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [next, prev]);
-
-  const handleTouchStart = useCallback((e) => {
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    touchEndRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    touchMovedRef.current = false;
-    pause();
-  }, [pause]);
-
-  const handleTouchMove = useCallback((e) => {
-    if (!touchStartRef.current.x) return;
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    touchEndRef.current = { x: currentX, y: currentY };
-    const deltaX = currentX - touchStartRef.current.x;
-    const deltaY = currentY - touchStartRef.current.y;
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
-      touchMovedRef.current = true;
-      e.preventDefault();
-    }
-  }, []);
-
-  const handleTouchEnd = useCallback(() => {
-    if (!touchStartRef.current.x || !touchMovedRef.current) {
-      resume();
+    if (reduceMotion) {
+      navigate('/login', { state });
       return;
     }
-    const deltaX = touchEndRef.current.x - touchStartRef.current.x;
-    if (Math.abs(deltaX) > 50) {
-      if (deltaX > 0) next();
-      else prev();
-    }
-    resume();
-  }, [next, prev, resume]);
 
-  const handleMouseEnter = useCallback(() => pause(), [pause]);
-  const handleMouseLeave = useCallback(() => resume(), [resume]);
-  const handleFocusIn = useCallback(() => pause(), [pause]);
-  const handleFocusOut = useCallback(() => resume(), [resume]);
+    setTransicionAuth(modo);
+    window.setTimeout(() => {
+      if (typeof document !== 'undefined' && document.startViewTransition) {
+        document.startViewTransition(() => {
+          navigate('/login', { state });
+        });
+      } else {
+        navigate('/login', { state });
+      }
+    }, 310);
+  };
+
+  const handleIniciarSesion = (e) => {
+    if (e) e.preventDefault();
+    navegarConTransicion('login', { registro: false });
+  };
+
+  const handleSeleccionarPlan = (planId) => {
+    trackConversion('seleccion_plan_' + planId, planId);
+    navegarConTransicion('registro', { registro: true, plan: planId });
+  };
+
+  const handleCtaPrincipal = (etiqueta = 'hero_cta') => {
+    trackConversion(etiqueta, 'free');
+    navegarConTransicion('registro', { registro: true });
+  };
+
+  // Brillo radial que sigue el cursor en las tarjetas Bento
+  const brilloBento = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  };
 
   return (
-    <div className="landing">
-      {/* Navbar */}
-      <header className={`landing-nav ${heroVisible ? 'landing-nav--scrolled' : ''}`}>
-        <div className="landing-nav-brand">
-          <div className="landing-nav-logo">
-            <Tractor size={26} />
+    <>
+      {transicionAuth && (
+        <div className="landing-auth-portal" role="status" aria-live="polite">
+          <div className="landing-auth-portal-card flex flex-col items-center gap-3 rounded-2xl border border-emerald-500/35 bg-[#0D1512]/90 px-7 py-6 text-center shadow-2xl shadow-emerald-950/60">
+            <span className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/35">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-xl bg-emerald-400 opacity-35" />
+              <Tractor size={24} className="relative z-10" />
+            </span>
+            <div className="text-sm font-bold font-heading text-white tracking-tight">
+              {transicionAuth === 'registro'
+                ? 'Preparando el registro de tu finca...'
+                : 'Abriendo inicio de sesión...'}
+            </div>
+            <div className="text-[11px] text-emerald-300/90 font-medium">
+              {transicionAuth === 'registro'
+                ? 'Régimen Especial Agropecuario · Cuenta gratuita'
+                : 'Panel de Finca · ContadorGanadero'}
+            </div>
           </div>
-          <span className="landing-nav-title">ContadorGanadero</span>
         </div>
-        <nav className="landing-nav-links" aria-label="Navegación principal">
-          <a href="#caracteristicas">Características</a>
-          <a href="#como-funciona">Cómo funciona</a>
-          <a href="#comparativa">Comparativa</a>
-          <a href="#planes">Planes</a>
-          <a href="#faq">Preguntas</a>
-        </nav>
-        <div className="landing-nav-actions">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="landing-share-btn gap-1.5"
-            onClick={handleCompartir}
-            aria-label="Compartir"
-            title="Compartir"
-          >
-            <Share2 size={16} /> {copiado ? '¡Copiado!' : ''}
-          </Button>
-          <Button asChild variant="outline" size="sm" className="landing-nav-login">
-            <Link to="/login">Iniciar Sesión</Link>
-          </Button>
-          <Button asChild variant="gradient" size="sm" className="landing-nav-cta">
-            <Link to="/login" state={{ registro: true }}>Comenzar Gratis</Link>
-          </Button>
-        </div>
-      </header>
+      )}
+      <div
+        className={`landing font-sans selection:bg-emerald-500/30 selection:text-emerald-200 ${
+          transicionAuth ? 'landing--saliendo' : ''
+        }`}
+      >
+      {/* ================================================================== */}
+      {/* NAVBAR FLOTANTE (píldora glassmorphism)                            */}
+      {/* ================================================================== */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex justify-center px-3 sm:px-4 pt-3 sm:pt-4 pointer-events-none">
+        <header
+          className={`landing-nav-pill pointer-events-auto w-full max-w-5xl flex items-center justify-between gap-3 rounded-full border px-3 sm:px-5 py-2.5 transition-all duration-300 ${
+            navScrolled
+              ? 'border-white/10 bg-black/60 shadow-xl shadow-black/40'
+              : 'border-white/10 bg-black/40'
+          } backdrop-blur-md`}
+        >
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2.5 shrink-0" aria-label="ContadorGanadero — inicio">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/30">
+              <Tractor size={20} />
+            </span>
+            <span className="font-heading font-bold text-white tracking-tight text-base leading-none hidden min-[380px]:block">
+              Contador<span className="text-emerald-400">Ganadero</span>
+            </span>
+          </Link>
 
-      {/* Hero */}
-      <section ref={heroRef} className={`landing-hero ${heroVisible ? 'landing-hero--visible' : ''}`}>
+          {/* Enlaces centrales */}
+          <nav className="hidden md:flex items-center gap-6 text-sm text-gray-300" aria-label="Navegación principal">
+            <a href="#funciones" className="hover:text-emerald-400 transition-colors">Funciones</a>
+            <a href="#pastoreo" className="hover:text-emerald-400 transition-colors">Pastoreo</a>
+            <a href="#finanzas" className="hover:text-emerald-400 transition-colors">Finanzas</a>
+            <a href="#precios" className="hover:text-emerald-400 transition-colors">Precios</a>
+          </nav>
+
+          {/* Acciones */}
+          <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex text-gray-300 hover:text-white hover:bg-white/10"
+            >
+              <Link to="/login" onClick={handleIniciarSesion}>Iniciar Sesión</Link>
+            </Button>
+            <Button
+              size="sm"
+              className="rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold shadow-lg shadow-emerald-500/30 px-4"
+              onClick={() => handleCtaPrincipal('nav_cta')}
+              data-conversion="nav_signup"
+            >
+              Probar Gratis
+            </Button>
+          </div>
+        </header>
+      </div>
+
+      {/* ================================================================== */}
+      {/* HERO SECTION DE ALTO IMPACTO (video limpio sin animación encima)   */}
+      {/* ================================================================== */}
+      <section className="landing-hero relative overflow-hidden">
+        {/* Video de fondo de la marca */}
         <video className="landing-hero-video" autoPlay muted loop playsInline preload="auto">
           <source src={fondoLogin} type="video/webm" />
         </video>
         <div className="landing-hero-overlay" />
-        <div className="landing-hero-contenido animate-slide-up">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <Badge variant="default" className="text-xs px-3.5 py-1 bg-emerald-500/20 text-emerald-300 border-emerald-500/40 backdrop-blur-md shadow-md">
-              <ShieldCheck size={14} className="mr-1.5 inline" /> Régimen Especial Agropecuario (REA)
-            </Badge>
-          </div>
-          <h1 className="landing-hero-titulo font-heading font-black tracking-tight">
-            Tu contador personal<br />automatizado para la finca
-          </h1>
-          <p className="landing-hero-subtitulo text-slate-300">
-            ContadorGanadero es la plataforma para pequeños productores agropecuarios
-            de Costa Rica: recibe facturas al instante por correo y WhatsApp, categoriza gastos con IA y
-            genera tus declaraciones de Hacienda sin esfuerzo.
-          </p>
-          <div className="landing-hero-ctas flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full max-w-xs sm:max-w-none mx-auto pt-2">
-            <Button asChild variant="gradient" size="lg" className="h-12 px-7 text-base shadow-xl w-full sm:w-auto">
-              <Link to="/login" state={{ registro: true }}>
-                Comenzar Gratis <ArrowRight size={18} className="ml-2" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="h-12 px-7 text-base bg-slate-900/60 backdrop-blur-md border-slate-700 w-full sm:w-auto">
-              <a href="#como-funciona">
-                Ver cómo funciona
-              </a>
-            </Button>
-          </div>
-          <ul className="landing-hero-stats" aria-label="Datos clave">
-            <li><strong>4</strong> especies controladas</li>
-            <li><strong>IVA 1%</strong> régimen REA</li>
-            <li><strong>3</strong> declaraciones automatizadas</li>
-            <li><strong>100%</strong> en línea</li>
-          </ul>
-        </div>
-      </section>
 
-      {/* TL;DR / En resumen */}
-      <section ref={tldrRef} id="resumen" className={`landing-seccion ${tldrVisible ? 'landing-seccion--visible' : ''}`}>
-        <Card className="landing-tldr max-w-4xl mx-auto p-8 border-slate-800 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap size={20} className="text-amber-400" />
-            <h2 className="landing-tldr-titulo text-2xl font-bold font-heading text-white">En resumen</h2>
-          </div>
-          <ul className="landing-tldr-lista space-y-3.5 my-6 text-slate-200">
-            <li className="flex items-start gap-3">
-              <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
-              <span><strong>Automatiza tu contabilidad:</strong> las facturas llegan solas vía correo Cloudflare o WhatsApp y la IA las clasifica.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
-              <span><strong>Cumple con Hacienda:</strong> IVA (D-135-1), Renta (D-101) y conciliación REA (D-150) listas para declarar.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
-              <span><strong>Conoce tu rentabilidad real:</strong> costo por kilo de carne, cartón de huevos o kilo de tilapia.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <Check size={18} className="text-emerald-400 shrink-0 mt-0.5" />
-              <span><strong>Todo en un solo lugar:</strong> inventario de bovinos, aves, peces y abejas, sin hojas de cálculo.</span>
-            </li>
-          </ul>
-          <div className="pt-2">
-            <Button asChild variant="gradient" size="default">
-              <Link to="/login" state={{ registro: true }}>
-                Empieza hoy, gratis <ArrowRight size={16} className="ml-1.5" />
-              </Link>
-            </Button>
-          </div>
-        </Card>
-      </section>
-
-      {/* Características - Carrusel */}
-      <section ref={featuresRef} id="caracteristicas" className={`landing-seccion ${featuresVisible ? 'landing-seccion--visible' : ''}`}>
-        <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Todo lo que tu finca necesita</h2>
-          <p className="landing-seccion-subtitulo text-slate-400">
-            Una plataforma completa diseñada para el productor agropecuario costarricense.
-          </p>
-        </div>
-
-        <div
-          ref={carouselRef}
-          className="landing-carousel"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          onFocusIn={handleFocusIn}
-          onFocusOut={handleFocusOut}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          role="region"
-          aria-label="Carrusel de características"
-          aria-roledescription="carousel"
-        >
-          <div className="landing-carousel-viewport">
-            <div
-              className="landing-carousel-track"
-              style={{ transform: `translateX(-${safeIndex * 100}%)` }}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 sm:pt-36 pb-16 md:pb-24 flex flex-col items-center text-center">
+          {/* Badge superior */}
+          <div>
+            <a
+              href="#funciones"
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 backdrop-blur-md px-4 py-1.5 text-xs font-medium text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:border-emerald-400/70 transition-colors"
             >
-              {slides.map((slide, slideIndex) => (
-                <div
-                  key={slideIndex}
-                  className="landing-carousel-slide"
-                  role="group"
-                  aria-roledescription="slide"
-                  aria-label={`Slide ${slideIndex + 1} de ${slides.length}`}
-                  aria-hidden={slideIndex !== safeIndex}
-                  inert={slideIndex !== safeIndex}
-                >
-                  <div className="landing-caracteristicas-grid">
-                    {slide.map(({ icono: Icono, titulo, descripcion, tag }) => (
-                      <Card key={titulo} className="landing-caracteristica border-slate-800 bg-slate-900/80 hover:border-emerald-500/50 hover:shadow-2xl transition-all duration-300">
-                        <CardHeader className="p-6 flex flex-col justify-between h-full">
-                          <div>
-                            <div className="landing-caracteristica-top mb-4">
-                              <div className="landing-caracteristica-icono">
-                                <Icono size={22} className="text-emerald-400" />
-                              </div>
-                              {tag && <span className="landing-caracteristica-tag">{tag}</span>}
-                            </div>
-                            <CardTitle className="text-xl font-bold font-heading text-white">{titulo}</CardTitle>
-                            <CardDescription className="text-slate-300 text-sm mt-2.5 leading-relaxed">
-                              {descripcion}
-                            </CardDescription>
-                          </div>
-                          <div className="pt-4 mt-auto flex items-center text-xs font-semibold text-emerald-400/90 gap-1.5 border-t border-slate-800/60">
-                            <span>Integrado al sistema</span>
-                            <ArrowRight size={13} />
-                          </div>
-                        </CardHeader>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <Sparkles size={13} className="text-emerald-400" />
+              Nuevo: Control inteligente de lotes y trazabilidad bovina
+              <ArrowRight size={12} />
+            </a>
+          </div>
+
+          {/* Headline */}
+          <div>
+            <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-white tracking-tight leading-[1.08] max-w-4xl">
+              El control total de tu ganadería,{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
+                sin papeles ni complicaciones.
+              </span>
+            </h1>
+          </div>
+
+          {/* Subheadline */}
+          <div>
+            <p className="mt-6 text-base sm:text-lg text-gray-300 leading-relaxed max-w-2xl">
+              Gestiona tu hato bovino, optimiza la rotación de potreros, registra pesos, vacunas y
+              controla la rentabilidad de tu finca en tiempo real desde cualquier dispositivo.
+            </p>
+          </div>
+
+          {/* CTAs */}
+          <div>
+            <div className="mt-8 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <Button
+                size="lg"
+                className="w-full sm:w-auto h-12 px-8 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-base shadow-xl shadow-emerald-500/30 hover:shadow-emerald-400/40 transition-all group"
+                onClick={() => handleCtaPrincipal('hero_btn_comenzar')}
+                data-conversion="hero_signup"
+              >
+                Comenzar ahora — Es Gratis
+                <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto h-12 px-7 rounded-full border-white/15 bg-white/[0.03] backdrop-blur-md text-gray-200 hover:bg-white/10 hover:text-white hover:border-emerald-500/40 text-base"
+              >
+                <a href="#funciones" className="flex items-center justify-center gap-2">
+                  <PlayCircle size={18} className="text-emerald-400" />
+                  Ver demostración interactiva
+                </a>
+              </Button>
             </div>
           </div>
 
-          <div aria-live="polite" aria-atomic="true" className="sr-only">
-            Mostrando slide {safeIndex + 1} de {slides.length}
+          <div>
+            <p className="mt-4 text-xs text-gray-400 flex items-center justify-center gap-4">
+              <span className="flex items-center gap-1.5"><Check size={13} className="text-emerald-400" /> Sin tarjeta de crédito</span>
+              <span className="flex items-center gap-1.5"><Clock size={13} className="text-emerald-400" /> Listo en 2 minutos</span>
+            </p>
           </div>
 
-          {slides.length > 1 && (
-            <>
-              <button className="landing-carousel-btn landing-carousel-btn--prev" onClick={prev} aria-label="Slide anterior">
-                <ChevronLeft size={22} />
-              </button>
-              <button className="landing-carousel-btn landing-carousel-btn--next" onClick={next} aria-label="Slide siguiente">
-                <ChevronRight size={22} />
-              </button>
-
-              <div className="landing-carousel-dots" role="tablist" aria-label="Navegación del carrusel">
-                {slides.map((_, i) => (
-                  <button
-                    key={i}
-                    className={`landing-carousel-dot ${i === safeIndex ? 'landing-carousel-dot--active' : ''}`}
-                    onClick={() => goTo(i)}
-                    role="tab"
-                    aria-selected={i === safeIndex}
-                    aria-label={`Ir a slide ${i + 1}`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
+          {/* Mockup del Dashboard */}
+          <div className="w-full mt-14 md:mt-16">
+            <HeroMockup />
+          </div>
         </div>
       </section>
 
-      {/* Cómo funciona */}
-      <section ref={stepsRef} id="como-funciona" className={`landing-seccion ${stepsVisible ? 'landing-seccion--visible' : ''}`}>
-        <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">¿Cómo funciona?</h2>
-          <p className="landing-seccion-subtitulo text-slate-400">
-            En tres pasos, tu contabilidad queda bajo control.
-          </p>
+      {/* ================================================================== */}
+      {/* BENTO GRID DE CARACTERÍSTICAS (Animaciones de aquí hacia abajo)    */}
+      {/* ================================================================== */}
+      <section id="funciones" className="relative py-16 md:py-24 scroll-mt-20 bg-[#0D1512] overflow-hidden">
+        {/* Efecto Aurora sutil en la sección inferior (sobre fondo sólido, sin chocar con el video) */}
+        <div className="absolute inset-x-0 top-0 h-[420px] z-0 pointer-events-none" aria-hidden="true">
+          <Aurora
+            colorStops={['#064E3B', '#10B981', '#047857']}
+            amplitude={0.85}
+            blend={0.65}
+            speed={0.55}
+            height={0.42}
+            opacity={0.28}
+          />
         </div>
-        <div className="landing-pasos">
-          {PASOS.map(({ numero, titulo, descripcion }, i) => (
-            <Card key={numero} className={`landing-paso border-slate-800 bg-slate-900/70 shadow-lg ${stepsVisible ? 'landing-paso--visible' : ''}`} style={{ animationDelay: `${i * 150}ms` }}>
-              <CardContent className="p-6">
-                <div className="landing-paso-numero">{numero}</div>
-                <h3 className="landing-paso-titulo text-xl font-bold font-heading text-white mt-4">{titulo}</h3>
-                <p className="landing-paso-desc text-slate-400 text-sm mt-2">{descripcion}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[600px] h-[380px] bg-emerald-500/[0.08] blur-[130px] rounded-full pointer-events-none" aria-hidden="true" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-medium text-emerald-300">
+                <Warehouse size={12} /> Funciones
+              </span>
+              <h2 className="mt-4 text-3xl sm:text-4xl font-bold font-heading text-white tracking-tight">
+                Una plataforma, todo el control
+              </h2>
+              <p className="mt-3 text-gray-400 text-base">
+                Cada módulo está diseñado para el trabajo real de la finca: del corral a la declaración de Hacienda.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Tarjeta 1 (2 columnas): Inventario y Trazabilidad Individual (Interactiva) */}
+            <Reveal className="md:col-span-2">
+              <article onMouseMove={brilloBento} className="bento-card group h-full rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:shadow-[0_0_40px_rgba(16,185,129,0.12)] transition-all duration-300">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+                      <Beef size={20} />
+                    </span>
+                    <h3 className="mt-4 text-xl font-bold font-heading text-white tracking-tight">
+                      Inventario y trazabilidad individual
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+                      Ficha completa por animal: arete, raza, peso, historial sanitario y genealogía en un solo lugar.
+                    </p>
+                  </div>
+
+                  {/* Selector interactivo de ejemplar */}
+                  <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/30 p-1">
+                    {EJEMPLARES_BENTO.map((item, idx) => (
+                      <button
+                        key={item.arete}
+                        type="button"
+                        onClick={() => setEjemplarIdx(idx)}
+                        className={`rounded-lg px-2.5 py-1 text-[11px] font-mono font-semibold transition-all duration-200 ${
+                          ejemplarIdx === idx
+                            ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {item.arete}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mini-ficha del animal con transición suave */}
+                <div className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4 sm:p-5 transition-all duration-300">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 font-bold font-heading text-sm">
+                        CR
+                      </span>
+                      <div>
+                        <div className="text-sm font-bold text-white">Arete {ejemplar.arete}</div>
+                        <div className="text-[11px] text-gray-400">{ejemplar.subtitulo}</div>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 transition-all duration-300">
+                      <TrendingUp size={11} /> {ejemplar.ganancia}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 text-center">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-gray-500">Peso actual</div>
+                      <div className="text-sm font-bold text-white tabular-nums">{ejemplar.peso}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-gray-500">Lote</div>
+                      <div className="text-sm font-bold text-white">{ejemplar.lote}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-gray-500">Potrero</div>
+                      <div className="text-sm font-bold text-emerald-300">{ejemplar.potrero}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-gray-500">Edad</div>
+                      <div className="text-sm font-bold text-white">{ejemplar.edad}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-white/10">
+                    <span className="text-[10px] text-gray-500 mr-1">Sanidad:</span>
+                    {ejemplar.sanidad.map((v) => (
+                      <span key={v} className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-gray-300">
+                        {v}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 pt-3 mt-3 border-t border-white/10 text-[11px] text-gray-400">
+                    <span>Padre: <span className="text-gray-200 font-medium">{ejemplar.padre}</span></span>
+                    <span>Madre: <span className="text-gray-200 font-medium">{ejemplar.madre}</span></span>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+
+            {/* Tarjeta 2 (1 columna): Rotación de Potreros y Pasturas (Interactiva) */}
+            <Reveal delay={80}>
+              <article id="pastoreo" onMouseMove={brilloBento} className="bento-card group h-full rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:shadow-[0_0_40px_rgba(16,185,129,0.12)] transition-all duration-300 scroll-mt-24">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+                  <Sprout size={20} />
+                </span>
+                <h3 className="mt-4 text-xl font-bold font-heading text-white tracking-tight">
+                  Rotación de potreros y pasturas
+                </h3>
+                <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+                  Días de ocupación vs. descanso del pasto y carga animal por hectárea, siempre bajo control.
+                </p>
+
+                {/* Mini-gráfico interactivo de rotación */}
+                <div className="mt-6 space-y-2.5">
+                  {POTREROS_BENTO.map((p, idx) => {
+                    const activo = potreroActivo === idx;
+                    const pctOcupacion = (p.ocupacion / (p.ocupacion + p.descanso)) * 100;
+                    const pctDescanso = (p.descanso / (p.ocupacion + p.descanso)) * 100;
+                    return (
+                      <button
+                        key={p.nombre}
+                        type="button"
+                        onClick={() => setPotreroActivo(idx)}
+                        className={`w-full text-left rounded-lg p-2 transition-all duration-200 ${
+                          activo ? 'bg-white/[0.06] ring-1 ring-emerald-500/40' : 'hover:bg-white/[0.03]'
+                        }`}
+                      >
+                        <div className="flex justify-between text-[11px] text-gray-400 mb-1">
+                          <span className="text-gray-200 font-medium">{p.nombre}</span>
+                          <span>
+                            <span className="text-amber-300">{p.ocupacion}d ocupado</span>
+                            {' · '}
+                            <span className="text-emerald-300">{p.descanso}d descanso</span>
+                          </span>
+                        </div>
+                        <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-black/40">
+                          <div
+                            className="h-full rounded-full bg-amber-500/80 transition-all duration-500"
+                            style={{ width: `${pctOcupacion}%` }}
+                          />
+                          <div
+                            className="h-full rounded-full bg-emerald-500/70 transition-all duration-500"
+                            style={{ width: `${pctDescanso}%` }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+                  <div className="pt-2 flex items-center justify-between rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[11px]">
+                    <span className="text-gray-400 truncate mr-2">{potreroActual.pasto}</span>
+                    <span className="font-bold text-emerald-300 shrink-0">{potreroActual.carga}</span>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+
+            {/* Tarjeta 3 (1 columna): Contabilidad y Finanzas Ganaderas (Interactiva) */}
+            <Reveal>
+              <article id="finanzas" onMouseMove={brilloBento} className="bento-card group h-full rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:shadow-[0_0_40px_rgba(16,185,129,0.12)] transition-all duration-300 scroll-mt-24">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
+                  <Wallet size={20} />
+                </span>
+                <h3 className="mt-4 text-xl font-bold font-heading text-white tracking-tight">
+                  Contabilidad y finanzas ganaderas
+                </h3>
+                <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+                  Ingresos por venta de ganado y leche contra costos de suplementación y veterinaria.
+                </p>
+
+                {/* Mini-gráfica interactiva de ingresos vs costos */}
+                <div className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500" /> {trimestreActual.ingresos}</span>
+                      <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500" /> {trimestreActual.costos}</span>
+                    </div>
+                    <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                      Margen {trimestreActual.margen}
+                    </span>
+                  </div>
+                  <div className="flex items-end justify-between gap-2 h-24">
+                    {TRIMESTRES_FINANZAS.map(({ label, i, c }, idx) => {
+                      const esActivo = trimestreActivo === idx;
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setTrimestreActivo(idx)}
+                          className={`flex items-end gap-1 flex-1 justify-center h-full rounded-lg px-1 pt-2 transition-colors ${
+                            esActivo ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]'
+                          }`}
+                          aria-label={`Ver métricas de ${label}`}
+                        >
+                          <div
+                            className={`w-3 rounded-t transition-all duration-500 ${
+                              esActivo ? 'bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)]' : 'bg-emerald-500/75'
+                            }`}
+                            style={{ height: `${i}%` }}
+                          />
+                          <div
+                            className={`w-3 rounded-t transition-all duration-500 ${
+                              esActivo ? 'bg-amber-400' : 'bg-amber-500/65'
+                            }`}
+                            style={{ height: `${c}%` }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 flex justify-between text-[9px] font-mono px-2">
+                    {TRIMESTRES_FINANZAS.map(({ label }, idx) => (
+                      <span
+                        key={label}
+                        className={trimestreActivo === idx ? 'text-emerald-300 font-bold' : 'text-gray-500'}
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-2 text-[11px] text-gray-400">
+                  <Receipt size={13} className="text-emerald-400 shrink-0" />
+                  Facturación electrónica v4.4 y D-135-1 listos para Hacienda.
+                </div>
+              </article>
+            </Reveal>
+
+            {/* Tarjeta 4 (2 columnas): Modo Campo & Acceso Multi-dispositivo (Interactiva) */}
+            <Reveal delay={80} className="md:col-span-2">
+              <article onMouseMove={brilloBento} className="bento-card group h-full rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:shadow-[0_0_40px_rgba(16,185,129,0.12)] transition-all duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center h-full">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
+                        <Smartphone size={20} />
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10px] font-semibold text-gray-300">
+                        <Monitor size={11} className="text-emerald-400" /> Web · Móvil · Tablet
+                      </span>
+                    </div>
+                    <h3 className="mt-4 text-xl font-bold font-heading text-white tracking-tight">
+                      Modo campo & multi-dispositivo
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+                      Rápido en el celular desde el corral y potente en la computadora de la oficina.
+                      Todo se sincroniza automáticamente entre dispositivos.
+                    </p>
+                    <ul className="mt-4 space-y-2 text-sm text-gray-300">
+                      <li className="flex items-center gap-2">
+                        <Check size={15} className="text-emerald-400 shrink-0" /> Registra eventos con señal débil.
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={15} className="text-emerald-400 shrink-0" /> Foto del arete → identificación con IA.
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check size={15} className="text-emerald-400 shrink-0" /> Conteos de ganado con la cámara.
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Mini-mockup móvil interactivo */}
+                  <div className="flex justify-center">
+                    <div className="w-56 rounded-[1.6rem] border border-white/15 bg-black/50 p-2.5 shadow-2xl shadow-emerald-950/40 rotate-2 group-hover:rotate-0 transition-transform duration-500">
+                      <div className="rounded-[1.2rem] border border-white/10 bg-[#0D1512] p-3.5 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold text-gray-300">Registro rápido</span>
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        </div>
+                        {EVENTOS_CAMPO.map(({ icono: Icono, label, color }, idx) => {
+                          const activo = eventoActivo === idx;
+                          return (
+                            <button
+                              key={label}
+                              type="button"
+                              onClick={() => setEventoActivo(idx)}
+                              className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 transition-all duration-200 ${
+                                activo
+                                  ? 'border-emerald-500/50 bg-emerald-500/15 shadow-sm'
+                                  : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08]'
+                              }`}
+                            >
+                              <span className={`flex items-center gap-2 text-[11px] font-medium ${color}`}>
+                                <Icono size={13} /> {label}
+                              </span>
+                              <ArrowRight size={11} className={activo ? 'text-emerald-300 translate-x-0.5 transition-transform' : 'text-gray-500'} />
+                            </button>
+                          );
+                        })}
+                        <div className="rounded-lg bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-2 text-[10px] text-emerald-300 font-medium text-center transition-all duration-300">
+                          ✓ {eventoActual.detalle}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+          </div>
         </div>
       </section>
 
-      {/* Comparativa (tabla) */}
-      <section ref={comparativaRef} id="comparativa" className={`landing-seccion ${comparativaVisible ? 'landing-seccion--visible' : ''}`}>
-        <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Contabilidad manual vs. ContadorGanadero</h2>
-          <p className="landing-seccion-subtitulo text-slate-400">
-            Deja atrás las hojas de cálculo y los cuadernos: esto es lo que ganas al automatizar.
-          </p>
-        </div>
-        <div className="table-responsive landing-tabla-wrap">
-          <table className="landing-tabla tabla--stack">
-            <thead>
-              <tr>
-                <th scope="col">Tarea</th>
-                <th scope="col">Forma tradicional</th>
-                <th scope="col">Con ContadorGanadero</th>
-              </tr>
-            </thead>
-            <tbody>
-              {COMPARATIVA.map((fila) => (
-                <tr key={fila.tarea}>
-                  <td data-label="Tarea">{fila.tarea}</td>
-                  <td data-label="Forma tradicional">{fila.manual}</td>
-                  <td className="landing-tabla-ventaja" data-label="Con ContadorGanadero">
-                    <Check size={14} /> {fila.app}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* ================================================================== */}
+      {/* SECCIÓN DE MÉTRICAS / IMPACTO                                      */}
+      {/* ================================================================== */}
+      <section className="py-14 md:py-20 border-y border-white/5 bg-[#070B09]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+            {METRICAS.map((m, idx) => (
+              <Reveal key={m.texto} delay={idx * 70}>
+                <div className="text-center lg:text-left">
+                  <div className={`text-3xl sm:text-4xl font-bold font-heading tracking-tight ${
+                    idx === 1 ? 'text-amber-400' : 'text-emerald-400'
+                  }`}>
+                    {m.valor}
+                  </div>
+                  <p className="mt-2 text-xs sm:text-sm text-gray-400 leading-relaxed">{m.texto}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Planes y precios */}
-      <section ref={pricingRef} id="planes" className={`landing-seccion ${pricingVisible ? 'landing-seccion--visible' : ''}`}>
-        <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Planes transparentes para tu finca</h2>
-          <p className="landing-seccion-subtitulo text-slate-400">
-            Comienza gratis con todas las herramientas de contabilidad e inventario (financiado con anuncios), o activa Pro ($10/mes) para trabajar sin publicidad, con visión artificial VLM y conciliación D-150.
-          </p>
+      {/* ================================================================== */}
+      {/* CÓMO FUNCIONA EN 3 PASOS                                           */}
+      {/* ================================================================== */}
+      <section id="como-funciona" className="relative py-16 md:py-24 scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="text-center max-w-2xl mx-auto mb-14">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-medium text-emerald-300">
+                <Zap size={12} /> Simple & rápido
+              </span>
+              <h2 className="mt-4 text-3xl sm:text-4xl font-bold font-heading text-white tracking-tight">
+                Cómo funciona en 3 pasos
+              </h2>
+            </div>
+          </Reveal>
+
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Línea punteada conectora animada (desktop) */}
+            <div className="hidden md:block absolute top-10 left-[16%] right-[16%] border-t border-dashed border-emerald-500/35 animate-step-line" aria-hidden="true" />
+
+            {PASOS.map((paso, idx) => (
+              <Reveal key={paso.numero} delay={idx * 100}>
+                <article className="group relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-6 sm:p-8 hover:border-emerald-500/40 hover:-translate-y-1 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-heading font-bold text-white text-lg shadow-lg shadow-emerald-500/25 relative z-10">
+                      {paso.numero}
+                    </span>
+                    <paso.icono size={24} className="text-emerald-400/60 group-hover:text-emerald-300 transition-colors" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-bold font-heading text-white tracking-tight">{paso.titulo}</h3>
+                  <p className="mt-2 text-sm text-gray-400 leading-relaxed">{paso.descripcion}</p>
+                </article>
+              </Reveal>
+            ))}
+          </div>
         </div>
-        <div className="landing-planes-grid">
-          {PLANES.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              planActual={undefined}
-              onSeleccionar={handleSeleccionarPlan}
-              disabled={false}
-            />
-          ))}
-        </div>
-        <p className="landing-planes-nota text-slate-400">
-          <Check size={14} className="text-emerald-400 inline mr-1" /> Sin tarjeta para el plan Gratis. Cancela cuando quieras.
-        </p>
       </section>
 
-      {/* FAQ */}
-      <section ref={faqRef} id="faq" className={`landing-seccion ${faqVisible ? 'landing-seccion--visible' : ''}`}>
-        <div className="landing-seccion-head">
-          <h2 className="landing-seccion-titulo font-heading font-extrabold text-3xl md:text-4xl text-white">Preguntas frecuentes</h2>
-          <p className="landing-seccion-subtitulo text-slate-400">
-            Las dudas más comunes de los productores agropecuarios.
-          </p>
-        </div>
-        <div className="landing-faq max-w-3xl mx-auto space-y-3">
-          {FAQ.map((item, i) => {
-            const abierta = faqAbierta === i;
-            return (
-              <div key={item.pregunta} className={`landing-faq-item rounded-xl border border-slate-800 bg-slate-900/70 ${abierta ? 'landing-faq-item--abierta border-emerald-500/40 shadow-lg' : ''}`}>
-                <button
-                  className="landing-faq-pregunta w-full flex items-center justify-between p-5 text-left"
-                  onClick={() => setFaqAbierta(abierta ? -1 : i)}
-                  aria-expanded={abierta}
+      {/* ================================================================== */}
+      {/* PRECIOS                                                            */}
+      {/* ================================================================== */}
+      <section id="precios" className="relative py-16 md:py-24 scroll-mt-20 bg-[#0D1512]">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-emerald-500/[0.08] blur-[140px] rounded-full pointer-events-none" aria-hidden="true" />
+
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="text-center max-w-2xl mx-auto mb-14">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-medium text-emerald-300">
+                <Wallet size={12} /> Precios
+              </span>
+              <h2 className="mt-4 text-3xl sm:text-4xl font-bold font-heading text-white tracking-tight">
+                Precios justos para cada operación
+              </h2>
+              <p className="mt-3 text-gray-400 text-base">
+                Empieza gratis hoy. Crece a tu ritmo cuando tu finca lo necesite.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+            {PLANES_LANDING.map((plan, idx) => (
+              <Reveal key={plan.id} delay={idx * 80} className="h-full">
+                <article
+                  className={`relative h-full flex flex-col rounded-2xl border p-6 sm:p-8 backdrop-blur-md transition-all duration-300 ${
+                    plan.destacado
+                      ? 'border-emerald-500/50 bg-gradient-to-b from-emerald-500/[0.08] to-white/[0.02] shadow-[0_0_50px_rgba(16,185,129,0.15)] lg:scale-[1.03]'
+                      : 'border-white/10 bg-white/[0.03] hover:border-emerald-500/40'
+                  }`}
                 >
-                  <h3 className="font-semibold text-base text-white">{item.pregunta}</h3>
-                  <ChevronDown size={20} className={`landing-faq-chevron transition-transform duration-200 text-slate-400 ${abierta ? 'rotate-180 text-emerald-400' : ''}`} />
-                </button>
-                {abierta && <p className="landing-faq-respuesta px-5 pb-5 text-slate-300 text-sm leading-relaxed border-t border-slate-800/60 pt-3">{item.respuesta}</p>}
-              </div>
-            );
-          })}
+                  {plan.destacado && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-950 shadow-lg shadow-emerald-500/40">
+                      {plan.badge}
+                    </span>
+                  )}
+
+                  <h3 className="text-lg font-bold font-heading text-white tracking-tight">{plan.nombre}</h3>
+                  <p className="mt-1 text-xs text-gray-400">{plan.subtitulo}</p>
+
+                  <div className="mt-5 flex items-baseline gap-1">
+                    <span className={`text-4xl font-bold font-heading tracking-tight ${plan.destacado ? 'text-emerald-400' : 'text-white'}`}>
+                      {plan.precio}
+                    </span>
+                    {plan.periodo && <span className="text-sm text-gray-400">{plan.periodo}</span>}
+                  </div>
+
+                  <ul className="mt-6 space-y-3 text-sm text-gray-300 flex-1">
+                    {plan.caracteristicas.map((c) => (
+                      <li key={c} className="flex items-start gap-2.5">
+                        <Check size={15} className="text-emerald-400 shrink-0 mt-0.5" />
+                        <span>{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-8">
+                    {plan.whatsapp ? (
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="w-full h-11 rounded-full border-white/15 bg-white/[0.03] text-gray-200 hover:bg-white/10 hover:text-white hover:border-emerald-500/40 font-semibold"
+                      >
+                        <a
+                          href={`https://wa.me/${WHATSAPP_CONTACT_NUMBER}?text=${WHATSAPP_VENTAS_MSG}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2"
+                        >
+                          <MessageSquare size={16} className="text-emerald-400" />
+                          {plan.cta}
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button
+                        className={`w-full h-11 rounded-full font-semibold ${
+                          plan.destacado
+                            ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/30'
+                            : 'bg-white/10 hover:bg-white/15 text-white border border-white/15'
+                        }`}
+                        onClick={() => handleSeleccionarPlan(plan.id)}
+                        data-conversion={`pricing_${plan.id}`}
+                      >
+                        {plan.cta}
+                      </Button>
+                    )}
+                  </div>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal>
+            <p className="mt-8 text-center text-xs text-gray-500 flex items-center justify-center gap-1.5">
+              <ShieldCheck size={13} className="text-emerald-400" />
+              Sin tarjeta de crédito para empezar. Cancela o actualiza cuando quieras.
+            </p>
+          </Reveal>
         </div>
       </section>
 
-      {/* CTA final */}
-      <section ref={ctaRef} id="comenzar" className={`landing-seccion ${ctaVisible ? 'landing-seccion--visible' : ''}`}>
-        <Card className="landing-cta-final max-w-4xl mx-auto p-10 text-center border-emerald-500/40 bg-gradient-to-b from-emerald-950/40 via-slate-900/90 to-slate-900 shadow-2xl">
-          <CardHeader className="p-0 mb-6">
-            <CardTitle className="landing-cta-final-titulo text-3xl md:text-4xl font-black font-heading text-white">Empieza hoy a controlar tu finca</CardTitle>
-            <CardDescription className="landing-cta-final-subtitulo text-slate-300 text-base max-w-xl mx-auto mt-2">
-              Crea tu cuenta gratis y ten tu contabilidad agropecuaria lista en minutos.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Button asChild variant="gradient" size="lg" className="h-12 px-8 text-base shadow-xl">
-              <Link to="/login" state={{ registro: true }}>
-                Crear cuenta gratis <ArrowRight size={18} className="ml-2" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+      {/* ================================================================== */}
+      {/* CTA FINAL                                                          */}
+      {/* ================================================================== */}
+      <section id="comenzar" className="relative py-16 md:py-24 scroll-mt-20 overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <Reveal>
+            <div className="relative rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/60 via-[#0D1512] to-[#070B09] p-8 sm:p-14 text-center overflow-hidden">
+              <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+                <Aurora
+                  colorStops={['#047857', '#10B981', '#F59E0B']}
+                  amplitude={0.9}
+                  blend={0.6}
+                  speed={0.6}
+                  height={0.55}
+                  opacity={0.45}
+                />
+              </div>
+              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-emerald-500/20 blur-[110px] rounded-full pointer-events-none" aria-hidden="true" />
+
+              <div className="relative z-10 space-y-5">
+                <h2 className="text-3xl sm:text-4xl font-bold font-heading text-white tracking-tight">
+                  Digitaliza tu finca hoy mismo
+                </h2>
+                <p className="text-gray-400 text-base max-w-xl mx-auto">
+                  Únete a los productores que ya controlan su ganado, sus potreros y sus finanzas
+                  sin papeles. Tu primera cuenta es gratis y tarda 2 minutos.
+                </p>
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto h-12 px-8 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-base shadow-xl shadow-emerald-500/30 transition-all group"
+                    onClick={() => handleCtaPrincipal('cta_final')}
+                    data-conversion="bottom_signup"
+                  >
+                    Crear cuenta gratis ahora
+                    <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto h-12 px-7 rounded-full border-white/15 bg-white/[0.03] text-gray-200 hover:bg-white/10 hover:text-white"
+                  >
+                    <a
+                      href={`https://wa.me/${WHATSAPP_CONTACT_NUMBER}?text=${WHATSAPP_DEFAULT_MSG}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare size={18} className="text-emerald-400" />
+                      Consultar por WhatsApp
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
       </section>
 
-      {/* Espacio publicitario Google AdSense (solo visible si AdSense está activo) */}
-      <div className="max-w-4xl mx-auto px-4 my-8">
+      {/* Espacio publicitario Google AdSense (solo visible si está configurado) */}
+      <div className="max-w-4xl mx-auto px-4 my-6">
         <AdvertisingSlot mostrarPublico={true} tamaño="banner" />
       </div>
 
-      {/* Footer */}
-      <footer ref={footerRef} className={`landing-footer ${footerVisible ? 'landing-footer--visible' : ''}`}>
-        <div className="landing-footer-brand">
-          <div className="landing-footer-logo">
-            <Tractor size={22} />
+      {/* ================================================================== */}
+      {/* FOOTER MINIMALISTA                                                 */}
+      {/* ================================================================== */}
+      <footer className="border-t border-white/5 bg-[#070B09] py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            {/* Marca */}
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-500/20">
+                <Tractor size={20} />
+              </span>
+              <div>
+                <div className="font-heading font-bold text-white tracking-tight">
+                  Contador<span className="text-emerald-400">Ganadero</span>
+                </div>
+                <div className="text-xs text-gray-500">Gestión integral de fincas · contadorganandero.com</div>
+              </div>
+            </div>
+
+            {/* Enlaces */}
+            <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400" aria-label="Enlaces de pie de página">
+              <a href="#funciones" className="hover:text-emerald-400 transition-colors">Funciones</a>
+              <a href="#pastoreo" className="hover:text-emerald-400 transition-colors">Pastoreo</a>
+              <a href="#finanzas" className="hover:text-emerald-400 transition-colors">Finanzas</a>
+              <a href="#precios" className="hover:text-emerald-400 transition-colors">Precios</a>
+              <Link to="/login" onClick={handleIniciarSesion} className="hover:text-emerald-400 transition-colors">Iniciar Sesión</Link>
+              <Link to="/terminos" className="hover:text-emerald-400 transition-colors">Términos</Link>
+              <Link to="/privacidad" className="hover:text-emerald-400 transition-colors">Privacidad</Link>
+              <Link to="/eliminacion-datos" className="hover:text-emerald-400 transition-colors">Eliminación de Datos</Link>
+            </nav>
+
+            {/* Estado del sistema */}
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              Todos los sistemas operativos
+            </div>
           </div>
-          <span>ContadorGanadero</span>
+
+          <div className="mt-10 pt-6 border-t border-white/5 text-center text-xs text-gray-500">
+            © {new Date().getFullYear()} ContadorGanadero · contadorganandero.com — Todos los derechos reservados.
+            No afiliado directamente con el Ministerio de Hacienda ni el MAG de Costa Rica.
+          </div>
         </div>
-        <p className="landing-footer-desc">
-          Cumplimiento tributario con Hacienda y MAG — Costa Rica.
-        </p>
-        <div className="landing-footer-links">
-          <Link to="/login">Iniciar Sesión</Link>
-          <a href="#caracteristicas">Características</a>
-          <a href="#como-funciona">Cómo funciona</a>
-          <a href="#comparativa">Comparativa</a>
-          <a href="#planes">Planes</a>
-          <a href="#faq">Preguntas frecuentes</a>
-          <Link to="/terminos">Términos y Condiciones</Link>
-          <Link to="/condiciones-servicio">Condiciones del Servicio</Link>
-          <Link to="/privacidad">Política de Privacidad</Link>
-        </div>
-        <p className="landing-footer-copy">
-          © {new Date().getFullYear()} ContadorGanadero. Todos los derechos reservados.
-        </p>
       </footer>
 
-      {/* CTA fijo en móvil */}
-      <div className="landing-cta-movil">
-        <Button asChild variant="gradient" className="w-full shadow-lg">
-          <Link to="/login" state={{ registro: true }}>
-            Comenzar Gratis <ArrowRight size={16} className="ml-1" />
-          </Link>
+      {/* ================================================================== */}
+      {/* BOTÓN FLOTANTE DE WHATSAPP                                         */}
+      {/* ================================================================== */}
+      <a
+        href={`https://wa.me/${WHATSAPP_CONTACT_NUMBER}?text=${WHATSAPP_DEFAULT_MSG}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-full bg-emerald-500 text-slate-950 font-bold text-sm shadow-2xl shadow-emerald-500/40 hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all"
+        aria-label="Hablar con un asesor por WhatsApp"
+      >
+        <MessageSquare size={18} />
+        <span className="hidden sm:inline">¿Dudas? Hablar por WhatsApp</span>
+      </a>
+
+      {/* CTA FIJO EN MÓVIL */}
+      <div className="landing-cta-movil md:hidden">
+        <Button
+          size="lg"
+          className="w-full rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-xl"
+          onClick={() => handleCtaPrincipal('mobile_sticky_cta')}
+          data-conversion="sticky_signup"
+        >
+          Comenzar Gratis (Sin Tarjeta) <ArrowRight size={16} className="ml-1" />
         </Button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
