@@ -21,8 +21,8 @@ const configurarIMAP = () => {
     },
     logger: false,
     tls: {
-      // Evita errores por certificados autofirmados en algunos servidores IMAP
-      rejectUnauthorized: false,
+      // Verifica certificados TLS por defecto; solo desactiva si IMAP_ALLOW_SELF_SIGNED=true explícitamente
+      rejectUnauthorized: process.env.IMAP_ALLOW_SELF_SIGNED === 'true' ? false : true,
     },
   };
 };

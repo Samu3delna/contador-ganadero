@@ -1,56 +1,38 @@
 const mongoose = require('mongoose');
 const Tenant = require('../models/Tenant');
-
-const DEMO_TENANT_ID = '66554433221100aabbccddff';
+const { enterTenantContext } = require('../utils/tenantContext');
 
 /**
  * Middleware que extrae y valida el Tenant del request.
- * Debe ejecutarse DESPUES de authMiddleware.protegerRuta.
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
+ * Debe ejecutarse DESPUÉS de authMiddleware.protegerRuta.
+ * Fail-closed: elimina por completo el tenant demo offline (66554433221100aabbccddff)
+ * y sincroniza el tenantId validado en AsyncLocalStorage.
  */
 const extraerTenant = async (req, res, next) => {
   try {
+    // Nunca tomar tenantId de req.body, req.query ni req.params
     const tenantId = req.usuario?.tenantId || req.auth?.tenantId;
-    if (!tenantId) {
+    if (!tenantId || !mongoose.Types.ObjectId.isValid(String(tenantId))) {
       return res.status(401).json({
         error: 'SIN_TENANT',
         mensaje: 'El usuario no tiene una finca (tenant) asociada.',
       });
     }
 
-    const dbOffline = mongoose.connection.readyState !== 1;
-    const esDemoTenant = String(tenantId) === DEMO_TENANT_ID;
-
-    let tenant = null;
-    if (!dbOffline) {
-      try {
-        tenant = await Tenant.findById(tenantId);
-      } catch (err) {
-        console.warn('⚠️ Base de datos no disponible en extraerTenant:', err.message);
-      }
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: 'SERVICIO_NO_DISPONIBLE',
+        mensaje: 'Servicio temporalmente no disponible.',
+      });
     }
 
+    const tenant = await Tenant.findById(tenantId);
+
     if (!tenant) {
-      if (dbOffline || esDemoTenant) {
-        tenant = {
-          _id: tenantId,
-          nombreFinca: req.usuario?.nombreFinca || 'Hacienda El Cedro (Demo)',
-          plan: req.usuario?.plan || 'pro',
-          estado: 'activo',
-          limites: { facturasMes: 500, usuarios: 5, animales: 1000 },
-          consumoActual: { facturasMes: 12, usuarios: 1, animales: 45 },
-          emailAlias: 'hacienda-el-cedro-demo',
-          estaActivo: () => true,
-          save: async () => {},
-        };
-      } else {
-        return res.status(401).json({
-          error: 'TENANT_INVALIDO',
-          mensaje: 'La finca (tenant) asociada no existe.',
-        });
-      }
+      return res.status(401).json({
+        error: 'TENANT_INVALIDO',
+        mensaje: 'La finca (tenant) asociada no existe.',
+      });
     }
 
     if (tenant.estado === 'suspendido') {
@@ -73,29 +55,43 @@ const extraerTenant = async (req, res, next) => {
 
     req.tenant = tenant;
 
+    if (typeof res.setHeader === 'function') {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+
+    // Reforzar el contexto de tenant en AsyncLocalStorage
+    enterTenantContext({
+      tenantId: tenant._id,
+      usuarioId: req.usuario?._id,
+      rol: req.usuario?.rol,
+      isSuperAdmin: Boolean(req.usuario?.isSuperAdmin),
+    });
+
     /**
-     * Construye un filtro de consulta scoped al tenant actual.
+     * Construye un filtro de consulta scoped al tenant actual (mantenido por compatibilidad).
      * @param {object} extra - campos adicionales del filtro
      * @returns {object} filtro MongoDB
      */
     req.filtrarPorTenant = (extra = {}) => ({
-      tenantId: req.tenant._id,
       ...extra,
+      tenantId: req.tenant._id,
     });
 
     /**
-     * Asigna tenantId a un documento antes de guardarlo.
+     * Asigna tenantId a un documento antes de guardarlo (mantenido por compatibilidad).
      * @param {object} doc - documento Mongoose o objeto plano
      * @returns {object} el mismo doc con tenantId asignado
      */
     req.aplicarTenant = (doc) => {
-      doc.tenantId = req.tenant._id;
+      if (doc && typeof doc === 'object') {
+        doc.tenantId = req.tenant._id;
+      }
       return doc;
     };
 
-    next();
+    return next();
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 

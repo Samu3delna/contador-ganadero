@@ -4,6 +4,29 @@ const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION || 'v21.0';
 const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
+function validarUrlDescargaMeta(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error('URL de descarga de Meta inválida');
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new Error('Solo se permite HTTPS para descargas de Meta');
+  }
+  const host = parsed.hostname.toLowerCase();
+  const permitido =
+    host === 'graph.facebook.com' ||
+    host === 'lookaside.fbsbx.com' ||
+    host.endsWith('.fbcdn.net') ||
+    host.endsWith('.whatsapp.net') ||
+    host.endsWith('.fbsbx.com');
+  if (!permitido) {
+    throw new Error(`Host no autorizado para descarga de media Meta: ${host}`);
+  }
+  return parsed.toString();
+}
+
 /**
  * Envía un mensaje de texto por WhatsApp usando Meta Cloud API
  */
@@ -33,6 +56,7 @@ async function enviarMensajeWhatsApp(telefonoDestino, texto) {
           'Content-Type': 'application/json',
         },
         timeout: 10000,
+        maxRedirects: 0,
       }
     );
     return response.data;
@@ -49,11 +73,16 @@ async function descargarMediaMeta(mediaId) {
   if (!WHATSAPP_TOKEN) {
     throw new Error('WHATSAPP_ACCESS_TOKEN no configurado');
   }
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(String(mediaId || ''))) {
+    throw new Error('mediaId inválido');
+  }
 
   // 1. Obtener la URL de descarga del recurso
   const metaMediaUrl = `https://graph.facebook.com/${META_GRAPH_VERSION}/${mediaId}`;
   const metaRes = await axios.get(metaMediaUrl, {
     headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+    timeout: 10000,
+    maxRedirects: 0,
   });
 
   const downloadUrl = metaRes.data?.url;
@@ -61,10 +90,16 @@ async function descargarMediaMeta(mediaId) {
     throw new Error(`No se pudo obtener URL de descarga para mediaId ${mediaId}`);
   }
 
-  // 2. Descargar el archivo binario
-  const downloadRes = await axios.get(downloadUrl, {
+  const safeDownloadUrl = validarUrlDescargaMeta(downloadUrl);
+
+  // 2. Descargar el archivo binario con límite de tamaño (5 MB) y sin redirecciones arbitrarias
+  const downloadRes = await axios.get(safeDownloadUrl, {
     headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
     responseType: 'arraybuffer',
+    timeout: 15000,
+    maxRedirects: 0,
+    maxContentLength: 5 * 1024 * 1024,
+    maxBodyLength: 5 * 1024 * 1024,
   });
 
   return {
@@ -76,4 +111,5 @@ async function descargarMediaMeta(mediaId) {
 module.exports = {
   enviarMensajeWhatsApp,
   descargarMediaMeta,
+  validarUrlDescargaMeta,
 };

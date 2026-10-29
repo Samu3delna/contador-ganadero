@@ -489,7 +489,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
 
     // Guardar PDFs
     if (nombre.endsWith('.pdf') || tipo.includes('pdf')) {
-      const nombreArchivo = `${Date.now()}_${adjunto.filename || 'factura.pdf'}`;
+      const nombreArchivo = `${Date.now()}_${require('crypto').randomUUID()}.pdf`;
       const rutaPDF = path.join(PDF_DIR, nombreArchivo);
       fs.writeFileSync(rutaPDF, adjunto.content);
       // Guardar ruta RELATIVA para que funcione en cualquier entorno
@@ -528,7 +528,7 @@ async function procesarMensaje(msg, usuarioId, carpeta = 'INBOX') {
   for (const xmlAdjunto of xmlsEncontrados) {
     const xmlString = xmlAdjunto.content.toString('utf-8');
     // Guardar XML en disco ANTES de parsear
-    const nombreXML = `${Date.now()}_${xmlAdjunto.filename || 'factura.xml'}`;
+    const nombreXML = `${Date.now()}_${require('crypto').randomUUID()}.xml`;
     const rutaAbsolutaXML = path.join(XML_DIR, nombreXML);
     fs.writeFileSync(rutaAbsolutaXML, xmlAdjunto.content);
     // Guardar ruta RELATIVA para que funcione en cualquier entorno

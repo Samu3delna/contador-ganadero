@@ -104,7 +104,7 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
             value={form.password}
             onChange={handleChange}
             required
-            minLength={6}
+            minLength={esRegistro ? 12 : 6}
             className="pr-10"
           />
           <button

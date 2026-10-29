@@ -6,7 +6,11 @@ const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
 const SubscriptionEvent = require('../models/SubscriptionEvent');
 const ChatFeedback = require('../models/ChatFeedback');
+const RefreshToken = require('../models/RefreshToken');
 const { CATALOGO_PLANES, PLANES_VALIDOS } = require('../config/planes');
+const { escapeRegex } = require('../utils/escapeRegex');
+const { audit } = require('../utils/audit');
+const logger = require('../utils/logger');
 
 const ESTADOS_TENANT_VALIDOS = ['activo', 'suspendido', 'periodo_gracia', 'cancelado'];
 
@@ -52,12 +56,12 @@ const obtenerResumen = async (req, res, next) => {
       Tenant.aggregate([{ $group: { _id: '$plan', total: { $sum: 1 } } }]),
       Tenant.aggregate([{ $group: { _id: '$estado', total: { $sum: 1 } } }]),
       Tenant.countDocuments({ plan: 'pro', estado: 'activo' }),
-      Factura.countDocuments(),
-      Factura.countDocuments({ createdAt: { $gte: hace30dias } }),
-      Ingreso.countDocuments(),
-      ChatFeedback.aggregate([{ $group: { _id: '$feedback', total: { $sum: 1 } } }]),
-      SubscriptionEvent.countDocuments({ createdAt: { $gte: hace24horas } }),
-      SubscriptionEvent.countDocuments({ error: { $exists: true, $ne: null } }),
+      Factura.countDocuments({}, { skipTenant: true }),
+      Factura.countDocuments({ createdAt: { $gte: hace30dias } }, { skipTenant: true }),
+      Ingreso.countDocuments({}, { skipTenant: true }),
+      ChatFeedback.aggregate([{ $group: { _id: '$feedback', total: { $sum: 1 } } }], { skipTenant: true }),
+      SubscriptionEvent.countDocuments({ createdAt: { $gte: hace24horas } }, { skipTenant: true }),
+      SubscriptionEvent.countDocuments({ error: { $exists: true, $ne: null } }, { skipTenant: true }),
       // Serie diaria de registros de usuarios (últimos 30 días)
       Usuario.aggregate([
         { $match: { createdAt: { $gte: hace30dias } } },
@@ -116,11 +120,13 @@ const listarUsuarios = async (req, res, next) => {
 
     const filtro = {};
     if (q) {
-      const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const rx = new RegExp(escapeRegex(q, 50), 'i');
       filtro.$or = [{ nombre: rx }, { email: rx }];
     }
     if (req.query.suspendido === 'true') filtro.suspendido = true;
-    if (req.query.rol) filtro.rol = req.query.rol;
+    if (req.query.rol && ['dueño', 'admin', 'contador', 'peon'].includes(String(req.query.rol))) {
+      filtro.rol = String(req.query.rol);
+    }
 
     const [usuarios, total] = await Promise.all([
       Usuario.find(filtro)
@@ -152,9 +158,10 @@ const obtenerUsuario = async (req, res, next) => {
       throw new Error('Usuario no encontrado');
     }
 
+    const targetTenantId = usuario.tenantId?._id || usuario.tenantId;
     const [facturas, ingresos] = await Promise.all([
-      Factura.countDocuments({ tenantId: usuario.tenantId?._id || usuario.tenantId }),
-      Ingreso.countDocuments({ tenantId: usuario.tenantId?._id || usuario.tenantId }),
+      Factura.countDocuments({ tenantId: targetTenantId }, { skipTenant: true }),
+      Ingreso.countDocuments({ tenantId: targetTenantId }, { skipTenant: true }),
     ]);
 
     res.json({ usuario, actividad: { facturas, ingresos } });
@@ -178,18 +185,33 @@ const actualizarUsuario = async (req, res, next) => {
       throw new Error('Usuario no encontrado');
     }
 
-    if (nombre !== undefined) usuario.nombre = String(nombre).trim();
-    if (telefono !== undefined) usuario.telefono = telefono ? String(telefono).trim() : undefined;
+    const rolAnterior = usuario.rol;
+    if (nombre !== undefined) usuario.nombre = String(nombre).trim().slice(0, 100);
+    if (telefono !== undefined) usuario.telefono = telefono ? String(telefono).trim().slice(0, 30) : undefined;
     if (rol !== undefined) {
-      if (!['dueño', 'contador', 'peon'].includes(rol)) {
+      if (!['dueño', 'admin', 'contador', 'peon'].includes(rol)) {
         res.status(400);
-        throw new Error("Rol inválido. Válidos: dueño, contador, peon");
+        throw new Error('Rol inválido. Válidos: dueño, admin, contador, peon');
       }
-      usuario.rol = rol;
+      if (rol !== rolAnterior) {
+        usuario.rol = rol;
+        usuario.tokenVersion = (usuario.tokenVersion || 0) + 1;
+      }
     }
 
     await usuario.save();
-    res.json({ mensaje: 'Usuario actualizado', usuario: await Usuario.findById(usuario._id).populate('tenantId', 'nombreFinca plan estado') });
+    await audit(req, {
+      accion: 'admin.user_update',
+      recurso: 'Usuario',
+      recursoId: usuario._id,
+      resultado: 'success',
+      metadata: { rolAnterior, rolNuevo: usuario.rol },
+    });
+
+    res.json({
+      mensaje: 'Usuario actualizado',
+      usuario: await Usuario.findById(usuario._id).populate('tenantId', 'nombreFinca plan estado'),
+    });
   } catch (error) {
     next(error);
   }
@@ -221,9 +243,27 @@ const cambiarSuspensionUsuario = async (req, res, next) => {
 
     usuario.suspendido = suspendido;
     usuario.suspendidoEn = suspendido ? new Date() : undefined;
+    if (suspendido) {
+      usuario.tokenVersion = (usuario.tokenVersion || 0) + 1;
+    }
     await usuario.save();
 
-    console.log(`🛡️ [ADMIN] ${req.usuario.email} ${suspendido ? 'suspendió' : 'reactivó'} al usuario ${usuario.email}`);
+    if (suspendido) {
+      await RefreshToken.revocarTodosDeUsuario(usuario._id, 'user_suspended');
+    }
+
+    await audit(req, {
+      accion: suspendido ? 'admin.user_suspend' : 'admin.user_reactivate',
+      recurso: 'Usuario',
+      recursoId: usuario._id,
+      resultado: 'success',
+    });
+
+    logger.info('Cambio de estado de suspensión de usuario por Super Admin', {
+      adminId: String(req.usuario._id),
+      targetUserId: String(usuario._id),
+      suspendido,
+    });
     res.json({ mensaje: suspendido ? 'Usuario suspendido' : 'Usuario reactivado', suspendido: usuario.suspendido });
   } catch (error) {
     next(error);
@@ -231,7 +271,7 @@ const cambiarSuspensionUsuario = async (req, res, next) => {
 };
 
 /**
- * @desc    Generar contraseña temporal (se devuelve una sola vez)
+ * @desc    Generar contraseña temporal segura (se devuelve una sola vez e invalida sesiones previas)
  * @route   PUT /api/admin/usuarios/:id/reset-password
  * @access  Super Admin
  */
@@ -243,11 +283,20 @@ const resetPasswordUsuario = async (req, res, next) => {
       throw new Error('Usuario no encontrado');
     }
 
-    const passwordTemporal = crypto.randomBytes(6).toString('base64url'); // ~8 chars legibles
+    const passwordTemporal = `${crypto.randomBytes(12).toString('base64url')}A1!`;
     usuario.password = passwordTemporal;
-    await usuario.save(); // el pre-save hashea con bcrypt
+    usuario.tokenVersion = (usuario.tokenVersion || 0) + 1;
+    await usuario.save(); // el pre-save hashea con bcrypt (12 rounds)
 
-    console.log(`🛡️ [ADMIN] ${req.usuario.email} reseteó la contraseña de ${usuario.email}`);
+    await RefreshToken.revocarTodosDeUsuario(usuario._id, 'admin_password_reset');
+
+    await audit(req, {
+      accion: 'admin.user_reset_password',
+      recurso: 'Usuario',
+      recursoId: usuario._id,
+      resultado: 'success',
+    });
+
     res.json({
       mensaje: 'Contraseña temporal generada. Compártela con el usuario por un canal seguro.',
       passwordTemporal,
@@ -288,9 +337,16 @@ const eliminarUsuario = async (req, res, next) => {
     }
 
     const emailEliminado = usuario.email;
+    await RefreshToken.revocarTodosDeUsuario(usuario._id, 'user_deleted');
     await usuario.deleteOne();
 
-    console.log(`🛡️ [ADMIN] ${req.usuario.email} eliminó al usuario ${emailEliminado}`);
+    await audit(req, {
+      accion: 'admin.user_delete',
+      recurso: 'Usuario',
+      recursoId: usuario._id,
+      resultado: 'success',
+    });
+
     res.json({ mensaje: 'Usuario eliminado', email: emailEliminado });
   } catch (error) {
     next(error);
@@ -309,15 +365,13 @@ const listarTenants = async (req, res, next) => {
 
     const filtro = {};
     if (q) {
-      const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const rx = new RegExp(escapeRegex(q, 50), 'i');
       filtro.$or = [{ nombreFinca: rx }, { emailAlias: rx }];
     }
     if (req.query.plan && PLANES_VALIDOS.includes(req.query.plan)) filtro.plan = req.query.plan;
     if (req.query.estado && ESTADOS_TENANT_VALIDOS.includes(req.query.estado)) filtro.estado = req.query.estado;
 
     const [tenants, total] = await Promise.all([
-      // Nota: certificadoP12Base64/pinCertificado/passwordHacienda ya tienen
-      // select:false a nivel de schema — excluirlos aquí choca con esa proyección.
       Tenant.find(filtro)
         .populate('owner', 'nombre email suspendido')
         .sort({ createdAt: -1 })
@@ -340,8 +394,6 @@ const listarTenants = async (req, res, next) => {
 const obtenerTenant = async (req, res, next) => {
   try {
     const tenant = await Tenant.findById(req.params.id)
-      // Los secretos de Hacienda (certificado, PIN, contraseña) tienen select:false
-      // en el schema, así que nunca viajan en esta respuesta.
       .populate('owner', 'nombre email suspendido createdAt')
       .populate('usuarios.usuarioId', 'nombre email rol suspendido');
 
@@ -351,9 +403,9 @@ const obtenerTenant = async (req, res, next) => {
     }
 
     const [facturas, ingresos, eventosOnvo] = await Promise.all([
-      Factura.countDocuments({ tenantId: tenant._id }),
-      Ingreso.countDocuments({ tenantId: tenant._id }),
-      SubscriptionEvent.countDocuments({ tenantId: tenant._id }),
+      Factura.countDocuments({ tenantId: tenant._id }, { skipTenant: true }),
+      Ingreso.countDocuments({ tenantId: tenant._id }, { skipTenant: true }),
+      SubscriptionEvent.countDocuments({ tenantId: tenant._id }, { skipTenant: true }),
     ]);
 
     res.json({ tenant, actividad: { facturas, ingresos, eventosOnvo } });
@@ -385,7 +437,14 @@ const cambiarPlanTenant = async (req, res, next) => {
     tenant.aplicarPlan(plan);
     await tenant.save();
 
-    console.log(`🛡️ [ADMIN] ${req.usuario.email} cambió el plan del tenant ${tenant._id}: ${planAnterior} → ${plan}`);
+    await audit(req, {
+      accion: 'admin.tenant_change_plan',
+      recurso: 'Tenant',
+      recursoId: tenant._id,
+      resultado: 'success',
+      metadata: { planAnterior, planNuevo: plan },
+    });
+
     res.json({ mensaje: `Plan actualizado a "${plan}"`, plan: tenant.plan, limites: tenant.limites });
   } catch (error) {
     next(error);
@@ -417,7 +476,14 @@ const cambiarEstadoTenant = async (req, res, next) => {
     if (estado === 'cancelado') tenant.canceladoEn = new Date();
     await tenant.save();
 
-    console.log(`🛡️ [ADMIN] ${req.usuario.email} cambió el estado del tenant ${tenant._id}: ${estadoAnterior} → ${estado}`);
+    await audit(req, {
+      accion: 'admin.tenant_change_status',
+      recurso: 'Tenant',
+      recursoId: tenant._id,
+      resultado: 'success',
+      metadata: { estadoAnterior, estadoNuevo: estado },
+    });
+
     res.json({ mensaje: `Estado actualizado a "${estado}"`, estado: tenant.estado });
   } catch (error) {
     next(error);
@@ -440,7 +506,13 @@ const resetearConsumoTenant = async (req, res, next) => {
     tenant.resetearConsumo();
     await tenant.save();
 
-    console.log(`🛡️ [ADMIN] ${req.usuario.email} reseteó el consumo del tenant ${tenant._id}`);
+    await audit(req, {
+      accion: 'admin.tenant_reset_consumption',
+      recurso: 'Tenant',
+      recursoId: tenant._id,
+      resultado: 'success',
+    });
+
     res.json({ mensaje: 'Consumo mensual reseteado', consumoActual: tenant.consumoActual });
   } catch (error) {
     next(error);
@@ -457,12 +529,12 @@ const monitoreoEventosOnvo = async (req, res, next) => {
     const limit = Math.min(100, parseInt(req.query.limit, 10) || 50);
 
     const [eventos, porTipo, conError] = await Promise.all([
-      SubscriptionEvent.find()
+      SubscriptionEvent.find({}, null, { skipTenant: true })
         .populate('tenantId', 'nombreFinca')
         .sort({ createdAt: -1 })
         .limit(limit),
-      SubscriptionEvent.aggregate([{ $group: { _id: '$type', total: { $sum: 1 } } }, { $sort: { total: -1 } }]),
-      SubscriptionEvent.countDocuments({ error: { $exists: true, $ne: null } }),
+      SubscriptionEvent.aggregate([{ $group: { _id: '$type', total: { $sum: 1 } } }, { $sort: { total: -1 } }], { skipTenant: true }),
+      SubscriptionEvent.countDocuments({ error: { $exists: true, $ne: null } }, { skipTenant: true }),
     ]);
 
     res.json({
@@ -486,13 +558,13 @@ const monitoreoChatFeedback = async (req, res, next) => {
     const hace30dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const [feedback, resumen, negativos30d] = await Promise.all([
-      ChatFeedback.find()
+      ChatFeedback.find({}, null, { skipTenant: true })
         .populate('usuario', 'nombre email')
         .populate('tenantId', 'nombreFinca')
         .sort({ createdAt: -1 })
         .limit(limit),
-      ChatFeedback.aggregate([{ $group: { _id: '$feedback', total: { $sum: 1 } } }]),
-      ChatFeedback.countDocuments({ feedback: 'negativo', createdAt: { $gte: hace30dias } }),
+      ChatFeedback.aggregate([{ $group: { _id: '$feedback', total: { $sum: 1 } } }], { skipTenant: true }),
+      ChatFeedback.countDocuments({ feedback: 'negativo', createdAt: { $gte: hace30dias } }, { skipTenant: true }),
     ]);
 
     res.json({
@@ -517,9 +589,9 @@ const monitoreoEmail = async (req, res, next) => {
     const [tenantsConAlias, usuariosConImap, facturasPorEmail7d, facturasPorEmailTotal, facturasConError] = await Promise.all([
       Tenant.countDocuments({ emailAlias: { $exists: true, $ne: null } }),
       Usuario.countDocuments({ 'configEmail.host': { $exists: true, $ne: null } }),
-      Factura.countDocuments({ emailUID: { $exists: true, $ne: null }, createdAt: { $gte: hace7dias } }),
-      Factura.countDocuments({ emailUID: { $exists: true, $ne: null } }),
-      Factura.countDocuments({ estadoProcesamiento: 'error' }),
+      Factura.countDocuments({ emailUID: { $exists: true, $ne: null }, createdAt: { $gte: hace7dias } }, { skipTenant: true }),
+      Factura.countDocuments({ emailUID: { $exists: true, $ne: null } }, { skipTenant: true }),
+      Factura.countDocuments({ estado: 'error' }, { skipTenant: true }),
     ]);
 
     const imapGlobal = !!(process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_'));

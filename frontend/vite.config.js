@@ -16,12 +16,14 @@ export default defineConfig({
   },
   build: {
     emptyOutDir: true,
+    sourcemap: false,
   },
   server: {
     port: 3000,
     host: '0.0.0.0',
-    // Permite hosts de preview (Arena/e2b) en desarrollo. No afecta el build de producción.
-    allowedHosts: true,
+    allowedHosts: process.env.VITE_ALLOWED_HOSTS
+      ? process.env.VITE_ALLOWED_HOSTS.split(',').map((h) => h.trim()).filter(Boolean)
+      : ['localhost', '127.0.0.1'],
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

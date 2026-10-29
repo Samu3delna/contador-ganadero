@@ -71,7 +71,8 @@ const crearRep = async (req, res, next) => {
     //Construir una factura tipo REP con una sola línea "Abono a factura X"
     const fechaEmision = new Date(fechaPago);
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
-    const consecutivo = `00100001${hacienda.clave50.TIPO_DOC_CODIGO[TIPO_REP]}${String(Date.now()).slice(-10)}`;
+    const seqNum = typeof req.tenant?.siguienteConsecutivo === 'function' ? await req.tenant.siguienteConsecutivo(TIPO_REP) : Number(String(Date.now()).slice(-10));
+    const consecutivo = `00100001${hacienda.clave50.TIPO_DOC_CODIGO[TIPO_REP]}${String(seqNum).padStart(10, '0')}`;
 
     const nuevoRep = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento: TIPO_REP,

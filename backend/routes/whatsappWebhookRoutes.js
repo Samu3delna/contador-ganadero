@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const { enviarMensajeWhatsApp, descargarMediaMeta } = require('../services/whatsappService');
 const { procesarFacturaXMLString, resolverDestinatario } = require('../services/ingestaFacturaService');
@@ -11,6 +12,39 @@ const {
 } = require('../controllers/dataDeletionController');
 
 /**
+ * Verifica firma HMAC-SHA256 de Meta (X-Hub-Signature-256) cuando META_APP_SECRET está configurado
+ */
+function verificarFirmaMeta(req, res, next) {
+  const appSecret = process.env.META_APP_SECRET;
+  const isProd = process.env.NODE_ENV === 'production';
+  const signatureHeader = req.headers['x-hub-signature-256'];
+
+  if (!appSecret) {
+    if (isProd) {
+      return res.status(503).json({ error: 'Webhook de WhatsApp no configurado (falta META_APP_SECRET)' });
+    }
+    return next();
+  }
+
+  if (!signatureHeader) {
+    if (isProd) {
+      return res.status(401).json({ error: 'Falta firma X-Hub-Signature-256' });
+    }
+    return next();
+  }
+
+  const rawPayload = req.rawBody || JSON.stringify(req.body || {});
+  const expectedSig = 'sha256=' + crypto.createHmac('sha256', appSecret).update(rawPayload).digest('hex');
+  const bufA = Buffer.from(String(signatureHeader));
+  const bufB = Buffer.from(expectedSig);
+
+  if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+    return res.status(401).json({ error: 'Firma X-Hub-Signature-256 inválida' });
+  }
+  return next();
+}
+
+/**
  * GET /api/webhooks/whatsapp
  * Verificación del webhook por parte de Meta Cloud API (Handshake)
  */
@@ -19,12 +53,17 @@ router.get('/', (req, res) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'contador_ganadero_wa_secret';
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+  if (!VERIFY_TOKEN) {
+    return res.sendStatus(503);
+  }
 
   if (mode && token) {
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    const bufA = Buffer.from(String(token));
+    const bufB = Buffer.from(String(VERIFY_TOKEN));
+    if (mode === 'subscribe' && bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)) {
       console.log('✅ Webhook de WhatsApp verificado por Meta exitosamente.');
-      return res.status(200).send(challenge);
+      return res.status(200).send(String(challenge || ''));
     } else {
       console.warn('⚠️ Intento de verificación de WhatsApp fallido (token incorrecto).');
       return res.sendStatus(403);
@@ -38,13 +77,13 @@ router.get('/', (req, res) => {
  * POST /api/webhooks/whatsapp
  * Recepción y procesamiento de mensajes de WhatsApp
  */
-router.post('/', async (req, res) => {
+router.post('/', verificarFirmaMeta, async (req, res) => {
   // Responder 200 de inmediato a Meta para evitar reintentos duplicados
   res.status(200).send('EVENT_RECEIVED');
 
   try {
     const body = req.body;
-    if (body.object !== 'whatsapp_business_account') {
+    if (!body || body.object !== 'whatsapp_business_account') {
       return;
     }
 
@@ -121,7 +160,7 @@ router.post('/', async (req, res) => {
             `❌ Hubo un error al procesar tu factura XML: ${err.message}`
           );
         }
-      } 
+      }
       // Es un PDF
       else if (fileName.endsWith('.pdf') || mime.includes('pdf')) {
         await enviarMensajeWhatsApp(
@@ -129,14 +168,14 @@ router.post('/', async (req, res) => {
           `📄 Recibimos tu factura en PDF (*${doc.filename || 'factura'}*).\n\n💡 *Consejo:* Para que el sistema desglose automáticamente el IVA, el emisor y calcule tus impuestos de Hacienda, pídele a tu proveedor que te envíe también el archivo *.XML* y reenvíalo aquí.`
         );
       }
-    } 
+    }
     // Es una imagen / foto de recibo o tiquete
     else if (msgType === 'image') {
       await enviarMensajeWhatsApp(
         fromPhone,
         `📸 *Foto de comprobante recibida.*\n\nLa hemos guardado en tu cuenta para que el asistente de IA analice los montos y puedas deducirla en tus gastos.`
       );
-    } 
+    }
     // Es un mensaje de texto
     else if (msgType === 'text') {
       const texto = (message.text?.body || '').trim();
@@ -182,4 +221,3 @@ router.get('/data-deletion/status/:code', obtenerEstadoEliminacion);
 router.post('/data-deletion/solicitud', crearSolicitudEliminacionPublica);
 
 module.exports = router;
-

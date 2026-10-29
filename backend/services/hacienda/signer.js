@@ -77,7 +77,9 @@ function cargarLlaveDesdeBase64(p12Base64, pin, cacheKey = 'default') {
     cert,
     serialNumber: cert.serialNumber,
   };
-  _keyCache.set(cacheKey, result);
+  if (process.env.CACHE_P12_KEYS === 'true') {
+    _keyCache.set(cacheKey, result);
+  }
   return result;
 }
 
