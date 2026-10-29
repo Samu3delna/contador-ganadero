@@ -166,4 +166,7 @@ costoProduccionSchema.methods.recalcularIndicadoresCentro = function (referencia
   return centro.indicadores;
 };
 
+const tenantPlugin = require('./plugins/tenantPlugin');
+costoProduccionSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('CostoProduccion', costoProduccionSchema);

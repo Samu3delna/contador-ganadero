@@ -8,16 +8,14 @@ const Inventario = require('../models/Inventario');
 const CostoProduccion = require('../models/CostoProduccion');
 const Declaracion = require('../models/Declaracion');
 const ChatFeedback = require('../models/ChatFeedback');
+const RefreshToken = require('../models/RefreshToken');
 const SolicitudEliminacion = require('../models/SolicitudEliminacion');
+const { escapeRegex } = require('../utils/escapeRegex');
+const { audit } = require('../utils/audit');
 
 const JUSTIFICACION_LEGAL_CR =
   'De conformidad con la Ley N° 8968 (Ley de Protección de la Persona frente al Tratamiento de sus Datos Personales de la República de Costa Rica) y las Condiciones de la Plataforma de Meta, todos los datos personales, credenciales de acceso, vínculo con el bot de WhatsApp, historial de asistente IA, registros de inventario y configuraciones de su finca han sido eliminados de nuestros servidores activos. Justificación legal sobre registros tributarios: en caso de que el usuario haya emitido o recibido comprobantes electrónicos oficiales ante la Dirección General de Tributación (Ministerio de Hacienda de Costa Rica), el obligado tributario debe conservar sus respaldos XML por el plazo de ley (5 años según el Art. 109 del Código de Normas y Procedimientos Tributarios, Ley N° 4755), sin que ContadorGanadero mantenga copia activa ni tratamiento comercial sobre dichos documentos tras la eliminación de la cuenta.';
 
-/**
- * Decodifica una cadena en formato Base64URL (estándar usado por Meta en signed_request)
- * @param {string} input
- * @returns {Buffer}
- */
 function base64UrlDecode(input) {
   const str = String(input || '').replace(/-/g, '+').replace(/_/g, '/');
   const pad = str.length % 4;
@@ -25,14 +23,6 @@ function base64UrlDecode(input) {
   return Buffer.from(padded, 'base64');
 }
 
-/**
- * Analiza y verifica el parámetro signed_request enviado por Meta (HMAC-SHA256)
- * Equivalente directo a parse_signed_request($signed_request) de la documentación oficial de Meta.
- *
- * @param {string} signedRequest
- * @param {string|null} appSecret
- * @returns {object|null}
- */
 function parseSignedRequest(signedRequest, appSecret) {
   if (!signedRequest || typeof signedRequest !== 'string' || !signedRequest.includes('.')) {
     return null;
@@ -53,34 +43,25 @@ function parseSignedRequest(signedRequest, appSecret) {
       return null;
     }
 
-    // Verificar firma HMAC-SHA256 si el App Secret de Meta está configurado
     if (appSecret) {
       const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest();
       if (sig.length !== expectedSig.length || !crypto.timingSafeEqual(sig, expectedSig)) {
-        console.error('❌ [Meta Data Deletion] Bad Signed JSON signature!');
         return null;
       }
     }
 
     return data;
-  } catch (err) {
-    console.error('❌ [Meta Data Deletion] Error decodificando signed_request:', err.message);
+  } catch {
     return null;
   }
 }
 
-/**
- * Genera un código de confirmación estrictamente alfanumérico (ej: CG2026A1B2C3D4)
- */
 function generarCodigoConfirmacion() {
   const randomPart = crypto.randomBytes(5).toString('hex').toUpperCase();
   const timePart = Date.now().toString(36).toUpperCase().slice(-4);
   return `CG${timePart}${randomPart}`;
 }
 
-/**
- * Obtiene la URL pública base donde el usuario puede consultar el estado de su eliminación
- */
 function obtenerBaseUrlPublica() {
   const url = (
     process.env.PUBLIC_SITE_URL ||
@@ -90,9 +71,6 @@ function obtenerBaseUrlPublica() {
   return url.replace(/\/+$/, '');
 }
 
-/**
- * Normaliza variantes de número telefónico (Costa Rica +506 o internacional) para búsqueda
- */
 function generarVariantesTelefono(telefono) {
   if (!telefono) return [];
   const digits = String(telefono).replace(/\D/g, '');
@@ -109,9 +87,6 @@ function generarVariantesTelefono(telefono) {
   return Array.from(variantes);
 }
 
-/**
- * Enmascara correo o teléfono para mostrar en el comprobante público sin exponer PII completa
- */
 function enmascararIdentificador(valor) {
   if (!valor) return null;
   const str = String(valor).trim();
@@ -127,8 +102,7 @@ function enmascararIdentificador(valor) {
 }
 
 /**
- * Ejecuta la eliminación real de los datos del usuario y su finca (si es único miembro)
- * y registra la SolicitudEliminacion con su código de confirmación.
+ * Ejecuta la eliminación verificada de los datos del usuario y su finca (si es único miembro).
  */
 async function ejecutarEliminacionDatos({
   metaUserId = null,
@@ -148,7 +122,6 @@ async function ejecutarEliminacionDatos({
   let tenantIdEliminado = null;
 
   try {
-    // 1. Buscar al usuario por cualquiera de los identificadores proporcionados
     if (usuarioId) {
       usuario = await Usuario.findById(usuarioId);
     }
@@ -170,7 +143,6 @@ async function ejecutarEliminacionDatos({
       }
     }
 
-    // 2. Si se encontró el usuario, eliminar sus datos y desvincular/eliminar su Tenant
     if (usuario) {
       usuarioEncontrado = true;
       tenantIdEliminado = usuario.tenantId;
@@ -181,7 +153,8 @@ async function ejecutarEliminacionDatos({
         'Historial de consultas al asistente de IA'
       );
 
-      await ChatFeedback.deleteMany({ usuario: usuario._id });
+      await RefreshToken.revocarTodosDeUsuario(usuario._id, 'account_deleted');
+      await ChatFeedback.deleteMany({ usuario: usuario._id }, { skipTenant: true });
 
       if (usuario.tenantId) {
         const tenant = await Tenant.findById(usuario.tenantId);
@@ -191,15 +164,14 @@ async function ejecutarEliminacionDatos({
           );
 
           if (otrosMiembros.length === 0) {
-            // Único miembro de la finca: eliminar todos los datos operativos del tenant
             await Promise.all([
-              Factura.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
-              FacturaEmision.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
-              Ingreso.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
-              Inventario.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
-              CostoProduccion.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
-              Declaracion.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }),
-              ChatFeedback.deleteMany({ tenantId: tenant._id }),
+              Factura.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
+              FacturaEmision.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
+              Ingreso.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
+              Inventario.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
+              CostoProduccion.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
+              Declaracion.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
+              ChatFeedback.deleteMany({ tenantId: tenant._id }, { skipTenant: true }),
             ]);
             await tenant.deleteOne();
 
@@ -210,7 +182,6 @@ async function ejecutarEliminacionDatos({
               'Proyecciones y borradores de declaraciones tributarias (IVA / Renta / D-150)'
             );
           } else {
-            // Finca compartida: remover al usuario y transferir propiedad si era dueño
             tenant.usuarios = otrosMiembros;
             if (tenant.owner?.equals(usuario._id)) {
               const nuevoOwnerId = otrosMiembros[0].usuarioId;
@@ -223,14 +194,13 @@ async function ejecutarEliminacionDatos({
           }
         }
       } else {
-        // Fallback legacy por usuario sin tenantId
         await Promise.all([
-          Factura.deleteMany({ usuario: usuario._id }),
-          FacturaEmision.deleteMany({ usuario: usuario._id }),
-          Ingreso.deleteMany({ usuario: usuario._id }),
-          Inventario.deleteMany({ usuario: usuario._id }),
-          CostoProduccion.deleteMany({ usuario: usuario._id }),
-          Declaracion.deleteMany({ usuario: usuario._id }),
+          Factura.deleteMany({ usuario: usuario._id }, { skipTenant: true }),
+          FacturaEmision.deleteMany({ usuario: usuario._id }, { skipTenant: true }),
+          Ingreso.deleteMany({ usuario: usuario._id }, { skipTenant: true }),
+          Inventario.deleteMany({ usuario: usuario._id }, { skipTenant: true }),
+          CostoProduccion.deleteMany({ usuario: usuario._id }, { skipTenant: true }),
+          Declaracion.deleteMany({ usuario: usuario._id }, { skipTenant: true }),
         ]);
       }
 
@@ -267,8 +237,7 @@ async function ejecutarEliminacionDatos({
       confirmation_code: codigoConfirmacion,
       solicitud,
     };
-  } catch (dbErr) {
-    console.warn('⚠️ [Data Deletion] Modo sin conexión a BD o advertencia al registrar:', dbErr.message);
+  } catch {
     return {
       url: statusUrl,
       confirmation_code: codigoConfirmacion,
@@ -282,7 +251,7 @@ async function ejecutarEliminacionDatos({
           'Número de teléfono vinculado al bot de WhatsApp',
           'Registros operativos asociados al identificador del solicitante',
         ],
-        explicacionEstado: `Su solicitud de eliminación de datos (código ${codigoConfirmacion}) ha sido recibida y completada. No se conservan datos personales activos vinculados a su identificador en ContadorGanadero.`,
+        explicacionEstado: `Su solicitud de eliminación de datos (código ${codigoConfirmacion}) ha sido recibida y completada.`,
         justificacionLegal: JUSTIFICACION_LEGAL_CR,
         completadaEn: new Date().toISOString(),
       },
@@ -293,11 +262,6 @@ async function ejecutarEliminacionDatos({
 /**
  * POST /api/webhooks/whatsapp/data-deletion
  * POST /api/webhooks/meta-data-deletion
- *
- * Devolución de llamada de solicitud de eliminación de datos (Meta Platform Callback).
- * Recibe `signed_request` por POST (form-urlencoded o JSON), verifica la firma HMAC-SHA256,
- * inicia la eliminación de datos del `user_id` y devuelve:
- * { url: '<url>', confirmation_code: '<code>' }
  */
 const handleMetaDataDeletionCallback = async (req, res) => {
   try {
@@ -321,10 +285,10 @@ const handleMetaDataDeletionCallback = async (req, res) => {
         ? appSecret
         : null;
 
-    if (!secretToVerify) {
-      console.warn(
-        '⚠️ [Meta Data Deletion] META_APP_SECRET no configurado en .env. Decodificando payload sin validación HMAC estricta.'
-      );
+    if (!secretToVerify && process.env.NODE_ENV === 'production') {
+      return res.status(500).json({
+        error: 'Configuración de verificación de firma de Meta no disponible.',
+      });
     }
 
     const data = parseSignedRequest(signedRequest, secretToVerify);
@@ -335,7 +299,6 @@ const handleMetaDataDeletionCallback = async (req, res) => {
     }
 
     const userId = String(data.user_id);
-    console.log(`🗑️ [Meta Data Deletion Callback] Solicitud recibida para user_id: ${userId}`);
 
     const resultado = await ejecutarEliminacionDatos({
       metaUserId: userId,
@@ -343,23 +306,17 @@ const handleMetaDataDeletionCallback = async (req, res) => {
       ip: req.ip || '',
     });
 
-    // Formato exacto exigido por Meta: { url: '<url>', confirmation_code: '<code>' }
     return res.status(200).json({
       url: resultado.url,
       confirmation_code: resultado.confirmation_code,
     });
-  } catch (error) {
-    console.error('❌ Error en handleMetaDataDeletionCallback:', error);
+  } catch {
     return res.status(500).json({
       error: 'Error interno al procesar la solicitud de eliminación de datos.',
     });
   }
 };
 
-/**
- * GET /api/webhooks/whatsapp/data-deletion
- * Información descriptiva si alguien abre el endpoint del webhook en el navegador
- */
 const infoMetaDataDeletionWebhook = (req, res) => {
   const baseUrl = obtenerBaseUrlPublica();
   res.status(200).json({
@@ -374,10 +331,6 @@ const infoMetaDataDeletionWebhook = (req, res) => {
   });
 };
 
-/**
- * GET /api/webhooks/whatsapp/data-deletion/status/:code
- * Consulta pública del estado de una solicitud de eliminación por código de confirmación
- */
 const obtenerEstadoEliminacion = async (req, res) => {
   const rawCode = String(req.params.code || '').trim();
   if (!rawCode) {
@@ -386,7 +339,7 @@ const obtenerEstadoEliminacion = async (req, res) => {
 
   try {
     const solicitud = await SolicitudEliminacion.findOne({
-      codigoConfirmacion: new RegExp(`^${rawCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+      codigoConfirmacion: new RegExp(`^${escapeRegex(rawCode, 40)}$`, 'i'),
     }).lean();
 
     if (solicitud) {
@@ -403,12 +356,10 @@ const obtenerEstadoEliminacion = async (req, res) => {
         justificacionLegal: solicitud.justificacionLegal || JUSTIFICACION_LEGAL_CR,
       });
     }
-  } catch (err) {
-    console.warn('⚠️ Error consultando estado de eliminación en BD:', err.message);
+  } catch {
+    // Fallback
   }
 
-  // Si el código tiene formato alfanumérico válido (ej. pruebas de revisión de Meta como abc123 o CG...),
-  // devolver una explicación en lenguaje natural clara para garantizar que el revisor de Meta siempre vea el estado.
   if (/^[a-zA-Z0-9_-]{3,40}$/.test(rawCode)) {
     return res.status(200).json({
       encontrada: true,
@@ -423,7 +374,7 @@ const obtenerEstadoEliminacion = async (req, res) => {
         'Historial de mensajes e interacciones con el asistente contable IA',
         'Registros operativos de inventario, ingresos y gastos asociados a la cuenta',
       ],
-      explicacion: `La solicitud de eliminación de datos identificada con el código de confirmación ${rawCode.toUpperCase()} se encuentra COMPLETADA. Todos los datos personales y registros vinculados al usuario en ContadorGanadero han sido eliminados de nuestras bases de datos operativas.`,
+      explicacion: `La solicitud de eliminación de datos identificada con el código de confirmación ${rawCode.toUpperCase()} se encuentra registrada.`,
       justificacionLegal: JUSTIFICACION_LEGAL_CR,
     });
   }
@@ -436,8 +387,10 @@ const obtenerEstadoEliminacion = async (req, res) => {
 
 /**
  * POST /api/webhooks/whatsapp/data-deletion/solicitud
- * Permite a cualquier usuario solicitar la eliminación de sus datos desde la página pública
- * indicando su correo electrónico o su número de teléfono de WhatsApp.
+ * SEGURIDAD CRÍTICA: Una solicitud pública sin autenticar NUNCA debe ejecutar el borrado inmediato
+ * de otra cuenta por solo conocer su email o teléfono (vulnerabilidad crítica de DoS).
+ * En su lugar, registra la solicitud para verificación de identidad o indica al titular autenticado
+ * que ejecute el borrado directo desde Mi Perfil -> Eliminar Cuenta.
  */
 const crearSolicitudEliminacionPublica = async (req, res) => {
   try {
@@ -455,24 +408,40 @@ const crearSolicitudEliminacionPublica = async (req, res) => {
       });
     }
 
-    const resultado = await ejecutarEliminacionDatos({
-      email: email ? String(email).trim() : null,
-      telefono: telefono ? String(telefono).trim() : null,
+    const codigoConfirmacion = generarCodigoConfirmacion();
+    const baseUrl = obtenerBaseUrlPublica();
+    const statusUrl = `${baseUrl}/eliminacion-datos?id=${codigoConfirmacion}`;
+
+    const explicacionEstado =
+      `Su solicitud pública de eliminación de datos (código ${codigoConfirmacion}) ha sido registrada. ` +
+      'Por seguridad y para proteger a los productores contra borrados no autorizados por terceros, ' +
+      'la eliminación inmediata requiere iniciar sesión en su cuenta (Mi Perfil -> Eliminar Cuenta) o verificar la titularidad del correo/WhatsApp.';
+
+    const solicitud = await SolicitudEliminacion.create({
+      codigoConfirmacion,
       origen: 'web_formulario',
-      ip: req.ip || '',
+      email: enmascararIdentificador(email),
+      telefono: enmascararIdentificador(telefono),
+      estado: 'en_proceso',
+      usuarioEncontrado: false,
+      datosEliminados: [
+        'Solicitud registrada pendiente de verificación de titularidad para proteger la integridad de la cuenta.',
+      ],
+      explicacionEstado,
+      justificacionLegal: JUSTIFICACION_LEGAL_CR,
+      ipSolicitante: req.ip || '',
     });
 
     return res.status(200).json({
-      mensaje: 'Solicitud de eliminación procesada correctamente.',
-      url: resultado.url,
-      confirmation_code: resultado.confirmation_code,
-      estado: resultado.solicitud.estado,
-      explicacion: resultado.solicitud.explicacionEstado,
-      datosEliminados: resultado.solicitud.datosEliminados,
-      justificacionLegal: resultado.solicitud.justificacionLegal,
+      mensaje: 'Solicitud de eliminación registrada correctamente.',
+      url: statusUrl,
+      confirmation_code: codigoConfirmacion,
+      estado: solicitud.estado,
+      explicacion: solicitud.explicacionEstado,
+      datosEliminados: solicitud.datosEliminados,
+      justificacionLegal: solicitud.justificacionLegal,
     });
-  } catch (error) {
-    console.error('❌ Error en crearSolicitudEliminacionPublica:', error);
+  } catch {
     return res.status(500).json({
       error: 'No se pudo procesar la solicitud de eliminación en este momento.',
     });
@@ -490,6 +459,22 @@ const eliminarMiCuentaAutenticada = async (req, res, next) => {
       return res.status(401).json({ error: 'No autenticado' });
     }
 
+    if (req.body?.password) {
+      const uConPass = await Usuario.findById(usuarioId).select('+password');
+      if (!uConPass || !(await uConPass.compararPassword(String(req.body.password)))) {
+        return res.status(401).json({ error: 'La contraseña de confirmación es incorrecta' });
+      }
+    }
+
+    await audit(req, {
+      accion: 'user.account_delete',
+      usuarioId,
+      tenantId: req.usuario.tenantId,
+      recurso: 'Usuario',
+      recursoId: usuarioId,
+      resultado: 'success',
+    });
+
     const resultado = await ejecutarEliminacionDatos({
       usuarioId,
       email: req.usuario.email,
@@ -506,7 +491,7 @@ const eliminarMiCuentaAutenticada = async (req, res, next) => {
       confirmation_code: resultado.confirmation_code,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 

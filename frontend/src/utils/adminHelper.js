@@ -1,38 +1,23 @@
 /**
- * Helper y configuración para la detección de Administradores / Super Administradores.
+ * Helper para la detección de Super Administradores en la interfaz.
+ * La autorización real siempre se valida en el backend (middleware/adminGuard.js).
+ * Nunca se confía en correos hardcodeados ni en variables VITE_ del cliente.
  */
 
-// Variable con los correos autorizados como Administrador por defecto.
-// Se puede extender mediante la variable de entorno VITE_ADMIN_EMAILS (separada por comas).
-export const CORREOS_ADMINISTRADOR = [
-  'admin@admin.admin',
-  ...(import.meta.env.VITE_ADMIN_EMAILS ? import.meta.env.VITE_ADMIN_EMAILS.split(',') : []),
-]
-  .map((c) => c.trim().toLowerCase())
-  .filter(Boolean);
+export const CORREOS_ADMINISTRADOR = [];
 
 /**
- * Condición para determinar si un usuario o correo ingresado es Administrador.
+ * Determina si el objeto de sesión retornado por el backend corresponde a un Super Administrador.
  *
- * Cumple si:
- * 1. Tiene el flag esSuperAdmin o isSuperAdmin en true.
- * 2. Su rol es 'admin', 'administrador' o 'superadmin'.
- * 3. Su correo electrónico coincide exactamente con la lista de CORREOS_ADMINISTRADOR.
- *
- * @param {object|null} usuario - Objeto de usuario o respuesta de sesión
- * @param {string} [emailFallback] - Correo electrónico ingresado en el formulario de login
+ * @param {object|null} usuario - Objeto de usuario autenticado devuelto por el servidor
  * @returns {boolean}
  */
-export const esAdministrador = (usuario, emailFallback = '') => {
-  const email = (usuario?.email || emailFallback || '').trim().toLowerCase();
+export const esAdministrador = (usuario) => {
   const rol = (usuario?.rol || '').trim().toLowerCase();
 
   return Boolean(
     usuario?.esSuperAdmin === true ||
     usuario?.isSuperAdmin === true ||
-    rol === 'admin' ||
-    rol === 'administrador' ||
-    rol === 'superadmin' ||
-    (email && CORREOS_ADMINISTRADOR.includes(email))
+    rol === 'superadmin'
   );
 };

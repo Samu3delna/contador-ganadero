@@ -37,6 +37,12 @@ const parser = new XMLParser({
  */
 function parsearFacturaXML(xmlString) {
   try {
+    if (typeof xmlString !== 'string' || Buffer.byteLength(xmlString, 'utf8') > 2 * 1024 * 1024) {
+      throw new Error('El tamaño del XML excede el límite permitido de 2MB');
+    }
+    if (/<!(DOCTYPE|ENTITY|ELEMENT)\b/i.test(xmlString)) {
+      throw new Error('XML rechazado por seguridad: no se permiten declaraciones DOCTYPE ni entidades externas (XXE)');
+    }
     const parsed = parser.parse(xmlString);
 
     // Si es un acuse de recibo de Hacienda (MensajeHacienda)

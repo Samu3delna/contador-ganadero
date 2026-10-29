@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { protegerRuta } = require('../middleware/authMiddleware');
 const { extraerTenant } = require('../middleware/tenantGuard');
+const { requiereCreditoChat } = require('../middleware/quotaGuard');
 const { chat, chatStream, enviarFeedback } = require('../controllers/chatController');
 
 const router = express.Router();
@@ -15,9 +16,8 @@ const chatLimiter = rateLimit({
     error: 'Límite de tasa excedido',
     respuesta: 'Demasiadas consultas al chat. Espera un minuto e intenta de nuevo.',
   },
-  standardHeaders: true,  // Envía X-RateLimit-* headers
+  standardHeaders: true,
   legacyHeaders: false,
-  // Permitir burst: skip si el usuario no ha excedido el burst limit
   skipSuccessfulRequests: false,
 });
 
@@ -43,9 +43,17 @@ const feedbackLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Solo aplicar requiereCreditoChat si existe req.tenant con método tieneCreditoChat
+const verificarCuotaChatOpcional = (req, res, next) => {
+  if (req.tenant && typeof req.tenant.tieneCreditoChat === 'function') {
+    return requiereCreditoChat(req, res, next);
+  }
+  return next();
+};
+
 // Rutas
-router.post('/', protegerRuta, extraerTenant, chatLimiter, chat);
-router.post('/stream', protegerRuta, streamLimiter, chatStream);
+router.post('/', protegerRuta, extraerTenant, verificarCuotaChatOpcional, chatLimiter, chat);
+router.post('/stream', protegerRuta, extraerTenant, verificarCuotaChatOpcional, streamLimiter, chatStream);
 router.post('/feedback', protegerRuta, extraerTenant, feedbackLimiter, enviarFeedback);
 
 module.exports = router;

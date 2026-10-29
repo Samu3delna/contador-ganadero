@@ -226,4 +226,7 @@ facturaSchema.index(
   { unique: true, partialFilterExpression: { claveNumerica: { $type: 'string' } } }
 );
 
+const tenantPlugin = require('./plugins/tenantPlugin');
+facturaSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('Factura', facturaSchema);

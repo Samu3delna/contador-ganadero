@@ -96,9 +96,11 @@ RESPONDE EN ESPAÑOL, de forma concisa y práctica. Usa formato markdown.`;
 
 // ============ CONTEXTO DEL USUARIO ============
 
-async function obtenerContextoUsuario(usuarioId) {
+// Inicio de obtenerContextoUsuario
   // Verificar cache primero
-  const cached = contextCache.get(usuarioId);
+async function obtenerContextoUsuario(usuarioId, tenantId = null) {
+  const cacheKey = tenantId ? `${tenantId}:${usuarioId}` : String(usuarioId);
+  const cached = contextCache.get(cacheKey);
   if (cached) return cached;
 
   const [facturas, ingresos, inventario, costos] = await Promise.all([
@@ -173,7 +175,7 @@ async function obtenerContextoUsuario(usuarioId) {
   };
 
   // Guardar en cache (5 min)
-  contextCache.set(usuarioId, contexto);
+  contextCache.set(cacheKey, contexto);
 
   return contexto;
 }
@@ -306,7 +308,7 @@ async function chat(req, res) {
     }
 
     // Obtener y sanitizar contexto
-    const contextoRaw = await obtenerContextoUsuario(usuarioId);
+    const contextoRaw = await obtenerContextoUsuario(usuarioId, req.tenantId || req.tenant?._id);
     const contexto = sanitizarContexto(contextoRaw);
     const promptContexto = truncarContexto(contexto);
 
@@ -423,7 +425,7 @@ async function chatStream(req, res) {
     }
 
     // Obtener y sanitizar contexto
-    const contextoRaw = await obtenerContextoUsuario(usuarioId);
+    const contextoRaw = await obtenerContextoUsuario(usuarioId, req.tenantId || req.tenant?._id);
     const contexto = sanitizarContexto(contextoRaw);
     const promptContexto = truncarContexto(contexto);
     const mensajeFiltrado = filtrarPII(mensajeLimpio);

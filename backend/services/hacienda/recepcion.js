@@ -15,6 +15,33 @@ const POLL_INTERVAL_MS = 5000;
 const POLL_MAX_INTENTOS = 24; //2 minutos max
 const MOCK_PROCESANDO_MS = 6000;
 
+const HACIENDA_ALLOWED_HOSTS = new Set([
+  'api.comprobanteselectronicos.go.cr',
+  'api.sandbox.comprobanteselectronicos.go.cr',
+  'localhost',
+  '127.0.0.1',
+]);
+
+function validarUrlConsultaHacienda(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error('URL de consulta de Hacienda inválida');
+  }
+  if (!['https:', 'http:'].includes(parsed.protocol)) {
+    throw new Error('Protocolo no permitido en URL de consulta de Hacienda');
+  }
+  const hostname = parsed.hostname.toLowerCase();
+  if (!HACIENDA_ALLOWED_HOSTS.has(hostname)) {
+    throw new Error(`Host no permitido para consulta de Hacienda: ${hostname}`);
+  }
+  if (parsed.protocol === 'http:' && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    throw new Error('Se requiere HTTPS para consultar endpoints externos de Hacienda');
+  }
+  return parsed.toString();
+}
+
 /**
  * Convierte string XML -> Base64 ASCII para el payload JSON.
  */
@@ -33,8 +60,6 @@ function buildRecepcionPayload({
   receptorTipoId,
   receptorNumeroId,
   comprobanteXml,
-  // tipoDocumento -> "01" FE, "02" TE, ...
-  // Para REP no se envia receptor
 }) {
   return {
     clave,
@@ -117,7 +142,8 @@ async function enviarComprobante({
     });
     //201 => OK, cabecera Location
     if (resp.status === 201) {
-      const location = resp.headers?.location || `${ep.consulta}${documento.clave}`;
+      const rawLocation = resp.headers?.location || `${ep.consulta}${documento.clave}`;
+      const location = validarUrlConsultaHacienda(rawLocation);
       return { httpStatus: 201, location, retry: false };
     }
     //400 => error definitivo
@@ -159,12 +185,14 @@ async function consultarEstado({ ambiente, clave, location, token, credenciales 
   }
   const ep = getEndpoint(ambiente);
   const accessToken = token?.access_token || (await getToken({ ambiente, ...credenciales })).access_token;
-  const url = location || `${ep.consulta}${clave}`;
+  const rawUrl = location || `${ep.consulta}${clave}`;
+  const url = validarUrlConsultaHacienda(rawUrl);
 
   const { data, status } = await axios.get(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
     timeout: 20000,
     validateStatus: () => true,
+    maxRedirects: 0,
   });
 
   if (status >= 200 && status < 300) {
@@ -198,4 +226,5 @@ module.exports = {
   pollingHastaTerminal,
   xmlToBase64,
   buildRecepcionPayload,
+  validarUrlConsultaHacienda,
 };

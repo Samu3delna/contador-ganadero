@@ -51,4 +51,7 @@ chatFeedbackSchema.index({ feedback: 1, createdAt: -1 });
 chatFeedbackSchema.index({ usuario: 1, createdAt: -1 });
 chatFeedbackSchema.index({ tenantId: 1, createdAt: -1 });
 
+const tenantPlugin = require('./plugins/tenantPlugin');
+chatFeedbackSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('ChatFeedback', chatFeedbackSchema);

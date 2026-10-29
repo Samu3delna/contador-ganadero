@@ -273,4 +273,8 @@ facturaEmisionSchema.pre('save', function () {
   };
 });
 
+const tenantPlugin = require('./plugins/tenantPlugin');
+facturaEmisionSchema.index({ claveNumerica: 1 }, { unique: true, sparse: true });
+facturaEmisionSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('FacturaEmision', facturaEmisionSchema);

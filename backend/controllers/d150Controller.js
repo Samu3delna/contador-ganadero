@@ -517,7 +517,7 @@ const reporteExcel = async (req, res, next) => {
         tipo: d.tipo,
         tipoDoc: d.tipoDoc,
         fecha: d.fecha,
-        tercero: d.tercero,
+        tercero: /^[=+\-@\t\r]/.test(String(d.tercero || '').trimStart()) ? `'${d.tercero}` : d.tercero,
         cedula: d.cedula ? String(d.cedula).trim() : '',
         consecutivo: d.consecutivo ? String(d.consecutivo).trim() : '',
         claveNumerica: d.claveNumerica ? String(d.claveNumerica).trim() : '',

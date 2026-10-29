@@ -6,6 +6,8 @@ const { sincronizarManual, obtenerEstado } = require('../services/emailService')
 const { procesarFacturaXMLString } = require('../services/ingestaFacturaService');
 const { validarTarifasFactura } = require('../utils/insumosAgropecuarios');
 
+const UPLOADS_BASE_DIR = path.resolve(__dirname, '..', 'uploads');
+
 const obtenerFacturas = async (req, res, next) => {
   try {
     const { periodoFiscal, cuatrimestre, categoriaIA, estado, soloAlertas, deducible, page = 1, limit = 20 } = req.query;
@@ -15,16 +17,17 @@ const obtenerFacturas = async (req, res, next) => {
     if (categoriaIA) filtro.categoriaIA = categoriaIA;
     if (estado) filtro.estado = estado;
     if (deducible !== undefined) filtro.esDeducible = deducible === 'true';
-    // Filtro especial: solo facturas con alertas de tarifa
     if (soloAlertas === 'true') {
       filtro['resumenValidacionTarifa.alertasError'] = { $gt: 0 };
     }
-    const skip = (Number(page) - 1) * Number(limit);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+    const pageNum = Math.max(1, Number(page) || 1);
+    const skip = (pageNum - 1) * limitNum;
     const [facturas, total] = await Promise.all([
-      Factura.find(filtro).sort({ fechaEmision: -1 }).skip(skip).limit(Number(limit)),
+      Factura.find(filtro).sort({ fechaEmision: -1 }).skip(skip).limit(limitNum),
       Factura.countDocuments(filtro),
     ]);
-    res.json({ facturas, total, pagina: Number(page), totalPaginas: Math.ceil(total / Number(limit)) });
+    res.json({ facturas, total, pagina: pageNum, totalPaginas: Math.ceil(total / limitNum) });
   } catch (error) { next(error); }
 };
 
@@ -42,8 +45,8 @@ const actualizarCategoriaFactura = async (req, res, next) => {
     const factura = await Factura.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
     if (categoriaManual) factura.categoriaManual = categoriaManual;
-    if (esDeducible !== undefined) factura.esDeducible = esDeducible;
-    if (motivoNoDeducible !== undefined) factura.motivoNoDeducible = motivoNoDeducible;
+    if (esDeducible !== undefined) factura.esDeducible = Boolean(esDeducible);
+    if (motivoNoDeducible !== undefined) factura.motivoNoDeducible = String(motivoNoDeducible).slice(0, 500);
     const actualizada = await factura.save();
     res.json(actualizada);
   } catch (error) { next(error); }
@@ -54,8 +57,8 @@ const actualizarDeducibilidad = async (req, res, next) => {
     const { esDeducible, motivoNoDeducible } = req.body;
     const factura = await Factura.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
-    factura.esDeducible = esDeducible;
-    if (!esDeducible) {
+    factura.esDeducible = Boolean(esDeducible);
+    if (!factura.esDeducible) {
       factura.motivoNoDeducible = motivoNoDeducible || 'Gasto no relacionado con la actividad agropecuaria';
     } else {
       factura.motivoNoDeducible = undefined;
@@ -65,31 +68,38 @@ const actualizarDeducibilidad = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+/**
+ * Helper seguro contra Path Traversal (LFI):
+ * Resuelve la ruta del archivo y verifica que pertenezca estrictamente al directorio uploads/.
+ */
+function resolverRutaArchivoSegura(rutaDB) {
+  if (!rutaDB || typeof rutaDB !== 'string') return null;
+  const candidate = path.isAbsolute(rutaDB)
+    ? path.resolve(rutaDB)
+    : path.resolve(__dirname, '..', rutaDB);
+
+  const relative = path.relative(UPLOADS_BASE_DIR, candidate);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return null;
+  }
+  return candidate;
+}
+
 const eliminarFactura = async (req, res, next) => {
   try {
     const factura = await Factura.findOneAndDelete({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
-    // Eliminar archivos XML y PDF del disco
-    if (factura.archivoXML && fs.existsSync(factura.archivoXML)) {
-      fs.unlinkSync(factura.archivoXML);
+    const rutaXML = resolverRutaArchivoSegura(factura.archivoXML);
+    const rutaPDF = resolverRutaArchivoSegura(factura.archivoPDF);
+    if (rutaXML && fs.existsSync(rutaXML)) {
+      fs.unlinkSync(rutaXML);
     }
-    if (factura.archivoPDF && fs.existsSync(factura.archivoPDF)) {
-      fs.unlinkSync(factura.archivoPDF);
+    if (rutaPDF && fs.existsSync(rutaPDF)) {
+      fs.unlinkSync(rutaPDF);
     }
     res.json({ mensaje: 'Factura eliminada correctamente' });
   } catch (error) { next(error); }
 };
-
-// --- Descarga de archivos XML ---
-
-// Helper: resolver ruta de archivo (soporta rutas relativas y absolutas legacy)
-function resolverRutaArchivo(rutaDB) {
-  if (!rutaDB) return null;
-  // Si ya es ruta absoluta (legacy), usarla directamente
-  if (path.isAbsolute(rutaDB)) return rutaDB;
-  // Si es relativa (nueva: "uploads/xml/..."), resolverla desde el dir del backend
-  return path.join(__dirname, '..', rutaDB);
-}
 
 const descargarXML = async (req, res, next) => {
   try {
@@ -100,14 +110,15 @@ const descargarXML = async (req, res, next) => {
     if (!factura.archivoXML) {
       return res.status(404).json({ error: 'Esta factura no tiene archivo XML asociado' });
     }
-    const rutaXML = resolverRutaArchivo(factura.archivoXML);
-    if (!fs.existsSync(rutaXML)) {
+    const rutaXML = resolverRutaArchivoSegura(factura.archivoXML);
+    if (!rutaXML || !fs.existsSync(rutaXML)) {
       return res.status(404).json({ error: 'Archivo XML no encontrado en el servidor' });
     }
-    const nombreArchivo = path.basename(rutaXML);
+    const nombreArchivo = path.basename(rutaXML).replace(/[^a-zA-Z0-9._-]/g, '_');
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     return res.download(rutaXML, nombreArchivo, (err) => {
       if (err && !res.headersSent) {
-        console.error('Error descargando XML:', err.message);
         return res.status(500).json({ error: 'Error al descargar el archivo XML' });
       }
     });
@@ -123,14 +134,15 @@ const descargarPDF = async (req, res, next) => {
     if (!factura.archivoPDF) {
       return res.status(404).json({ error: 'Esta factura no tiene archivo PDF asociado' });
     }
-    const rutaPDF = resolverRutaArchivo(factura.archivoPDF);
-    if (!fs.existsSync(rutaPDF)) {
+    const rutaPDF = resolverRutaArchivoSegura(factura.archivoPDF);
+    if (!rutaPDF || !fs.existsSync(rutaPDF)) {
       return res.status(404).json({ error: 'Archivo PDF no encontrado en el servidor' });
     }
-    const nombreArchivo = path.basename(rutaPDF);
+    const nombreArchivo = path.basename(rutaPDF).replace(/[^a-zA-Z0-9._-]/g, '_');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     return res.download(rutaPDF, nombreArchivo, (err) => {
       if (err && !res.headersSent) {
-        console.error('Error descargando PDF:', err.message);
         return res.status(500).json({ error: 'Error al descargar el archivo PDF' });
       }
     });
@@ -181,7 +193,6 @@ const estadoEmail = async (req, res, next) => {
     const alias = tenant?.emailAlias || (req.usuario?.nombreFinca ? `${req.usuario.nombreFinca.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${suffix}` : `finca-${suffix}`);
     const correoRecepcion = `${alias}@contadorganandero.com`;
 
-    // Si el usuario configuró explícitamente IMAP en su cuenta
     let estadoIMAP = null;
     if (req.usuario?.configEmail?.host && req.usuario?.configEmail?.usuario) {
       try {
@@ -205,21 +216,17 @@ const estadoEmail = async (req, res, next) => {
 
 const forzarSincronizacion = async (req, res, next) => {
   try {
-    // Si el usuario tiene credenciales IMAP personales configuradas, ejecutarlas
     if (req.usuario?.configEmail?.host && req.usuario?.configEmail?.usuario) {
       try {
         const soloNoLeidos = req.query.soloNoLeidos === 'true' || req.body.soloNoLeidos === true;
         const resultado = await sincronizarManual(req.usuario._id, { soloNoLeidos });
         return res.json({ modo: 'imap', ...resultado });
-      } catch (err) {
-        console.warn('⚠️ Sincronización IMAP falló, pero buzón Cloudflare sigue activo:', err.message);
+      } catch {
+        // Fallback silencioso a buzón Cloudflare
       }
     }
 
-    // Sincronización estándar Cloudflare (refresco de datos)
-    const totalFacturas = await Factura.countDocuments({
-      $or: [{ usuario: req.usuario._id }, { tenantId: req.tenantId }]
-    });
+    const totalFacturas = await Factura.countDocuments(req.filtrarPorTenant());
 
     res.json({
       modo: 'cloudflare',
@@ -239,7 +246,7 @@ const subirXMLManual = async (req, res, next) => {
     const xmlString = req.file.buffer.toString('utf-8');
     const resultado = await procesarFacturaXMLString(xmlString, {
       usuarioId: req.usuario._id,
-      tenantId: req.tenantId || req.usuario.tenantId,
+      tenantId: req.tenant?._id || req.usuario.tenantId,
       canal: 'subida-manual',
     });
 
@@ -259,7 +266,7 @@ const subirXMLManual = async (req, res, next) => {
 const crearGastoManual = async (req, res, next) => {
   try {
     const { fechaEmision, emisorNombre, categoriaManual, totalVenta, totalImpuesto, descripcion, numComprobante } = req.body;
-    
+
     if (!fechaEmision || !emisorNombre || totalVenta === undefined || totalVenta === null) {
       res.status(400);
       throw new Error('Faltan campos requeridos: fechaEmision, emisorNombre, totalVenta');
@@ -279,7 +286,6 @@ const crearGastoManual = async (req, res, next) => {
 
     const fecha = new Date(fechaEmision);
 
-    // Validar la tarifa del gasto manual si tiene descripción
     let alertasTarifa = [];
     let resumenValidacionTarifa = { totalLineas: 0, alertasError: 0, alertasAdvertencia: 0, lineasOk: 0, ahorrosPerdidos: 0 };
     if (descripcion) {
@@ -288,10 +294,10 @@ const crearGastoManual = async (req, res, next) => {
       alertasTarifa = validacion.alertas;
       resumenValidacionTarifa = validacion.resumenValidacion;
     }
-    
+
     const nuevaFactura = await Factura.create(req.aplicarTenant({
       fechaEmision: fecha,
-      emisor: { nombre: emisorNombre },
+      emisor: { nombre: String(emisorNombre).trim().slice(0, 150) },
       resumenFactura: {
         totalVenta: totalVentaNum,
         totalImpuesto: totalImpuestoNum,
@@ -317,6 +323,9 @@ const crearGastoManual = async (req, res, next) => {
 
 const diagnosticarIMAP = async (req, res, next) => {
   try {
+    if (!req.usuario?.isSuperAdmin) {
+      return res.status(403).json({ error: 'Solo el Super Admin puede ejecutar diagnósticos IMAP globales.' });
+    }
     const { ImapFlow } = require('imapflow');
     const { configurarIMAP } = require('../config/email');
     const config = configurarIMAP();
@@ -324,22 +333,19 @@ const diagnosticarIMAP = async (req, res, next) => {
     if (!config.auth.user || !config.auth.pass) {
       return res.status(400).json({
         conectado: false,
-        error: 'Faltan credenciales IMAP (IMAP_USER o IMAP_PASSWORD)',
-        detalles: { user: !!config.auth.user, pass: !!config.auth.pass },
+        error: 'Faltan credenciales IMAP configuradas en el servidor',
       });
     }
 
     const cliente = new ImapFlow(config);
-    let resultado = { conectado: false, error: null, serverInfo: null };
+    const resultado = { conectado: false, error: null };
 
     try {
       await cliente.connect();
       resultado.conectado = true;
-      resultado.serverInfo = cliente.serverInfo || 'Sin info';
       await cliente.logout();
-    } catch (err) {
-      resultado.error = err.message;
-      if (err.response) resultado.imapResponse = err.response;
+    } catch {
+      resultado.error = 'No se pudo establecer conexión con el servidor IMAP';
     }
 
     res.json({
@@ -348,12 +354,7 @@ const diagnosticarIMAP = async (req, res, next) => {
         host: config.host,
         port: config.port,
         secure: config.secure,
-        user: config.auth.user,
-        passLength: config.auth.pass.length,
       },
-      recomendacion: resultado.conectado
-        ? 'Todo bien! Conexión IMAP exitosa.'
-        : 'La contraseña de aplicación de Gmail es incorrecta o caducó. Genera una nueva en myaccount.google.com/apppasswords',
     });
   } catch (error) { next(error); }
 };
@@ -372,4 +373,5 @@ module.exports = {
   obtenerAlertasTarifa,
   diagnosticarIMAP,
   subirXMLManual,
+  resolverRutaArchivoSegura,
 };

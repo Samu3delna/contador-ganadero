@@ -4,23 +4,39 @@ let rawUrl = (import.meta.env.VITE_API_URL || '/api').trim();
 rawUrl = rawUrl.replace(/\/+$/, '');
 export const API_URL = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
 
+// Access token efímero en memoria (nunca en localStorage ni sessionStorage para mitigar robo por XSS)
+let inMemoryAccessToken = null;
+
+export const setAccessToken = (token) => {
+  inMemoryAccessToken = token || null;
+  try {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+  } catch {
+    // ignorar en entornos sin storage
+  }
+};
+
+export const getAccessToken = () => inMemoryAccessToken;
+
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true, // Necesario para que las cookies httpOnly del refresh token viajen
 });
 
-// Interceptor: agregar token JWT
+// Interceptor: agregar token JWT desde memoria
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (inMemoryAccessToken) {
+    config.headers.Authorization = `Bearer ${inMemoryAccessToken}`;
+  }
   return config;
 });
 
 // Bandera para evitar múltiples refresh simultáneos
 let refreshPromise = null;
 
-// Interceptor: manejar errores 401 con refresh token transparente
+// Interceptor: manejar errores 401 con refresh token transparente vía cookie httpOnly
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -39,7 +55,6 @@ api.interceptors.response.use(
     originalRequest._retry = true;
 
     try {
-      // Reutilizar un único refresh en vuelo si hay varias peticiones 401 simultáneas
       if (!refreshPromise) {
         refreshPromise = api.post('/auth/refresh').finally(() => {
           refreshPromise = null;
@@ -49,19 +64,16 @@ api.interceptors.response.use(
       const res = await refreshPromise;
       const nuevoToken = res.data?.token;
       if (nuevoToken) {
-        localStorage.setItem('token', nuevoToken);
+        setAccessToken(nuevoToken);
         originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${nuevoToken}`;
       }
-      // Reintentar la petición original con el nuevo token
       return api(originalRequest);
     } catch (refreshErr) {
-      // Refresh falló: logout genuino (intenta llamar API, ignora errores) y redirect
       try {
         await api.post('/auth/logout');
       } catch { /* cookie posiblemente ya no existe */ }
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
+      setAccessToken(null);
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
@@ -73,8 +85,19 @@ api.interceptors.response.use(
 // === Auth ===
 export const loginAPI = (datos) => api.post('/auth/login', datos);
 export const registroAPI = (datos) => api.post('/auth/registro', datos);
+export const refreshTokenAPI = () => api.post('/auth/refresh');
 export const obtenerPerfilAPI = () => api.get('/auth/perfil');
 export const actualizarPerfilAPI = (datos) => api.put('/auth/perfil', datos);
+export const cambiarPasswordAPI = (datos) => api.put('/auth/cambiar-password', datos);
+export const forgotPasswordAPI = (datos) => api.post('/auth/forgot-password', datos);
+export const resetPasswordAPI = (datos) => api.post('/auth/reset-password', datos);
+export const mfaSetupAPI = () => api.post('/auth/mfa/setup');
+export const mfaEnableAPI = (datos) => api.post('/auth/mfa/enable', datos);
+export const mfaDisableAPI = (datos) => api.post('/auth/mfa/disable', datos);
+export const listarSesionesAPI = () => api.get('/auth/sessions');
+export const revocarSesionAPI = (sessionId) => api.delete(`/auth/sessions/${encodeURIComponent(sessionId)}`);
+export const logoutAllAPI = () => api.post('/auth/logout-all');
+export const exportarMisDatosAPI = () => api.get('/auth/exportar-datos');
 
 // === Ingresos ===
 export const obtenerIngresosAPI = (params) => api.get('/ingresos', { params });
@@ -88,13 +111,11 @@ export const subirFacturaXML_API = (formData) => api.post('/facturas/upload', fo
 });
 
 // === Descarga de archivos XML / PDF ===
-// Usamos una función helper que maneja correctamente los errores con responseType: 'blob'
 async function descargarArchivo(url) {
   try {
     const res = await api.get(url, { responseType: 'blob' });
     return res;
   } catch (err) {
-    // Cuando responseType es 'blob', los errores JSON del servidor llegan como Blob
     if (err.response?.data instanceof Blob) {
       const texto = await err.response.data.text();
       try {
@@ -153,15 +174,16 @@ export const chatAPI = (mensaje, historial) => api.post('/chat', { mensaje, hist
 
 /**
  * Chat con streaming SSE — retorna un ReadableStream.
- * Usa fetch directo para leer Server-Sent Events.
+ * Usa fetch directo para leer Server-Sent Events con credenciales y token en memoria.
  */
 export const chatStreamAPI = async (mensaje, historial, onChunk, onDone, onError) => {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const baseUrl = API_URL;
 
   try {
     const response = await fetch(`${baseUrl}/chat/stream`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -185,9 +207,8 @@ export const chatStreamAPI = async (mensaje, historial, onChunk, onDone, onError
 
       buffer += decoder.decode(value, { stream: true });
 
-      // Procesar cada línea SSE
       const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // Mantener línea incompleta en buffer
+      buffer = lines.pop() || '';
 
       for (const line of lines) {
         if (line.startsWith('data: ')) {
@@ -272,7 +293,6 @@ export const conciliacionD150GETAPI = (params) => api.get('/hacienda/d150/concil
 export const reporteD150PDFAPI = (params) => descargarArchivoBlob('/hacienda/d150/reporte/pdf', { params });
 export const reporteD150ExcelAPI = (params) => descargarArchivoBlob('/hacienda/d150/reporte/excel', { params });
 
-// Helper para descargar blob (XML/PDF/Excel)
 async function descargarArchivoBlob(url, config) {
   try {
     const res = await api.get(url, { ...config, responseType: 'blob' });
@@ -294,4 +314,3 @@ export const solicitarEliminacionDatosPublicaAPI = (datos) =>
 export const eliminarMiCuentaAPI = () => api.delete('/auth/eliminar-cuenta');
 
 export default api;
-

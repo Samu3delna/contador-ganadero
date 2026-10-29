@@ -15,6 +15,8 @@
  *  pos 11-20 : secuencia (10)
  */
 
+const crypto = require('crypto');
+
 const TIPO_DOC_CODIGO = {
   FE: '01',
   TE: '02',
@@ -73,10 +75,10 @@ function generarClave({
 
   const consecutivo = generarConsecutivo({ sucursal, terminal, tipoDocumento, secuencia });
 
-  //Codigo de seguridad de 9 digitos
+  // Codigo de seguridad de 9 digitos criptograficamente aleatorio (CSPRNG)
   const seg = codigoSeguridad != null
     ? String(codigoSeguridad).padStart(9, '0').slice(-9)
-    : String(Math.floor(100000000 + Math.random() * 900000000)).slice(0, 9);
+    : String(crypto.randomInt(100000000, 1000000000)).slice(0, 9);
 
   const clave = `${pais}${fechaStr}${cedulaPadded}${consecutivo}${seg}`;
   if (clave.length !== 50) {
@@ -94,4 +96,3 @@ module.exports = {
   generarConsecutivo,
   padCedula,
 };
-

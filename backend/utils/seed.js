@@ -1,14 +1,20 @@
 /**
  * Script de inicialización de la base de datos
- * Crea las categorías predeterminadas y opcionalmente un usuario de prueba
- * 
- * Para crear también el usuario demo, ejecutar con:
- *   CREATE_DEMO_USER=true node utils/seed.js
+ * Crea las categorías predeterminadas y opcionalmente un usuario de prueba (SOLO fuera de producción).
+ *
+ * Para crear también el usuario demo en desarrollo, ejecutar con:
+ *   CREATE_DEMO_USER=true DEMO_USER_PASSWORD="TuPasswordFuerte123!" node utils/seed.js
  */
 
 require('dotenv').config({ path: '../.env' });
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const Usuario = require('../models/Usuario');
+
+if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+  console.error('❌ Ejecución de seed bloqueada en producción por seguridad.');
+  process.exit(1);
+}
 
 const categoriasSeed = [
   { nombre: 'veterinaria', etiqueta: 'Veterinaria', descripcion: 'Medicamentos, consultas, vacunas, desparasitantes', tasaIVAComun: 2, esDeducible: true, icono: 'Stethoscope', color: '#EF4444' },
@@ -28,22 +34,27 @@ const categoriasSeed = [
 async function seed() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ Conectado a MongoDB Atlas — BD: contador_ganadero');
+    console.log('✅ Conectado a MongoDB — BD inicializando categorías...');
 
-    // Insertar categorías
+    // Insertar categorías de forma idempotente (sin borrar existentes)
     const categoriasCol = mongoose.connection.db.collection('categorias');
-    await categoriasCol.deleteMany({});
-    const cats = await categoriasCol.insertMany(categoriasSeed);
-    console.log(`🏷️  ${cats.insertedCount} categorías creadas`);
+    for (const cat of categoriasSeed) {
+      await categoriasCol.updateOne(
+        { nombre: cat.nombre },
+        { $set: cat },
+        { upsert: true }
+      );
+    }
+    console.log(`🏷️  ${categoriasSeed.length} categorías sincronizadas`);
 
-    // Crear usuario de prueba solo si se solicita explícitamente
-    if (process.env.CREATE_DEMO_USER === 'true') {
+    // Crear usuario de prueba solo en desarrollo y con contraseña aleatoria o provista por env
+    if (process.env.CREATE_DEMO_USER === 'true' && process.env.NODE_ENV !== 'production') {
       const existeUsuario = await Usuario.findOne({ email: 'ganadero@demo.com' });
       if (!existeUsuario) {
         const bcrypt = require('bcryptjs');
         const salt = await bcrypt.genSalt(12);
-        // En producción/despliegue, cambiar esta contraseña o eliminar el usuario demo
-        const hashedPassword = await bcrypt.hash('DemoSeguro2026!', salt);
+        const rawPassword = process.env.DEMO_USER_PASSWORD || `Demo_${crypto.randomBytes(12).toString('base64url')}!9aA`;
+        const hashedPassword = await bcrypt.hash(rawPassword, salt);
 
         await Usuario.collection.insertOne({
           nombre: 'Ganadero Demo',
@@ -51,24 +62,17 @@ async function seed() {
           password: hashedPassword,
           nombreFinca: 'Finca La Esperanza',
           cedula: { tipo: 'fisica', numero: '123456789' },
+          rol: 'owner',
           cantidadHijos: 2,
           tieneConyuge: true,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        console.log('👤 Usuario de prueba creado: ganadero@demo.com / DemoSeguro2026!');
-        console.log('   ⚠️  IMPORTANTE: Elimina este usuario antes de pasar a producción.');
+        console.log('👤 Usuario de prueba creado para entorno local: ganadero@demo.com');
       } else {
         console.log('👤 Usuario de prueba ya existe');
       }
-    } else {
-      console.log('   ℹ️  Saltando creación de usuario demo. Usa CREATE_DEMO_USER=true para crearlo.');
     }
-
-    // Listar colecciones creadas
-    const colecciones = await mongoose.connection.db.listCollections().toArray();
-    console.log('\n📦 Colecciones en la base de datos:');
-    colecciones.forEach(c => console.log(`   - ${c.name}`));
 
     console.log('\n✅ Seed completado exitosamente!');
     process.exit(0);
@@ -78,4 +82,8 @@ async function seed() {
   }
 }
 
-seed();
+if (require.main === module) {
+  seed();
+}
+
+module.exports = { seed, categoriasSeed };

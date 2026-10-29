@@ -6,7 +6,16 @@ const Ingreso = require('../models/Ingreso');
 /**
  * Genera datos exportables para contador en formato CSV y Excel
  */
-async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null) {
+function sanitizarFormulaExcel(val) {
+  if (val === null || val === undefined) return '';
+  const str = String(val);
+  if (/^[=+\-@\t\r]/.test(str.trimStart())) {
+    return `'${str}`;
+  }
+  return str;
+}
+
+async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null, tenantId = null) {
   let fechaInicio, fechaFin;
 
   if (cuatrimestre) {
@@ -721,17 +730,17 @@ async function generarExcel(datos, periodoInfo = {}) {
     const row = wsDetalle.addRow({
       tipo: d.tipo,
       fecha: d.fecha,
-      proveedor: d.proveedor,
+      proveedor: sanitizarFormulaExcel(d.proveedor),
       cedulaProveedor: d.cedulaProveedor ? String(d.cedulaProveedor).trim() : '',
-      descripcion: d.descripcion,
-      categoria: d.categoria,
+      descripcion: sanitizarFormulaExcel(d.descripcion),
+      categoria: sanitizarFormulaExcel(d.categoria),
       subtotal: Number(d.subtotal || 0),
       iva: Number(d.iva || 0),
       total: Number(d.total || 0),
       consecutivo: d.consecutivo || d.numComprobante || '',
       claveNumerica: d.claveNumerica || '',
       esDeducible: d.esDeducible,
-      motivoNoDeducible: d.motivoNoDeducible,
+      motivoNoDeducible: sanitizarFormulaExcel(d.motivoNoDeducible),
       tasaIVA: Number(d.tasaIVA || 0) / 100, // formato %
     });
 
@@ -848,12 +857,16 @@ function generarCSV(datos) {
     const str = String(val).trim();
     // Proteger campos numéricos largos y cédulas para que Excel los abra como texto sin truncar dígitos
     if (['consecutivo', 'claveNumerica', 'numComprobante', 'cedulaProveedor'].includes(key) && str.length > 0) {
-      return `="${str.replace(/"/g, '""')}"`;
+      return `="${str.replace(/[^a-zA-Z0-9_-]/g, '')}"`;
     }
     if (str.includes(',') || str.includes('"') || str.includes('\n')) {
       return `"${str.replace(/"/g, '""')}"`;
     }
-    return str;
+    const safeCsvStr = sanitizarFormulaExcel(str);
+    if (safeCsvStr.includes(',') || safeCsvStr.includes('"') || safeCsvStr.includes('\n') || safeCsvStr.startsWith("'")) {
+      return `"${safeCsvStr.replace(/"/g, '""')}"`;
+    }
+    return safeCsvStr;
   };
 
   const filas = datos.map(d => COLUMNAS.map(c => escapeCsv(d[c.key], c.key)).join(','));

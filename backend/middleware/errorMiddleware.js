@@ -1,5 +1,9 @@
+const logger = require('../utils/logger');
+
 /**
- * Middleware centralizado de manejo de errores
+ * Middleware centralizado de manejo de errores (Fail-Closed).
+ * - Nunca devuelve stack traces, nombres de colecciones ni rutas internas en producción.
+ * - Incluye correlationId (req.id) para trazabilidad segura.
  */
 
 // Middleware para rutas no encontradas
@@ -11,9 +15,9 @@ const notFound = (req, res, next) => {
 
 // Middleware centralizado de errores
 const errorHandler = (err, req, res, next) => {
-  // Si el status es 200, forzar a 500
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  let mensaje = err.message;
+  const isProd = process.env.NODE_ENV === 'production';
+  let statusCode = res.statusCode === 200 ? (err.statusCode || err.status || 500) : res.statusCode;
+  let mensaje = err.message || 'Error interno del servidor';
 
   // Error de Mongoose: ID no válido
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
@@ -24,21 +28,54 @@ const errorHandler = (err, req, res, next) => {
   // Error de Mongoose: validación
   if (err.name === 'ValidationError') {
     statusCode = 400;
-    const errores = Object.values(err.errors).map((e) => e.message);
-    mensaje = errores.join(', ');
+    const errores = Object.values(err.errors || {}).map((e) => e.message);
+    mensaje = errores.join(', ') || 'Datos de entrada inválidos';
   }
 
-  // Error de Mongoose: duplicado
+  // Error de Mongoose: duplicado (sin filtrar el valor ni detalles de esquema en producción)
   if (err.code === 11000) {
     statusCode = 400;
-    const campo = Object.keys(err.keyValue)[0];
+    const campo = err.keyValue ? Object.keys(err.keyValue)[0] : 'registro';
     mensaje = `Ya existe un registro con ese ${campo}`;
   }
 
-  res.status(statusCode).json({
+  // Error de payload demasiado grande
+  if (err.type === 'entity.too.large' || err.status === 413) {
+    statusCode = 413;
+    mensaje = 'El tamaño de la solicitud excede el límite permitido';
+  }
+
+  // Error de JSON malformado
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    statusCode = 400;
+    mensaje = 'Formato JSON inválido';
+  }
+
+  // Registrar el error internamente con logger estructurado sin exponer secretos
+  if (statusCode >= 500) {
+    logger.error('Error interno en petición HTTP', {
+      requestId: req?.id,
+      method: req?.method,
+      path: req?.originalUrl,
+      statusCode,
+      errorName: err?.name,
+      errorMessage: err?.message,
+    });
+    if (isProd) {
+      mensaje = 'Error interno del servidor';
+    }
+  }
+
+  const respuesta = {
     error: mensaje,
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
-  });
+    correlationId: req?.id,
+  };
+
+  if (!isProd && err.stack) {
+    respuesta.stack = err.stack;
+  }
+
+  res.status(statusCode).json(respuesta);
 };
 
 module.exports = { notFound, errorHandler };

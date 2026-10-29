@@ -34,7 +34,7 @@ function getEndpoint(ambiente) {
   return null; //local
 }
 
-async function getToken({ ambiente, usuario, password } = {}) {
+async function getToken({ ambiente, usuario, password, tenantId } = {}) {
   if (ambiente === 'local') {
     return {
       access_token: 'mock_local_token_no_usar_en_produccion',
@@ -47,7 +47,7 @@ async function getToken({ ambiente, usuario, password } = {}) {
   if (!ep) throw new Error('Ambiente invalido para auth');
   if (!usuario || !password) throw new Error('usuario y password requeridos');
 
-  const cacheKey = `${ambiente}:${usuario}`;
+  const cacheKey = `${tenantId || 'global'}:${ambiente}:${usuario}`;
   const cached = TOKEN_CACHE.get(cacheKey);
   if (cached && cached.expiresAt > Date.now() + 5000) return cached.payload;
 
@@ -60,6 +60,7 @@ async function getToken({ ambiente, usuario, password } = {}) {
   const { data } = await axios.post(ep.auth, params.toString(), {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     timeout: 15000,
+    maxRedirects: 0,
   });
 
   const payload = {

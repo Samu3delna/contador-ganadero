@@ -1,10 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { parsearFacturaXML } = require('./xmlParserService');
 const { categorizarFactura } = require('./aiService');
 const Factura = require('../models/Factura');
 const Usuario = require('../models/Usuario');
 const Tenant = require('../models/Tenant');
+const { escapeRegex } = require('../utils/escapeRegex');
+const { runWithTenantContext } = require('../utils/tenantContext');
 
 const UPLOAD_ROOT = process.env.UPLOAD_ROOT || path.join(__dirname, '..', 'uploads');
 const XML_DIR = path.join(UPLOAD_ROOT, 'xml');
@@ -17,10 +20,10 @@ function asegurarDirectorios() {
 }
 
 /**
- * Busca el Usuario y Tenant destinatario usando múltiples estrategias:
- * 1. Cédula del receptor extraída del XML (la más confiable en Costa Rica)
- * 2. ID explícito de usuario o tenant
- * 3. Email alias del tenant (ej: finca-esperanza@contadorganandero.com)
+ * Busca el Usuario y Tenant destinatario usando múltiples estrategias seguras (sin full table scans ni ReDoS):
+ * 1. ID explícito de usuario o tenant
+ * 2. Email alias del tenant (ej: finca-esperanza@contadorganandero.com)
+ * 3. Cédula del receptor extraída del XML (la más confiable en Costa Rica)
  * 4. Número de teléfono (para WhatsApp)
  */
 async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, emailDestino, telefono }) {
@@ -34,55 +37,44 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
 
   // 2. Por alias de email del Tenant o sufijo (Cloudflare Email Routing)
   if (emailDestino) {
-    const alias = emailDestino.split('@')[0].toLowerCase().trim();
+    const alias = String(emailDestino).split('@')[0].toLowerCase().trim().slice(0, 64);
 
     // 2a. Coincidencia exacta con emailAlias del Tenant
     let tenant = await Tenant.findOne({ emailAlias: alias });
 
-    // 2b. Coincidencia por sufijo de 4 caracteres (ej: "finca-af2e", "pepe-af2e", "af2e")
+    // 2b. Coincidencia por sufijo hexadecimal de 4 caracteres en emailAlias (sin full table scan)
     if (!tenant) {
       const matchSuffix = alias.match(/-?([a-f0-9]{4})$/i);
       if (matchSuffix) {
-        const suffix = matchSuffix[1].toLowerCase();
-        // Buscar tenant cuyo emailAlias termine con ese sufijo
-        tenant = await Tenant.findOne({ emailAlias: { $regex: suffix + '$', $options: 'i' } });
-
-        // Si no, buscar tenant cuyo ID termine con ese sufijo
-        if (!tenant) {
-          const allTenants = await Tenant.find({}, '_id');
-          const matchedTenant = allTenants.find(t => t._id.toString().toLowerCase().endsWith(suffix));
-          if (matchedTenant) tenant = await Tenant.findById(matchedTenant._id);
-        }
-
-        // Si no, buscar usuario cuyo ID termine con ese sufijo
-        if (!tenant) {
-          const allUsers = await Usuario.find({}, '_id tenantId');
-          const matchedUser = allUsers.find(u => u._id.toString().toLowerCase().endsWith(suffix));
-          if (matchedUser) {
-            const u = await Usuario.findById(matchedUser._id);
-            if (u) return { usuario: u, tenantId: u.tenantId };
-          }
-        }
+        const suffix = escapeRegex(matchSuffix[1].toLowerCase());
+        tenant = await Tenant.findOne({ emailAlias: { $regex: `${suffix}$`, $options: 'i' } });
       }
     }
 
-    // 2c. Si el alias coincide con el nombre/slug de la finca
+    // 2c. Si el alias coincide con el nombre/slug de la finca (con regex escapado)
     if (!tenant) {
-      const cleanAlias = alias.replace(/^finca-/, '');
-      tenant = await Tenant.findOne({
-        emailAlias: { $regex: cleanAlias, $options: 'i' },
-      });
+      const cleanAlias = escapeRegex(alias.replace(/^finca-/, ''), 50);
+      if (cleanAlias) {
+        tenant = await Tenant.findOne({
+          emailAlias: { $regex: `^${cleanAlias}`, $options: 'i' },
+        });
+      }
     }
 
     if (tenant) {
-      const u = await Usuario.findOne({ tenantId: tenant._id, rol: 'dueño' }) || await Usuario.findOne({ tenantId: tenant._id });
+      const u =
+        (await Usuario.findOne({ tenantId: tenant._id, rol: { $in: ['owner', 'dueño'] } })) ||
+        (await Usuario.findOne({ tenantId: tenant._id }));
       if (u) return { usuario: u, tenantId: tenant._id };
     }
 
-    // 2d. Coincidencia por prefijo del correo registrado del usuario (ej: samu3delgado@...)
-    const uByEmail = await Usuario.findOne({ email: { $regex: '^' + alias + '@', $options: 'i' } });
-    if (uByEmail) {
-      return { usuario: uByEmail, tenantId: uByEmail.tenantId };
+    // 2d. Coincidencia por prefijo del correo registrado del usuario (escapado contra ReDoS)
+    const safeAlias = escapeRegex(alias, 50);
+    if (safeAlias) {
+      const uByEmail = await Usuario.findOne({ email: { $regex: `^${safeAlias}@`, $options: 'i' } });
+      if (uByEmail) {
+        return { usuario: uByEmail, tenantId: uByEmail.tenantId };
+      }
     }
   }
 
@@ -106,10 +98,11 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
   // 4. Por teléfono del usuario (WhatsApp Bot)
   if (telefono) {
     const telLimpio = String(telefono).replace(/\D/g, '');
+    const ultimos8 = escapeRegex(telLimpio.slice(-8), 16);
     const u = await Usuario.findOne({
       $or: [
         { telefono: telLimpio },
-        { telefono: { $regex: telLimpio.slice(-8) + '$' } }, // Match últimos 8 dígitos (CR)
+        ...(ultimos8 ? [{ telefono: { $regex: `${ultimos8}$` } }] : []),
       ],
     });
     if (u) {
@@ -119,7 +112,6 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
 
   return { usuario: null, tenantId: null };
 }
-
 
 /**
  * Procesa un XML de factura electrónica y lo guarda en la base de datos
@@ -156,109 +148,127 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
     };
   }
 
-  // Verificar si ya existe en la BD (idempotencia)
-  const yaExiste = await Factura.findOne({
-    claveNumerica: datosFactura.claveNumerica,
-    $or: [{ usuario: usuario._id }, { tenantId: tenantId || usuario.tenantId }],
-  });
+  const effectiveTenantId = tenantId || usuario.tenantId;
 
-  if (yaExiste) {
-    // Si la factura existente provenía de un acuse y ahora llegó el XML completo con líneas de detalle:
-    if (!datosFactura.esMensajeHacienda && (!yaExiste.lineaDetalle || yaExiste.lineaDetalle.length <= 1)) {
-      yaExiste.lineaDetalle = datosFactura.lineaDetalle || yaExiste.lineaDetalle;
-      yaExiste.resumenFactura = datosFactura.resumenFactura || yaExiste.resumenFactura;
-      yaExiste.alertasTarifa = datosFactura.alertasTarifa || yaExiste.alertasTarifa;
-      yaExiste.resumenValidacionTarifa = datosFactura.resumenValidacionTarifa || yaExiste.resumenValidacionTarifa;
-      await yaExiste.save();
+  return runWithTenantContext(
+    { tenantId: effectiveTenantId, userId: usuario._id, role: usuario.rol },
+    async () => {
+      // Verificar si ya existe en la BD (idempotencia)
+      const yaExiste = await Factura.findOne(
+        {
+          claveNumerica: datosFactura.claveNumerica,
+          $or: [{ usuario: usuario._id }, ...(effectiveTenantId ? [{ tenantId: effectiveTenantId }] : [])],
+        },
+        null,
+        { skipTenant: !effectiveTenantId }
+      );
+
+      if (yaExiste) {
+        if (!datosFactura.esMensajeHacienda && (!yaExiste.lineaDetalle || yaExiste.lineaDetalle.length <= 1)) {
+          yaExiste.lineaDetalle = datosFactura.lineaDetalle || yaExiste.lineaDetalle;
+          yaExiste.resumenFactura = datosFactura.resumenFactura || yaExiste.resumenFactura;
+          yaExiste.alertasTarifa = datosFactura.alertasTarifa || yaExiste.alertasTarifa;
+          yaExiste.resumenValidacionTarifa = datosFactura.resumenValidacionTarifa || yaExiste.resumenValidacionTarifa;
+          await yaExiste.save();
+          return {
+            exito: true,
+            actualizada: true,
+            factura: yaExiste,
+            mensaje: `Factura ${datosFactura.claveNumerica} enriquecida con detalle de líneas completo.`,
+          };
+        }
+
+        return {
+          exito: true,
+          duplicada: true,
+          factura: yaExiste,
+          mensaje: `Factura ${datosFactura.claveNumerica} ya estaba registrada.`,
+        };
+      }
+
+      const safeClave = String(datosFactura.claveNumerica).replace(/[^0-9]/g, '').slice(0, 50) || crypto.randomUUID();
+
+      // Guardar archivo XML en disco con nombre seguro
+      const nombreXML = `${Date.now()}_${safeClave}.xml`;
+      const rutaAbsolutaXML = path.join(XML_DIR, nombreXML);
+      fs.writeFileSync(rutaAbsolutaXML, xmlString);
+      const rutaRelativaXML = path.join('uploads', 'xml', nombreXML);
+
+      // Guardar PDF adjunto si vino en opciones
+      let rutaRelativaPDF = null;
+      if (opciones.pdfBuffer) {
+        const nombrePDF = `${Date.now()}_${safeClave}.pdf`;
+        const rutaAbsolutaPDF = path.join(PDF_DIR, nombrePDF);
+        fs.writeFileSync(rutaAbsolutaPDF, opciones.pdfBuffer);
+        rutaRelativaPDF = path.join('uploads', 'pdf', nombrePDF);
+      }
+
+      // Categorización con IA (NVIDIA NIM)
+      let categorizacion = { categoria: 'sin_clasificar', confianza: 0.5, justificacion: 'Pendiente de análisis' };
+      try {
+        categorizacion = await categorizarFactura(datosFactura);
+      } catch (err) {
+        console.warn('⚠️ Error al categorizar factura con IA:', err.message);
+      }
+
+      // Resumen de validación de tarifas
+      const alertasTarifa = datosFactura.alertasTarifa || [];
+      const resumenTarifa = datosFactura.resumenValidacionTarifa || {
+        totalLineas: datosFactura.detalle?.length || 0,
+        alertasError: alertasTarifa.filter(a => a.severidad === 'error').length,
+        alertasAdvertencia: alertasTarifa.filter(a => a.severidad === 'advertencia').length,
+        lineasOk: alertasTarifa.filter(a => a.severidad === 'ok').length,
+        ahorrosPerdidos: alertasTarifa.reduce((sum, a) => sum + (a.diferenciaIVA || 0), 0),
+      };
+
+      const fechaEmision = datosFactura.fechaEmision ? new Date(datosFactura.fechaEmision) : new Date();
+
+      // Crear registro en MongoDB
+      const docData = {
+        claveNumerica: datosFactura.claveNumerica,
+        consecutivo: datosFactura.consecutivo,
+        fechaEmision,
+        emisor: datosFactura.emisor,
+        receptor: datosFactura.receptor,
+        lineaDetalle: datosFactura.detalle || [],
+        resumenFactura: datosFactura.resumenFactura || {},
+        otrosCargos: datosFactura.otrosCargos || [],
+        categoriaIA: categorizacion.categoriaIA || categorizacion.categoria || 'sin_clasificar',
+        subcategoriaIA: categorizacion.subcategoriaIA || undefined,
+        confianzaIA: categorizacion.confianzaIA ?? categorizacion.confianza ?? 0.5,
+        justificacionIA: categorizacion.justificacionIA || categorizacion.justificacion || 'Pendiente de análisis',
+        categoriaManual: categorizacion.categoriaIA || categorizacion.categoria || 'sin_clasificar',
+        alertasTarifa,
+        resumenValidacionTarifa: resumenTarifa,
+        cuatrimestre: datosFactura.cuatrimestre || 1,
+        periodoFiscal: datosFactura.periodoFiscal || fechaEmision.getFullYear(),
+        archivoXML: rutaRelativaXML,
+        archivoPDF: rutaRelativaPDF,
+        emailUID: opciones.emailUID,
+        carpetaOrigen: opciones.canal || 'webhook',
+        estado: resumenTarifa.alertasError > 0 ? 'revision' : 'procesada',
+        esDeducible: categorizacion.esDeducible !== undefined ? categorizacion.esDeducible : true,
+        tenantId: effectiveTenantId,
+        usuario: usuario._id,
+      };
+
+      const nuevaFactura = new Factura(docData);
+      if (!effectiveTenantId) {
+        nuevaFactura.$locals = { skipTenant: true };
+      }
+      await nuevaFactura.save();
+
       return {
         exito: true,
-        actualizada: true,
-        factura: yaExiste,
-        mensaje: `Factura ${datosFactura.claveNumerica} enriquecida con detalle de líneas completo.`,
+        duplicada: false,
+        factura: nuevaFactura,
+        usuario,
+        emisor: datosFactura.emisor?.nombre || 'Emisor desconocido',
+        total: datosFactura.resumenFactura?.totalComprobante || 0,
+        alertas: resumenTarifa.alertasError,
       };
     }
-
-    return {
-      exito: true,
-      duplicada: true,
-      factura: yaExiste,
-      mensaje: `Factura ${datosFactura.claveNumerica} ya estaba registrada.`,
-    };
-  }
-
-  // Guardar archivo XML en disco
-  const nombreXML = `${Date.now()}_${datosFactura.claveNumerica}.xml`;
-  const rutaAbsolutaXML = path.join(XML_DIR, nombreXML);
-  fs.writeFileSync(rutaAbsolutaXML, xmlString);
-  const rutaRelativaXML = path.join('uploads', 'xml', nombreXML);
-
-  // Guardar PDF adjunto si vino en opciones
-  let rutaRelativaPDF = null;
-  if (opciones.pdfBuffer) {
-    const nombrePDF = `${Date.now()}_${datosFactura.claveNumerica}.pdf`;
-    const rutaAbsolutaPDF = path.join(PDF_DIR, nombrePDF);
-    fs.writeFileSync(rutaAbsolutaPDF, opciones.pdfBuffer);
-    rutaRelativaPDF = path.join('uploads', 'pdf', nombrePDF);
-  }
-
-  // Categorización con IA (NVIDIA NIM)
-  let categorizacion = { categoria: 'sin_clasificar', confianza: 0.5, justificacion: 'Pendiente de análisis' };
-  try {
-    categorizacion = await categorizarFactura(datosFactura);
-  } catch (err) {
-    console.warn('⚠️ Error al categorizar factura con IA:', err.message);
-  }
-
-  // Resumen de validación de tarifas
-  const alertasTarifa = datosFactura.alertasTarifa || [];
-  const resumenTarifa = datosFactura.resumenValidacionTarifa || {
-    totalLineas: datosFactura.detalle?.length || 0,
-    alertasError: alertasTarifa.filter(a => a.severidad === 'error').length,
-    alertasAdvertencia: alertasTarifa.filter(a => a.severidad === 'advertencia').length,
-    lineasOk: alertasTarifa.filter(a => a.severidad === 'ok').length,
-    ahorrosPerdidos: alertasTarifa.reduce((sum, a) => sum + (a.diferenciaIVA || 0), 0),
-  };
-
-  const fechaEmision = datosFactura.fechaEmision ? new Date(datosFactura.fechaEmision) : new Date();
-
-  // Crear registro en MongoDB
-  const nuevaFactura = await Factura.create({
-    claveNumerica: datosFactura.claveNumerica,
-    consecutivo: datosFactura.consecutivo,
-    fechaEmision,
-    emisor: datosFactura.emisor,
-    receptor: datosFactura.receptor,
-    lineaDetalle: datosFactura.detalle || [],
-    resumenFactura: datosFactura.resumenFactura || {},
-    otrosCargos: datosFactura.otrosCargos || [],
-    categoriaIA: categorizacion.categoriaIA || categorizacion.categoria || 'sin_clasificar',
-    subcategoriaIA: categorizacion.subcategoriaIA || undefined,
-    confianzaIA: categorizacion.confianzaIA ?? categorizacion.confianza ?? 0.5,
-    justificacionIA: categorizacion.justificacionIA || categorizacion.justificacion || 'Pendiente de análisis',
-    categoriaManual: categorizacion.categoriaIA || categorizacion.categoria || 'sin_clasificar',
-    alertasTarifa,
-    resumenValidacionTarifa: resumenTarifa,
-    cuatrimestre: datosFactura.cuatrimestre || 1,
-    periodoFiscal: datosFactura.periodoFiscal || fechaEmision.getFullYear(),
-    archivoXML: rutaRelativaXML,
-    archivoPDF: rutaRelativaPDF,
-    emailUID: opciones.emailUID,
-    carpetaOrigen: opciones.canal || 'webhook',
-    estado: resumenTarifa.alertasError > 0 ? 'revision' : 'procesada',
-    esDeducible: categorizacion.esDeducible !== undefined ? categorizacion.esDeducible : true,
-    tenantId: tenantId || usuario.tenantId,
-    usuario: usuario._id,
-  });
-
-  return {
-    exito: true,
-    duplicada: false,
-    factura: nuevaFactura,
-    usuario,
-    emisor: datosFactura.emisor?.nombre || 'Emisor desconocido',
-    total: datosFactura.resumenFactura?.totalComprobante || 0,
-    alertas: resumenTarifa.alertasError,
-  };
+  );
 }
 
 module.exports = {

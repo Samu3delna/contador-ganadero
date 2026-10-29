@@ -53,6 +53,7 @@ Thumbs.db
 # Archivos de configuración local de agentes/IDEs
 .claude/
 .opencode/
+.worktrees/
 
 # Archivos temporales de desarrollo
 backend/parsed.txt

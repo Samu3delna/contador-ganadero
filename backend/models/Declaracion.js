@@ -77,4 +77,7 @@ const declaracionSchema = new mongoose.Schema({
 declaracionSchema.index({ tenantId: 1, tipo: 1, periodoFiscal: 1, cuatrimestre: 1 });
 declaracionSchema.index({ tenantId: 1, usuario: 1 });
 
+const tenantPlugin = require('./plugins/tenantPlugin');
+declaracionSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('Declaracion', declaracionSchema);

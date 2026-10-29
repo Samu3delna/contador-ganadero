@@ -33,7 +33,12 @@ const actualizarConfiguracionFiscal = async (req, res, next) => {
     if (actividadEconomica !== undefined) usuario.configuracionFiscal.actividadEconomica = actividadEconomica;
     if (regimenTributario !== undefined) usuario.configuracionFiscal.regimenTributario = regimenTributario;
     if (frecuenciaIVA !== undefined) usuario.configuracionFiscal.frecuenciaIVA = frecuenciaIVA;
-    if (depreciacionActivos !== undefined) usuario.configuracionFiscal.depreciacionActivos = depreciacionActivos;
+    if (Array.isArray(depreciacionActivos)) {
+      const { sanitizarObjetoUsuario } = require('../middleware/validateMiddleware');
+      usuario.configuracionFiscal.depreciacionActivos = depreciacionActivos.slice(0, 100).map((act) =>
+        sanitizarObjetoUsuario(act, ['nombre', 'fechaAdquisicion', 'valorOriginal', 'vidaUtilAnios', 'activo'])
+      );
+    }
 
     await usuario.save();
     res.json({ mensaje: 'Configuración fiscal actualizada', configuracionFiscal: usuario.configuracionFiscal });
