@@ -1,9 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const { uploadLimiter } = require('../middleware/rateLimiters');
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2 MB máx por XML
+    files: 5,
+  },
+  fileFilter: (req, file, cb) => {
+    const name = String(file.originalname || '').toLowerCase();
+    const mime = String(file.mimetype || '').toLowerCase();
+    const esXml =
+      name.endsWith('.xml') ||
+      mime === 'application/xml' ||
+      mime === 'text/xml' ||
+      mime.endsWith('+xml');
+    if (!esXml) {
+      return cb(new Error('Solo se permiten archivos XML (.xml)'));
+    }
+    cb(null, true);
+  },
 });
 
 const {
@@ -18,7 +36,7 @@ router.use(protegerRuta);
 router.use(extraerTenant);
 router.route('/').get(obtenerFacturas);
 router.post('/manual', crearGastoManual);
-router.post('/upload', upload.single('archivoXML'), subirXMLManual);
+router.post('/upload', uploadLimiter, upload.single('archivoXML'), subirXMLManual);
 
 // Alertas de tarifa agropecuaria
 router.get('/alertas-tarifa', obtenerAlertasTarifa);

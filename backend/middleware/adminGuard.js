@@ -1,6 +1,6 @@
 /**
- * Valida que el usuario autenticado sea dueno del tenant actual.
- * Cumple si rol === 'dueño' o si el usuario es el owner del tenant.
+ * Valida que el usuario autenticado sea dueño o admin del tenant actual.
+ * Cumple si rol === 'dueño' | 'admin' o si el usuario es el owner del tenant.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
@@ -9,26 +9,22 @@ const esDueñoTenant = (req, res, next) => {
   const usuario = req.usuario;
   const tenant = req.tenant;
 
-  const esDuenoRol = usuario?.rol === 'dueño';
-  const esOwner = !!(tenant?.owner && usuario?._id && tenant.owner.equals(usuario._id));
+  const esDuenoOAdminRol = usuario?.rol === 'dueño' || usuario?.rol === 'admin';
+  const esOwner = !!(tenant?.owner && usuario?._id && typeof tenant.owner.equals === 'function' && tenant.owner.equals(usuario._id));
 
-  if (!esDuenoRol && !esOwner) {
+  if (!esDuenoOAdminRol && !esOwner) {
     return res.status(403).json({
       error: 'NO_ES_DUENO',
       rol: usuario?.rol,
     });
   }
 
-  next();
+  return next();
 };
 
-const CORREOS_ADMIN_DEFAULT = [
-  'admin@admin.admin',
-];
-
 /**
- * Determina si un email pertenece a un Super Admin.
- * Fuente de verdad: process.env.SUPER_ADMIN_EMAILS (CSV) o correos administradores por defecto.
+ * Determina si un email está en la lista explícita de variables de entorno (solo para referencia operativa).
+ * SEGURIDAD: Se eliminó 'admin@admin.admin' y cualquier correo fijo en código.
  * @param {string|undefined} email
  * @returns {boolean}
  */
@@ -42,31 +38,38 @@ const esEmailSuperAdmin = (email) => {
   const emailLimpio = (email || '').toString().trim().toLowerCase();
   if (!emailLimpio) return false;
 
-  return (
-    permitidos.includes(emailLimpio) ||
-    CORREOS_ADMIN_DEFAULT.includes(emailLimpio)
-  );
+  return permitidos.includes(emailLimpio);
 };
 
 /**
- * Valida que el usuario sea Super Admin.
- * Cumple si su email esta en process.env.SUPER_ADMIN_EMAILS (CSV) / lista admin,
- * o si tiene flag isSuperAdmin / rol admin o administrador.
+ * Valida que el usuario sea Super Admin de la plataforma.
+ * SEGURIDAD:
+ * - Separa estrictamente el rol dentro de un tenant ('dueño', 'admin') del rol de plataforma (isSuperAdmin).
+ * - Un 'admin' de tenant NUNCA pasa esSuperAdmin.
+ * - Solo pasa si usuario.isSuperAdmin === true (asignado por script de consola autenticado).
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
 const esSuperAdmin = (req, res, next) => {
   const usuario = req.usuario;
-  const enLista = esEmailSuperAdmin(usuario?.email);
-  const flagFuturo = usuario?.isSuperAdmin === true || usuario?.esSuperAdmin === true;
-  const rolAdmin = usuario?.rol === 'admin' || usuario?.rol === 'administrador';
+  const esSuper = usuario?.isSuperAdmin === true || usuario?.esSuperAdmin === true;
 
-  if (!enLista && !flagFuturo && !rolAdmin) {
+  if (!esSuper) {
     return res.status(403).json({ error: 'NO_SUPER_ADMIN' });
   }
 
-  next();
+  // En producción, si REQUIRE_ADMIN_MFA=true, exige que el superadmin tenga MFA activo
+  if (process.env.NODE_ENV === 'production' && process.env.REQUIRE_ADMIN_MFA === 'true') {
+    if (!usuario?.mfa?.enabled) {
+      return res.status(403).json({
+        error: 'MFA_REQUERIDO_SUPERADMIN',
+        mensaje: 'El acceso de Super Admin requiere autenticación de dos factores (MFA) activa.',
+      });
+    }
+  }
+
+  return next();
 };
 
 module.exports = { esDueñoTenant, esSuperAdmin, esEmailSuperAdmin };

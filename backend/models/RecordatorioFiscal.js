@@ -198,4 +198,7 @@ recordatorioFiscalSchema.statics.generarParaAnio = async function (usuarioId, an
   return nuevos;
 };
 
+const tenantPlugin = require('./plugins/tenantPlugin');
+recordatorioFiscalSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('RecordatorioFiscal', recordatorioFiscalSchema);

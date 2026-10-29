@@ -274,4 +274,7 @@ inventarioSchema.virtual('totalMielProducidaKg').get(function () {
   return this.colmenas?.reduce((sum, c) => sum + (c.activo ? (c.mielProducidaTotalKg || 0) : 0), 0) || 0;
 });
 
+const tenantPlugin = require('./plugins/tenantPlugin');
+inventarioSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('Inventario', inventarioSchema);

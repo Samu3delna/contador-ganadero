@@ -1,19 +1,18 @@
 /**
- * Worker asincrono de envio de comprobantes a Hacienda (Multi-tenant).
+ * Worker asíncrono de envío de comprobantes a Hacienda (Multi-tenant).
  *
  *  Loop:
- *   1. Busca comprobantes en estado "firmada" pendientes de envio
- *   2. Agrupa por tenantId
- *   3. Para cada tenant: obtiene config, token, envia comprobantes
+ *   1. Busca comprobantes en estado "firmada" pendientes de envío ({ skipTenant: true })
+ *   2. Agrupa por tenantId y ejecuta cada lote dentro de runWithTenantContext({ tenantId })
+ *   3. Para cada tenant: obtiene config, token aislado por tenant, envía comprobantes
  *   4. Loop de polling: actualiza a "aceptado" / "rechazado"
- *
- *  Pensado para un proceso separado (worker.js) o ser llamado por cron.
- *  No bloquea el request HTTP de creacion de factura.
  */
 
+const crypto = require('crypto');
 const FacturaEmision = require('../models/FacturaEmision');
 const Tenant = require('../models/Tenant');
 const hacienda = require('./hacienda');
+const { runWithTenantContext } = require('../utils/tenantContext');
 const { generarClave } = hacienda.clave50;
 const { buildXml } = hacienda.xmlBuilder;
 const { firmarDocumento, limpiarCacheLlave } = hacienda.signer;
@@ -30,17 +29,15 @@ let _timer = null;
 
 /**
  * Obtiene configuración de Hacienda para un tenant específico.
- * @param {Object} tenant - Documento Tenant con configuracionHacienda
- * @returns {Object} config con credenciales desencriptadas
  */
 function getTenantConfig(tenant) {
   const hc = tenant.configuracionHacienda || {};
   return {
     ambiente: hc.ambiente || 'local',
-    p12Base64: hc.certificadoP12Base64 || '',
-    pin: hc.obtenerPinCertificado ? hc.obtenerPinCertificado() : null,
+    p12Base64: tenant.obtenerCertificadoP12Base64 ? tenant.obtenerCertificadoP12Base64() : (hc.certificadoP12Base64 || ''),
+    pin: tenant.obtenerPinCertificado ? tenant.obtenerPinCertificado() : null,
     usuario: hc.usuarioHacienda || '',
-    password: hc.obtenerPasswordHacienda ? hc.obtenerPasswordHacienda() : null,
+    password: tenant.obtenerPasswordHacienda ? tenant.obtenerPasswordHacienda() : null,
     sucursal: hc.sucursal || '001',
     terminal: hc.terminal || '00001',
     codigoActividad: hc.codigoActividad || '000000',
@@ -50,7 +47,6 @@ function getTenantConfig(tenant) {
 
 /**
  * Obtiene configuración global (legacy) desde variables de entorno.
- * @returns {Object} config global
  */
 function getGlobalConfig() {
   return {
@@ -71,9 +67,7 @@ function getGlobalConfig() {
  *  - Asigna claveNumerica + consecutivo si faltan
  *  - Genera XML v4.4
  *  - Firma (mock o XAdES-EPES real)
- *  - guarda como "firmada"
- *
- *  Lanzado por el controller POST /emision.
+ *  - Guarda como "firmada"
  */
 async function prepararYFirmar(facturaId) {
   const factura = await FacturaEmision.findById(facturaId).populate({
@@ -82,10 +76,9 @@ async function prepararYFirmar(facturaId) {
   });
   if (!factura) throw new Error('Factura no encontrada');
   if (factura.estado !== 'borrador') {
-    return factura; // ya firmada o en proceso
+    return factura;
   }
 
-  // Obtener config del tenant o global (legacy)
   let cfg;
   if (factura.tenantId && factura.tenantId.configuracionHacienda?.estaConfigurado?.()) {
     cfg = getTenantConfig(factura.tenantId);
@@ -93,7 +86,6 @@ async function prepararYFirmar(facturaId) {
     cfg = getGlobalConfig();
   }
 
-  // Generar clave si no existe
   if (!factura.claveNumerica) {
     const secuencialNum = parseInt(factura.consecutivo.slice(-10) || '0000000001', 10);
     const { clave, consecutivo: consGen } = generarClave({
@@ -106,17 +98,14 @@ async function prepararYFirmar(facturaId) {
       secuencia: secuencialNum,
     });
     factura.claveNumerica = clave;
-    // Mantener consecutivo del modelo (20 digitos); clave se usa solo en XML
     if (!factura.consecutivo || factura.consecutivo.length !== 20) {
       factura.consecutivo = consGen;
     }
     factura.ambiente = cfg.ambiente;
   }
 
-  // Construir XML
   const xml = buildXml(factura.toObject ? factura.toObject() : factura);
 
-  // Firmar
   let xmlFirmado;
   if (cfg.p12Base64 && cfg.pin) {
     xmlFirmado = firmarDocumento(xml, {
@@ -125,8 +114,7 @@ async function prepararYFirmar(facturaId) {
       cacheKey: cfg.tenantId,
       ambiente: cfg.ambiente,
     });
-  } else if (cfg.p12Path && cfg.pin || cfg.ambiente === 'local') {
-    // Legacy: archivo en filesystem o mock local
+  } else if ((cfg.p12Path && cfg.pin) || cfg.ambiente === 'local') {
     xmlFirmado = firmarDocumento(xml, {
       p12Path: cfg.p12Path,
       pin: cfg.pin,
@@ -138,7 +126,7 @@ async function prepararYFirmar(facturaId) {
 
   factura.xmlFirmado = xmlFirmado;
   factura.estado = 'firmada';
-  factura.hashFirma = require('crypto').createHash('sha256').update(xmlFirmado).digest('hex').slice(0, 32);
+  factura.hashFirma = crypto.createHash('sha256').update(xmlFirmado).digest('hex').slice(0, 32);
   await factura.save();
   return factura;
 }
@@ -150,9 +138,8 @@ async function enviarPendientes() {
   if (_running) return;
   _running = true;
   try {
-    // Buscar facturas pendientes (incluyendo +xmlFirmado que tiene select: false) y poblar tenantId
     const pendientes = await FacturaEmision
-      .find({ estado: 'firmada' })
+      .find({ estado: 'firmada' }, null, { skipTenant: true })
       .select('+xmlFirmado')
       .populate('tenantId')
       .sort({ createdAt: 1 })
@@ -160,7 +147,6 @@ async function enviarPendientes() {
 
     if (pendientes.length === 0) return;
 
-    // Agrupar por tenantId
     const porTenant = {};
     for (const factura of pendientes) {
       const tid = factura.tenantId?._id?.toString() || 'global';
@@ -168,89 +154,83 @@ async function enviarPendientes() {
       porTenant[tid].push(factura);
     }
 
-    // Procesar cada tenant
     for (const [tenantId, facturas] of Object.entries(porTenant)) {
-      try {
-        // Obtener config del tenant
-        let cfg;
-        if (tenantId === 'global') {
-          cfg = getGlobalConfig();
-        } else {
-          const tenant = await Tenant.findById(tenantId).select(SELECT_HACIENDA_CREDS);
-          if (!tenant || !tenant.configuracionHacienda?.estaConfigurado?.()) {
+      await runWithTenantContext({ tenantId: tenantId === 'global' ? null : tenantId }, async () => {
+        try {
+          let cfg;
+          if (tenantId === 'global') {
             cfg = getGlobalConfig();
-            if (cfg.ambiente !== 'local') {
-              console.warn(`[hacienda worker] Tenant ${tenantId} sin config Hacienda, saltando`);
-              continue;
-            }
           } else {
-            cfg = getTenantConfig(tenant);
-          }
-        }
-
-        // Obtener token para este tenant
-        const token = await getToken({
-          ambiente: cfg.ambiente,
-          usuario: cfg.usuario,
-          password: cfg.password,
-        }).catch((e) => {
-          console.error(`[hacienda worker] error obtencion token tenant ${tenantId}:`, e.message);
-          return null;
-        });
-        if (!token && cfg.ambiente !== 'local') continue;
-
-        // Enviar facturas de este tenant
-        for (const factura of facturas.slice(0, MAX_DOC_POR_TICK)) {
-          try {
-            const documento = {
-              clave: factura.claveNumerica,
-              fecha: (factura.fechaEmision || new Date()).toISOString(),
-              emisorTipoId: factura.emisor?.cedula?.tipo || '01',
-              emisorNumeroId: factura.emisor?.cedula?.numero,
-              receptorTipoId: factura.receptor?.cedula?.tipo || '02',
-              receptorNumeroId: factura.receptor?.cedula?.numero,
-              xmlFirmado: factura.xmlFirmado,
-            };
-            const resp = await enviarComprobante({
-              ambiente: cfg.ambiente,
-              documento,
-              token,
-              credenciales: { usuario: cfg.usuario, password: cfg.password },
-            });
-
-            if (resp.httpStatus === 201) {
-              factura.estado = 'procesando';
-              factura.fechaEnvioHacienda = new Date();
-              factura.respuestaHacienda = {
-                clave: factura.claveNumerica,
-                estado: 'procesando',
-                detalle: 'Enviado a Hacienda',
-                fecha: new Date(),
-                location: resp.location,
-              };
-              await factura.save();
-              console.log(`[hacienda worker] enviado ${factura.claveNumerica} (tenant: ${tenantId}) -> Location: ${resp.location}`);
-            } else if (resp.retry) {
-              console.warn(`[hacienda worker] retry para ${factura.claveNumerica}: http=${resp.httpStatus}`);
+            const tenant = await Tenant.findById(tenantId).select(SELECT_HACIENDA_CREDS);
+            if (!tenant || !tenant.configuracionHacienda?.estaConfigurado?.()) {
+              cfg = getGlobalConfig();
+              if (cfg.ambiente !== 'local') {
+                return;
+              }
             } else {
-              factura.estado = 'rechazada';
-              factura.fechaRespuestaHacienda = new Date();
-              factura.respuestaHacienda = {
-                clave: factura.claveNumerica,
-                estado: 'rechazado',
-                detalle: JSON.stringify(resp.error || 'Error definitivo'),
-                fecha: new Date(),
-              };
-              await factura.save();
-              console.warn(`[hacienda worker] rechazado ${factura.claveNumerica}:`, resp.error);
+              cfg = getTenantConfig(tenant);
             }
-          } catch (err) {
-            console.error(`[hacienda worker] error envio ${factura.claveNumerica}:`, err.message);
           }
+
+          const token = await getToken({
+            ambiente: cfg.ambiente,
+            usuario: cfg.usuario,
+            password: cfg.password,
+            tenantId: cfg.tenantId,
+          }).catch(() => null);
+          if (!token && cfg.ambiente !== 'local') return;
+
+          for (const factura of facturas.slice(0, MAX_DOC_POR_TICK)) {
+            try {
+              const documento = {
+                clave: factura.claveNumerica,
+                fecha: (factura.fechaEmision || new Date()).toISOString(),
+                emisorTipoId: factura.emisor?.cedula?.tipo || '01',
+                emisorNumeroId: factura.emisor?.cedula?.numero,
+                receptorTipoId: factura.receptor?.cedula?.tipo || '02',
+                receptorNumeroId: factura.receptor?.cedula?.numero,
+                xmlFirmado: factura.xmlFirmado,
+              };
+              const resp = await enviarComprobante({
+                ambiente: cfg.ambiente,
+                documento,
+                token,
+                credenciales: { usuario: cfg.usuario, password: cfg.password, tenantId: cfg.tenantId },
+              });
+
+              factura.$locals = factura.$locals || {};
+              factura.$locals.skipTenant = true;
+
+              if (resp.httpStatus === 201) {
+                factura.estado = 'procesando';
+                factura.fechaEnvioHacienda = new Date();
+                factura.respuestaHacienda = {
+                  clave: factura.claveNumerica,
+                  estado: 'procesando',
+                  detalle: 'Enviado a Hacienda',
+                  fecha: new Date(),
+                  location: resp.location,
+                };
+                await factura.save();
+              } else if (!resp.retry) {
+                factura.estado = 'rechazada';
+                factura.fechaRespuestaHacienda = new Date();
+                factura.respuestaHacienda = {
+                  clave: factura.claveNumerica,
+                  estado: 'rechazado',
+                  detalle: JSON.stringify(resp.error || 'Error definitivo'),
+                  fecha: new Date(),
+                };
+                await factura.save();
+              }
+            } catch {
+              // Continúa con el siguiente comprobante
+            }
+          }
+        } catch {
+          // Continúa con el siguiente tenant
         }
-      } catch (err) {
-        console.error(`[hacienda worker] error procesando tenant ${tenantId}:`, err.message);
-      }
+      });
     }
   } finally {
     _running = false;
@@ -262,12 +242,11 @@ async function enviarPendientes() {
  */
 async function consultarProcesando() {
   const enProceso = await FacturaEmision
-    .find({ estado: 'procesando' })
+    .find({ estado: 'procesando' }, null, { skipTenant: true })
     .populate('tenantId')
     .sort({ fechaEnvioHacienda: 1 })
     .limit(MAX_DOC_POR_TICK * MAX_TENANTS_POR_TICK);
 
-  // Agrupar por tenantId
   const porTenant = {};
   for (const factura of enProceso) {
     const tid = factura.tenantId?._id?.toString() || 'global';
@@ -275,59 +254,59 @@ async function consultarProcesando() {
     porTenant[tid].push(factura);
   }
 
-  // Procesar cada tenant
   for (const [tenantId, facturas] of Object.entries(porTenant)) {
-    try {
-      let cfg;
-      if (tenantId === 'global') {
-        cfg = getGlobalConfig();
-      } else {
-        const tenant = await Tenant.findById(tenantId).select(SELECT_HACIENDA_CREDS);
-        if (!tenant || !tenant.configuracionHacienda?.estaConfigurado?.()) {
+    await runWithTenantContext({ tenantId: tenantId === 'global' ? null : tenantId }, async () => {
+      try {
+        let cfg;
+        if (tenantId === 'global') {
           cfg = getGlobalConfig();
-          if (cfg.ambiente !== 'local') continue;
         } else {
-          cfg = getTenantConfig(tenant);
-        }
-      }
-
-      for (const factura of facturas.slice(0, MAX_DOC_POR_TICK)) {
-        try {
-          const resultado = await pollingHastaTerminal({
-            ambiente: cfg.ambiente,
-            clave: factura.claveNumerica,
-            location: factura.respuestaHacienda?.location,
-            intentos: 1, // un solo intento por tick
-            intervalo: 100,
-          });
-          if (resultado.estado === 'aceptado' || resultado.estado === 'rechazado') {
-            factura.estado = resultado.estado === 'aceptado' ? 'aceptada' : 'rechazada';
-            factura.fechaRespuestaHacienda = new Date();
-            factura.respuestaHacienda = {
-              clave: factura.claveNumerica,
-              estado: resultado.estado,
-              detalle: resultado.detalle,
-              fecha: new Date(),
-              location: factura.respuestaHacienda?.location,
-              xml: resultado.xmlRespuesta,
-              indicaciones: resultado.raw?.indEstado || '',
-            };
-            await factura.save();
-            console.log(`[hacienda worker] ${factura.claveNumerica} (tenant: ${tenantId}) -> ${factura.estado}`);
+          const tenant = await Tenant.findById(tenantId).select(SELECT_HACIENDA_CREDS);
+          if (!tenant || !tenant.configuracionHacienda?.estaConfigurado?.()) {
+            cfg = getGlobalConfig();
+            if (cfg.ambiente !== 'local') return;
+          } else {
+            cfg = getTenantConfig(tenant);
           }
-        } catch (err) {
-          console.error(`[hacienda worker] error consulta ${factura.claveNumerica}:`, err.message);
         }
+
+        for (const factura of facturas.slice(0, MAX_DOC_POR_TICK)) {
+          try {
+            const resultado = await pollingHastaTerminal({
+              ambiente: cfg.ambiente,
+              clave: factura.claveNumerica,
+              location: factura.respuestaHacienda?.location,
+              intentos: 1,
+              intervalo: 100,
+              credenciales: { usuario: cfg.usuario, password: cfg.password, tenantId: cfg.tenantId },
+            });
+            if (resultado.estado === 'aceptado' || resultado.estado === 'rechazado') {
+              factura.$locals = factura.$locals || {};
+              factura.$locals.skipTenant = true;
+              factura.estado = resultado.estado === 'aceptado' ? 'aceptada' : 'rechazada';
+              factura.fechaRespuestaHacienda = new Date();
+              factura.respuestaHacienda = {
+                clave: factura.claveNumerica,
+                estado: resultado.estado,
+                detalle: resultado.detalle,
+                fecha: new Date(),
+                location: factura.respuestaHacienda?.location,
+                xml: resultado.xmlRespuesta,
+                indicaciones: resultado.raw?.indEstado || '',
+              };
+              await factura.save();
+            }
+          } catch {
+            // Continúa con el siguiente comprobante
+          }
+        }
+      } catch {
+        // Continúa con el siguiente tenant
       }
-    } catch (err) {
-      console.error(`[hacienda worker] error polling tenant ${tenantId}:`, err.message);
-    }
+    });
   }
 }
 
-/**
- * Un tick completo del worker.
- */
 async function tick() {
   await enviarPendientes();
   await consultarProcesando();
@@ -335,19 +314,16 @@ async function tick() {
 
 function iniciar(intervaloMs = INTERVALO_TICK_MS) {
   if (_timer) return;
-  console.log(`[hacienda worker] iniciado (intervalo ${intervaloMs}ms, modo multi-tenant)`);
   _timer = setInterval(async () => {
-    try { await tick(); } catch (e) { console.error('[hacienda worker] tick error:', e.message); }
+    try { await tick(); } catch { /* ignore */ }
   }, intervaloMs);
-  // tick inicial
-  tick().catch((e) => console.error('[hacienda worker] tick inicial error:', e.message));
+  tick().catch(() => {});
 }
 
 function detener() {
   if (_timer) {
     clearInterval(_timer);
     _timer = null;
-    console.log('[hacienda worker] detenido');
   }
 }
 

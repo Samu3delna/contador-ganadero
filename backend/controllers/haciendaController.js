@@ -85,7 +85,8 @@ const crearBorrador = async (req, res, next) => {
     const periodoFiscal = fechaEmision.getFullYear();
 
     // consecutivo temporal sin firma - se regenera al firmar
-    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO[tipoDocumento] || '01'}${String(Date.now()).slice(-10)}`;
+    const seqNum = typeof tenant.siguienteConsecutivo === 'function' ? await tenant.siguienteConsecutivo(tipoDocumento) : Number(String(Date.now()).slice(-10));
+    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO[tipoDocumento] || '01'}${String(seqNum).padStart(10, '0')}`;
 
     const nueva = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento,
@@ -238,7 +239,10 @@ const cancelarDocumento = async (req, res, next) => {
     const fechaEmision = new Date();
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
     const periodoFiscal = fechaEmision.getFullYear();
-    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO.NC}${String(Date.now()).slice(-10)}`;
+    const seqNumNC = typeof tenant?.siguienteConsecutivo === 'function'
+      ? await tenant.siguienteConsecutivo('NC')
+      : Number(String(Date.now()).slice(-10));
+    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO.NC}${String(seqNumNC).padStart(10, '0')}`;
 
     const notaCredito = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento: 'NC',
@@ -281,6 +285,9 @@ const cancelarDocumento = async (req, res, next) => {
 // ============ CONSULTA MOCK (endpoint interno) ============
 const consultaMockLocal = async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ error: 'Endpoint no disponible en producción' });
+    }
     const clave = req.params.clave;
     const mock = mockStore.get(clave);
     if (!mock) { res.status(404); return res.json({ indEstado: 'procesando' }); }

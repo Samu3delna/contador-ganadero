@@ -138,4 +138,7 @@ ingresoSchema.index({ tenantId: 1, periodoFiscal: 1, cuatrimestre: 1 });
 ingresoSchema.index({ tenantId: 1, fecha: -1 });
 ingresoSchema.index({ tenantId: 1, usuario: 1 });
 
+const tenantPlugin = require('./plugins/tenantPlugin');
+ingresoSchema.plugin(tenantPlugin);
+
 module.exports = mongoose.model('Ingreso', ingresoSchema);

@@ -1,19 +1,10 @@
 const mongoose = require('mongoose');
 const { LIMITES_POR_PLAN, PLANES_VALIDOS } = require('../config/planes');
 const { encrypt, decrypt } = require('../utils/crypto');
+const { KeyProvider } = require('../utils/keyProvider');
 
 /**
  * Modelo Tenant (Inquilino / Finca) — Aislamiento multi-tenant SaaS
- *
- * Cada Tenant representa una finca/organización cliente del SaaS.
- * Contiene: plan de suscripción, estado, límites del plan, consumo actual,
- * relación con ONVO Pay, y lista de usuarios miembros (con roles).
- *
- * Hoy: 1 Tenant = 1 Usuario dueño. Mañana: esqueleto preparado para RBAC
- * multi-usuario sin reescribir el esquema.
- *
- * Planes vigentes (2): free (Gratis + anuncios) | pro (Pro $10 sin anuncios).
- * Los límites se centralizan en config/planes.js.
  */
 
 // === Usuario miembro del tenant (subdoc embebido) ===
@@ -25,7 +16,7 @@ const usuarioTenantSchema = new mongoose.Schema({
   },
   rol: {
     type: String,
-    enum: ['dueño', 'contador', 'peon'],
+    enum: ['dueño', 'admin', 'contador', 'peon'],
     default: 'peon',
   },
   agregadoEn: {
@@ -34,7 +25,17 @@ const usuarioTenantSchema = new mongoose.Schema({
   },
 }, { _id: false });
 
-// === Configuración Hacienda por tenant (credenciales encriptadas) ===
+// === Consecutivos atómicos por tipo de comprobante Hacienda v4.4 ===
+const consecutivosHaciendaSchema = new mongoose.Schema({
+  FE: { type: Number, default: 0 },
+  TE: { type: Number, default: 0 },
+  NC: { type: Number, default: 0 },
+  ND: { type: Number, default: 0 },
+  FEC: { type: Number, default: 0 },
+  REP: { type: Number, default: 0 },
+}, { _id: false });
+
+// === Configuración Hacienda por tenant (credenciales cifradas con AES-256-GCM + AAD) ===
 const haciendaConfigSchema = new mongoose.Schema({
   ambiente: {
     type: String,
@@ -72,6 +73,10 @@ const haciendaConfigSchema = new mongoose.Schema({
     default: '000000',
     trim: true,
   },
+  consecutivos: {
+    type: consecutivosHaciendaSchema,
+    default: () => ({ FE: 0, TE: 0, NC: 0, ND: 0, FEC: 0, REP: 0 }),
+  },
   configuradoEn: {
     type: Date,
   },
@@ -80,46 +85,75 @@ const haciendaConfigSchema = new mongoose.Schema({
   },
 }, { _id: false });
 
-// Métodos de encriptación para configuración Hacienda
+// Métodos de cifrado autenticado para configuración Hacienda (con AAD vinculado al tenant y campo)
 haciendaConfigSchema.methods.establecerPinCertificado = function (pin) {
-  this.pinCertificado = encrypt(pin);
+  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  this.pinCertificado = encrypt(pin, { tenantId: parentTenantId, field: 'configuracionHacienda.pinCertificado' });
 };
 
 haciendaConfigSchema.methods.obtenerPinCertificado = function () {
-  return this.pinCertificado ? decrypt(this.pinCertificado) : null;
+  if (!this.pinCertificado) return null;
+  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  try {
+    return decrypt(this.pinCertificado, { tenantId: parentTenantId, field: 'configuracionHacienda.pinCertificado' });
+  } catch {
+    return decrypt(this.pinCertificado);
+  }
 };
 
 haciendaConfigSchema.methods.establecerPasswordHacienda = function (password) {
-  this.passwordHacienda = encrypt(password);
+  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  this.passwordHacienda = encrypt(password, { tenantId: parentTenantId, field: 'configuracionHacienda.passwordHacienda' });
 };
 
 haciendaConfigSchema.methods.obtenerPasswordHacienda = function () {
-  return this.passwordHacienda ? decrypt(this.passwordHacienda) : null;
+  if (!this.passwordHacienda) return null;
+  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  try {
+    return decrypt(this.passwordHacienda, { tenantId: parentTenantId, field: 'configuracionHacienda.passwordHacienda' });
+  } catch {
+    return decrypt(this.passwordHacienda);
+  }
+};
+
+haciendaConfigSchema.methods.establecerCertificadoP12 = function (base64) {
+  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  this.certificadoP12Base64 = encrypt(base64, { tenantId: parentTenantId, field: 'configuracionHacienda.certificadoP12Base64' });
+};
+
+haciendaConfigSchema.methods.obtenerCertificadoP12 = function () {
+  if (!this.certificadoP12Base64) return null;
+  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  try {
+    return decrypt(this.certificadoP12Base64, { tenantId: parentTenantId, field: 'configuracionHacienda.certificadoP12Base64' });
+  } catch {
+    return decrypt(this.certificadoP12Base64);
+  }
 };
 
 haciendaConfigSchema.methods.estaConfigurado = function () {
   return !!(this.certificadoP12Base64 && this.pinCertificado && this.usuarioHacienda && this.passwordHacienda);
 };
 
-// === Limites del plan contratado ===
+// === Límites del plan contratado ===
 const limitesSchema = new mongoose.Schema({
-  conteosMes: { type: Number, default: 5 },          // Conteos visuales IA por mes
-  usuariosTenant: { type: Number, default: 1 },      // Máx usuarios en el tenant
-  almacenamientoMB: { type: Number, default: 100 },   // Cuota de almacenamiento
-  vlmHabilitado: { type: Boolean, default: false },   // Acceso a VLM (neva-22b/vila)
-  tokensChatMes: { type: Number, default: 100000 },   // Tokens del chat IA por mes
-  moduloContable: { type: Boolean, default: true },   // Acceso al módulo contable/fiscal
-  moduloD150: { type: Boolean, default: false },      // Acceso al módulo D-150 / conciliación REA
-  anunciosHabilitados: { type: Boolean, default: true }, // true = la web muestra anuncios
-  soporte: { type: String, default: 'Comunidad' },     // Comunidad | Email | Prioritario
+  conteosMes: { type: Number, default: 5 },
+  usuariosTenant: { type: Number, default: 1 },
+  almacenamientoMB: { type: Number, default: 100 },
+  vlmHabilitado: { type: Boolean, default: false },
+  tokensChatMes: { type: Number, default: 100000 },
+  moduloContable: { type: Boolean, default: true },
+  moduloD150: { type: Boolean, default: false },
+  anunciosHabilitados: { type: Boolean, default: true },
+  soporte: { type: String, default: 'Comunidad' },
 }, { _id: false });
 
-// === Consumo actual (se resetea mensualmente con cron o webhook ONVO) ===
+// === Consumo actual ===
 const consumoActualSchema = new mongoose.Schema({
   conteosMes: { type: Number, default: 0 },
   tokensChatMes: { type: Number, default: 0 },
   almacenamientoUsadoMB: { type: Number, default: 0 },
-  periodoActual: { type: String, default: '' }, // Formato 'YYYY-MM'
+  periodoActual: { type: String, default: '' },
 }, { _id: false });
 
 const tenantSchema = new mongoose.Schema({
@@ -130,8 +164,6 @@ const tenantSchema = new mongoose.Schema({
     maxlength: [120, 'El nombre de la finca no puede exceder 120 caracteres'],
   },
 
-  // Alias de correo electrónico para recepción automática vía Cloudflare Email Routing
-  // ej: "finca-el-roble" -> finca-el-roble@contadorganandero.com
   emailAlias: {
     type: String,
     lowercase: true,
@@ -139,6 +171,12 @@ const tenantSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
     index: true,
+  },
+
+  // Clave de cifrado de datos por organización (DEK envuelta bajo KEK maestra — Envelope Encryption)
+  encryptedDek: {
+    type: String,
+    select: false,
   },
 
   // === Suscripción ===
@@ -157,7 +195,6 @@ const tenantSchema = new mongoose.Schema({
   periodoRenovacion: {
     type: Date,
     default: () => {
-      // Primer día del mes siguiente
       const d = new Date();
       return new Date(d.getFullYear(), d.getMonth() + 1, 1);
     },
@@ -175,7 +212,7 @@ const tenantSchema = new mongoose.Schema({
     trim: true,
   },
 
-  // === Limites y consumo ===
+  // === Límites y consumo ===
   limites: {
     type: limitesSchema,
     default: () => ({}),
@@ -197,7 +234,7 @@ const tenantSchema = new mongoose.Schema({
     default: [],
   },
 
-  // === Owner (referencia directa para consultas rápidas) ===
+  // === Owner ===
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
@@ -207,7 +244,7 @@ const tenantSchema = new mongoose.Schema({
   // === Metadata SaaS ===
   canceladoEn: { type: Date },
   suspendidoEn: { type: Date },
-  periodoGraciaFin: { type: Date }, // Fecha límite del periodo de gracia
+  periodoGraciaFin: { type: Date },
 
 }, {
   timestamps: true,
@@ -217,32 +254,28 @@ const tenantSchema = new mongoose.Schema({
 tenantSchema.index({ onvoCustomerId: 1 }, { unique: true, sparse: true });
 tenantSchema.index({ onvoSubscriptionId: 1 }, { unique: true, sparse: true });
 
-// === MÉTODO ESTÁTICO: limites por plan ===
-// (la definición de límites vive en config/planes.js para que backend y
-// el catálogo público /api/onvo/planes no diverjan)
+tenantSchema.pre('save', function (next) {
+  try {
+    if (!this.encryptedDek) {
+      const { encryptedDek } = KeyProvider.generateTenantDek(String(this._id));
+      this.encryptedDek = encryptedDek;
+    }
+  } catch {
+    // Si EMAIL_ENC_KEY no está configurada en un test unitario aislado, permitir continuar
+  }
+  next();
+});
 
-/**
- * Devuelve los límites correspondientes a un plan
- * @param {string} plan - free|pro
- * @returns {object} limites
- */
 tenantSchema.statics.obtenerLimitesPlan = function (plan) {
   return LIMITES_POR_PLAN[plan] || LIMITES_POR_PLAN.free;
 };
 
-/**
- * Actualiza los límites del tenant según el plan contratado
- * @param {string} plan
- */
 tenantSchema.methods.aplicarPlan = function (plan) {
   this.plan = plan;
   this.limites = this.constructor.obtenerLimitesPlan(plan);
   return this;
 };
 
-/**
- * Resetea el consumo mensual (llamado por webhook ONVO o cron)
- */
 tenantSchema.methods.resetearConsumo = function () {
   const ahora = new Date();
   this.consumoActual = {
@@ -254,34 +287,41 @@ tenantSchema.methods.resetearConsumo = function () {
   return this;
 };
 
-/**
- * Verifica si el tenant puede realizar un conteo visual
- */
 tenantSchema.methods.tieneCreditoConteo = function () {
   return this.estado === 'activo' &&
     (this.consumoActual?.conteosMes || 0) < (this.limites?.conteosMes || 0);
 };
 
-/**
- * Verifica si el tenant puede usar el chat IA
- */
 tenantSchema.methods.tieneCreditoChat = function () {
   if (this.estado === 'cancelado') return false;
   if (this.estado === 'suspendido') return false;
   return (this.consumoActual?.tokensChatMes || 0) < (this.limites?.tokensChatMes || 0);
 };
 
-/**
- * Verifica si el tenant está activo para operaciones generales
- */
 tenantSchema.methods.estaActivo = function () {
   return ['activo', 'periodo_gracia'].includes(this.estado);
 };
 
 /**
- * Crea un Tenant nuevo con un usuario dueño
- * @param {object} params - { nombreFinca, owner (UsuarioId), plan? }
+ * Incrementa y devuelve de forma atómica el siguiente número consecutivo
+ * para un tipo de comprobante electrónico (FE, TE, NC, ND, FEC, REP).
+ * @param {'FE'|'TE'|'NC'|'ND'|'FEC'|'REP'} tipoDoc
+ * @returns {Promise<number>}
  */
+tenantSchema.methods.siguienteConsecutivo = async function (tipoDoc = 'FE') {
+  const tiposValidos = ['FE', 'TE', 'NC', 'ND', 'FEC', 'REP'];
+  const tipo = tiposValidos.includes(tipoDoc) ? tipoDoc : 'FE';
+  const campo = `configuracionHacienda.consecutivos.${tipo}`;
+
+  const actualizado = await this.constructor.findOneAndUpdate(
+    { _id: this._id },
+    { $inc: { [campo]: 1 } },
+    { new: true }
+  );
+
+  return actualizado?.configuracionHacienda?.consecutivos?.[tipo] || 1;
+};
+
 tenantSchema.statics.crearParaUsuario = async function ({ nombreFinca, owner, plan = 'free' }) {
   const limites = this.obtenerLimitesPlan(plan);
   const ahora = new Date();
@@ -307,5 +347,17 @@ tenantSchema.statics.crearParaUsuario = async function ({ nombreFinca, owner, pl
 
   return tenant;
 };
+
+tenantSchema.set('toJSON', {
+  transform(_doc, ret) {
+    delete ret.encryptedDek;
+    if (ret.configuracionHacienda) {
+      delete ret.configuracionHacienda.certificadoP12Base64;
+      delete ret.configuracionHacienda.pinCertificado;
+      delete ret.configuracionHacienda.passwordHacienda;
+    }
+    return ret;
+  },
+});
 
 module.exports = mongoose.model('Tenant', tenantSchema);

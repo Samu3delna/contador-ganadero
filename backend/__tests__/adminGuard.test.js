@@ -1,9 +1,10 @@
 /**
  * Tests para middleware/adminGuard.js
- * Valida la detección estricta de administradores y el bloqueo a usuarios normales.
+ * Valida la separación estricta entre rol de tenant (dueño/admin) y Super Admin de plataforma (isSuperAdmin === true),
+ * así como la eliminación de 'admin@admin.admin'.
  */
 
-const { esSuperAdmin, esEmailSuperAdmin } = require('../middleware/adminGuard');
+const { esSuperAdmin, esEmailSuperAdmin, esDueñoTenant } = require('../middleware/adminGuard');
 
 const mockRes = () => {
   const res = {};
@@ -15,9 +16,10 @@ const mockRes = () => {
 const mockNext = jest.fn();
 
 describe('middleware/adminGuard - esEmailSuperAdmin', () => {
-  test('debe reconocer admin@admin.admin como super admin', () => {
-    expect(esEmailSuperAdmin('admin@admin.admin')).toBe(true);
-    expect(esEmailSuperAdmin('ADMIN@ADMIN.ADMIN')).toBe(true);
+  test('NO debe reconocer admin@admin.admin por defecto como super admin', () => {
+    delete process.env.SUPER_ADMIN_EMAILS;
+    expect(esEmailSuperAdmin('admin@admin.admin')).toBe(false);
+    expect(esEmailSuperAdmin('ADMIN@ADMIN.ADMIN')).toBe(false);
   });
 
   test('no debe reconocer usuarios normales o personales como super admin', () => {
@@ -34,36 +36,33 @@ describe('middleware/adminGuard - esSuperAdmin middleware', () => {
     mockNext.mockClear();
   });
 
-  test('permite acceso si el email es admin@admin.admin', () => {
-    const req = { usuario: { email: 'admin@admin.admin', rol: 'dueño' } };
+  test('rechaza acceso si el email es admin@admin.admin pero isSuperAdmin no es true', () => {
+    const req = { usuario: { email: 'admin@admin.admin', rol: 'dueño', isSuperAdmin: false } };
     const res = mockRes();
 
     esSuperAdmin(req, res, mockNext);
 
-    expect(mockNext).toHaveBeenCalledTimes(1);
-    expect(res.status).not.toHaveBeenCalled();
+    expect(mockNext).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'NO_SUPER_ADMIN' });
   });
 
-  test('permite acceso si el usuario tiene rol admin o administrador', () => {
-    const req1 = { usuario: { email: 'otro@test.com', rol: 'admin' } };
+  test('rechaza acceso si el usuario solo tiene rol admin de tenant pero no isSuperAdmin', () => {
+    const req1 = { usuario: { email: 'otro@test.com', rol: 'admin', isSuperAdmin: false } };
     const res1 = mockRes();
     esSuperAdmin(req1, res1, mockNext);
-    expect(mockNext).toHaveBeenCalledTimes(1);
-
-    mockNext.mockClear();
-    const req2 = { usuario: { email: 'otro@test.com', rol: 'administrador' } };
-    const res2 = mockRes();
-    esSuperAdmin(req2, res2, mockNext);
-    expect(mockNext).toHaveBeenCalledTimes(1);
+    expect(mockNext).not.toHaveBeenCalled();
+    expect(res1.status).toHaveBeenCalledWith(403);
   });
 
-  test('permite acceso si tiene isSuperAdmin o esSuperAdmin en true', () => {
+  test('permite acceso únicamente si tiene isSuperAdmin o esSuperAdmin en true', () => {
     const req = { usuario: { email: 'custom@empresa.com', isSuperAdmin: true, rol: 'dueño' } };
     const res = mockRes();
 
     esSuperAdmin(req, res, mockNext);
 
     expect(mockNext).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('rechaza con 403 NO_SUPER_ADMIN a usuario normal o con plan regular', () => {
@@ -84,6 +83,28 @@ describe('middleware/adminGuard - esSuperAdmin middleware', () => {
     esSuperAdmin(req, res, mockNext);
 
     expect(mockNext).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+});
+
+describe('middleware/adminGuard - esDueñoTenant middleware', () => {
+  beforeEach(() => {
+    mockNext.mockClear();
+  });
+
+  test('permite acceso a rol dueño o admin de tenant', () => {
+    const res = mockRes();
+    esDueñoTenant({ usuario: { rol: 'dueño' } }, res, mockNext);
+    expect(mockNext).toHaveBeenCalledTimes(1);
+
+    mockNext.mockClear();
+    esDueñoTenant({ usuario: { rol: 'admin' } }, res, mockNext);
+    expect(mockNext).toHaveBeenCalledTimes(1);
+  });
+
+  test('rechaza acceso a contador o peon', () => {
+    const res = mockRes();
+    esDueñoTenant({ usuario: { rol: 'peon' } }, res, mockNext);
     expect(res.status).toHaveBeenCalledWith(403);
   });
 });

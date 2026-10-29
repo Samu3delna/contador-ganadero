@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const tenantPlugin = require('./plugins/tenantPlugin');
 
 /**
  * Modelo SubscriptionEvent — Log idempotente de webhooks ONVO
@@ -19,6 +20,7 @@ const subscriptionEventSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
+    sparse: true,
     index: true,
   },
 
@@ -76,11 +78,14 @@ const subscriptionEventSchema = new mongoose.Schema({
  * @returns {Promise<{created:boolean, event:object}>}
  */
 subscriptionEventSchema.statics.registrarSiNoExiste = async function (params) {
-  const existente = await this.findOne({ eventoId: params.eventoId });
+  const existente = await this.findOne({ eventoId: params.eventoId }, null, { skipTenant: true });
   if (existente) {
     return { created: false, event: existente };
   }
-  const event = await this.create(params);
+  const event = new this(params);
+  event.$locals = event.$locals || {};
+  event.$locals.skipTenant = true;
+  await event.save();
   return { created: true, event };
 };
 
@@ -91,6 +96,8 @@ subscriptionEventSchema.methods.marcarProcesado = function (tenantId = null) {
   this.procesado = true;
   this.procesadoAt = new Date();
   if (tenantId) this.tenantId = tenantId;
+  this.$locals = this.$locals || {};
+  this.$locals.skipTenant = true;
   return this.save();
 };
 
@@ -100,7 +107,11 @@ subscriptionEventSchema.methods.marcarProcesado = function (tenantId = null) {
 subscriptionEventSchema.methods.marcarError = function (mensajeError) {
   this.error = mensajeError;
   this.procesadoAt = new Date();
+  this.$locals = this.$locals || {};
+  this.$locals.skipTenant = true;
   return this.save();
 };
+
+subscriptionEventSchema.plugin(tenantPlugin, { strict: false });
 
 module.exports = mongoose.model('SubscriptionEvent', subscriptionEventSchema);

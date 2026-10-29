@@ -57,7 +57,8 @@ const crearFec = async (req, res, next) => {
 
     const fechaEmision = new Date();
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
-    const consecutivo = `00100001${hacienda.clave50.TIPO_DOC_CODIGO[TIPO_FEC]}${String(Date.now()).slice(-10)}`;
+    const seqNum = typeof req.tenant?.siguienteConsecutivo === 'function' ? await req.tenant.siguienteConsecutivo(TIPO_FEC) : Number(String(Date.now()).slice(-10));
+    const consecutivo = `00100001${hacienda.clave50.TIPO_DOC_CODIGO[TIPO_FEC]}${String(seqNum).padStart(10, '0')}`;
 
     const nuevoFec = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento: TIPO_FEC,
