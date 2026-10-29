@@ -59,7 +59,7 @@ Para operar el sistema en **desarrollo local** y posteriormente en **producción
 3. **Usuario y Contraseña del API de Hacienda:** Usuario con formato `cpf-01-XXXXXXXXX@comprobanteselectronicos.go.cr` generado en *Desarrollos Propios* de ATV.
 4. **Servicio de Hosting:**
    - **Backend:** [Render](https://render.com) (Web Service + Background Worker) o [Railway](https://railway.app).
-   - **Frontend:** [Vercel](https://vercel.com) (conectado a repositorio Git).
+   - **Frontend:** [Cloudflare Workers](https://developers.cloudflare.com/workers/static-assets/) (Static Assets, conectado a repositorio Git).
 
 ---
 

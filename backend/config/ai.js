@@ -7,7 +7,7 @@
 const configurarIA = () => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const nvidiaApiKey = process.env.AI_API_KEY || process.env.NVIDIA_API_KEY;
-  const frontendUrl = process.env.FRONTEND_URL || 'https://contador-ganadero.vercel.app';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://contadorganandero.com';
 
   // Determinar proveedor activo
   let proveedor = 'none';

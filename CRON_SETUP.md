@@ -109,7 +109,7 @@ El `worker.js` corre 24/7 SIN spin-down en plan FREE de Render.
             ▲
             │
     ┌───────┴───────┐
-    │  VERCEL       │
+    │  CLOUDFLARE   │
     │  Frontend     │
     │  (React)      │
     └───────────────┘
@@ -130,13 +130,13 @@ El `worker.js` corre 24/7 SIN spin-down en plan FREE de Render.
 - [ ] `IMAP_USER` = `contadoriasam@gmail.com`
 - [ ] `IMAP_PASSWORD` = App Password actual
 - [ ] `OPENROUTER_API_KEY`
-- [ ] `FRONTEND_URL` = `https://tu-app.vercel.app`
+- [ ] `FRONTEND_URL` = `https://contadorganandero.com`
 - [ ] `EMAIL_ENC_KEY` = (regenerar con `openssl rand -hex 32` — el valor previamente expuesto en versiones históricas de este documento queda comprometido y debe rotarse)
 
 ### Render Background Worker:
 - [ ] Mismas variables que Web Service (excepto JWT_SECRET, OPENROUTER_API_KEY, FRONTEND_URL)
 
-### Vercel Frontend:
+### Cloudflare Frontend:
 - [ ] `VITE_API_URL` = `https://tu-backend.onrender.com/api`
 
 ### Cron-job.org (Backup):

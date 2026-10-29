@@ -65,16 +65,18 @@ Aplicación MERN full-stack para funcionar como contador personal automatizado p
 - Generación de XML y PDF con clave numérica.
 - Estados: borrador, generada, firmada, enviada a Hacienda, aceptada/rechazada.
 
-## Despliegue en Vercel
+## Despliegue en Cloudflare (Frontend) + Render (Backend)
 
-Configuración del proyecto para el frontend en Vercel:
+Configuración del proyecto para el frontend en Cloudflare Workers (Static Assets):
 
 | Ajuste | Valor |
 | --- | --- |
-| **Framework Preset** | `Vite` |
-| **Root Directory** | `frontend` |
-| **Build Command** | `npm run build` |
-| **Output Directory** | `dist` |
-| **Variables de Entorno** | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`, `VITE_ADSENSE_CLIENT`, `VITE_ADSENSE_SLOT` |
+| **Root Directory** | `/` (raíz del monorepo) |
+| **Build Command** | `bun run build` |
+| **Deploy Command** | `npx wrangler deploy` |
+| **Versión de Node** | `24.13.0` (definida en `.nvmrc` / `.node-version`) |
+| **Variables de Entorno (build)** | `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`, `VITE_ADSENSE_CLIENT`, `VITE_ADSENSE_SLOT` |
 
-El archivo [`frontend/vercel.json`](frontend/vercel.json) gestiona automáticamente la reescritura de rutas para Single Page Application (SPA).
+El archivo [`wrangler.toml`](wrangler.toml) sirve `./frontend/dist` con `not_found_handling = "single-page-application"` para el enrutamiento SPA. Si el proyecto de Cloudflare usa `frontend` como Root Directory, se aplica [`frontend/wrangler.toml`](frontend/wrangler.toml) (sirve `./dist`).
+
+El backend (API + worker IMAP) se despliega en Render.
