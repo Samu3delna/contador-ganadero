@@ -64,6 +64,17 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
       expect(res.ok).toBe(false);
       expect(res.errors.some((e) => e.includes('CORS_ORIGINS'))).toBe(true);
     });
+
+    it('acepta FRONTEND_URL válido como respaldo compatible con Render cuando CORS_ORIGINS aún no se define', () => {
+      const renderCompatibleEnv = {
+        ...baseSecureEnv,
+        CORS_ORIGINS: '',
+        FRONTEND_URL: 'https://contadorganandero.com',
+      };
+      const res = validarEntorno({ env: renderCompatibleEnv, allowTestDefaults: false, exitOnError: false });
+      expect(res.ok).toBe(true);
+      expect(res.CORS_ORIGINS).toEqual(['https://contadorganandero.com']);
+    });
   });
 
   describe('CORS Estricto, Helmet y Trust Proxy en Express', () => {
@@ -92,12 +103,14 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
       expect(res.headers['access-control-allow-credentials']).toBe('true');
     });
 
-    it('oculta X-Powered-By e incluye cabeceras de seguridad de Helmet', async () => {
+    it('oculta X-Powered-By e incluye cabeceras de seguridad de Helmet compatibles con ONVO Pay', async () => {
       const res = await request(app).get('/api/health');
       expect(res.headers['x-powered-by']).toBeUndefined();
       expect(res.headers['x-frame-options']).toBe('DENY');
       expect(res.headers['x-content-type-options']).toBe('nosniff');
       expect(res.headers['content-security-policy']).toBeDefined();
+      expect(res.headers['content-security-policy']).toContain('https://sdk.onvopay.com');
+      expect(res.headers['content-security-policy']).toContain("frame-ancestors 'none'");
     });
 
     it('configura trust proxy con valor numérico por defecto 1', () => {

@@ -18,6 +18,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -37,8 +42,8 @@ jobs:
             exit 1
           fi
 
-      - name: Run npm audit (high/critical)
-        run: bun x npm audit --audit-level=high --omit=dev || true
+      - name: Run dependency security audit (high/critical)
+        run: bun audit --audit-level=high || true
 
       - name: Run Backend Automated Tests (Jest + Supertest)
         working-directory: backend
