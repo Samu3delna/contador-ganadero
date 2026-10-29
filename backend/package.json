@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=26.13.0"
+    "node": ">=20.19.0"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",

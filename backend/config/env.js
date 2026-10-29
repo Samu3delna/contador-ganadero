@@ -132,7 +132,7 @@ function validarEntorno(arg1 = process.env, arg2 = {}) {
   }
 
   // 6. CORS_ORIGINS (lista separada por comas de orígenes exactos)
-  const corsOriginsRaw = envObj.CORS_ORIGINS;
+  const corsOriginsRaw = envObj.CORS_ORIGINS || envObj.FRONTEND_URL;
   if (!corsOriginsRaw || typeof corsOriginsRaw !== 'string' || !corsOriginsRaw.trim()) {
     errores.push('CORS_ORIGINS es obligatoria (lista de orígenes exactos separados por comas).');
   } else {
