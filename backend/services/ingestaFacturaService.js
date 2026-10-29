@@ -9,7 +9,7 @@ const Tenant = require('../models/Tenant');
 const { escapeRegex } = require('../utils/escapeRegex');
 const { runWithTenantContext } = require('../utils/tenantContext');
 
-const UPLOAD_ROOT = process.env.UPLOAD_ROOT || path.join(__dirname, '..', 'uploads');
+const UPLOAD_ROOT = path.resolve(process.env.UPLOAD_ROOT || path.join(__dirname, '..', 'uploads'));
 const XML_DIR = path.join(UPLOAD_ROOT, 'xml');
 const PDF_DIR = path.join(UPLOAD_ROOT, 'pdf');
 
@@ -63,7 +63,7 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
 
     if (tenant) {
       const u =
-        (await Usuario.findOne({ tenantId: tenant._id, rol: { $in: ['owner', 'dueño'] } })) ||
+        (await Usuario.findOne({ tenantId: tenant._id, $or: [{ rol: 'owner' }, { rol: 'dueño' }] })) ||
         (await Usuario.findOne({ tenantId: tenant._id }));
       if (u) return { usuario: u, tenantId: tenant._id };
     }
@@ -98,12 +98,15 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
   // 4. Por teléfono del usuario (WhatsApp Bot)
   if (telefono) {
     const telLimpio = String(telefono).replace(/\D/g, '');
-    const ultimos8 = escapeRegex(telLimpio.slice(-8), 16);
+    const ultimos8 = telLimpio.slice(-8);
+    const candidatosTelefono = new Set([telLimpio, `+${telLimpio}`]);
+    if (ultimos8.length === 8) {
+      candidatosTelefono.add(ultimos8);
+      candidatosTelefono.add(`506${ultimos8}`);
+      candidatosTelefono.add(`+506${ultimos8}`);
+    }
     const u = await Usuario.findOne({
-      $or: [
-        { telefono: telLimpio },
-        ...(ultimos8 ? [{ telefono: { $regex: `${ultimos8}$` } }] : []),
-      ],
+      $or: Array.from(candidatosTelefono, (valor) => ({ telefono: valor })),
     });
     if (u) {
       return { usuario: u, tenantId: u.tenantId };
@@ -164,7 +167,9 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
       );
 
       if (yaExiste) {
-        if (!datosFactura.esMensajeHacienda && (!yaExiste.lineaDetalle || yaExiste.lineaDetalle.length <= 1)) {
+        const lineasExistentes = yaExiste.lineaDetalle?.length || 0;
+        const lineasRecibidas = datosFactura.lineaDetalle?.length || 0;
+        if (!datosFactura.esMensajeHacienda && lineasRecibidas > lineasExistentes) {
           yaExiste.lineaDetalle = datosFactura.lineaDetalle || yaExiste.lineaDetalle;
           yaExiste.resumenFactura = datosFactura.resumenFactura || yaExiste.resumenFactura;
           yaExiste.alertasTarifa = datosFactura.alertasTarifa || yaExiste.alertasTarifa;
@@ -214,7 +219,7 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
       // Resumen de validación de tarifas
       const alertasTarifa = datosFactura.alertasTarifa || [];
       const resumenTarifa = datosFactura.resumenValidacionTarifa || {
-        totalLineas: datosFactura.detalle?.length || 0,
+        totalLineas: datosFactura.lineaDetalle?.length || 0,
         alertasError: alertasTarifa.filter(a => a.severidad === 'error').length,
         alertasAdvertencia: alertasTarifa.filter(a => a.severidad === 'advertencia').length,
         lineasOk: alertasTarifa.filter(a => a.severidad === 'ok').length,
@@ -230,7 +235,7 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
         fechaEmision,
         emisor: datosFactura.emisor,
         receptor: datosFactura.receptor,
-        lineaDetalle: datosFactura.detalle || [],
+        lineaDetalle: datosFactura.lineaDetalle || [],
         resumenFactura: datosFactura.resumenFactura || {},
         otrosCargos: datosFactura.otrosCargos || [],
         categoriaIA: categorizacion.categoriaIA || categorizacion.categoria || 'sin_clasificar',

@@ -9,6 +9,8 @@
   "scripts": {
     "build": "cd frontend && npm run build",
     "build:frontend": "cd frontend && npm run build",
+    "dev:email-worker": "npx wrangler dev --config cloudflare-email-worker/wrangler.jsonc",
+    "deploy:email-worker": "npx wrangler deploy --config cloudflare-email-worker/wrangler.jsonc",
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
     "lint": "cd frontend && npm run lint"

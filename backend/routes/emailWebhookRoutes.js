@@ -200,17 +200,30 @@ router.post(
       }
 
       const exitoCount = resultados.filter(r => r.exito).length;
+      const detalles = resultados.map((resultado) => ({
+        exito: Boolean(resultado.exito),
+        duplicada: Boolean(resultado.duplicada),
+        actualizada: Boolean(resultado.actualizada),
+        noAsignada: Boolean(resultado.noAsignada),
+        claveNumerica: resultado.claveNumerica || resultado.factura?.claveNumerica,
+        emisor: resultado.emisor,
+        total: resultado.total,
+        alertas: resultado.alertas,
+        mensaje: resultado.mensaje,
+        error: resultado.error,
+      }));
       const mensajeResumen = exitoCount > 0
         ? `✅ ${exitoCount} factura(s) guardada(s) con éxito`
         : `⚠️ 0 facturas guardadas: ${resultados[0]?.mensaje || resultados[0]?.error || 'No se pudo procesar el XML'}`;
 
-      return res.status(200).json({
+      const status = exitoCount === 0 ? 422 : exitoCount < resultados.length ? 207 : 200;
+      return res.status(status).json({
         resumen: mensajeResumen,
         procesadas: exitoCount,
         recibido: true,
         remitente: fromLimpio,
         destinatario: toLimpio,
-        detalles: resultados,
+        detalles,
       });
     } catch (error) {
       console.error('❌ Error general en Webhook Email:', error);

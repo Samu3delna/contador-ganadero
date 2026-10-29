@@ -131,4 +131,73 @@ describe('Bloque 4: Aislamiento Obligatorio Multi-Tenant (AsyncLocalStorage + Mo
     expect(creado.tenantId.toString()).toBe(tenantA._id.toString());
     expect(creado.tenantId.toString()).not.toBe(tenantB._id.toString());
   });
+
+  it('aísla el inventario multiespecie y los centros de costo entre tenants', async () => {
+    const animal = await request(app)
+      .post('/api/inventario/bovinos')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ tagId: 'A-001', sexo: 'hembra', tenantId: tenantB._id.toString() });
+    expect(animal.status).toBe(201);
+
+    const lote = await request(app)
+      .post('/api/inventario/aves')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ loteId: 'AVES-A-001', especie: 'gallina_ponedora' });
+    const estanque = await request(app)
+      .post('/api/inventario/peces')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ estanqueId: 'PECES-A-001', especie: 'tilapia' });
+    const colmena = await request(app)
+      .post('/api/inventario/colmenas')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ colmenaId: 'ABEJAS-A-001' });
+    expect(lote.status).toBe(201);
+    expect(estanque.status).toBe(201);
+    expect(colmena.status).toBe(201);
+
+    const inventarioA = await request(app)
+      .get('/api/inventario')
+      .set('Authorization', `Bearer ${tokenA}`);
+    const inventarioB = await request(app)
+      .get('/api/inventario')
+      .set('Authorization', `Bearer ${tokenB}`);
+    expect(inventarioA.body.bovinos.map((b) => b.tagId)).toContain('A-001');
+    expect(inventarioA.body.lotesAves.map((l) => l.loteId)).toContain('AVES-A-001');
+    expect(inventarioA.body.estanques.map((e) => e.estanqueId)).toContain('PECES-A-001');
+    expect(inventarioA.body.colmenas.map((c) => c.colmenaId)).toContain('ABEJAS-A-001');
+    expect(inventarioB.body.bovinos.map((b) => b.tagId)).not.toContain('A-001');
+    expect(inventarioB.body.lotesAves.map((l) => l.loteId)).not.toContain('AVES-A-001');
+    expect(inventarioB.body.estanques.map((e) => e.estanqueId)).not.toContain('PECES-A-001');
+    expect(inventarioB.body.colmenas.map((c) => c.colmenaId)).not.toContain('ABEJAS-A-001');
+
+    const referenciaId = 'CENTRO-A-001';
+    const centro = await request(app)
+      .post('/api/costos/centros')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ referenciaId, tipoActividad: 'bovino_carne', nombreLote: 'Lote A' });
+    expect(centro.status).toBe(201);
+
+    const consumo = await request(app)
+      .post(`/api/costos/centros/${referenciaId}/consumo`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ tipoInsumo: 'forraje', cantidad: 20, unidadMedida: 'kg', costoUnitario: 500 });
+    expect(consumo.status).toBe(201);
+
+    const produccion = await request(app)
+      .post(`/api/costos/centros/${referenciaId}/produccion`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ tipoProducto: 'carne_bovino', cantidad: 10, unidadMedida: 'kg', ingresoBrutoVenta: 12000 });
+    expect(produccion.status).toBe(201);
+
+    const period = new Date().getFullYear();
+    const resumenA = await request(app)
+      .get(`/api/costos/resumen?periodoFiscal=${period}`)
+      .set('Authorization', `Bearer ${tokenA}`);
+    const resumenB = await request(app)
+      .get(`/api/costos/resumen?periodoFiscal=${period}`)
+      .set('Authorization', `Bearer ${tokenB}`);
+    expect(resumenA.body.centrosCosto.map((c) => c.referenciaId)).toContain(referenciaId);
+    expect(resumenA.body.centrosCosto[0].indicadores.factorConversionAlimenticia).toBe(2);
+    expect(resumenB.body.centrosCosto.map((c) => c.referenciaId)).not.toContain(referenciaId);
+  });
 });

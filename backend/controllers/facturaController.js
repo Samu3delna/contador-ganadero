@@ -6,7 +6,7 @@ const { sincronizarManual, obtenerEstado } = require('../services/emailService')
 const { procesarFacturaXMLString } = require('../services/ingestaFacturaService');
 const { validarTarifasFactura } = require('../utils/insumosAgropecuarios');
 
-const UPLOADS_BASE_DIR = path.resolve(__dirname, '..', 'uploads');
+const UPLOADS_BASE_DIR = path.resolve(process.env.UPLOAD_ROOT || path.join(__dirname, '..', 'uploads'));
 
 const obtenerFacturas = async (req, res, next) => {
   try {
@@ -74,9 +74,12 @@ const actualizarDeducibilidad = async (req, res, next) => {
  */
 function resolverRutaArchivoSegura(rutaDB) {
   if (!rutaDB || typeof rutaDB !== 'string') return null;
-  const candidate = path.isAbsolute(rutaDB)
-    ? path.resolve(rutaDB)
-    : path.resolve(__dirname, '..', rutaDB);
+  const portablePath = rutaDB.replace(/[\\/]+/g, path.sep);
+  const candidate = path.isAbsolute(portablePath)
+    ? path.resolve(portablePath)
+    : portablePath === 'uploads' || portablePath.startsWith(`uploads${path.sep}`)
+      ? path.resolve(UPLOADS_BASE_DIR, path.relative('uploads', portablePath))
+      : path.resolve(__dirname, '..', portablePath);
 
   const relative = path.relative(UPLOADS_BASE_DIR, candidate);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {

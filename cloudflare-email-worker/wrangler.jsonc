@@ -1,0 +1,14 @@
+{
+  "name": "contador-ganadero-email",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-29",
+  "addresses": ["*@contadorganandero.com"],
+  "vars": {
+    "BACKEND_WEBHOOK_URL": "https://contador-ganadero.onrender.com/api/webhooks/email"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 }
+  }
+}

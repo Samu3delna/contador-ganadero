@@ -27,18 +27,21 @@ function verificarFirmaMeta(req, res, next) {
   }
 
   if (!signatureHeader) {
-    if (isProd) {
-      return res.status(401).json({ error: 'Falta firma X-Hub-Signature-256' });
-    }
-    return next();
+    return res.status(401).json({ error: 'Falta firma X-Hub-Signature-256' });
   }
 
-  const rawPayload = req.rawBody || JSON.stringify(req.body || {});
+  if (!Buffer.isBuffer(req.rawBody)) {
+    console.error(JSON.stringify({ event: 'whatsapp_signature_body_missing' }));
+    return res.status(400).json({ error: 'No se pudo validar el cuerpo original del webhook' });
+  }
+
+  const rawPayload = req.rawBody;
   const expectedSig = 'sha256=' + crypto.createHmac('sha256', appSecret).update(rawPayload).digest('hex');
   const bufA = Buffer.from(String(signatureHeader));
   const bufB = Buffer.from(expectedSig);
 
   if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+    console.warn(JSON.stringify({ event: 'whatsapp_signature_invalid' }));
     return res.status(401).json({ error: 'Firma X-Hub-Signature-256 inválida' });
   }
   return next();
@@ -99,13 +102,15 @@ router.post('/', verificarFirmaMeta, async (req, res) => {
     const message = messages[0];
     const fromPhone = message.from; // Número del remitente (ej: "50688888888")
     const msgType = message.type;
+    const messageId = message.id || null;
 
-    console.log(`📱 WhatsApp recibido de +${fromPhone} (tipo: ${msgType})`);
+    console.log(JSON.stringify({ event: 'whatsapp_message_received', messageId, type: msgType }));
 
     // 1. Identificar al usuario por número de teléfono
     const { usuario, tenantId } = await resolverDestinatario({ telefono: fromPhone });
 
     if (!usuario) {
+      console.warn(JSON.stringify({ event: 'whatsapp_sender_unmatched', messageId }));
       await enviarMensajeWhatsApp(
         fromPhone,
         `👋 ¡Hola! No encontramos ninguna finca asociada a tu número (+${fromPhone}) en ContadorGanadero.\n\nPor favor inicia sesión en https://contadorganandero.com y registra tu número en tu perfil para empezar a enviar facturas.`
@@ -129,6 +134,13 @@ router.post('/', verificarFirmaMeta, async (req, res) => {
             tenantId,
             canal: 'whatsapp',
           });
+
+          console.log(JSON.stringify({
+            event: 'whatsapp_invoice_processing_finished',
+            messageId,
+            outcome: resultado.duplicada ? 'duplicate' : resultado.exito ? 'success' : resultado.noAsignada ? 'unassigned' : 'failed',
+            claveSuffix: resultado.claveNumerica?.slice(-8) || resultado.factura?.claveNumerica?.slice(-8) || null,
+          }));
 
           if (resultado.duplicada) {
             await enviarMensajeWhatsApp(
@@ -154,7 +166,7 @@ router.post('/', verificarFirmaMeta, async (req, res) => {
             );
           }
         } catch (err) {
-          console.error('❌ Error procesando documento XML de WhatsApp:', err);
+          console.error(JSON.stringify({ event: 'whatsapp_invoice_processing_failed', messageId, error: err?.name || 'Error' }));
           await enviarMensajeWhatsApp(
             fromPhone,
             `❌ Hubo un error al procesar tu factura XML: ${err.message}`
@@ -204,7 +216,7 @@ router.post('/', verificarFirmaMeta, async (req, res) => {
       );
     }
   } catch (error) {
-    console.error('❌ Error procesando webhook de WhatsApp:', error);
+    console.error(JSON.stringify({ event: 'whatsapp_event_processing_failed', error: error?.name || 'Error' }));
   }
 });
 

@@ -4,61 +4,22 @@ Esta guía explica cómo activar los dos canales automáticos para recibir factu
 
 ---
 
-## CANAL 1: Cloudflare Email Routing (Gratis y Automático)
+## CANAL 1: Cloudflare Email Routing
 
-Con este canal, cualquier factura enviada a `finca-nombre@contadorganandero.com` (o `facturas@contadorganandero.com`) se procesa en 2 segundos en tu aplicación.
+El Worker y su regla catch-all están definidos en `cloudflare-email-worker/wrangler.jsonc`, separados de la configuración Wrangler del frontend.
 
-### Paso 1: Activar Email Routing en Cloudflare
-1. Entra a tu panel de **Cloudflare** y haz clic en tu dominio **`contadorganandero.com`**.
-2. En el menú de la izquierda, haz clic en **Email** > **Email Routing**.
-3. Pulsa el botón **Enable Email Routing** (Habilitar enrutamiento de correo).
-4. Cloudflare te pedirá agregar unos registros DNS (MX y SPF) automáticamente. Haz clic en **Add records and enable**.
+1. En Cloudflare, habilita Email Routing para `contadorganandero.com` y verifica los registros MX/DNS.
+2. Desde la raíz del proyecto, carga el mismo secreto configurado como `EMAIL_WEBHOOK_SECRET` en Render:
+   `npx wrangler secret put EMAIL_WEBHOOK_SECRET --config cloudflare-email-worker/wrangler.jsonc`
+3. Revisa las reglas actuales de Email Routing y confirma que no haya otro destino que deba conservar el catch-all. Wrangler administra `*@contadorganandero.com` desde el archivo de configuración.
+4. Despliega el Worker con `npm run deploy:email-worker`.
+5. Revisa los logs del Worker durante el envío de un correo de prueba con un XML válido. El Worker reintenta fallos HTTP 429/5xx hasta tres veces; cada resultado se registra sin copiar el cuerpo ni los adjuntos a los logs.
 
-### Paso 2: Crear el Email Worker
-1. En ese mismo menú de **Email Routing**, ve a la pestaña **Email Workers**.
-2. Haz clic en **Create Email Worker**.
-3. Borra el código que sale y pega el contenido de [cloudflare-email-worker/worker.js](file:///c:/Users/samu3/Desktop/Contador%20IA/cloudflare-email-worker/worker.js):
-   ```javascript
-   export default {
-     async email(message, env, ctx) {
-       try {
-         console.log(`📥 [CF Worker] Recibiendo correo para: ${message.to} de: ${message.from}`);
-         const rawEmail = await new Response(message.raw).arrayBuffer();
-         console.log(`📦 [CF Worker] Tamaño MIME: ${rawEmail.byteLength} bytes`);
-         const webhookUrl = env.BACKEND_WEBHOOK_URL || 'https://contador-ganadero.onrender.com/api/webhooks/email';
+El endpoint del backend distingue correo sin XML (200), factura procesada (200), resultado parcial (207) y XML que no pudo procesarse (422). Revisa también los logs del backend para distinguir errores de parseo, asignación y almacenamiento.
 
-         const response = await fetch(webhookUrl, {
-           method: 'POST',
-           headers: {
-             'Content-Type': 'message/rfc822',
-             'X-Email-To': message.to,
-             'X-Email-From': message.from,
-             'X-Email-Webhook-Secret': env.EMAIL_WEBHOOK_SECRET || '',
-           },
-           body: rawEmail,
-         });
+### Persistencia de XML y PDF en Render
 
-         const responseText = await response.text();
-         if (!response.ok) {
-           console.error(`❌ [CF Worker] Error del backend (${response.status}): ${responseText}`);
-         } else {
-           console.log(`✅ [CF Worker] Éxito (${response.status}): ${responseText}`);
-         }
-       } catch (err) {
-         console.error('❌ [CF Worker] Error al procesar correo:', err.message);
-       }
-     },
-   };
-   ```
-4. Haz clic en **Save and Deploy**.
-
-### Paso 3: Configurar la regla de captura (Catch-All o Dirección Custom)
-1. En **Email Routing**, ve a la pestaña **Routing rules** (Reglas de enrutamiento).
-2. En la sección **Catch-all rule** (Regla para cualquier dirección `*@contadorganandero.com`):
-   - **Action:** Selecciona **Send to a Worker**.
-   - **Destination:** Selecciona el Worker que acabas de crear.
-   - Guarda los cambios.
-3. ¡Listo! Ahora cualquier correo enviado a `cualquier-finca@contadorganandero.com` viajará en milisegundos a tu servidor en Render, el cual extraerá el XML, leerá la cédula del ganadero y guardará la factura.
+En el servicio API de Render, agrega un Persistent Disk montado en `/var/data` y define `UPLOAD_ROOT=/var/data/uploads`. Confirma que el plan del servicio permita discos persistentes. Después de reiniciar el servicio, abre una factura ya importada y descarga su XML/PDF para comprobar que el archivo sigue disponible. No uses `./uploads` como ruta de producción si el servicio no tiene disco persistente.
 
 ---
 
@@ -66,10 +27,11 @@ Con este canal, cualquier factura enviada a `finca-nombre@contadorganandero.com`
 
 Permite a los ganaderos reenviar XMLs, PDFs o fotos de tiquetes de caja directamente por WhatsApp.
 
-### Variables de Entorno a configurar en Render:
-- `WHATSAPP_VERIFY_TOKEN`: Un texto secreto para la verificación (por defecto `contador_ganadero_wa_secret`).
-- `WHATSAPP_ACCESS_TOKEN`: Token permanente de tu aplicación en Meta for Developers.
-- `WHATSAPP_PHONE_NUMBER_ID`: Identificador de número de teléfono de WhatsApp Business.
+### Variables de entorno requeridas en Render
+- `WHATSAPP_VERIFY_TOKEN`: secreto aleatorio para el handshake de Meta.
+- `META_APP_SECRET`: secreto de la aplicación Meta para validar `X-Hub-Signature-256`.
+- `WHATSAPP_ACCESS_TOKEN`: token de acceso de WhatsApp Cloud API.
+- `WHATSAPP_PHONE_NUMBER_ID`: identificador del número de WhatsApp Business.
 
 ### Paso 1: Configurar el Webhook en Meta for Developers
 1. Entra a [developers.facebook.com](https://developers.facebook.com) y selecciona tu App de WhatsApp Business.
@@ -77,10 +39,11 @@ Permite a los ganaderos reenviar XMLs, PDFs o fotos de tiquetes de caja directam
 3. Haz clic en **Editar**:
    - **URL de devolución de llamada (Callback URL):**
      `https://contador-ganadero.onrender.com/api/webhooks/whatsapp`
-   - **Identificador de verificación (Verify Token):**
-     `contador_ganadero_wa_secret` (o el que pongas en tu Render).
+   - **Identificador de verificación (Verify Token):** el mismo valor configurado en Render como `WHATSAPP_VERIFY_TOKEN`.
 4. Haz clic en **Verificar y guardar**. Meta hará un `GET` a tu servidor y quedará verificado con un check verde.
 5. En **Campos de webhook**, suscríbete al evento **`messages`**.
+
+El backend valida la firma sobre los bytes originales recibidos. Un webhook sin firma válida se rechaza. En los logs busca `whatsapp_invoice_processing_finished` o `whatsapp_invoice_processing_failed` para comprobar el resultado posterior al acuse `EVENT_RECEIVED`.
 
 ### Paso 2: ¿Cómo lo usa el Ganadero?
 1. En su perfil de ContadorGanadero, el ganadero guarda su número de teléfono celular (ej: `50688888888`).

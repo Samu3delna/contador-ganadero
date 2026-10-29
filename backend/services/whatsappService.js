@@ -32,6 +32,9 @@ function validarUrlDescargaMeta(rawUrl) {
  */
 async function enviarMensajeWhatsApp(telefonoDestino, texto) {
   if (!WHATSAPP_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('WHATSAPP_ACCESS_TOKEN y WHATSAPP_PHONE_NUMBER_ID no están configurados');
+    }
     console.log(`[WHATSAPP MOCK] Enviar a ${telefonoDestino}: ${texto}`);
     return { mock: true, enviado: true };
   }

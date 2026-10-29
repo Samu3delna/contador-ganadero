@@ -80,3 +80,7 @@ Configuración del proyecto para el frontend en Cloudflare Workers (Static Asset
 El archivo [`wrangler.toml`](wrangler.toml) sirve `./frontend/dist` con `not_found_handling = "single-page-application"` para el enrutamiento SPA. Si el proyecto de Cloudflare usa `frontend` como Root Directory, se aplica [`frontend/wrangler.toml`](frontend/wrangler.toml) (sirve `./dist`).
 
 El backend (API + worker IMAP) se despliega en Render.
+
+El Email Worker es un despliegue independiente del frontend: usa `cloudflare-email-worker/wrangler.jsonc` y `npm run deploy:email-worker`. Antes del primer despliegue, configura el secreto `EMAIL_WEBHOOK_SECRET` con Wrangler y comprueba que el catch-all `*@contadorganandero.com` pueda ser administrado por este Worker. No uses el `wrangler.toml` raíz para desplegar el Email Worker; ese archivo publica el frontend.
+
+Para que los XML y PDF sigan disponibles después de reinicios de Render, monta un Persistent Disk con punto de montaje `/var/data` en el servicio API y define `UPLOAD_ROOT=/var/data/uploads`. El servicio debe usar el mismo disco en todos los despliegues.

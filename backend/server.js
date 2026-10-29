@@ -129,7 +129,14 @@ app.use(cors(corsOptions));
 app.use('/api/onvo/webhook', onvoWebhookRoutes);
 
 // Límite de 100kb por defecto en JSON y urlencoded para mitigar DoS de memoria
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({
+  limit: '100kb',
+  verify: (req, res, buffer) => {
+    if (req.originalUrl.startsWith('/api/webhooks/whatsapp')) {
+      req.rawBody = Buffer.from(buffer);
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 app.use(cookieParser());
 
