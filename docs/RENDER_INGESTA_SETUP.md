@@ -11,10 +11,11 @@ En Render, abre `contador-ganadero-api` → **Environment** y configura las vari
 | `JWT_REFRESH_SECRET` | Secreto aleatorio de al menos 32 caracteres y distinto de `JWT_SECRET`. Cambiarlo puede invalidar sesiones de renovación existentes. |
 | `EMAIL_ENC_KEY` | Exactamente 64 caracteres hexadecimales. Debe ser la clave vigente que descifra las credenciales cifradas que ya están en MongoDB. No uses placeholders ni una clave histórica expuesta; rotar exige migrar los datos cifrados. |
 | `FRONTEND_URL` | Origen exacto del frontend, actualmente `https://contadorganandero.com`. El backend ya permite usarlo como alternativa a `CORS_ORIGINS`. |
+| `CORS_ORIGINS` | Configura explícitamente `https://contadorganandero.com` para que el preflight de login/refresh devuelva CORS; si hay más frontends, sepáralos por comas. |
 | `ONVO_WEBHOOK_SECRET` | Al menos 32 caracteres y el mismo valor configurado para el webhook de ONVO. |
 | `EMAIL_WEBHOOK_SECRET` | Al menos 32 caracteres y el mismo valor configurado como secreto del Worker de Cloudflare. |
 
-Para más de un dominio de frontend, se puede definir `CORS_ORIGINS` con los orígenes exactos separados por comas. No se permiten comodines ni rutas, por ejemplo: `https://contadorganandero.com,https://app.contadorganandero.com`.
+Aunque el backend acepta `FRONTEND_URL` como alternativa, deja `CORS_ORIGINS` explícita en producción. Usa orígenes exactos, sin comodines ni rutas, por ejemplo: `https://contadorganandero.com,https://app.contadorganandero.com`.
 
 Para activar WhatsApp también deben estar definidos `META_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN` y `WHATSAPP_PHONE_NUMBER_ID`. `META_APP_SECRET` debe coincidir con la aplicación de Meta; el token de verificación debe coincidir con el usado en el handshake. El backend no imprime estos valores.
 
