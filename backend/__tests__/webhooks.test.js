@@ -298,5 +298,58 @@ describe('Webhooks Integration Tests (Cloudflare Email & WhatsApp)', () => {
       expect(factura.lineaDetalle).toHaveLength(1);
       expect(factura.tenantId.toString()).toBe(emailTenant._id.toString());
     });
+
+    it('mantiene una sola factura si Email y WhatsApp la entregan al mismo tiempo', async () => {
+      const concurrentTenant = await Tenant.create({
+        nombreFinca: 'Finca Ingesta Concurrente',
+        plan: 'free',
+        emailAlias: 'finca-ingesta-concurrente',
+      });
+      await Usuario.create({
+        nombre: 'Productor Concurrente',
+        email: 'concurrente@finca.cr',
+        password: 'Password123!',
+        cedula: { tipo: 'fisica', numero: '109990888' },
+        telefono: '50681112223',
+        tenantId: concurrentTenant._id,
+        rol: 'owner',
+      });
+
+      const enviarEmail = () => request(app)
+        .post('/api/webhooks/email')
+        .set('x-email-webhook-secret', 'test_email_secret_123')
+        .send({ to: 'finca-ingesta-concurrente@contadorganandero.com', xml: XML_FACTURA_PRUEBA });
+
+      whatsappService.descargarMediaMeta.mockClear();
+      whatsappService.enviarMensajeWhatsApp.mockClear();
+      whatsappService.descargarMediaMeta.mockResolvedValue({ buffer: Buffer.from(XML_FACTURA_PRUEBA) });
+      const payload = {
+        object: 'whatsapp_business_account',
+        entry: [{ changes: [{ value: { messages: [{
+          from: '50681112223',
+          id: 'wamid.invoice-concurrente',
+          type: 'document',
+          document: { id: 'media-concurrente', filename: 'factura.xml', mime_type: 'application/xml' },
+        }] } }] }],
+      };
+      const rawBody = JSON.stringify(payload);
+      const firma = `sha256=${crypto.createHmac('sha256', process.env.META_APP_SECRET).update(rawBody).digest('hex')}`;
+      const enviarWhatsApp = () => request(app)
+        .post('/api/webhooks/whatsapp')
+        .set('X-Hub-Signature-256', firma)
+        .set('Content-Type', 'application/json')
+        .send(rawBody);
+
+      const respuestas = await Promise.all([enviarEmail(), enviarWhatsApp()]);
+      expect(respuestas.map((respuesta) => respuesta.status)).toEqual([200, 200]);
+      for (let intento = 0; intento < 80 && !whatsappService.enviarMensajeWhatsApp.mock.calls.length; intento += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+      expect(whatsappService.descargarMediaMeta).toHaveBeenCalledWith('media-concurrente');
+      expect(whatsappService.enviarMensajeWhatsApp).toHaveBeenCalled();
+
+      const guardadas = await Factura.countDocuments({ claveNumerica: CLAVE_FACTURA_PRUEBA }, { skipTenant: true });
+      expect(guardadas).toBe(1);
+    });
   });
 });

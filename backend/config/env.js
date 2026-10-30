@@ -131,10 +131,10 @@ function validarEntorno(arg1 = process.env, arg2 = {}) {
     errores.push('MASTER_KEK_CURRENT debe tener exactamente 64 caracteres hexadecimales (32 bytes).');
   }
 
-  // 6. CORS_ORIGINS (lista separada por comas de orígenes exactos)
-  const corsOriginsRaw = envObj.CORS_ORIGINS;
+  // 6. CORS_ORIGINS o FRONTEND_URL (orígenes exactos sin comodines)
+  const corsOriginsRaw = envObj.CORS_ORIGINS || envObj.FRONTEND_URL;
   if (!corsOriginsRaw || typeof corsOriginsRaw !== 'string' || !corsOriginsRaw.trim()) {
-    errores.push('CORS_ORIGINS es obligatoria (lista de orígenes exactos separados por comas).');
+    errores.push('CORS_ORIGINS o FRONTEND_URL es obligatoria (lista de orígenes exactos separados por comas).');
   } else {
     const origenes = corsOriginsRaw
       .split(',')

@@ -37,7 +37,7 @@ describe('Cloudflare Email Worker', () => {
   it('reintenta HTTP 5xx y termina cuando el backend acepta el correo', async () => {
     fetchSpy
       .mockResolvedValueOnce(new Response('{}', { status: 503 }))
-      .mockResolvedValueOnce(new Response('{}', { status: 200 }));
+      .mockResolvedValueOnce(new Response('{"recibido":true,"procesadas":1,"detalles":[{"exito":true}]}', { status: 200 }));
 
     await worker.email(crearMensaje(), { EMAIL_WEBHOOK_SECRET: 'secreto-de-prueba' });
 
@@ -50,5 +50,33 @@ describe('Cloudflare Email Worker', () => {
 
     await expect(worker.email(crearMensaje(), { EMAIL_WEBHOOK_SECRET: 'secreto-de-prueba' })).rejects.toThrow(/HTTP 422/);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('registra como recibido sin factura un correo válido sin XML', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({
+      recibido: true,
+      procesadas: 0,
+      mensaje: 'Email recibido sin archivos XML',
+    }), { status: 200 }));
+
+    await worker.email(crearMensaje(), { EMAIL_WEBHOOK_SECRET: 'secreto-de-prueba' });
+
+    const events = logSpy.mock.calls.map(([line]) => JSON.parse(line).event);
+    expect(events).toContain('email_received_without_invoice');
+    expect(events).not.toContain('email_processed');
+  });
+
+  it('reintenta si el backend devuelve 2xx sin un resultado verificable', async () => {
+    fetchSpy
+      .mockResolvedValueOnce(new Response('not-json', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{"recibido":true,"procesadas":1,"detalles":[{"exito":true}]}', { status: 200 }));
+
+    await worker.email(crearMensaje(), { EMAIL_WEBHOOK_SECRET: 'secreto-de-prueba' });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const events = logSpy.mock.calls.map(([line]) => JSON.parse(line).event);
+    const errorEvents = errorSpy.mock.calls.map(([line]) => JSON.parse(line).event);
+    expect(errorEvents).toContain('backend_unexpected_response');
+    expect(events).toContain('email_processed');
   });
 });

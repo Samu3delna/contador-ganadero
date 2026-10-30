@@ -21,21 +21,47 @@ function asegurarDirectorios() {
 
 /**
  * Busca el Usuario y Tenant destinatario usando múltiples estrategias seguras (sin full table scans ni ReDoS):
- * 1. ID explícito de usuario o tenant
- * 2. Email alias del tenant (ej: finca-esperanza@contadorganandero.com)
- * 3. Cédula del receptor extraída del XML (la más confiable en Costa Rica)
+ * 1. Cédula del receptor extraída del XML (la más confiable en Costa Rica)
+ * 2. ID explícito de usuario o tenant
+ * 3. Email alias del tenant (ej: finca-esperanza@contadorganandero.com)
  * 4. Número de teléfono (para WhatsApp)
  */
 async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, emailDestino, telefono }) {
-  // 1. Por ID directo si ya se conoce
+  // 1. La cédula del receptor del XML prevalece sobre el destinatario del correo.
+  // Evita asignar una factura al alias equivocado cuando el XML identifica otra finca.
+  if (cedulaReceptor) {
+    const cedulaLimpia = String(cedulaReceptor).replace(/[-\s]/g, '').trim();
+    const cedulaSinCeros = cedulaLimpia.replace(/^0+/, '');
+    const u = await Usuario.findOne({
+      $or: [
+        { 'cedula.numero': cedulaLimpia },
+        { 'cedula.numero': cedulaSinCeros },
+        { 'cedula.numero': '0' + cedulaSinCeros },
+        { 'cedula.numero': String(cedulaReceptor).trim() },
+      ],
+    });
+    if (u) return { usuario: u, tenantId: u.tenantId || null };
+  }
+
+  // 2. Resolver el ID explícito de usuario o de finca, cuando el canal ya lo conoce.
   if (usuarioId) {
     const u = await Usuario.findById(usuarioId);
-    if (u) {
-      return { usuario: u, tenantId: u.tenantId || tenantId };
+    if (u) return { usuario: u, tenantId: u.tenantId || tenantId || null };
+  }
+
+  if (tenantId) {
+    const tenant = await Tenant.findById(tenantId);
+    if (tenant) {
+      let u = tenant.owner ? await Usuario.findById(tenant.owner) : null;
+      if (u?.tenantId && String(u.tenantId) !== String(tenant._id)) u = null;
+      u = u ||
+        (await Usuario.findOne({ tenantId: tenant._id, $or: [{ rol: 'owner' }, { rol: 'dueño' }] })) ||
+        (await Usuario.findOne({ tenantId: tenant._id }));
+      if (u) return { usuario: u, tenantId: tenant._id };
     }
   }
 
-  // 2. Por alias de email del Tenant o sufijo (Cloudflare Email Routing)
+  // 3. Por alias de email del Tenant o sufijo (Cloudflare Email Routing)
   if (emailDestino) {
     const alias = String(emailDestino).split('@')[0].toLowerCase().trim().slice(0, 64);
 
@@ -75,23 +101,6 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
       if (uByEmail) {
         return { usuario: uByEmail, tenantId: uByEmail.tenantId };
       }
-    }
-  }
-
-  // 3. Por Cédula del receptor (crucial en XML costarricense)
-  if (cedulaReceptor) {
-    const cedulaLimpia = String(cedulaReceptor).replace(/[-\s]/g, '').trim();
-    const cedulaSinCeros = cedulaLimpia.replace(/^0+/, '');
-    const u = await Usuario.findOne({
-      $or: [
-        { 'cedula.numero': cedulaLimpia },
-        { 'cedula.numero': cedulaSinCeros },
-        { 'cedula.numero': '0' + cedulaSinCeros },
-        { 'cedula.numero': String(cedulaReceptor).trim() },
-      ],
-    });
-    if (u) {
-      return { usuario: u, tenantId: u.tenantId };
     }
   }
 
@@ -194,7 +203,7 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
       const safeClave = String(datosFactura.claveNumerica).replace(/[^0-9]/g, '').slice(0, 50) || crypto.randomUUID();
 
       // Guardar archivo XML en disco con nombre seguro
-      const nombreXML = `${Date.now()}_${safeClave}.xml`;
+      const nombreXML = `${Date.now()}_${crypto.randomUUID()}_${safeClave}.xml`;
       const rutaAbsolutaXML = path.join(XML_DIR, nombreXML);
       fs.writeFileSync(rutaAbsolutaXML, xmlString);
       const rutaRelativaXML = path.join('uploads', 'xml', nombreXML);
@@ -202,7 +211,7 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
       // Guardar PDF adjunto si vino en opciones
       let rutaRelativaPDF = null;
       if (opciones.pdfBuffer) {
-        const nombrePDF = `${Date.now()}_${safeClave}.pdf`;
+        const nombrePDF = `${Date.now()}_${crypto.randomUUID()}_${safeClave}.pdf`;
         const rutaAbsolutaPDF = path.join(PDF_DIR, nombrePDF);
         fs.writeFileSync(rutaAbsolutaPDF, opciones.pdfBuffer);
         rutaRelativaPDF = path.join('uploads', 'pdf', nombrePDF);
@@ -261,7 +270,36 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
       if (!effectiveTenantId) {
         nuevaFactura.$locals = { skipTenant: true };
       }
-      await nuevaFactura.save();
+      try {
+        await nuevaFactura.save();
+      } catch (error) {
+        // La clave única también protege duplicados concurrentes entre Email y WhatsApp.
+        if (error?.code === 11000 && datosFactura.claveNumerica) {
+          const filtroDuplicado = {
+            claveNumerica: datosFactura.claveNumerica,
+            $or: [{ usuario: usuario._id }, ...(effectiveTenantId ? [{ tenantId: effectiveTenantId }] : [])],
+          };
+          const duplicada = await Factura.findOne(
+            filtroDuplicado,
+            null,
+            { skipTenant: !effectiveTenantId }
+          );
+
+          if (duplicada) {
+            for (const ruta of [rutaAbsolutaXML, rutaRelativaPDF && path.join(UPLOAD_ROOT, rutaRelativaPDF.replace(/^uploads[\\/]/, ''))]) {
+              if (ruta && fs.existsSync(ruta)) fs.unlinkSync(ruta);
+            }
+            return {
+              exito: true,
+              duplicada: true,
+              factura: duplicada,
+              mensaje: `Factura ${datosFactura.claveNumerica} ya estaba registrada.`
+            };
+          }
+        }
+
+        throw error;
+      }
 
       return {
         exito: true,

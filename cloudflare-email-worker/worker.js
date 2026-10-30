@@ -42,9 +42,20 @@ async function enviarAlBackend(message, env, rawEmail, webhookUrl) {
       }
 
       if (response.ok) {
-        const procesadas = Number(result?.procesadas || 0);
+        const procesadas = result?.procesadas;
+        if (!result || typeof procesadas !== 'number' || !Number.isInteger(procesadas) || procesadas < 0) {
+          log('backend_unexpected_response', { attempt, backendStatus: response.status }, 'error');
+          const error = new Error('Backend respondió una respuesta no verificable');
+          error.retryable = true;
+          throw error;
+        }
+
         const totalAdjuntos = Array.isArray(result?.detalles) ? result.detalles.length : 0;
-        const event = totalAdjuntos > procesadas ? 'email_partially_processed' : 'email_processed';
+        const event = procesadas === 0
+          ? 'email_received_without_invoice'
+          : totalAdjuntos > procesadas
+            ? 'email_partially_processed'
+            : 'email_processed';
         log(event, {
           attempt,
           backendStatus: response.status,

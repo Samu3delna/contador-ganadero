@@ -23,6 +23,18 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
       expect(result.errors).toHaveLength(0);
     });
 
+    it('acepta FRONTEND_URL como origen exacto cuando CORS_ORIGINS no está definido', () => {
+      const { CORS_ORIGINS, ...envWithoutCorsOrigins } = baseSecureEnv;
+      const result = validarEntorno({
+        env: { ...envWithoutCorsOrigins, FRONTEND_URL: 'https://contadorganandero.com' },
+        allowTestDefaults: false,
+        exitOnError: false,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.CORS_ORIGINS).toEqual(['https://contadorganandero.com']);
+    });
+
     it('rechaza arrancar si falta JWT_SECRET o tiene menos de 32 caracteres', () => {
       const missingJwt = { ...baseSecureEnv, JWT_SECRET: '' };
       expect(() =>
