@@ -56,6 +56,7 @@ const emailWebhookRoutes = require('./routes/emailWebhookRoutes');
 const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes');
 const metaDataDeletionRoutes = require('./routes/metaDataDeletionRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const supportRoutes = require('./routes/supportRoutes');
 
 // Importar middleware de errores
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
@@ -228,6 +229,7 @@ app.use('/api/webhooks/email', emailWebhookRoutes);
 app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes);
 app.use('/api/webhooks/meta-data-deletion', metaDataDeletionRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/support', supportRoutes);
 
 // Servir frontend SPA compilado (Vite dist)
 const fs = require('fs');

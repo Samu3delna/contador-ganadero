@@ -76,6 +76,56 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
       expect(res.ok).toBe(false);
       expect(res.errors.some((e) => e.includes('CORS_ORIGINS'))).toBe(true);
     });
+
+    describe('Cloudflare Email Sending (opcional para formulario de soporte)', () => {
+      it('acepta configuración completa con Cloudflare Email Sending', () => {
+        const envWithEmail = {
+          ...baseSecureEnv,
+          CLOUDFLARE_EMAIL_API_TOKEN: 'cf_api_token_with_more_than_32_characters_here_12345',
+          CLOUDFLARE_ACCOUNT_ID: 'cf_account_id_with_more_than_32_characters_here_12345',
+          CLOUDFLARE_EMAIL_FROM: 'soporte@contadorganandero.com',
+          CLOUDFLARE_EMAIL_FROM_NAME: 'ContadorGanadero Soporte',
+        };
+        const result = validarEntorno({ env: envWithEmail, allowTestDefaults: false, exitOnError: false });
+        expect(result.ok).toBe(true);
+      });
+
+      it('acepta configuración sin Cloudflare Email Sending (opcional)', () => {
+        const result = validarEntorno({ env: baseSecureEnv, allowTestDefaults: false, exitOnError: false });
+        expect(result.ok).toBe(true);
+      });
+
+      it('rechaza CLOUDFLARE_EMAIL_API_TOKEN muy corto si está presente', () => {
+        const envShort = { ...baseSecureEnv, CLOUDFLARE_EMAIL_API_TOKEN: 'corto' };
+        const res = validarEntorno({ env: envShort, allowTestDefaults: false, exitOnError: false });
+        expect(res.ok).toBe(false);
+        expect(res.errors.some((e) => e.includes('CLOUDFLARE_EMAIL_API_TOKEN'))).toBe(true);
+      });
+
+      it('rechaza CLOUDFLARE_ACCOUNT_ID muy corto si está presente', () => {
+        const envShort = { ...baseSecureEnv, CLOUDFLARE_ACCOUNT_ID: 'corto' };
+        const res = validarEntorno({ env: envShort, allowTestDefaults: false, exitOnError: false });
+        expect(res.ok).toBe(false);
+        expect(res.errors.some((e) => e.includes('CLOUDFLARE_ACCOUNT_ID'))).toBe(true);
+      });
+
+      it('rechaza CLOUDFLARE_EMAIL_FROM con formato inválido si está presente', () => {
+        const envInvalid = { ...baseSecureEnv, CLOUDFLARE_EMAIL_FROM: 'no-es-email' };
+        const res = validarEntorno({ env: envInvalid, allowTestDefaults: false, exitOnError: false });
+        expect(res.ok).toBe(false);
+        expect(res.errors.some((e) => e.includes('CLOUDFLARE_EMAIL_FROM'))).toBe(true);
+      });
+
+      it('rechaza placeholders en Cloudflare Email vars', () => {
+        const envPlaceholder = {
+          ...baseSecureEnv,
+          CLOUDFLARE_EMAIL_API_TOKEN: 'tu_api_token_de_ejemplo_con_mas_de_32_caracteres',
+          CLOUDFLARE_ACCOUNT_ID: 'tu_account_id_de_ejemplo_con_mas_de_32_caracteres',
+        };
+        const res = validarEntorno({ env: envPlaceholder, allowTestDefaults: false, exitOnError: false });
+        expect(res.ok).toBe(false);
+      });
+    });
   });
 
   describe('CORS Estricto, Helmet y Trust Proxy en Express', () => {

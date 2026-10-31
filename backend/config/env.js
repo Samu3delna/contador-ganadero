@@ -173,6 +173,21 @@ function validarEntorno(arg1 = process.env, arg2 = {}) {
     }
   }
 
+  // 8. Cloudflare Email Sending (opcional, para formulario de soporte)
+  // Solo validar si están presentes (permiten habilitar/deshabilitar la funcionalidad)
+  const cloudflareEmailVars = ['CLOUDFLARE_EMAIL_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID'];
+  for (const varName of cloudflareEmailVars) {
+    const val = envObj[varName];
+    if (val && (typeof val !== 'string' || val.trim().length < 32 || esPlaceholder(val))) {
+      errores.push(`${varName} debe tener al menos 32 caracteres si está configurado.`);
+    }
+  }
+
+  // 9. Email remitente para Cloudflare Email Sending (opcional, usa dominio verificado)
+  if (envObj.CLOUDFLARE_EMAIL_FROM && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(envObj.CLOUDFLARE_EMAIL_FROM.trim())) {
+    errores.push('CLOUDFLARE_EMAIL_FROM debe ser un email válido si está configurado.');
+  }
+
   if (envObj.WHATSAPP_VERIFY_TOKEN && esPlaceholder(envObj.WHATSAPP_VERIFY_TOKEN)) {
     errores.push('WHATSAPP_VERIFY_TOKEN no puede usar un valor por defecto débil.');
   }
