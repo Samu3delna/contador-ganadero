@@ -104,6 +104,27 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
       expect(res.headers['access-control-allow-credentials']).toBe('true');
     });
 
+    it('responde el preflight de login con el origen de producción y credenciales', async () => {
+      const corsAnterior = process.env.CORS_ORIGINS;
+      process.env.CORS_ORIGINS = 'https://contadorganandero.com';
+
+      try {
+        const res = await request(app)
+          .options('/api/auth/login')
+          .set('Origin', 'https://contadorganandero.com')
+          .set('Access-Control-Request-Method', 'POST')
+          .set('Access-Control-Request-Headers', 'content-type');
+
+        expect(res.status).toBe(204);
+        expect(res.headers['access-control-allow-origin']).toBe('https://contadorganandero.com');
+        expect(res.headers['access-control-allow-credentials']).toBe('true');
+        expect(res.headers['access-control-allow-methods']).toContain('POST');
+      } finally {
+        if (corsAnterior === undefined) delete process.env.CORS_ORIGINS;
+        else process.env.CORS_ORIGINS = corsAnterior;
+      }
+    });
+
     it('oculta X-Powered-By e incluye cabeceras de seguridad de Helmet', async () => {
       const res = await request(app).get('/api/health');
       expect(res.headers['x-powered-by']).toBeUndefined();

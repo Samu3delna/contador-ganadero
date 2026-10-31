@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test \"tests/**/*.test.js\""
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.6",

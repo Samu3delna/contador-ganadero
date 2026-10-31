@@ -1,13 +1,7 @@
 import axios from 'axios';
+import { resolverApiUrl } from './apiUrl';
 
-// En producción (Cloudflare) no existe proxy /api: si VITE_API_URL no se definió en el build,
-// se usa la API de Render para que el login y demás llamadas no terminen en el SPA estático.
-const API_URL_PRODUCCION = 'https://contador-ganadero.onrender.com/api';
-let rawUrl = (
-  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? API_URL_PRODUCCION : '/api')
-).trim();
-rawUrl = rawUrl.replace(/\/+$/, '');
-export const API_URL = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
+export const API_URL = resolverApiUrl(import.meta.env);
 
 // Access token efímero en memoria (nunca en localStorage ni sessionStorage para mitigar robo por XSS)
 let inMemoryAccessToken = null;

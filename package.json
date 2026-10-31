@@ -13,7 +13,10 @@
     "deploy:email-worker": "npx --yes wrangler@4.113.0 deploy --config cloudflare-email-worker/wrangler.jsonc",
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
-    "lint": "cd frontend && npm run lint"
+    "lint": "cd frontend && npm run lint",
+    "test": "npm --prefix backend test && npm --prefix frontend test",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test"
   },
   "packageManager": "bun@1.4.3",
   "engines": {
