@@ -1,0 +1,15 @@
+ M backend/__tests__/onvoController.test.js
+ M backend/config/db.js
+ M backend/controllers/adminController.js
+ M backend/controllers/supportController.js
+ M backend/middleware/errorMiddleware.js
+ M backend/routes/adminRoutes.js
+ M frontend/src/App.jsx
+ M frontend/src/components/layout/Sidebar.jsx
+ M frontend/src/pages/CondicionesServicioPage.jsx
+ M frontend/src/pages/admin/admin.css
+ M frontend/src/services/adminApi.js
+?? artifacts/
+?? backend/__tests__/adminSoporte.test.js
+?? backend/models/TicketSoporte.js
+?? frontend/src/pages/admin/AdminSoportePage.jsx

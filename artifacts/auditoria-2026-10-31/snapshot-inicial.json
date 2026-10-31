@@ -1,0 +1,1130 @@
+﻿[
+    {
+        "path":  "backend/__diag_dashboard.js",
+        "sha256":  "13C9224D0841DF0D1EF7DD57FDEB03DE12BAFA78F5B6C40F45388284D3A743AA"
+    },
+    {
+        "path":  "backend/__diag_dashboard2.js",
+        "sha256":  "335AA08B9A5FDAD5F2E8325F28410009BFCD1BB49A8634C795D77D45D1A64687"
+    },
+    {
+        "path":  "backend/__tests__/adminSoporte.test.js",
+        "sha256":  "9D19E52216CBEB2B50889A183F525E080B9EA720AFB0BC35B98E4227A42A04C9"
+    },
+    {
+        "path":  "backend/models/TicketSoporte.js",
+        "sha256":  "B873E8B4077BE49ACCC8E54C3C0833026B4B8E6514657B718EDB4C306A4DC81A"
+    },
+    {
+        "path":  "AGENTS.md",
+        "sha256":  "28EDC62FC837C7DD15FDA5B38C01E87DDE63A733134943470B164F5A56DE69AD"
+    },
+    {
+        "path":  "README.md",
+        "sha256":  "51D55945C7C0F780D4C80AACE4958513818E65757F4BDA913E8B0A58523BAE4E"
+    },
+    {
+        "path":  "backend/__tests__/adminGuard.test.js",
+        "sha256":  "B9B889426C61E2550A9B57EBA8876C27A7CA802902BD56D69A4733EB4EC8B1EE"
+    },
+    {
+        "path":  "backend/__tests__/authSecurity.test.js",
+        "sha256":  "0D8EEC891317E886DD15FD8B22C2DFB0C435FDCB7A616930708AD98C318052E7"
+    },
+    {
+        "path":  "backend/__tests__/chatController.test.js",
+        "sha256":  "2640D6C49E24B675022FBE8426C0F2A97C4954377A1576F0294549AAD35D1F85"
+    },
+    {
+        "path":  "backend/__tests__/clave50.test.js",
+        "sha256":  "634E7FCBB3E91169723C85554AE1FF49AC2F1D99F92BDA2E219B1D438950DF0B"
+    },
+    {
+        "path":  "backend/__tests__/emailWorker.test.js",
+        "sha256":  "161FCC3D3DBE3D2BCD68E134D81B4A4FD5CD97FB0214AFDDB7E99C0C985DB71F"
+    },
+    {
+        "path":  "backend/__tests__/excelAndXmlParser.test.js",
+        "sha256":  "C78908807688616E96A96EE3E8E450A3E35956DEF8060DAB216ED9E5D0600E77"
+    },
+    {
+        "path":  "backend/__tests__/ingestaFacturaService.test.js",
+        "sha256":  "B354F567FF25B10B142E2C6EA0A6E38A421F1FD3FDBC096BA8F30A8BA50070CB"
+    },
+    {
+        "path":  "backend/__tests__/metaDataDeletion.test.js",
+        "sha256":  "A257A7378BA694B4664852CED21B98E6B5E43CEB7093B8D00F1E91FFC9CBC8A9"
+    },
+    {
+        "path":  "backend/__tests__/migrateTenant.test.js",
+        "sha256":  "C4B8DB0D7090A3D6675A909384AE4BE19713124FEC838AB1AF18A14159B40452"
+    },
+    {
+        "path":  "backend/__tests__/onvoController.test.js",
+        "sha256":  "5A2358131CC046CAD923EBBF136D779BBB9A8A5215CFC05761847FFF01058348"
+    },
+    {
+        "path":  "backend/__tests__/quotaGuard.test.js",
+        "sha256":  "CF6DE02B030D7D018437199DC176395C442407934CE9376BBC6B7330CE96549B"
+    },
+    {
+        "path":  "backend/__tests__/security/authJwtAndCrypto.test.js",
+        "sha256":  "77F19622F676B9F5395039B752ACE7510D3EA31E38FD7AEDB4B573A847F2C8C7"
+    },
+    {
+        "path":  "backend/__tests__/security/envAndNetwork.test.js",
+        "sha256":  "09764429BE8EC06782F73483BC5B60C9CBD9E43125955BE6041605DF3AB7760B"
+    },
+    {
+        "path":  "backend/__tests__/security/tenantIsolation.test.js",
+        "sha256":  "45511D3EC58A6B59E146501551929E02070D17BC0CE672C351F79F4520E98868"
+    },
+    {
+        "path":  "backend/__tests__/security/validationAndNoSql.test.js",
+        "sha256":  "4FCB2A50F214294C61F57B14AE7B5CA9E8AA6819DB764A504F27D09294D32F5B"
+    },
+    {
+        "path":  "backend/__tests__/tenantGuard.test.js",
+        "sha256":  "998282B7104EADF18ACA63A9F0EEBB598E0A3ADB11604D8C499D4F653616D792"
+    },
+    {
+        "path":  "backend/__tests__/uploadStorage.test.js",
+        "sha256":  "9018FE1E5B819F2A5374F7948926F346C0DA25264850344E8417AF5D9E3BB7E0"
+    },
+    {
+        "path":  "backend/__tests__/webhooks.test.js",
+        "sha256":  "45093A99C11E771066C034316ACC2005934833DC60BEB32644A04F9E9CD3C085"
+    },
+    {
+        "path":  "backend/__tests__/xmlBuilder.test.js",
+        "sha256":  "38F4C8E05DBE7D76147D4CAFD096FC8E4A1A8F5DAE3549D10F0D1517F05F4801"
+    },
+    {
+        "path":  "backend/babel.config.js",
+        "sha256":  "FC9663FDB885F16C7B3ED921411E959C790194C258EE46D8CB275D31E72F49D8"
+    },
+    {
+        "path":  "backend/config/ai.js",
+        "sha256":  "A4702452C4D0CADE5950025D82904BA79B24722E9C4F9BC261D41F41AD67E308"
+    },
+    {
+        "path":  "backend/config/db.js",
+        "sha256":  "F70AC1D3D75F0759C07B406BDFB466A18E0452C2EE10F3B2A66D9288E65668BD"
+    },
+    {
+        "path":  "backend/config/email.js",
+        "sha256":  "3B0C656AAC5666F24D5015B79A46440F2F897DAA8DDB3990C1F90A535422D7D2"
+    },
+    {
+        "path":  "backend/config/env.js",
+        "sha256":  "EB0F47DA814056BCEDF2438285A6A2F789FB23CFE004268030BFDD6144C1F676"
+    },
+    {
+        "path":  "backend/config/planes.js",
+        "sha256":  "2E5DF9BAED641F91182E1085BB98E40FBDB1DEA51EF334356C82676E1A1FC5E1"
+    },
+    {
+        "path":  "backend/controllers/adminController.js",
+        "sha256":  "8498CACDD931F0D1D74711590895522B33A3D3E08078499F37B0E419839DF41E"
+    },
+    {
+        "path":  "backend/controllers/authController.js",
+        "sha256":  "2A1A896D263D5DA4EC3A1FB8426642B9FC5932FBD4CA671363E08FBEB7894DEF"
+    },
+    {
+        "path":  "backend/controllers/chatController.js",
+        "sha256":  "9898C0ECA65F0D4B8FBEC2B97924BD4809FECDBA490AFCEA52213C18884F0940"
+    },
+    {
+        "path":  "backend/controllers/costoController.js",
+        "sha256":  "C08E5E1E6F17C3B6AD0DCB121F4211B70317E9CF8F07D8D56C527DC0DC013A79"
+    },
+    {
+        "path":  "backend/controllers/d150Controller.js",
+        "sha256":  "6D21D7B379DF324BED07111187DC3120792E94E2C7C7BB94BC94988E62411BEE"
+    },
+    {
+        "path":  "backend/controllers/dashboardController.js",
+        "sha256":  "61832EC9B01985275F99C89493E8570D5B032294F9AC9D99AAD9D8618383C8DF"
+    },
+    {
+        "path":  "backend/controllers/dataDeletionController.js",
+        "sha256":  "86129E88561E348899C704377282E6FA2450FC9716DA74E873712AE21552BFC0"
+    },
+    {
+        "path":  "backend/controllers/declaracionController.js",
+        "sha256":  "747709C419D675695122189CA40B4AC023FD1AB4BDA048084FDE9CC612DE7A75"
+    },
+    {
+        "path":  "backend/controllers/facturaController.js",
+        "sha256":  "B11C6A6FDCC4E790C3D46EE72AC9D13A52E76F831E2C2365397A217E998E00B4"
+    },
+    {
+        "path":  "backend/controllers/facturaEmisionController.js",
+        "sha256":  "EF1A8B433BF4686C13F9CC84E5977E192C21277B714B7A35E627DD79F4A316EE"
+    },
+    {
+        "path":  "backend/controllers/fecController.js",
+        "sha256":  "B49903C32E1A46EBA1780F8F4832B73306E031DEE187CD2FE396B9F4C1BFD287"
+    },
+    {
+        "path":  "backend/controllers/googleAuthController.js",
+        "sha256":  "C79069AFEF6AA10DFC14C941F092EBEB0819D53150CCED1B976B0938DDFAE90C"
+    },
+    {
+        "path":  "backend/controllers/haciendaConfigController.js",
+        "sha256":  "A81382103D7746E1EACD9439824A16540A1443827A84E6129C315A19CF3BEF3D"
+    },
+    {
+        "path":  "backend/controllers/haciendaController.js",
+        "sha256":  "B8B78A15A2E7CFA1E0DC81E0EB78686623F9CEB40E8B21359B635CE938AA06EC"
+    },
+    {
+        "path":  "backend/controllers/impuestoController.js",
+        "sha256":  "64E4B7D36C653AECE07B6F409B64DBC3110DB3DA69AFC7ECF75D95CE514C5C36"
+    },
+    {
+        "path":  "backend/controllers/ingresoController.js",
+        "sha256":  "3A83C7C356DDEABC3C923FCD821C3BF0160B66D87FEA2EA851F5BCC2585D0B88"
+    },
+    {
+        "path":  "backend/controllers/inventarioController.js",
+        "sha256":  "FEDF81505C7E1B066C491FE7CBA3A32D380D6E412566D5A91BFBA49CF57ABB5A"
+    },
+    {
+        "path":  "backend/controllers/onvoController.js",
+        "sha256":  "126A2729836317E42AC2C33E1A65F3FCBAA5058D6846C9452B2CCC5C3DA01B8D"
+    },
+    {
+        "path":  "backend/controllers/repController.js",
+        "sha256":  "6E4CC4D641629AC5F92BA33AE2A2F8ABE1D93B37B853F609BB5A0F2D77B9A144"
+    },
+    {
+        "path":  "backend/controllers/supportController.js",
+        "sha256":  "4F4281153A33251D2E2A715205A4E31F1BC7BBD7707E714A9AF84183815CA082"
+    },
+    {
+        "path":  "backend/eslint.config.js",
+        "sha256":  "8AFC2C9DE73DEBE183593757CC31B884FBC78340D1EF396A5C783AB5A170EFCA"
+    },
+    {
+        "path":  "backend/insumos_oficiales.json",
+        "sha256":  "A88F41FE0E00FD651800E853F7445C5BB03755D730EAC1B0AD0966BE3EB20B5F"
+    },
+    {
+        "path":  "backend/jest.setup.js",
+        "sha256":  "BC718B747AF049CBAB848C49933DA6AA63789286CCB99F1D80835F5A010901D4"
+    },
+    {
+        "path":  "backend/middleware/adminGuard.js",
+        "sha256":  "3FFC937783F9D68E7D556A624E5A4A008BA5E9BCACD674B039A91B831101EAF0"
+    },
+    {
+        "path":  "backend/middleware/authMiddleware.js",
+        "sha256":  "53B896852451ED5607697673D30251004FE68D08DF8C5A334918E0929069E249"
+    },
+    {
+        "path":  "backend/middleware/errorMiddleware.js",
+        "sha256":  "983F29B5AEE8FB0CDD824F7FEF2D8EF51C8DEFC560D142B68C120BCE652FE88E"
+    },
+    {
+        "path":  "backend/middleware/quotaGuard.js",
+        "sha256":  "F48344E295F4EA79F99ABD6CB04266AB818FDFAE177811C0ADAFCBA424FB2537"
+    },
+    {
+        "path":  "backend/middleware/rateLimiters.js",
+        "sha256":  "2EBB2015004B217A0B4FE59FCD787BAD34B9DEDA48637F915742B24BD827E920"
+    },
+    {
+        "path":  "backend/middleware/rbacMiddleware.js",
+        "sha256":  "9352B22F7CE4F4E85B943831EAA1064E14D571E117554BCF8D29557DCC27B506"
+    },
+    {
+        "path":  "backend/middleware/tenantGuard.js",
+        "sha256":  "5F020ED7851B74BADF9E2A53E04D1923A84404FE8634C160595F10F9BD65D717"
+    },
+    {
+        "path":  "backend/middleware/validateMiddleware.js",
+        "sha256":  "265BE2784F3C4EF02CA18A60C2BFE7F50B0172A5B3EDFA8211FDD62D6FB92724"
+    },
+    {
+        "path":  "backend/models/AuditLog.js",
+        "sha256":  "861BDD478AB6B8002B87E876F1C778569616C04D64E2FBF9EF6317D76FCF7DC4"
+    },
+    {
+        "path":  "backend/models/Categoria.js",
+        "sha256":  "4D6BA9F157542912C4B2917B602FDF64802CE01A23950868D54E096F726DFF6C"
+    },
+    {
+        "path":  "backend/models/ChatFeedback.js",
+        "sha256":  "C52E3463F2DFA91C6D19757EE935B2B7B10139E6623E67ED88BA508B310C4C5F"
+    },
+    {
+        "path":  "backend/models/CostoProduccion.js",
+        "sha256":  "9602B7210BC5301A7B595AFACD75D353FCDBF35F156A1A168B066D1DA03536C9"
+    },
+    {
+        "path":  "backend/models/Declaracion.js",
+        "sha256":  "160BF5D6C4911367F2CDA63C44E758DD6EFE0AF5B997696DAC2207C5C022D710"
+    },
+    {
+        "path":  "backend/models/Factura.js",
+        "sha256":  "476FB94394E5C3CE806F589C0BBCE9F472F82729D2A60B19C0CC56954D6661B6"
+    },
+    {
+        "path":  "backend/models/FacturaEmision.js",
+        "sha256":  "8745EDA8A553777A3326FD25EF695B7B35D66BA977B40FF42FCCDE1E0798E881"
+    },
+    {
+        "path":  "backend/models/Ingreso.js",
+        "sha256":  "4B28E1511406CDDFE3570CEC58D684D87B4F1C288A0D54E22C8A13896D87596B"
+    },
+    {
+        "path":  "backend/models/Inventario.js",
+        "sha256":  "8B00432BF66E27FCAA20736A036CEA8913C5B82EBBDB8AD6C0EE7E4BD4F07966"
+    },
+    {
+        "path":  "backend/models/InvitacionTenant.js",
+        "sha256":  "BE772020294E8DA0FE484CBCD365759D6BC6F9FE4C5323ABFF8A03080FF0FD47"
+    },
+    {
+        "path":  "backend/models/RecordatorioFiscal.js",
+        "sha256":  "3A4181919E5DF59F5AC6470B647BCE82268DBA88E9D48E8B3A9FA5FD122DF318"
+    },
+    {
+        "path":  "backend/models/RefreshToken.js",
+        "sha256":  "CDDD38D3D70837AC35B503E82E9C5898EB29B908350DFDDCDEA8E3A69D59A647"
+    },
+    {
+        "path":  "backend/models/SolicitudEliminacion.js",
+        "sha256":  "D8C4B5CD7486EDECF4AB34E037B02C41FA9C3F40B52B1846DEEC3DE8003722B1"
+    },
+    {
+        "path":  "backend/models/SubscriptionEvent.js",
+        "sha256":  "9612F8B0F67E6CAD9D5CAA4CCF16BA5BEF40756AEB0CC6C5A41E14C4EF102159"
+    },
+    {
+        "path":  "backend/models/Tenant.js",
+        "sha256":  "A0153E2EF8DBA4C9AA69F95ED543C77FC50C8D5D89D7C65A68244983DF610C18"
+    },
+    {
+        "path":  "backend/models/Usuario.js",
+        "sha256":  "740B42495616B240E314227C77748C829A44C75155BD09A6DFA5DAE4E7C5D2E4"
+    },
+    {
+        "path":  "backend/models/plugins/tenantPlugin.js",
+        "sha256":  "5D0E6AEE1FB680FCDE05284CAE22604605BB6DE7027197AD0FBA67C4B9F6DF33"
+    },
+    {
+        "path":  "backend/package.json",
+        "sha256":  "E92AE0375FDB6E39EEE86C544FDBB800E2D2F8EFA47A126B1630C3F1B05EABA2"
+    },
+    {
+        "path":  "backend/routes/adminRoutes.js",
+        "sha256":  "EBE2A4D890880DA1F974A935B967E9449FDCE7634F51A81175B4FF345FCE61EC"
+    },
+    {
+        "path":  "backend/routes/authRoutes.js",
+        "sha256":  "FC2D26CBAAB195F82B889B0B67558A42414899888CA53B7E056CEFD266A17622"
+    },
+    {
+        "path":  "backend/routes/chatRoutes.js",
+        "sha256":  "7A43DA6F2054E4A66B8FBBD3F03E4A7BC91B700BA0EA773991E1008104354B55"
+    },
+    {
+        "path":  "backend/routes/costoRoutes.js",
+        "sha256":  "CEF78E6EABBBB97829104AB6C5384C237D35638D3613F741E5408D97417350B1"
+    },
+    {
+        "path":  "backend/routes/dashboardRoutes.js",
+        "sha256":  "738C0C457C39449EDE6E89280C8B6A4AD5CC620F7F728F2488137200ED3847D5"
+    },
+    {
+        "path":  "backend/routes/declaracionRoutes.js",
+        "sha256":  "9AD3B6040BFC577F9C3441B100B921B868AEDE60771BC0EC14BC991130E43C5B"
+    },
+    {
+        "path":  "backend/routes/emailWebhookRoutes.js",
+        "sha256":  "15616EC7FA201E2A1AD7EE02D20AA3A27BB26D1EC3AE680577EDF0FCF4BDB3A1"
+    },
+    {
+        "path":  "backend/routes/facturaEmisionRoutes.js",
+        "sha256":  "375D3C414D15F2CC7818D7E1AAD054DDDCFE5D04EFFB45BCE3768E2A8492A5D9"
+    },
+    {
+        "path":  "backend/routes/facturaRoutes.js",
+        "sha256":  "5340965E23075E29ABA3750533C720384E47BDC356EF42E3B9D4F082C62CB1A7"
+    },
+    {
+        "path":  "backend/routes/haciendaConfigRoutes.js",
+        "sha256":  "B80FA94ACF0D2C30873127B124BFA0BD8122CDEBE43C20781EA3E51E90708A9B"
+    },
+    {
+        "path":  "backend/routes/haciendaRoutes.js",
+        "sha256":  "0CDBAA0C923C9C02A3F472F377E60E907A9BA0EF142D4122AA59ABDB8B1AD43F"
+    },
+    {
+        "path":  "backend/routes/impuestoRoutes.js",
+        "sha256":  "710467AC9B029DF846CE117D721C57C37DB149FD4EADFC4C7D4AEC7E0C64B697"
+    },
+    {
+        "path":  "backend/routes/ingresoRoutes.js",
+        "sha256":  "22D0E39D1610DC1C880D223D6C0955F008AF8FABC4E556F8150A4BEC73859792"
+    },
+    {
+        "path":  "backend/routes/inventarioRoutes.js",
+        "sha256":  "39F508203E742A27B789306CBC9BCB4AE28C647C8D13B89F9DF860FB287F7EBF"
+    },
+    {
+        "path":  "backend/routes/metaDataDeletionRoutes.js",
+        "sha256":  "E0A8773FCBC08621AE77CBF1F6F08429C0E495E83407004CBB8CBD9D664EFC65"
+    },
+    {
+        "path":  "backend/routes/onvoRoutes.js",
+        "sha256":  "1FEA6244D4C8118DC833648E9E2CEDC5D730B08C4A62E56434A4C6DFAC7FC2A9"
+    },
+    {
+        "path":  "backend/routes/onvoWebhookRoutes.js",
+        "sha256":  "980302311413E15557684B7CED5AC91B97F6EDD7A8D49365812F97A5AC07101F"
+    },
+    {
+        "path":  "backend/routes/supportRoutes.js",
+        "sha256":  "63B61929ACD6BFE1154DFF0382320F5770E4ED1BB51CB565319B1714E1BF9BD1"
+    },
+    {
+        "path":  "backend/routes/whatsappWebhookRoutes.js",
+        "sha256":  "6B7723BF85CACF2EB2C94D09BD7D59A7985D8414F8F45F5316F2CE7AC79F5023"
+    },
+    {
+        "path":  "backend/scripts/MIGRATE_README.md",
+        "sha256":  "183974BD5D213DD91C3F310F97872A6F34D2B0C45EFEAAC517871A5DD5CB7816"
+    },
+    {
+        "path":  "backend/scripts/backup-mongodb.js",
+        "sha256":  "DD9DC1B5D038DE836ACC9C1A355031A4202C42B24053166CFCC56BE906199C33"
+    },
+    {
+        "path":  "backend/scripts/crear-superadmin.js",
+        "sha256":  "2C850BFBD08023F48EDCC131F9B495F4376C39A5A683D8875F8E9A31E451733F"
+    },
+    {
+        "path":  "backend/scripts/migrateCryptoGcm.js",
+        "sha256":  "20C4858F94E7AF0D42CD43FDE8DA621105104908F3633642325CBD8BAC139A46"
+    },
+    {
+        "path":  "backend/scripts/migrateOnvo.js",
+        "sha256":  "4F58C792605E8548E437573EED47DDA3982DD3DA2504E1B217DDF874748B03F1"
+    },
+    {
+        "path":  "backend/scripts/migratePlanes.js",
+        "sha256":  "6D5083FFDDEE2CBDE17D83CC51D07F884CB21777446D330A728F846EF0EC7AD7"
+    },
+    {
+        "path":  "backend/scripts/migrateTenant.js",
+        "sha256":  "DE998C7E11B92F1C9620048092428B9C400D6FDC57777B859A6F320E97B2E26D"
+    },
+    {
+        "path":  "backend/scripts/repararFacturasXML.js",
+        "sha256":  "72EF80031AD6B03EF035AD3793AFDD29A24B8E28ED760BE986AD9E711350E35D"
+    },
+    {
+        "path":  "backend/scripts/restore-mongodb.js",
+        "sha256":  "0C11D069EF1969420ED3171ABBA1257248380F5AD0BDC88CF3ED1D22910DC90F"
+    },
+    {
+        "path":  "backend/server.js",
+        "sha256":  "9BFEAD739AAD9ABBC03E23E6F8239BEDEFE6A78771D4B5A7EED2607E0BA2BA5E"
+    },
+    {
+        "path":  "backend/services/aiProvider.js",
+        "sha256":  "6721076A591030EAE82C80631367F51084D7CEFFC8854DE4F8A995B5B189C7B3"
+    },
+    {
+        "path":  "backend/services/aiService.js",
+        "sha256":  "1F24531954F551ACBDEAFC96482BE89C8A7224977BC25F66A2BFDA65820BBE65"
+    },
+    {
+        "path":  "backend/services/d150Service.js",
+        "sha256":  "CA19A4295CF1367CC8CAF91F271773E5ECF8F79A582A2AC95884862AF643E7E6"
+    },
+    {
+        "path":  "backend/services/declaracionService.js",
+        "sha256":  "A2BBBD65AC7EC814D13EF0C2E1D0755705C5ACF836ED51D7BABD4ACE25ABCC90"
+    },
+    {
+        "path":  "backend/services/emailService.js",
+        "sha256":  "FECDA0DCE67013DB8071A27DE68C9F85AEDAD98A264C396AECB0FAF4C7424FAA"
+    },
+    {
+        "path":  "backend/services/hacienda/auth.js",
+        "sha256":  "D24A7EAFBBC28A3D25FB56F8FC5E9781D5B5A6CCD26BA6F0BF325FA6DD942099"
+    },
+    {
+        "path":  "backend/services/hacienda/clave50.js",
+        "sha256":  "C36CE2CDF07B3EA5A127AF81F16A88BB42E1B075E0E514225E027F50D52533CD"
+    },
+    {
+        "path":  "backend/services/hacienda/index.js",
+        "sha256":  "B66BBABE4A133FEF90AB354A91CCDFB21EB9F9AC24F0B44C4155A0C6CB12C67F"
+    },
+    {
+        "path":  "backend/services/hacienda/mockStore.js",
+        "sha256":  "D8FAFDCAE75059B96E0564B99E9E18ADCA2BD1548CB4ACDDED791E6539CC8482"
+    },
+    {
+        "path":  "backend/services/hacienda/recepcion.js",
+        "sha256":  "32C5FE36DD40690CD28C2EF8579E7A9394E912929340BB4BD20C2D62C3DA6B9F"
+    },
+    {
+        "path":  "backend/services/hacienda/signer.js",
+        "sha256":  "63B4336F9DFC7FB3589438DDA1527B2FAD62343C4B80C39E1019F417185AB6ED"
+    },
+    {
+        "path":  "backend/services/hacienda/xmlBuilder.js",
+        "sha256":  "F171F79917B868E7F398F2446623A05E594BBFBF67FC1ED8C799984D48A143BB"
+    },
+    {
+        "path":  "backend/services/haciendaWorker.js",
+        "sha256":  "B450E3D3299F15FEC4953825867C1E24968BAFD8C7FAE0B566F9E645AE8F5893"
+    },
+    {
+        "path":  "backend/services/impuestoService.js",
+        "sha256":  "DAC701DBEA7A6691F0BB274CBE029B4E3E1666AFCDAD4AB58DA58FE05E1691F7"
+    },
+    {
+        "path":  "backend/services/ingestaFacturaService.js",
+        "sha256":  "275AF410D4C2D91CA47D1A003997777653FB3C38BADE8E838A4FE92467B3F9B9"
+    },
+    {
+        "path":  "backend/services/onvoService.js",
+        "sha256":  "4FBFAC152B8437E43DF9C19F0A681FAC3FF2AF3D613B780E29892420B373BBE2"
+    },
+    {
+        "path":  "backend/services/whatsappService.js",
+        "sha256":  "FA7DC9EFE2DAB838C6830C5CE7BC59775845E2E316DBEB2AA03B5AD54ADA5173"
+    },
+    {
+        "path":  "backend/services/xmlParserService.js",
+        "sha256":  "EFEEC758CFED8C5460711BA166E2AD5A1DEFE7B0EAE93E9D948DCC1E8D9F34DF"
+    },
+    {
+        "path":  "backend/utils/audit.js",
+        "sha256":  "EF1F97B19E47F6D86CCDB8005AA4AADE628D7933A5B2E02910DE6352C3F3BD03"
+    },
+    {
+        "path":  "backend/utils/chatCache.js",
+        "sha256":  "748EA0C96FF86EE4382279F2C50D9274190EEC80712771558E03D3CDDD3F329B"
+    },
+    {
+        "path":  "backend/utils/costaRicaTax.js",
+        "sha256":  "4C53C88CD9B5993DE9BC07D7BA89388D75A827391701BA6A1C2856576622C55F"
+    },
+    {
+        "path":  "backend/utils/createUser.js",
+        "sha256":  "3943FC1B6D330439890AF7027CE4DB1304C606E83CCA6407F6D254B1DA148C98"
+    },
+    {
+        "path":  "backend/utils/crypto.js",
+        "sha256":  "3A20B3EA8AB76822E05FE266A19F9D274704D394F9BBBC2F90A028FD13289BC9"
+    },
+    {
+        "path":  "backend/utils/escapeRegex.js",
+        "sha256":  "6052273E10F9296F4964D8A80A61CA8798FA4A9782050FFB55B72F3C6D69ED27"
+    },
+    {
+        "path":  "backend/utils/formatters.js",
+        "sha256":  "B39D5CE031ADFFDB472689634B5D86D892D45426A339AA4342FFC7058AC43A64"
+    },
+    {
+        "path":  "backend/utils/insumosAgropecuarios.js",
+        "sha256":  "0A9997AA2D52DCD96C70158FF0E620A1DD47EBD40CE2F066070F18628984E935"
+    },
+    {
+        "path":  "backend/utils/keyProvider.js",
+        "sha256":  "F657FC6139646304824C9C1D7D9ECCAD58F0F7CC6C4272CB4692C5EE7B749D8B"
+    },
+    {
+        "path":  "backend/utils/logger.js",
+        "sha256":  "D0475A64894806ABD9DC185E74D31FAA86669B1F3AE30B835004A64E0882CB6F"
+    },
+    {
+        "path":  "backend/utils/migrateNewCollections.js",
+        "sha256":  "616FE00CE3FD4B598945D6B2ADBEACD897FB5B4AD2A22CB4F61A89EFDE0ACBA5"
+    },
+    {
+        "path":  "backend/utils/pwnedPassword.js",
+        "sha256":  "EF76D3B2A1515676BB9440D8BDB4D5CB57565B8711DE65C1E51426941D24D696"
+    },
+    {
+        "path":  "backend/utils/sanitizer.js",
+        "sha256":  "A1E69C9E7810A56498A13864720D30AE05DFD2A8054A17921AB96B22F0733355"
+    },
+    {
+        "path":  "backend/utils/seed.js",
+        "sha256":  "C595F17170445B4FD620BDDB551BEB8F65F22A0D5F0568B129EA6BC835238E41"
+    },
+    {
+        "path":  "backend/utils/tenantContext.js",
+        "sha256":  "A78D170FB46CE02632A77582EE99D8C4F90D43CEC449B690CF15AEF7973F03C5"
+    },
+    {
+        "path":  "backend/utils/totp.js",
+        "sha256":  "5CFC0A0DD1FACCE8C55ADA039533F0FDA11C45988DF66C0D336203FE86F0806B"
+    },
+    {
+        "path":  "backend/worker.js",
+        "sha256":  "05415B006C30B01B7AFE13403F5CBBFB308776EF839905B8B75DC100806D5EB5"
+    },
+    {
+        "path":  "bun.lock",
+        "sha256":  "A8D9833F1856F96F393B400E14955D71734460584F1EA321F16E824D2D53AB7B"
+    },
+    {
+        "path":  "cloudflare-email-worker/worker.js",
+        "sha256":  "A546614EDC67B5724E9063578A43D1B6F7158C7C1D4381C5DABC38648EA9E711"
+    },
+    {
+        "path":  "cloudflare-email-worker/wrangler.jsonc",
+        "sha256":  "777CDE31D3F3AD0836FA231DC8C6DED7C1B80F3ADAFAA5B39FB6E934473D73C2"
+    },
+    {
+        "path":  "frontend/.gitignore",
+        "sha256":  "FE718E7BABB14F3CBAD2D97F08889B9CE5215ED3FE0E43B2B8CFBFB3B9B844E8"
+    },
+    {
+        "path":  "frontend/.npmrc",
+        "sha256":  "AB78FE09E0E67C6206FA272DBC6F4DEF6390805C20030CDAD8BFB7C6AE220925"
+    },
+    {
+        "path":  "frontend/README.md",
+        "sha256":  "A460B4DC7E6392E76AA54D844C9261B8DB0ADB7F967BA8300526456F1DCF5FB4"
+    },
+    {
+        "path":  "frontend/components.json",
+        "sha256":  "6B8F901B9F692876D40E4BA0C4D018CCF0FF686CA107823ECAA3110349B49C4A"
+    },
+    {
+        "path":  "frontend/eslint.config.js",
+        "sha256":  "5F601F7261BE2D08A7B81FBC6F01D34D182CF2F28C4EB9E18CFE07A21C15C0FB"
+    },
+    {
+        "path":  "frontend/index.html",
+        "sha256":  "4755B42FBB517CC0FBE58198DCC6B16AE9491743DC7AB89E364E9851C26FDAB8"
+    },
+    {
+        "path":  "frontend/jsconfig.json",
+        "sha256":  "1909B20ACC753F86D4CD378C2A3EDD1F12A17772977D31DD9C71C906C4B28CBC"
+    },
+    {
+        "path":  "frontend/package.json",
+        "sha256":  "BD707ADC995EACB70AA936AF93212CEF432637C16E092C94D773AC8ED3F37D8C"
+    },
+    {
+        "path":  "frontend/postcss.config.js",
+        "sha256":  "190C877DB466995BF1482F4A16ABD06E04A89EDE3119341E2A86FF96E1737B27"
+    },
+    {
+        "path":  "frontend/public/.well-known/security.txt",
+        "sha256":  "4E7546905E89249D82A8C6CBCDE8BE82525C44349296E82CE0828E7DE781008A"
+    },
+    {
+        "path":  "frontend/public/_headers",
+        "sha256":  "DE10DB8D3286249C304553BC223ED725FDF33228218F4063751345B592C849CA"
+    },
+    {
+        "path":  "frontend/public/ads.txt",
+        "sha256":  "9175052BFE8A44158CA783673A6857430896E0D1566133B8F752DBE8E0190863"
+    },
+    {
+        "path":  "frontend/public/favicon.svg",
+        "sha256":  "7047F642B1DB6ACC93943A7FD9B741CFD2248905B2AA1EC33A2FDD39548E7D32"
+    },
+    {
+        "path":  "frontend/public/icons.svg",
+        "sha256":  "B45FA506195CFCDEF406BA9F0C77B36DDC1A7C224040926EC70ABC2FDEA7B93A"
+    },
+    {
+        "path":  "frontend/public/llms.txt",
+        "sha256":  "78B30B5CAEA172B41B8AB839123D2D71E2713B71AC6742FD2BF9BDCB6351EBC8"
+    },
+    {
+        "path":  "frontend/public/robots.txt",
+        "sha256":  "D688EBCB812A6C7FC39B6BBC7EB17ACC6573DA13FBD8C6BBA48E0AFCAB34705A"
+    },
+    {
+        "path":  "frontend/public/sitemap.xml",
+        "sha256":  "86EC8521818EF4A7B7B788014A795888E48C43B6729F4F7A007EF48B3C6A3A5D"
+    },
+    {
+        "path":  "frontend/public/videos/fondo-ganadero.webm",
+        "sha256":  "7C0C2E67286D057F86BF4951E5BAA7195C20831A978BBAC1BE096382E7EEE669"
+    },
+    {
+        "path":  "frontend/src/App.css",
+        "sha256":  "D58B7E20F46C9B71965917F501DE2334F9B31269857076A0ECB9DA74083282FB"
+    },
+    {
+        "path":  "frontend/src/App.jsx",
+        "sha256":  "B150AF3A94FBA80428D12F93EA3A16A5483CE60032B333CADAF5C0FFC7E03CEA"
+    },
+    {
+        "path":  "frontend/src/Recursos/fondo_login.webm",
+        "sha256":  "5324B1A1CB048019830D1949B39B1589F8BAAC46BDA6BFB7EF13148A8E30A5CD"
+    },
+    {
+        "path":  "frontend/src/components/Aurora.jsx",
+        "sha256":  "5E5984F21E354A26FBDA030A5875B94EDA554C4790150F580AAACD0B5C4D13D4"
+    },
+    {
+        "path":  "frontend/src/components/ads/AdvertisingSlot.css",
+        "sha256":  "BCA6609DFAED732BDF3B87A6C10DB4B42763A69FD335054F0CB09E964456D7DF"
+    },
+    {
+        "path":  "frontend/src/components/ads/AdvertisingSlot.jsx",
+        "sha256":  "08BBAF9CAFB702757716D63C7280D973C9E90B3225AC0A738C2D2959D504EAC2"
+    },
+    {
+        "path":  "frontend/src/components/billing/OnvoCheckoutModal.css",
+        "sha256":  "9A957230F5B23D46F335E6FA02C97F1B385D303F6A3A9DA1E19E5EFEBA9D8CB2"
+    },
+    {
+        "path":  "frontend/src/components/billing/OnvoCheckoutModal.jsx",
+        "sha256":  "055C0A1ADD415E81EEA526791CD136A2F32B0CCF304F3C69E3E83E1F48067DE6"
+    },
+    {
+        "path":  "frontend/src/components/billing/PlanCard.css",
+        "sha256":  "51E641C7C30300EA1C15D7DE2099EE280DD311C55FBB78844BB6B16755B5E838"
+    },
+    {
+        "path":  "frontend/src/components/billing/PlanCard.jsx",
+        "sha256":  "EE934900DD4BA3A58B61507565CB7BBAFFC564C8F951A09FC346FEA17E72C258"
+    },
+    {
+        "path":  "frontend/src/components/billing/UsageBar.css",
+        "sha256":  "C99FD875B2DAF6DD483E22DCE0A983F6C6AF492643149E46D74BACD21E90F12F"
+    },
+    {
+        "path":  "frontend/src/components/billing/UsageBar.jsx",
+        "sha256":  "7D39A9CEE52AEAB88DC0D2830C5E65E08B106E12B6EEA288B5FCFD1FD7A8D852"
+    },
+    {
+        "path":  "frontend/src/components/common/DetalleFacturaModal.jsx",
+        "sha256":  "1F01F62D49C6E06BC3CD7EFA69A025964AB0E63DE5DE954BB99BF5594980E93D"
+    },
+    {
+        "path":  "frontend/src/components/common/Modal.jsx",
+        "sha256":  "95E9387A1FC758A61DB1E126410DBEDA622D195EF253996E5069F955A6516F18"
+    },
+    {
+        "path":  "frontend/src/components/dashboard/ChatBot.css",
+        "sha256":  "E5F43CDEA78919E080F4254FED5EE30E84933D5368DD5CBF0185A71CDF91588F"
+    },
+    {
+        "path":  "frontend/src/components/dashboard/ChatBot.jsx",
+        "sha256":  "1DF7D97CCE7E7FB40432E06057127FD0A991E2A28FE5CC40AB8AD065D43F9DD1"
+    },
+    {
+        "path":  "frontend/src/components/dashboard/GastosCategoriaList.jsx",
+        "sha256":  "04448965769F92E3CCFAE90C43376E98BB7B64D47ED86B3C58DA87189F9C52C8"
+    },
+    {
+        "path":  "frontend/src/components/dashboard/ProyeccionFiscal.jsx",
+        "sha256":  "32A1DEA51F2984BFEC3178751BA88FC7061D3C7A26D1388684AF374E28BD72B7"
+    },
+    {
+        "path":  "frontend/src/components/dashboard/ResumenCards.jsx",
+        "sha256":  "1E2D60F30BC5F4AFF35D1FB638E8234DADC3844167ECD82BDB5BB899F3DAE48D"
+    },
+    {
+        "path":  "frontend/src/components/dashboard/TendenciaChart.jsx",
+        "sha256":  "5F502720853D509F3CBF8D7AFB9589DE7DEB4CE41D0D14D2D856932E51879EC5"
+    },
+    {
+        "path":  "frontend/src/components/facturacion/EmitirFacturaModal.jsx",
+        "sha256":  "8D2E1C0EBEEFEFDD76552EE896C27274DE56EFE9305AD21EDCC510F20B0B72DA"
+    },
+    {
+        "path":  "frontend/src/components/facturas/AlertasPanel.jsx",
+        "sha256":  "2098598FB4FA5D49D171620AF7B0454441D48E61000B4D5729885707F2C6695A"
+    },
+    {
+        "path":  "frontend/src/components/facturas/EmailStatus.jsx",
+        "sha256":  "A05A5C2048DD125D9A5B94D757A37C6883B4528BA4C6C2A875D7BCBE2A310003"
+    },
+    {
+        "path":  "frontend/src/components/facturas/FacturasTable.jsx",
+        "sha256":  "B9B803F2607CF9D35FBF4B3E0E52DDDDE9B3F9B81517E3B30ADD9AA16CFF1254"
+    },
+    {
+        "path":  "frontend/src/components/gastos/DesgloseGastos.jsx",
+        "sha256":  "656951557BF9D5B04ACC44A5BE3F7D5A3BBAB0E6CD0D1B5CF56647ACF9EC70FB"
+    },
+    {
+        "path":  "frontend/src/components/gastos/DetalleCategoria.jsx",
+        "sha256":  "418D78D73C5BE10391516681138587649534BE4D995B82E9154DA68FF98FE78E"
+    },
+    {
+        "path":  "frontend/src/components/gastos/DistribucionGastos.jsx",
+        "sha256":  "8978124620332262B2615AD811B113B6A21AED625E1C62F2FE36F348B6AC6F3B"
+    },
+    {
+        "path":  "frontend/src/components/hacienda/EmitirComprobanteModal.jsx",
+        "sha256":  "5D1C13D68835006B642DAE5D39A00055F63A5C303FF860214F44A6A53A4602D5"
+    },
+    {
+        "path":  "frontend/src/components/impuestos/PanelIVA.jsx",
+        "sha256":  "861C0F2581C3F8215C62306906801307FDA227F65CA659BD410ED7E8C888DEE5"
+    },
+    {
+        "path":  "frontend/src/components/impuestos/PanelRenta.jsx",
+        "sha256":  "AACBBD0E1971C13E4B43D22B0A3FC58FC6086ECB108F710ED834D08D3E824BD5"
+    },
+    {
+        "path":  "frontend/src/components/ingresos/FormularioIngreso.jsx",
+        "sha256":  "F9008F1FED67B6F80B02171B5173EC33431125DE36ADDD5C50DA94F9988C5E5A"
+    },
+    {
+        "path":  "frontend/src/components/ingresos/HistorialVentas.jsx",
+        "sha256":  "9A19A35938B55D42542D0AA2AC71ECA9372606092C46A0A6062DD33BE9BDC62B"
+    },
+    {
+        "path":  "frontend/src/components/inventario/AvesForm.jsx",
+        "sha256":  "F43693A7BB01327D0A86CBD8BC4B35AC8E8D8BD1B591E3314DDECBEB0CF9D3A5"
+    },
+    {
+        "path":  "frontend/src/components/inventario/BovinoForm.jsx",
+        "sha256":  "CA84770CA63CD97E8F50F003E786798B399676C1313CA2D7C5B37FB76CBA6E9E"
+    },
+    {
+        "path":  "frontend/src/components/inventario/ColmenaForm.jsx",
+        "sha256":  "6D4BA17DCB74634065410647114A60BBEF7F2ADAC1D5B3555261F9A648E28BF8"
+    },
+    {
+        "path":  "frontend/src/components/inventario/PecesForm.jsx",
+        "sha256":  "2A17AEF64C97563487BDE603EE8BA7A4EBC0C281FDE84B9B969262068C222190"
+    },
+    {
+        "path":  "frontend/src/components/layout/LegalLayout.jsx",
+        "sha256":  "81C230333E4D91D1464975AC47F14D8AFC5611A503D5E99594DD294D51C7FC07"
+    },
+    {
+        "path":  "frontend/src/components/layout/Sidebar.css",
+        "sha256":  "D79935D7B264ED62F88FEE33C9F0A0320A0838FB1DF27F07108A2B106628F463"
+    },
+    {
+        "path":  "frontend/src/components/layout/Sidebar.jsx",
+        "sha256":  "353D099E8090C84CE9056C071DD075F01A3613452447E122AE94FD2F1CB77A80"
+    },
+    {
+        "path":  "frontend/src/components/login/LoginForm.jsx",
+        "sha256":  "EED8B0208E7A81DC7357D0A01743F4758D4A30188720B72BA5C4C1D094CE6837"
+    },
+    {
+        "path":  "frontend/src/components/login/LoginHeader.jsx",
+        "sha256":  "AB45E6D2B9A50E1DB6F735D970791CF6DC1FD7AB8CC9C454EB1ADBDAB2E4BE94"
+    },
+    {
+        "path":  "frontend/src/components/ui/alert.jsx",
+        "sha256":  "CB4B9542D9FDEDE19467B6002F65BE40B0D60CD4A333C173CCDA455AAFC18521"
+    },
+    {
+        "path":  "frontend/src/components/ui/avatar.jsx",
+        "sha256":  "0140B305AD344B28D0EC389E43169054E050D594D898398832D4D983C77865C8"
+    },
+    {
+        "path":  "frontend/src/components/ui/badge.jsx",
+        "sha256":  "F8694BCD4DCF38F653BD4A6DEF021BC0632634EF6E8C6554C7F153F29813F642"
+    },
+    {
+        "path":  "frontend/src/components/ui/button.jsx",
+        "sha256":  "93970F231FDE9E01627EC45497773A9FC838BE7B931AE39F8A58D7D8E36CFB0E"
+    },
+    {
+        "path":  "frontend/src/components/ui/card.jsx",
+        "sha256":  "3F97AEE61CE1A7E2E6B60246DCABA8D7C9CB6DC26E811FDB852C4C6E5D4ACCBB"
+    },
+    {
+        "path":  "frontend/src/components/ui/dialog.jsx",
+        "sha256":  "D55E08BB2ED85F0C047039CB42C0ED0C74C22DA6557F763EA6DD01305C84843A"
+    },
+    {
+        "path":  "frontend/src/components/ui/index.js",
+        "sha256":  "690629B717817678BA8EAC83DE213E7402A223332E60B0A521CBDD8627410706"
+    },
+    {
+        "path":  "frontend/src/components/ui/input.jsx",
+        "sha256":  "6DB30AB7A34D3DFBBB186751E77630311083EF8877B221C5E43DC9681BBFC3CB"
+    },
+    {
+        "path":  "frontend/src/components/ui/label.jsx",
+        "sha256":  "AEC59F14EA4D751BF327B4FF3A59B96A8F604D79BAE1806950186B54047DDA4F"
+    },
+    {
+        "path":  "frontend/src/components/ui/progress.jsx",
+        "sha256":  "FAE62D49AAA2EB4D2B778B9A78356B0629B9E404C004096583F52CE905C2D669"
+    },
+    {
+        "path":  "frontend/src/components/ui/select.jsx",
+        "sha256":  "B129146C394A691E846EEFCCEF9B698D421156CD6E2604FC7CC15EAC5551E4E7"
+    },
+    {
+        "path":  "frontend/src/components/ui/skeleton.jsx",
+        "sha256":  "2B785A2EE81EBD687960EE8C5A45EFF7B8C23BADC099D8B697441449BB65217D"
+    },
+    {
+        "path":  "frontend/src/components/ui/switch.jsx",
+        "sha256":  "A4B1A3A98500AC24DAA4D5CAF02149FD1AEB6ED23347591CBBEB2F078A161104"
+    },
+    {
+        "path":  "frontend/src/components/ui/table.jsx",
+        "sha256":  "3353B69B26CCB469811E92F5334C489018A125203E558235591BBCA6AACD56F8"
+    },
+    {
+        "path":  "frontend/src/components/ui/tabs.jsx",
+        "sha256":  "B199399D30715F09D736430F9AF08746B57C7A266638CFE02D8330DDB6FD1214"
+    },
+    {
+        "path":  "frontend/src/context/AuthContext.jsx",
+        "sha256":  "EFF61F2D43833852E2108368B69417415D38322CF5641F42BD2A727124AB211A"
+    },
+    {
+        "path":  "frontend/src/data/planes.js",
+        "sha256":  "7755444E75A6A224D2DF9DB1DA0735728A3419E7FF22684583ADFD637984BEDC"
+    },
+    {
+        "path":  "frontend/src/hooks/useReveal.js",
+        "sha256":  "9C3A14135C834DC723BE4CE6BC1870E8C6DA979E44527BD07D72D07C2631AAD3"
+    },
+    {
+        "path":  "frontend/src/hooks/useSeo.js",
+        "sha256":  "66CC1806FD3764981E22530F745E881C9ABD73993DF8AD9D730F54A6C66CD691"
+    },
+    {
+        "path":  "frontend/src/index.css",
+        "sha256":  "2407564DA1274FF14564A551917A74D954B1D395E73C4F2362284ADCBA8ACED9"
+    },
+    {
+        "path":  "frontend/src/lib/utils.js",
+        "sha256":  "10A09C89BF1CC01FCF2066F3976EA42D20E5E5F874D2C2FE07E38FEADEF0E180"
+    },
+    {
+        "path":  "frontend/src/main.jsx",
+        "sha256":  "3607EB5A2D586C74985C7A9A5673B0AE0969575E2D05009217BCD291D0C5CE18"
+    },
+    {
+        "path":  "frontend/src/pages/BillingPage.css",
+        "sha256":  "B3A839EB48B19735FAC339601515F8F74620808C2FD782E8AB644D5DDA25830E"
+    },
+    {
+        "path":  "frontend/src/pages/BillingPage.jsx",
+        "sha256":  "58C2ADEB2FFA243C3344EBC2BCA74BCE98BA625CCF3902509081172B39242B6C"
+    },
+    {
+        "path":  "frontend/src/pages/CalendarioPage.css",
+        "sha256":  "E8960C088C02B8178EEAF0BE313A9E50D7DCFDB018596756EF51052F114F5C91"
+    },
+    {
+        "path":  "frontend/src/pages/CalendarioPage.jsx",
+        "sha256":  "44C6E2C53203D89BBD33E92314F5C739B44FEB405F4BE2130A89437F3325144B"
+    },
+    {
+        "path":  "frontend/src/pages/CondicionesServicioPage.jsx",
+        "sha256":  "AE3FB8D4BE9EAF14829B7A85FA7305647DF0E1246698CB199E025FB7A49A10E0"
+    },
+    {
+        "path":  "frontend/src/pages/CostosPage.css",
+        "sha256":  "485B2DF979680197899CB1521BF140753EE910362EB5D4771FD22D213B10D0F7"
+    },
+    {
+        "path":  "frontend/src/pages/CostosPage.jsx",
+        "sha256":  "6BACA17C65D444BF7048478F17E913273A52F51905166DBE7C76624DFBC4C122"
+    },
+    {
+        "path":  "frontend/src/pages/D150Page.css",
+        "sha256":  "58F6FCAACF5B23496CB3EE2410D7752F21C5939B83D575E2D2EBDDD55EABE39A"
+    },
+    {
+        "path":  "frontend/src/pages/D150Page.jsx",
+        "sha256":  "3A5639650DE19FA29D4E10971951B17F4E3EC9F2B68AAAFB2B006F1A963790BF"
+    },
+    {
+        "path":  "frontend/src/pages/DashboardPage.css",
+        "sha256":  "B832590A05036BC9B70CD5C9DF7EA40088681708481FD71F78B2E15BEEB87CF5"
+    },
+    {
+        "path":  "frontend/src/pages/DashboardPage.jsx",
+        "sha256":  "D9DC9BC1CD52FE858D83EBEE61791381F5E4461BDFBFC6B62AFE0B552ABF2593"
+    },
+    {
+        "path":  "frontend/src/pages/DeclaracionesPage.css",
+        "sha256":  "89CA2C618832A198065AAADD1E580EA92191667312EFDE548A902D9ED6FB25EF"
+    },
+    {
+        "path":  "frontend/src/pages/DeclaracionesPage.jsx",
+        "sha256":  "AD3E28BCD7506A41C7B3BF27D076CA1DC73EDA425656A540F6FE7238187A6B4D"
+    },
+    {
+        "path":  "frontend/src/pages/EliminacionDatosPage.jsx",
+        "sha256":  "7D5FE3BF40DFDE7F48837A76C47FB6E8BD5FDBC1733C9716B484F022408E1F51"
+    },
+    {
+        "path":  "frontend/src/pages/FacturacionPage.css",
+        "sha256":  "5D81CDEF6A93D31D0CB3652D4D3AC4D3356ABC966AD4873E5EE6DEA3B75B269C"
+    },
+    {
+        "path":  "frontend/src/pages/FacturacionPage.jsx",
+        "sha256":  "4C37765021467A04CD732CFE428822FB7B7A4212FF33382DB0EC3FC5706AB202"
+    },
+    {
+        "path":  "frontend/src/pages/FacturasPage.css",
+        "sha256":  "63B453C0D38DADFE5ABA90F59EF5AB849D6722C3489C2AEDD67EB629C7127501"
+    },
+    {
+        "path":  "frontend/src/pages/FacturasPage.jsx",
+        "sha256":  "3AC1DC6490477134472702A82BAE7429C53ABDBA42280B0571BD04D59161FF10"
+    },
+    {
+        "path":  "frontend/src/pages/GastosPage.css",
+        "sha256":  "1F3B39BC28BA543448DBC3571B8FA6B7FC09081C04AEA0B157C007198126A0ED"
+    },
+    {
+        "path":  "frontend/src/pages/GastosPage.jsx",
+        "sha256":  "55E19CAE056206DFC04E1EDB111CF6DC34E9CA3D2D308E99B5ECB220CC97FAB2"
+    },
+    {
+        "path":  "frontend/src/pages/HaciendaPage.css",
+        "sha256":  "ADBFB169F9649532A431B0C2A4410B18A05A55348B5A5814D6E52E31CA6D15AE"
+    },
+    {
+        "path":  "frontend/src/pages/HaciendaPage.jsx",
+        "sha256":  "D4A6D68C7407BFE8BC5FD97C2FFDF5717E1393DF2A0B3F4921FDA00520CFE67D"
+    },
+    {
+        "path":  "frontend/src/pages/ImpuestosPage.css",
+        "sha256":  "0C0C926BD8784EC39C8264D15D4B0B806E61A4143E304BE7DB82FDADE876B047"
+    },
+    {
+        "path":  "frontend/src/pages/ImpuestosPage.jsx",
+        "sha256":  "10761F198530DF09D31236A922053A17CBDBE59F5E153C7885D66E1EB03A01B2"
+    },
+    {
+        "path":  "frontend/src/pages/IngresosPage.css",
+        "sha256":  "CD497F3FAA1AAC669C882521EF00FD1516BF0FCE9F8EE4C077C21D3467009100"
+    },
+    {
+        "path":  "frontend/src/pages/IngresosPage.jsx",
+        "sha256":  "A5F044F7D8CA0BEE28A6EB5E884341451775A4E8B2E35A445A5FE38D66AB9B41"
+    },
+    {
+        "path":  "frontend/src/pages/InventarioPage.css",
+        "sha256":  "476CC9A62B95703CAC776E55EA47851B10DE92C339636B8010628D7A6C5DC431"
+    },
+    {
+        "path":  "frontend/src/pages/InventarioPage.jsx",
+        "sha256":  "291A4BD4D61DFAAE7CBDF5B3C390D7AF000530871B7431FEF5C3C73693A91950"
+    },
+    {
+        "path":  "frontend/src/pages/LandingPage.css",
+        "sha256":  "4CDDFAB720DE5D2217AA398D0A4F562BD31F8EA15C335DB125E534F34267F0FC"
+    },
+    {
+        "path":  "frontend/src/pages/LandingPage.jsx",
+        "sha256":  "6BBD2C825CD51A4CC3601D872F4F9AE12BAF618151A3D223AFA03C3268DA6B2F"
+    },
+    {
+        "path":  "frontend/src/pages/LegalPages.css",
+        "sha256":  "0A207486CE513B623DF95F175F3AD30D89017F5E6F6F15CEF7D8A88DB825360B"
+    },
+    {
+        "path":  "frontend/src/pages/LoginPage.css",
+        "sha256":  "07E1AEFED8E6108A4168A209223683379BFC3BAE4C21940D16B35E5E26D623C6"
+    },
+    {
+        "path":  "frontend/src/pages/LoginPage.jsx",
+        "sha256":  "282745601C3381879DD67D7EAA58E283D7BD429310DD1A08DE7D0832228DF557"
+    },
+    {
+        "path":  "frontend/src/pages/PerfilPage.css",
+        "sha256":  "0F410A07DFB996DF23947798FBC50C61E68E8A2BECAA046A6755DE4E9A37A3B4"
+    },
+    {
+        "path":  "frontend/src/pages/PerfilPage.jsx",
+        "sha256":  "56DDBAB7DD59C086C74526470094C1386E87C67041A86A28DC3D698973C8AA9F"
+    },
+    {
+        "path":  "frontend/src/pages/PlanesPage.css",
+        "sha256":  "A731A521FD3A8A057A533E1BA7BFB7F86F13D4F73635F9BD09F707BE364B8BD3"
+    },
+    {
+        "path":  "frontend/src/pages/PlanesPage.jsx",
+        "sha256":  "1002DC121AB701CF9AFA40A4A80CEB61BB31F1E9F2F3381A97CEF35EADF60B60"
+    },
+    {
+        "path":  "frontend/src/pages/PoliticaPrivacidadPage.jsx",
+        "sha256":  "B00D49975326E3D6191BE7B7DAD1D757519838BD508861A0D4F157E9D98E7049"
+    },
+    {
+        "path":  "frontend/src/pages/TerminosCondicionesPage.jsx",
+        "sha256":  "97385533BCF82A7C7768C259F82F0E5E55E2B36EA8497644ACCB8D84DBE896F1"
+    },
+    {
+        "path":  "frontend/src/pages/admin/AdminDashboardPage.jsx",
+        "sha256":  "7538B5368908C032C7EE7A4A4E403538A4DBBA08AB67013561DB79AB97283890"
+    },
+    {
+        "path":  "frontend/src/pages/admin/AdminMonitoreoPage.jsx",
+        "sha256":  "BBB1A3D6934F776D2B7CA5A4CC942B9F661A19D7A622EEB4C3B6485CB4AB77B0"
+    },
+    {
+        "path":  "frontend/src/pages/admin/AdminTenantsPage.jsx",
+        "sha256":  "7820B90DBC7D4C9CC21E96D9FC8F1E4A0EB73C5C2302DC4E356D3F34A97CDD92"
+    },
+    {
+        "path":  "frontend/src/pages/admin/AdminUsuariosPage.jsx",
+        "sha256":  "FA0C816248D0907EEAD83FB8513CF1A8F5D2346BD0FB67A2F8FDF7B994F43A64"
+    },
+    {
+        "path":  "frontend/src/pages/admin/admin.css",
+        "sha256":  "071944DB16DB83152BC0FF7A263214DD42FF2A13670CD0760E388F06916AA2B0"
+    },
+    {
+        "path":  "frontend/src/services/adminApi.js",
+        "sha256":  "19772199CBE9EDC317562EB1B6BD0E7B124D84C220AA6890D19296D60F575112"
+    },
+    {
+        "path":  "frontend/src/services/api.js",
+        "sha256":  "2B8261AF212592BBAAD4FC61427CE96B3B77B9EA9ABBFD99E67380E3127D78D4"
+    },
+    {
+        "path":  "frontend/src/services/apiUrl.js",
+        "sha256":  "9053270636981E458337BCD2523C0C581D64FDCF2FA3188DD554AC6972F299E9"
+    },
+    {
+        "path":  "frontend/src/utils/adminHelper.js",
+        "sha256":  "1BBDA4C2AB3C13F8874973C04DFAC6BC9003AE45A6DCEE2B9BB45EA197797BE2"
+    },
+    {
+        "path":  "frontend/tailwind.config.js",
+        "sha256":  "715FFC4E99C1933BF2A125E947101FB6863BD40D5B9D036704982CD5BEA6B124"
+    },
+    {
+        "path":  "frontend/tests/apiUrl.test.js",
+        "sha256":  "193D9F7D5B93AA641C9AAB0F811C520CC6AF06B064491DCA8ED74DABC5CC6930"
+    },
+    {
+        "path":  "frontend/tests/cloudflareDeploy.test.js",
+        "sha256":  "15A6F0DCAE93481C6C1604C95F3304DC89F5632B0E4BCD973DDD68E408F8D534"
+    },
+    {
+        "path":  "frontend/vite.config.js",
+        "sha256":  "5458C927C992B8CB32E6B290D45F08E5DFD7395E2A8B4892CAC74CE9CE179E98"
+    },
+    {
+        "path":  "frontend/wrangler.jsonc",
+        "sha256":  "56F7C6EB4233DA3B3BA63118E6D4E37417A0A2B39860644F8A85E048D515CF6B"
+    },
+    {
+        "path":  "package.json",
+        "sha256":  "A17510453E2AB1454A440EEA79C21657D83A81C3E30D7B3545FCA6344D3375B0"
+    }
+]

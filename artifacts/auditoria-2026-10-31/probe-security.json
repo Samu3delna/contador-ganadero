@@ -1,0 +1,92 @@
+[
+  {
+    "name": "peon_delete_owner_factura",
+    "actual": {
+      "http": 200,
+      "deleted": true
+    }
+  },
+  {
+    "name": "auth_audit_persistence",
+    "actual": {
+      "successfulLogin": 200,
+      "persistedAuthEvents": 0
+    }
+  },
+  {
+    "name": "admin_suspension_partial_failure",
+    "actual": {
+      "error": null,
+      "persistedSuspension": true
+    }
+  },
+  {
+    "name": "google_login_bypasses_enabled_mfa",
+    "actual": {
+      "mfaEnabled": true,
+      "issuedRefreshCookie": true,
+      "redirect": "http://localhost:5173/dashboard"
+    }
+  },
+  {
+    "name": "mfa_setup_disables_existing_mfa",
+    "actual": {
+      "http": 200,
+      "enabled": false,
+      "returnsNewSecret": true
+    }
+  },
+  {
+    "name": "parallel_refresh_same_cookie",
+    "actual": {
+      "statuses": [
+        200,
+        200
+      ],
+      "activeTokens": 3
+    }
+  },
+  {
+    "name": "onvo_retry_after_processing_failure",
+    "actual": {
+      "first": 500,
+      "retry": {
+        "received": true,
+        "duplicate": true
+      },
+      "linkedSubscription": null
+    }
+  },
+  {
+    "name": "cancel_pro_blocks_free_account",
+    "actual": {
+      "plan": "free",
+      "estado": "cancelado",
+      "profileHttp": 402,
+      "error": "SUSCRIPCION_CANCELADA"
+    }
+  },
+  {
+    "name": "expired_periods",
+    "actual": {
+      "expiredGraceActive": true,
+      "freeOldMonthHasCredit": false,
+      "period": "2020-01"
+    }
+  },
+  {
+    "name": "nonexistent_deletion_status",
+    "actual": {
+      "http": 200,
+      "found": true,
+      "status": "completada"
+    }
+  },
+  {
+    "name": "deletion_failure_reported_completed",
+    "actual": {
+      "status": "completada",
+      "userStillExists": true
+    }
+  }
+]

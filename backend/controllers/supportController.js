@@ -1,7 +1,10 @@
 const crypto = require('crypto');
+const mongoose = require('mongoose');
+const TicketSoporte = require('../models/TicketSoporte');
 
 /**
  * @desc    Enviar formulario de contacto/soporte a los super admins
+ *          y persistirlo como ticket de soporte (visible en el panel admin)
  * @route   POST /api/support/contact
  * @access  Público (con rate limiting)
  */
@@ -34,6 +37,35 @@ const enviarContactoSoporte = async (req, res, next) => {
       });
     }
 
+    const userAgent = req.get('User-Agent') || 'Desconocido';
+    const ip = req.ip || req.connection?.remoteAddress || 'Desconocida';
+
+    // === 1) Persistencia: el ticket se guarda SIEMPRE, aunque falle el envío del email ===
+    let ticket = null;
+    try {
+      const datosTicket = {
+        nombre,
+        email: email.trim().toLowerCase(),
+        asunto,
+        mensajes: [
+          {
+            autor: 'usuario',
+            texto: mensaje,
+            emailEnviado: false,
+          },
+        ],
+        ip,
+        userAgent,
+      };
+      // tenantId opcional proveniente del formulario público (solo si es un ObjectId válido)
+      if (tenantId && mongoose.Types.ObjectId.isValid(tenantId)) {
+        datosTicket.tenantId = tenantId;
+      }
+      ticket = await TicketSoporte.create(datosTicket);
+    } catch (errTicket) {
+      console.error('❌ Error guardando el ticket de soporte:', errTicket.message);
+    }
+
     // Obtener emails de super admins desde variable de entorno
     const superAdminEmailsRaw = process.env.SUPER_ADMIN_EMAILS || '';
     const superAdminEmails = superAdminEmailsRaw
@@ -41,21 +73,10 @@ const enviarContactoSoporte = async (req, res, next) => {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
-    if (superAdminEmails.length === 0) {
-      console.warn('⚠️ SUPER_ADMIN_EMAILS no configurado, no se puede enviar email de soporte');
-      return res.status(503).json({
-        error: 'SOPORTE_NO_CONFIGURADO',
-        mensaje: 'El servicio de soporte no está disponible temporalmente',
-      });
-    }
-
     // Preparar el contenido del email
     const tenantInfo = tenantId
       ? `\n\n--- Información del Tenant ---\nTenant ID: ${tenantId}`
       : '';
-
-    const userAgent = req.get('User-Agent') || 'Desconocido';
-    const ip = req.ip || req.connection?.remoteAddress || 'Desconocida';
 
     const textoPlano = `
 Nuevo mensaje de soporte desde ContadorGanadero
@@ -133,28 +154,44 @@ Fecha: ${new Date().toISOString()}
 </html>
     `.trim();
 
-    // Enviar email via Cloudflare Email Sending REST API
-    const resultado = await enviarEmailCloudflare({
-      to: superAdminEmails,
-      subject: `[Soporte] ${asunto}`,
-      text: textoPlano,
-      html: html,
-      replyTo: email,
-    });
-
-    if (!resultado.success) {
-      console.error('❌ Error enviando email de soporte:', resultado.error);
-      return res.status(500).json({
-        error: 'ERROR_ENVIO_EMAIL',
-        mensaje: 'No se pudo enviar el mensaje de soporte. Inténtalo más tarde.',
+    // === 2) Notificación por email a los super admins (mejor esfuerzo) ===
+    let resultado = { success: false, error: 'SUPER_ADMIN_EMAILS no configurado' };
+    if (superAdminEmails.length === 0) {
+      console.warn('⚠️ SUPER_ADMIN_EMAILS no configurado; el ticket quedó registrado sin notificación por email');
+    } else {
+      // Enviar email via Cloudflare Email Sending REST API
+      resultado = await enviarEmailCloudflare({
+        to: superAdminEmails,
+        subject: `[Soporte] ${asunto}`,
+        text: textoPlano,
+        html: html,
+        replyTo: email,
       });
+
+      if (resultado.success) {
+        console.log('✅ Email de soporte enviado a super admins:', superAdminEmails.join(', '));
+      } else {
+        console.error('❌ Error enviando email de soporte:', resultado.error);
+      }
     }
 
-    console.log('✅ Email de soporte enviado a super admins:', superAdminEmails.join(', '));
+    // === 3) Registrar el resultado del envío en el primer mensaje del ticket ===
+    if (ticket) {
+      try {
+        ticket.mensajes[0].emailEnviado = Boolean(resultado.success);
+        ticket.mensajes[0].errorEnvio = resultado.success
+          ? null
+          : String(resultado.error || 'Error desconocido').slice(0, 500);
+        await ticket.save();
+      } catch (errEstado) {
+        console.error('❌ Error actualizando estado de envío del ticket:', errEstado.message);
+      }
+    }
 
     res.json({
       ok: true,
-      mensaje: 'Tu mensaje ha sido enviado correctamente. Nuestro equipo de soporte te responderá pronto.',
+      mensaje: 'Tu mensaje ha sido recibido correctamente. Nuestro equipo de soporte te responderá pronto.',
+      ticketId: ticket?._id,
     });
   } catch (error) {
     next(error);

@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User, Shield, Users, Building, Activity } from 'lucide-react';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User, Shield, Users, Building, Activity, LifeBuoy } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { esAdministrador } from '../../utils/adminHelper';
@@ -58,6 +58,7 @@ const SECCION_ADMIN = {
     { path: '/admin/usuarios', label: 'Usuarios', icon: Users },
     { path: '/admin/tenants', label: 'Tenants & Planes', icon: Building },
     { path: '/admin/monitoreo', label: 'Monitoreo', icon: Activity },
+    { path: '/admin/soporte', label: 'Soporte', icon: LifeBuoy },
   ]
 };
 

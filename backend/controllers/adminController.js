@@ -7,12 +7,16 @@ const Ingreso = require('../models/Ingreso');
 const SubscriptionEvent = require('../models/SubscriptionEvent');
 const ChatFeedback = require('../models/ChatFeedback');
 const RefreshToken = require('../models/RefreshToken');
+const TicketSoporte = require('../models/TicketSoporte');
 const { CATALOGO_PLANES, PLANES_VALIDOS } = require('../config/planes');
 const { escapeRegex } = require('../utils/escapeRegex');
 const { audit } = require('../utils/audit');
-const logger = require('../utils/logger');
+const { logger } = require('../utils/logger');
+const { enviarEmailCloudflare } = require('./supportController');
 
 const ESTADOS_TENANT_VALIDOS = ['activo', 'suspendido', 'periodo_gracia', 'cancelado'];
+const ESTADOS_TICKET_VALIDOS = ['abierto', 'en_progreso', 'resuelto', 'cerrado'];
+const PRIORIDADES_TICKET_VALIDAS = ['baja', 'media', 'alta'];
 
 /**
  * Helper: parseo seguro de paginación
@@ -635,6 +639,272 @@ const monitoreoSalud = async (req, res, next) => {
   }
 };
 
+// ============================================================
+// === Soporte: bandeja de tickets (formularios de contacto) ===
+// ============================================================
+
+/**
+ * Escapa HTML para prevenir XSS en las plantillas de email
+ */
+function escapeHtml(text) {
+  const map = {
+    '&': '&',
+    '<': '<',
+    '>': '>',
+    '"': '"',
+    "'": '&#039;',
+  };
+  return String(text ?? '').replace(/[&<>"']/g, (m) => map[m]);
+}
+
+/**
+ * @desc    Listar tickets de soporte (búsqueda + filtros + paginación + resumen)
+ * @route   GET /api/admin/soporte/tickets?q=&estado=&prioridad=&page=&limit=
+ * @access  Super Admin
+ */
+const listarTicketsSoporte = async (req, res, next) => {
+  try {
+    const { page, limit, skip } = paginacion(req);
+    const q = (req.query.q || '').trim();
+
+    const filtro = {};
+    if (q) {
+      const rx = new RegExp(escapeRegex(q, 50), 'i');
+      filtro.$or = [{ asunto: rx }, { email: rx }, { nombre: rx }];
+    }
+    if (req.query.estado && ESTADOS_TICKET_VALIDOS.includes(String(req.query.estado))) {
+      filtro.estado = String(req.query.estado);
+    }
+    if (req.query.prioridad && PRIORIDADES_TICKET_VALIDAS.includes(String(req.query.prioridad))) {
+      filtro.prioridad = String(req.query.prioridad);
+    }
+
+    const [tickets, total, resumenPorEstado] = await Promise.all([
+      TicketSoporte.find(filtro, null, { skipTenant: true })
+        .populate('tenantId', 'nombreFinca plan estado')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      TicketSoporte.countDocuments(filtro, { skipTenant: true }),
+      TicketSoporte.aggregate(
+        [{ $group: { _id: '$estado', total: { $sum: 1 } } }],
+        { skipTenant: true }
+      ),
+    ]);
+
+    res.json({
+      tickets,
+      total,
+      page,
+      paginas: Math.ceil(total / limit),
+      resumen: resumenPorEstado.reduce((acc, { _id, total: n }) => ({ ...acc, [_id]: n }), {}),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Detalle de un ticket de soporte (hilo completo)
+ * @route   GET /api/admin/soporte/tickets/:id
+ * @access  Super Admin
+ */
+const obtenerTicketSoporte = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'ID_INVALIDO', mensaje: 'Identificador de ticket inválido' });
+    }
+
+    const ticket = await TicketSoporte.findById(id, null, { skipTenant: true })
+      .populate('tenantId', 'nombreFinca plan estado');
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'TICKET_NO_ENCONTRADO', mensaje: 'El ticket de soporte no existe' });
+    }
+
+    res.json({ ticket });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Actualizar estado y/o prioridad de un ticket de soporte
+ * @route   PUT /api/admin/soporte/tickets/:id  { estado, prioridad }
+ * @access  Super Admin
+ */
+const actualizarTicketSoporte = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'ID_INVALIDO', mensaje: 'Identificador de ticket inválido' });
+    }
+
+    const { estado, prioridad } = req.body || {};
+    const cambios = {};
+
+    if (estado !== undefined && estado !== null && estado !== '') {
+      if (!ESTADOS_TICKET_VALIDOS.includes(estado)) {
+        return res.status(400).json({
+          error: 'ESTADO_INVALIDO',
+          mensaje: `Estado inválido. Válidos: ${ESTADOS_TICKET_VALIDOS.join(', ')}`,
+        });
+      }
+      cambios.estado = estado;
+    }
+
+    if (prioridad !== undefined && prioridad !== null && prioridad !== '') {
+      if (!PRIORIDADES_TICKET_VALIDAS.includes(prioridad)) {
+        return res.status(400).json({
+          error: 'PRIORIDAD_INVALIDA',
+          mensaje: `Prioridad inválida. Válidas: ${PRIORIDADES_TICKET_VALIDAS.join(', ')}`,
+        });
+      }
+      cambios.prioridad = prioridad;
+    }
+
+    if (Object.keys(cambios).length === 0) {
+      return res.status(400).json({ error: 'SIN_CAMBIOS', mensaje: 'Indica estado y/o prioridad a actualizar' });
+    }
+
+    const ticket = await TicketSoporte.findOneAndUpdate(
+      { _id: id },
+      { $set: cambios },
+      { new: true, runValidators: true, skipTenant: true }
+    ).populate('tenantId', 'nombreFinca plan estado');
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'TICKET_NO_ENCONTRADO', mensaje: 'El ticket de soporte no existe' });
+    }
+
+    await audit(req, {
+      accion: 'admin.soporte_actualizar_ticket',
+      recurso: 'TicketSoporte',
+      recursoId: ticket._id,
+      resultado: 'success',
+      metadata: cambios,
+    });
+
+    res.json({ ticket });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Responder un ticket de soporte: registra la respuesta en el hilo
+ *          y envía el email al remitente (mejor esfuerzo)
+ * @route   POST /api/admin/soporte/tickets/:id/responder  { mensaje }
+ * @access  Super Admin
+ */
+const responderTicketSoporte = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'ID_INVALIDO', mensaje: 'Identificador de ticket inválido' });
+    }
+
+    const texto = ((req.body && req.body.mensaje) || '').trim();
+    if (!texto) {
+      return res.status(400).json({ error: 'MENSAJE_REQUERIDO', mensaje: 'Debes escribir la respuesta a enviar' });
+    }
+    if (texto.length > 5000) {
+      return res.status(400).json({
+        error: 'DATOS_DEMASIADO_LARGOS',
+        mensaje: 'La respuesta excede la longitud máxima permitida (5000 caracteres)',
+      });
+    }
+
+    const ticket = await TicketSoporte.findById(id, null, { skipTenant: true });
+    if (!ticket) {
+      return res.status(404).json({ error: 'TICKET_NO_ENCONTRADO', mensaje: 'El ticket de soporte no existe' });
+    }
+
+    const nombreSoporte = req.usuario?.nombre || 'Equipo de Soporte';
+
+    const textoPlano = `
+Respuesta del equipo de soporte de ContadorGanadero
+
+Ticket: ${ticket.asunto}
+Respondido por: ${nombreSoporte}
+
+--- Respuesta ---
+${texto}
+    `.trim();
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #1e40af; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .content { background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; }
+    .message-box { background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; white-space: pre-wrap; }
+    .footer { background: #1e40af; color: white; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 style="margin: 0; font-size: 20px;">💬 Respuesta de Soporte</h1>
+    <p style="margin: 8px 0 0; opacity: 0.9;">ContadorGanadero</p>
+  </div>
+  <div class="content">
+    <p>Ticket: <strong>${escapeHtml(ticket.asunto)}</strong></p>
+    <div class="message-box">${escapeHtml(texto)}</div>
+  </div>
+  <div class="footer">
+    ${escapeHtml(nombreSoporte)} — Equipo de Soporte de ContadorGanadero
+  </div>
+</body>
+</html>
+    `.trim();
+
+    // Enviar email al remitente (mejor esfuerzo: la respuesta queda registrada igual)
+    const resultado = await enviarEmailCloudflare({
+      to: [ticket.email],
+      subject: `[Soporte] ${ticket.asunto}`,
+      text: textoPlano,
+      html: html,
+      replyTo: process.env.CLOUDFLARE_EMAIL_FROM || 'soporte@contadorganandero.com',
+    });
+
+    const emailEnviado = Boolean(resultado.success);
+    if (!emailEnviado) {
+      console.error('❌ Error enviando respuesta de soporte:', resultado.error);
+    }
+
+    ticket.mensajes.push({
+      autor: 'soporte',
+      autorNombre: nombreSoporte,
+      texto,
+      fecha: new Date(),
+      emailEnviado,
+      errorEnvio: emailEnviado ? null : String(resultado.error || 'Error desconocido').slice(0, 500),
+    });
+
+    // Al responder, un ticket abierto pasa a estar en progreso
+    if (ticket.estado === 'abierto') {
+      ticket.estado = 'en_progreso';
+    }
+
+    // Evita que el plugin de tenant sobrescriba el tenantId del ticket
+    ticket.$locals.skipTenant = true;
+    await ticket.save();
+
+    res.json({
+      ok: true,
+      ticket,
+      emailEnviado,
+      ...(emailEnviado ? {} : { mensaje: 'La respuesta quedó registrada en el hilo, pero no se pudo enviar el email al remitente' }),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   obtenerResumen,
   listarUsuarios,
@@ -652,4 +922,8 @@ module.exports = {
   monitoreoChatFeedback,
   monitoreoEmail,
   monitoreoSalud,
+  listarTicketsSoporte,
+  obtenerTicketSoporte,
+  actualizarTicketSoporte,
+  responderTicketSoporte,
 };

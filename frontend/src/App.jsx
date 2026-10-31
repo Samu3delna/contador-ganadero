@@ -35,6 +35,7 @@ const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage')
 const AdminUsuariosPage = lazy(() => import('./pages/admin/AdminUsuariosPage'));
 const AdminTenantsPage = lazy(() => import('./pages/admin/AdminTenantsPage'));
 const AdminMonitoreoPage = lazy(() => import('./pages/admin/AdminMonitoreoPage'));
+const AdminSoportePage = lazy(() => import('./pages/admin/AdminSoportePage'));
 
 function PageLoader() {
   return <div className="loader-center"><div className="loader" /></div>;
@@ -86,6 +87,7 @@ function AppLayout() {
             <Route path="/admin/usuarios" element={<RutaAdmin><AdminUsuariosPage /></RutaAdmin>} />
             <Route path="/admin/tenants" element={<RutaAdmin><AdminTenantsPage /></RutaAdmin>} />
             <Route path="/admin/monitoreo" element={<RutaAdmin><AdminMonitoreoPage /></RutaAdmin>} />
+            <Route path="/admin/soporte" element={<RutaAdmin><AdminSoportePage /></RutaAdmin>} />
 
             <Route path="*" element={<Navigate to={esAdmin ? "/admin" : "/dashboard"} replace />} />
           </Routes>

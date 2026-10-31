@@ -20,6 +20,10 @@ const {
   monitoreoChatFeedback,
   monitoreoEmail,
   monitoreoSalud,
+  listarTicketsSoporte,
+  obtenerTicketSoporte,
+  actualizarTicketSoporte,
+  responderTicketSoporte,
 } = require('../controllers/adminController');
 
 // Todas las rutas de admin requieren autenticación + super admin
@@ -48,5 +52,11 @@ router.get('/monitoreo/eventos-onvo', monitoreoEventosOnvo);
 router.get('/monitoreo/chat-feedback', monitoreoChatFeedback);
 router.get('/monitoreo/email', monitoreoEmail);
 router.get('/monitoreo/salud', monitoreoSalud);
+
+// === Soporte: bandeja de tickets ===
+router.get('/soporte/tickets', listarTicketsSoporte);
+router.get('/soporte/tickets/:id', obtenerTicketSoporte);
+router.put('/soporte/tickets/:id', actualizarTicketSoporte);
+router.post('/soporte/tickets/:id/responder', responderTicketSoporte);
 
 module.exports = router;

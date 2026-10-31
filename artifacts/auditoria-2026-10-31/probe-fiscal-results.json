@@ -1,0 +1,161 @@
+{
+  "tenantCredentials": {
+    "configured": true,
+    "pin": null,
+    "password": null,
+    "rootMethod": "undefined",
+    "nestedMethod": "function"
+  },
+  "p12": {
+    "error": "bag.bags is not iterable"
+  },
+  "signature": {
+    "hasSignature": true,
+    "hasSignedProperties": false,
+    "hasSignaturePolicy": false
+  },
+  "poll": {
+    "estado": "procesando",
+    "detalle": null,
+    "fecha": "2026-10-31T12:00:00.000Z",
+    "raw": {
+      "ind-estado": "aceptado",
+      "respuesta-xml": "PHgvPg==",
+      "fecha": "2026-10-31T12:00:00Z"
+    }
+  },
+  "emission": {
+    "line": {
+      "numeroLinea": 1,
+      "codigo": "0212010100100",
+      "descripcion": "Synthetic",
+      "cantidad": 1,
+      "unidadMedida": "kg",
+      "precioUnitario": 1000,
+      "subtotal": 1000,
+      "descuento": {
+        "monto": 100
+      },
+      "impuesto": {
+        "tarifa": 13,
+        "codigo": "01",
+        "codigoTarifa": "02",
+        "monto": 10,
+        "factorIVA": 0.01,
+        "exoneracion": {
+          "montoExoneracion": 0,
+          "porcentajeExoneracion": 0
+        }
+      },
+      "impuestoNeto": 10,
+      "montoTotal": 910
+    },
+    "summary": {
+      "totalServGravados": 0,
+      "totalServExentos": 0,
+      "totalMercanciasGravadas": 1000,
+      "totalMercanciasExentas": 0,
+      "totalGravado": 1000,
+      "totalExento": 0,
+      "totalVenta": 1000,
+      "totalDescuentos": 100,
+      "totalVentaNeta": 900,
+      "totalImpuesto": 10,
+      "totalComprobante": 910
+    },
+    "persistedProvince": null,
+    "persistedActivity": null
+  },
+  "teWithoutReceiver": [
+    "receptor.cedula.numero",
+    "receptor.nombre"
+  ],
+  "milkEdit": {
+    "litros": 20,
+    "subtotal": 1000,
+    "expectedSubtotal": 2000
+  },
+  "taxCreditNoteUSD": {
+    "cuatrimestre": 1,
+    "periodoFiscal": 2026,
+    "ivaCobrado": 0,
+    "ivaPagado": 13,
+    "ivaResultante": -13,
+    "detalleIVAPorTasa": [
+      {
+        "tasa": 13,
+        "basePagada": 100,
+        "ivaPagado": 13,
+        "baseCobrada": 0,
+        "ivaCobrado": 0
+      }
+    ],
+    "totalIngresos": 0,
+    "totalGastos": 113,
+    "totalFacturas": 1,
+    "totalRegistrosIngresos": 0,
+    "aPagar": false,
+    "creditoFiscal": true
+  },
+  "d150CreditNoteUSD": {
+    "ventasGravadasBase": 0,
+    "ventasIVADebito": 0,
+    "ventasExentas": 0,
+    "comprasGravadasBase": 100,
+    "comprasIVACredito": 13,
+    "comprasExentas": 0
+  },
+  "aiFallback": {
+    "nvidiaInit": 0,
+    "nvidiaCalls": 0,
+    "fallbackCategory": "otros"
+  },
+  "chat": {
+    "totalIncome": 0,
+    "lastIncome": [
+      {}
+    ]
+  },
+  "csv": "Tipo,Fecha,Proveedor/Comprador,Cedula,Descripcion,Categoria,Subtotal,IVA,Total,NumFactura_Consecutivo,Clave_Hacienda,NumComprobante,EsDeducible,MotivoNoDeducible,TasaIVA\nGASTO,,\"=SUM(1,2)\",,,,,,,,,,,,",
+  "key": {
+    "clave": "50631102600012345678900100001050000000001987654321",
+    "consecutivo": "00100001050000000001",
+    "codigoSeguridad": "987654321"
+  },
+  "builder": {
+    "namespace": "https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica",
+    "amountTag": "910.00",
+    "subtotalTag": "1000.00",
+    "totalLineTag": "910.00",
+    "hasCabys": false
+  },
+  "parser": {
+    "parsedTax": {
+      "codigo": "01",
+      "codigoTarifa": "08",
+      "tarifa": 1,
+      "monto": 10,
+      "factorIVA": 0,
+      "montoExportacion": 0
+    },
+    "netTax": 0,
+    "alerts": [
+      {
+        "tieneAlerta": true,
+        "tipoAlerta": "tarifa_incorrecta",
+        "severidad": "error",
+        "mensaje": "⚠️ ALERTA TARIFA: \"concentrado\" es un insumo agropecuario que debería pagar 1% (código 02), pero la factura cobra 13% (código 08). Estás pagando de más.",
+        "descripcion": "concentrado",
+        "codigoTarifaActual": "08",
+        "codigoTarifaEsperado": "02",
+        "tarifaActual": 1,
+        "tarifaEsperada": 1,
+        "diferenciaIVA": 120,
+        "categoriaInsumo": "alimentacion_animal",
+        "coincidencias": [
+          "concentrado"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+﻿ M backend/__tests__/onvoController.test.js
+ M backend/controllers/adminController.js
+ M backend/controllers/supportController.js
+ M backend/routes/adminRoutes.js
+ M frontend/src/pages/CondicionesServicioPage.jsx
+?? artifacts/
+?? backend/__diag_dashboard.js
+?? backend/__diag_dashboard2.js
+?? backend/__tests__/adminSoporte.test.js
+?? backend/models/TicketSoporte.js

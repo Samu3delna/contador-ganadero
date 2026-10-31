@@ -2,8 +2,13 @@ const mongoose = require('mongoose');
 const dns = require('dns');
 const { logger } = require('../utils/logger');
 
-// Activar sanitización automática de filtros contra operadores NoSQL ($ne, $gt, etc.) y strictQuery
-mongoose.set('sanitizeFilter', true);
+// strictQuery activado; sanitizeFilter DESACTIVADO intencionalmente.
+// En Mongoose 8.24, sanitizeFilter:true envuelve en $eq cualquier valor de campo con claves $,
+// rompiendo TODAS las queries legítimas del servidor con operadores (estado:{$ne:'error'},
+// fechaEmision:{$gte,$lte}, emailUID:{$in:[...]}, expiresAt:{$gt:...}, etc.) con CastError 500.
+// La inyección NoSQL ya se bloquea a nivel HTTP por sanitizarEntradasGlobal (middleware/validateMiddleware.js),
+// que rechaza con 400 cualquier operador $ en body/query/params.
+mongoose.set('sanitizeFilter', false);
 mongoose.set('strictQuery', true);
 
 // DNS fallback para entornos donde el DNS local falla (ej. MongoDB Atlas SRV)

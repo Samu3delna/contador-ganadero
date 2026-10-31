@@ -256,3 +256,118 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* === Soporte: badges de estados y prioridades de tickets === */
+.admin-badge--ticket-abierto    { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+.admin-badge--ticket-en_progreso { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+.admin-badge--ticket-resuelto   { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+.admin-badge--ticket-cerrado    { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.4); }
+
+.admin-badge--prioridad-baja  { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.4); }
+.admin-badge--prioridad-media { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+.admin-badge--prioridad-alta  { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+/* === Soporte: modal de atención del ticket === */
+.admin-ticket-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.admin-ticket-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.admin-ticket-msg {
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  font-size: 0.82rem;
+}
+
+.admin-ticket-msg--usuario {
+  background: rgba(30, 41, 59, 0.5);
+  border-left: 3px solid rgba(59, 130, 246, 0.6);
+}
+
+.admin-ticket-msg--soporte {
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 3px solid rgba(16, 185, 129, 0.6);
+}
+
+.admin-ticket-msg-cabecera {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.admin-ticket-msg-texto {
+  color: #e2e8f0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admin-ticket-clasificacion {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.admin-ticket-clasificacion label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.admin-ticket-clasificacion select {
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.admin-ticket-respuesta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.admin-ticket-respuesta textarea {
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.admin-ticket-respuesta textarea:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+@media (max-width: 640px) {
+  .admin-ticket-clasificacion {
+    grid-template-columns: 1fr;
+  }
+}

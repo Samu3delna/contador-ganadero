@@ -1,0 +1,27 @@
+{
+  "changed": [
+    "backend/__tests__/adminSoporte.test.js",
+    "backend/config/db.js",
+    "backend/controllers/adminController.js",
+    "backend/middleware/errorMiddleware.js",
+    "frontend/src/App.jsx",
+    "frontend/src/components/layout/Sidebar.jsx",
+    "frontend/src/pages/admin/admin.css",
+    "frontend/src/services/adminApi.js"
+  ],
+  "removed": [
+    "backend/__diag_dashboard.js",
+    "backend/__diag_dashboard2.js"
+  ],
+  "newFiles": [
+    "frontend/src/pages/admin/AdminSoportePage.jsx",
+    "RESPALDOS.md",
+    "docs/ESTADO_PROYECTO_Y_ROADMAP.md",
+    "docs/GUIA_CLOUDFLARE_EMAIL_Y_WHATSAPP.md",
+    "docs/PENDIENTES_HACIENDA.md",
+    "docs/RENDER_INGESTA_SETUP.md",
+    "docs/SUSCRIPCIONES.md",
+    "wrangler.jsonc"
+  ],
+  "note": "El coordinador y revisores solo escribieron artifacts/ y salida de build dist/. Los cambios de aplicación observados durante la revisión proceden de trabajo concurrente y no se sobrescribieron."
+}

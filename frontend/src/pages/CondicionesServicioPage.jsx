@@ -142,12 +142,55 @@ export default function CondicionesServicioPage() {
           <h2 className="legal-section-title">Cancelación de Suscripciones y Política de Reembolsos</h2>
         </div>
         <p>
-          Usted puede cancelar su suscripción paga en cualquier momento desde la sección <strong>Facturación / Planes</strong> de su panel.
-          Al cancelar, mantendrá acceso a los beneficios de su plan hasta el final del periodo facturado en curso.
+          Usted puede cancelar su suscripción al <strong>Plan Pro</strong> en cualquier momento, sin penalidad y sin
+          necesidad de contactar a soporte, desde la sección <strong>Mi Suscripción</strong> de su panel, confirmando
+          la acción en el diálogo de cancelación.
         </p>
+        <ul>
+          <li>
+            <strong>Efecto de la cancelación:</strong> la cancelación se procesa de forma inmediata. Su cuenta pasa al
+            <strong> Plan Gratis</strong> (con anuncios) en ese mismo momento y cesa el cobro recurrente ante ONVO Pay.
+          </li>
+          <li>
+            <strong>Conservación de sus datos:</strong> sus facturas, ingresos, gastos, inventario y comprobantes XML se
+            conservan y siguen disponibles en el Plan Gratis. La cancelación no elimina información ni historial contable.
+          </li>
+          <li>
+            <strong>Cargos ya realizados:</strong> por la naturaleza digital y de consumo inmediato de los recursos de
+            cómputo e IA, los cobros correspondientes al periodo en curso no son reembolsables, salvo error de cobro
+            atribuible a la plataforma o cobro duplicado.
+          </li>
+          <li>
+            <strong>Errores de cobro:</strong> si detecta un cobro duplicado, un monto incorrecto o un cargo posterior a
+            su cancelación, escríbanos a <code>soporte@contadorganandero.com</code> dentro de los <strong>5 días hábiles</strong>
+            siguientes al cargo. Verificaremos el caso con ONVO Pay y, de corresponder, emitiremos el reembolso por el
+            mismo medio de pago utilizado.
+          </li>
+          <li>
+            <strong>Renovaciones automáticas:</strong> la suscripción se renueva cada mes. Para evitar el cobro del ciclo
+            siguiente, cancele antes de la fecha de renovación indicada en <strong>Mi Suscripción</strong>.
+          </li>
+          <li>
+            <strong>Cambios de precio:</strong> cualquier modificación en el precio del Plan Pro se comunicará con al
+            menos <strong>30 días</strong> de anticipación por correo electrónico. Si no está de acuerdo, podrá cancelar
+            antes de que el nuevo precio entre en vigencia.
+          </li>
+        </ul>
         <p>
-          Por la naturaleza digital y de consumo inmediato de los recursos de cómputo e IA, no se realizan reembolsos proporcionales por periodos parcialmente utilizados, salvo requerimiento expreso de la legislación de protección al consumidor de Costa Rica.
+          Estas disposiciones se aplican sin perjuicio de los derechos que la Ley N.º 7472 (Ley de Promoción de la
+          Competencia y Defensa Efectiva del Consumidor) y la Ley N.º 8968 reconozcan al usuario.
         </p>
+        <div className="legal-alert legal-alert--info">
+          <MailCheck size={22} className="legal-alert-icon" />
+          <div className="legal-alert-content">
+            <h4>Contacto para Facturación, Cobros y Reembolsos</h4>
+            <p>
+              Consultas sobre cobros, cancelaciones, reembolsos o facturación de la suscripción:
+              <a href="mailto:soporte@contadorganandero.com" style={{ color: '#4ade80' }}> soporte@contadorganandero.com</a>.
+              Respondemos en horario de días hábiles.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* Sección 8 */}

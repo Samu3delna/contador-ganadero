@@ -23,3 +23,9 @@ export const monitoreoEventosOnvoAPI = (limit = 50) => api.get('/admin/monitoreo
 export const monitoreoChatFeedbackAPI = (limit = 50) => api.get('/admin/monitoreo/chat-feedback', { params: { limit } });
 export const monitoreoEmailAPI = () => api.get('/admin/monitoreo/email');
 export const monitoreoSaludAPI = () => api.get('/admin/monitoreo/salud');
+
+// === Soporte: bandeja de tickets ===
+export const listarTicketsSoporteAPI = (params) => api.get('/admin/soporte/tickets', { params });
+export const obtenerTicketSoporteAPI = (id) => api.get(`/admin/soporte/tickets/${id}`);
+export const actualizarTicketSoporteAPI = (id, datos) => api.put(`/admin/soporte/tickets/${id}`, datos);
+export const responderTicketSoporteAPI = (id, mensaje) => api.post(`/admin/soporte/tickets/${id}/responder`, { mensaje });
