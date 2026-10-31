@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 // === Config env antes de importar el controller ===
 process.env.ONVO_SECRET_KEY = 'onvo_test_secret_key_123';
 process.env.ONVO_PUBLISHABLE_KEY = 'onvo_test_publishable_key_123';
-process.env.ONVO_WEBHOOK_SECRET = 'webhook_secret_test_123';
+process.env.ONVO_WEBHOOK_SECRET = 'webhook_secret_zQzfNtqFFnodeTb2';
 process.env.ONVO_PRICE_FREE = 'price_free';
 process.env.ONVO_PRICE_PRO = 'price_pro';
 process.env.FRONTEND_URL = 'http://localhost:5173';
@@ -25,7 +25,7 @@ const Tenant = require('../models/Tenant');
 const SubscriptionEvent = require('../models/SubscriptionEvent');
 const { webhookOnvo } = require('../controllers/onvoController');
 
-const SECRET = 'webhook_secret_test_123';
+const SECRET = 'webhook_secret_zQzfNtqFFnodeTb2';
 
 const buildEventoRenovacion = (overrides = {}) => ({
   type: 'subscription.renewal.succeeded',

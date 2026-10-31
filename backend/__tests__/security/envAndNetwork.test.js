@@ -13,7 +13,7 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
       JWT_REFRESH_SECRET: 'z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4j3i2h1g0f9e8d7c6',
       EMAIL_ENC_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       CORS_ORIGINS: 'https://contadorganandero.com,https://app.contadorganandero.com',
-      ONVO_WEBHOOK_SECRET: 'onvo_webhook_secret_key_with_more_than_32_characters!!',
+      ONVO_WEBHOOK_SECRET: 'webhook_secret_zQzfNtqFFnodeTb2x',
       EMAIL_WEBHOOK_SECRET: 'email_webhook_secret_key_with_more_than_32_characters!!',
     };
 
