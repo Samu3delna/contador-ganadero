@@ -61,7 +61,7 @@ const esSuperAdmin = (req, res, next) => {
 
   // En producción, si REQUIRE_ADMIN_MFA=true, exige que el superadmin tenga MFA activo
   if (process.env.NODE_ENV === 'production' && process.env.REQUIRE_ADMIN_MFA === 'true') {
-    if (!usuario?.mfa?.enabled) {
+    if (!usuario?.mfa?.enabled || !req.auth?.mfaVerifiedAt) {
       return res.status(403).json({
         error: 'MFA_REQUERIDO_SUPERADMIN',
         mensaje: 'El acceso de Super Admin requiere autenticación de dos factores (MFA) activa.',

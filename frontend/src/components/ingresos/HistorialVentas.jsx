@@ -1,3 +1,4 @@
+import { mostrarFechaCivil } from '../../utils/fechaCivil';
 import { Trash2, DollarSign } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../ui/table';
 import { Badge } from '../ui/badge';
@@ -55,7 +56,7 @@ export default function HistorialVentas({ cargando, ingresos, handleEliminar }) 
             {ingresos.map(ing => (
               <TableRow key={ing._id} className="hover:bg-slate-800/50">
                 <TableCell className="font-mono text-xs text-slate-300 whitespace-nowrap">
-                  {new Date(ing.fecha).toLocaleDateString('es-CR')}
+                  {mostrarFechaCivil(ing.fecha)}
                 </TableCell>
                 <TableCell className="font-medium text-white">
                   {ing.descripcion}

@@ -1,3 +1,5 @@
+import { obtenerPaginas } from '../services/paginas';
+import { hoyCivil } from '../utils/fechaCivil';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -13,13 +15,7 @@ export default function CalendarioPage() {
   const cargarFacturasMes = useCallback(async () => {
     setCargando(true);
     try {
-      // Obtenemos un límite alto para poder pintar el mes
-      const res = await api.get(`/facturas?limit=500`);
-      // Filtramos en el cliente las del mes actual (podría hacerse en el backend pero esto es rápido)
-      const facturasMes = res.data.facturas.filter(f => {
-        const date = new Date(f.fechaEmision);
-        return date.getMonth() === fechaActual.getMonth() && date.getFullYear() === fechaActual.getFullYear();
-      });
+      const facturasMes = await obtenerPaginas(page => api.get('/facturas', { params: { page, limit: 100, mes: fechaActual.getMonth() + 1, anio: fechaActual.getFullYear() } }), 'facturas');
       setFacturas(facturasMes);
     } catch (error) {
       console.error('Error cargando facturas del calendario:', error);
@@ -112,7 +108,7 @@ export default function CalendarioPage() {
               {dias.map((dia, index) => {
                 if (!dia) return <div key={`empty-${index}`} className="calendario-celda vacia"></div>;
                 
-                const facturasDelDia = facturas.filter(f => new Date(f.fechaEmision).getDate() === dia.getDate());
+                const facturasDelDia = facturas.filter(f => Number(hoyCivil(new Date(f.fechaEmision)).slice(8,10)) === dia.getDate());
                 const esHoy = new Date().toDateString() === dia.toDateString();
 
                 return (

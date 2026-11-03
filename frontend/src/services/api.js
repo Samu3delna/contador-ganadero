@@ -34,6 +34,12 @@ api.interceptors.request.use((config) => {
 
 // Bandera para evitar múltiples refresh simultáneos
 let refreshPromise = null;
+function renovarSesion() {
+  if (!refreshPromise) {
+    refreshPromise = api.post('/auth/refresh').finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
 
 // Interceptor: manejar errores 401 con refresh token transparente vía cookie httpOnly
 api.interceptors.response.use(
@@ -42,10 +48,10 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Si no es 401, o ya se marcó retry, o es ruta de auth, propagar
-    const esRutaAuth = originalRequest?.url?.startsWith('/auth/');
+    const esRutaAuth = ['/auth/login', '/auth/registro', '/auth/refresh', '/auth/logout', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-email', '/auth/mfa/verify'].includes(originalRequest?.url);
     if (
       error.response?.status !== 401 ||
-      originalRequest._retry ||
+      !originalRequest || originalRequest._retry ||
       esRutaAuth
     ) {
       return Promise.reject(error);
@@ -54,13 +60,7 @@ api.interceptors.response.use(
     originalRequest._retry = true;
 
     try {
-      if (!refreshPromise) {
-        refreshPromise = api.post('/auth/refresh').finally(() => {
-          refreshPromise = null;
-        });
-      }
-
-      const res = await refreshPromise;
+      const res = await renovarSesion();
       const nuevoToken = res.data?.token;
       if (nuevoToken) {
         setAccessToken(nuevoToken);
@@ -84,7 +84,7 @@ api.interceptors.response.use(
 // === Auth ===
 export const loginAPI = (datos) => api.post('/auth/login', datos);
 export const registroAPI = (datos) => api.post('/auth/registro', datos);
-export const refreshTokenAPI = () => api.post('/auth/refresh');
+export const refreshTokenAPI = renovarSesion;
 export const obtenerPerfilAPI = () => api.get('/auth/perfil');
 export const actualizarPerfilAPI = (datos) => api.put('/auth/perfil', datos);
 export const cambiarPasswordAPI = (datos) => api.put('/auth/cambiar-password', datos);
@@ -93,6 +93,7 @@ export const resetPasswordAPI = (datos) => api.post('/auth/reset-password', dato
 export const mfaSetupAPI = () => api.post('/auth/mfa/setup');
 export const mfaEnableAPI = (datos) => api.post('/auth/mfa/enable', datos);
 export const mfaDisableAPI = (datos) => api.post('/auth/mfa/disable', datos);
+export const verificarMfaAPI = (datos) => api.post('/auth/mfa/verify', datos);
 export const listarSesionesAPI = () => api.get('/auth/sessions');
 export const revocarSesionAPI = (sessionId) => api.delete(`/auth/sessions/${encodeURIComponent(sessionId)}`);
 export const logoutAllAPI = () => api.post('/auth/logout-all');
@@ -270,7 +271,9 @@ export const obtenerFacturasEmisionAPI = (params) => api.get('/facturacion', { p
 export const crearFacturaEmisionAPI = (datos) => api.post('/facturacion', datos);
 export const obtenerResumenEmisionAPI = (params) => api.get('/facturacion/resumen', { params });
 
-// === Hacienda v4.4 nativa ===
+// === Hacienda v4.4 ===
+export const guardarConfigHaciendaAPI = (datos) => api.post('/hacienda/config', datos);
+export const probarConfigHaciendaAPI = () => api.post('/hacienda/config/test');
 export const infoAmbienteHaciendaAPI = () => api.get('/hacienda/ambiente');
 export const crearBorradorHaciendaAPI = (datos) => api.post('/hacienda/emision', datos);
 export const firmarDocumentoHaciendaAPI = (id) => api.post(`/hacienda/emision/${id}/firmar`);

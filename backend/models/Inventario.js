@@ -256,6 +256,7 @@ inventarioSchema.index({ 'lotesAves.loteId': 1 });
 inventarioSchema.index({ 'estanques.estanqueId': 1 });
 inventarioSchema.index({ 'colmenas.colmenaId': 1 });
 inventarioSchema.index({ tenantId: 1, usuario: 1 });
+inventarioSchema.index({ tenantId: 1 }, { unique: true, name: 'tenant_inventory_unique', partialFilterExpression: { tenantId: { $type: 'objectId' } } });
 
 // ============ MÉTODOS VIRTUALES ============
 inventarioSchema.virtual('totalBovinosActivos').get(function () {

@@ -8,12 +8,12 @@
  * 3. Muestra estado de migración
  */
 
-require('dotenv').config({ path: '../.env' });
+
 const mongoose = require('mongoose');
 
-async function migrate() {
+async function migrate({ dryRun = true } = {}) {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    if (mongoose.connection.readyState !== 1) await mongoose.connect(process.env.MONGODB_URI, { autoIndex: false, autoCreate: false });
     console.log('✅ Conectado a MongoDB');
 
     const db = mongoose.connection.db;
@@ -27,7 +27,7 @@ async function migrate() {
     
     for (const collName of coleccionesNuevas) {
       if (!nombresColecciones.includes(collName)) {
-        await db.createCollection(collName);
+        if (!dryRun) await db.createCollection(collName);
         console.log(`✅ Colección '${collName}' creada`);
       } else {
         console.log(`ℹ️ Colección '${collName}' ya existe`);
@@ -38,28 +38,28 @@ async function migrate() {
     console.log('\n🔧 Creando índices...');
     
     // Inventario
-    await db.collection('inventarios').createIndex({ usuario: 1 });
-    await db.collection('inventarios').createIndex({ 'bovinos.tagId': 1 });
-    await db.collection('inventarios').createIndex({ 'lotesAves.loteId': 1 });
-    await db.collection('inventarios').createIndex({ 'estanques.estanqueId': 1 });
-    await db.collection('inventarios').createIndex({ 'colmenas.colmenaId': 1 });
+    if (!dryRun) await db.collection('inventarios').createIndex({ usuario: 1 });
+    if (!dryRun) await db.collection('inventarios').createIndex({ 'bovinos.tagId': 1 });
+    if (!dryRun) await db.collection('inventarios').createIndex({ 'lotesAves.loteId': 1 });
+    if (!dryRun) await db.collection('inventarios').createIndex({ 'estanques.estanqueId': 1 });
+    if (!dryRun) await db.collection('inventarios').createIndex({ 'colmenas.colmenaId': 1 });
     console.log('✅ Índices de inventarios creados');
 
     // Costos
-    await db.collection('costoproduccions').createIndex({ usuario: 1, periodoFiscal: 1 });
-    await db.collection('costoproduccions').createIndex({ 'centrosCosto.referenciaId': 1 });
+    if (!dryRun) await db.collection('costoproduccions').createIndex({ usuario: 1, periodoFiscal: 1 });
+    if (!dryRun) await db.collection('costoproduccions').createIndex({ 'centrosCosto.referenciaId': 1 });
     console.log('✅ Índices de costos creados');
 
     // Factura Emisión
-    await db.collection('facturaemisions').createIndex({ usuario: 1, periodoFiscal: 1, cuatrimestre: 1 });
-    await db.collection('facturaemisions').createIndex({ usuario: 1, fechaEmision: -1 });
-    await db.collection('facturaemisions').createIndex({ 'emisor.cedula.numero': 1 });
+    if (!dryRun) await db.collection('facturaemisions').createIndex({ usuario: 1, periodoFiscal: 1, cuatrimestre: 1 });
+    if (!dryRun) await db.collection('facturaemisions').createIndex({ usuario: 1, fechaEmision: -1 });
+    if (!dryRun) await db.collection('facturaemisions').createIndex({ 'emisor.cedula.numero': 1 });
     console.log('✅ Índices de facturaemisions creados');
 
     // Actualizar schema de Usuarios si es necesario
     const usuarios = db.collection('usuarios');
-    const usuarioEjemplo = await usuarios.findOne();
-    if (usuarioEjemplo && !usuarioEjemplo.configuracionFiscal) {
+    const pendientes = await usuarios.countDocuments({ configuracionFiscal: { $exists: false } });
+    if (pendientes && !dryRun) {
       await usuarios.updateMany(
         { configuracionFiscal: { $exists: false } },
         { 
@@ -77,11 +77,15 @@ async function migrate() {
     }
 
     console.log('\n✅ Migración completada exitosamente');
-    process.exit(0);
+    return { dryRun, usuariosPendientes: pendientes };
   } catch (error) {
     console.error('❌ Error en migración:', error.message);
-    process.exit(1);
+    throw error;
   }
 }
 
-migrate();
+module.exports = { migrate };
+if (require.main === module) {
+ require('dotenv').config({ path: require('path').resolve(__dirname, '..', '..', '.env') });
+ migrate({ dryRun: process.argv.includes('--dry-run') }).catch(() => { process.exitCode = 1; }).finally(() => mongoose.disconnect());
+}

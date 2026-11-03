@@ -1,0 +1,1610 @@
+[
+  {
+    "id": "S-01",
+    "problema": "Historial del chat compartido entre cuentas",
+    "severidad": "alta",
+    "archivo": "frontend/src/components/dashboard/ChatBot.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/components/dashboard/ChatBot.jsx",
+        "linea": 52,
+        "extracto": "return <ChatBotSesion key={`${usuario.tenantId?._id || usuario.tenantId || ''}:${usuario._id}`} />;"
+      }
+    ],
+    "correccion": "Historial en memoria por usuario y finca; se descarta el almacenamiento global heredado y se desmonta la sesion anterior.",
+    "prueba": {
+      "archivo": "frontend/tests/uiRegresiones.test.js",
+      "linea": 76,
+      "caso": "test('S-01: cuenta nueva no carga historial global ni mensajes de la cuenta anterior',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-02",
+    "problema": "D-150 queda accesible a planes sin módulo",
+    "severidad": "alta",
+    "archivo": "backend/routes/haciendaRoutes.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/routes/haciendaRoutes.js",
+        "linea": 66,
+        "extracto": "router.use('/d150', require('../middleware/rbacMiddleware').permitir('declaraciones:generar_y_exportar'), (req, res, next) => req.tenant?.limites?.moduloD150 === true ? next() : res.status(403).json({ error: 'PLAN_SIN_D150' }));"
+      }
+    ],
+    "correccion": "Todas las consultas y exportaciones D150 exigen el modulo del plan en la API.",
+    "prueba": {
+      "archivo": "backend/__tests__/remediacion.test.js",
+      "linea": 37,
+      "caso": "test('S-02: free no puede consultar ni exportar D150',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-03",
+    "problema": "Se omite la cascada NVIDIA cuando falla Gemini",
+    "severidad": "alta",
+    "archivo": "backend/services/aiProvider.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/aiProvider.js",
+        "linea": 17,
+        "extracto": "geminiClient = null; openAIClient = null;"
+      }
+    ],
+    "correccion": "Inicializacion independiente de ambos proveedores; cascada Gemini, NVIDIA y heuristica.",
+    "prueba": {
+      "archivo": "backend/__tests__/aiFallbackRemediacion.test.js",
+      "linea": 8,
+      "caso": "test('S-03: fallo de peticion Gemini usa NVIDIA para clasificacion y chat',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-04",
+    "problema": "IMAP escribe facturas sin tenant y usa primer usuario",
+    "severidad": "alta",
+    "archivo": "backend/services/emailService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/emailService.js",
+        "linea": 18,
+        "extracto": "const inbox = require('./ingestionInbox');"
+      }
+    ],
+    "correccion": "IMAP usa la ingesta durable unificada; nunca selecciona el primer usuario para asignar comprobantes.",
+    "prueba": {
+      "archivo": "backend/__tests__/inboxRecovery.test.js",
+      "linea": 38,
+      "caso": "test('S-04/F-38: IMAP global utiliza inbox sin usuario arbitrario y conserva destinatario', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-05",
+    "problema": "Alias aproximados asignan facturas a fincas ambiguas",
+    "severidad": "alta",
+    "archivo": "backend/services/ingestaFacturaService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/ingestaFacturaService.js",
+        "linea": 75,
+        "extracto": "// 2a. Coincidencia exacta con emailAlias del Tenant"
+      }
+    ],
+    "correccion": "Solo alias exacto; identidades ambiguas quedan sin asignar.",
+    "prueba": {
+      "archivo": "backend/__tests__/ingestaFacturaService.test.js",
+      "linea": 58,
+      "caso": "test('S-05: alias parciales, sufijos y correo personal no asignan finca', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-06",
+    "problema": "Un fallo de procesamiento ONVO convierte el reintento en duplicado descartado",
+    "severidad": "alta",
+    "archivo": "backend/controllers/onvoController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/onvoController.js",
+        "linea": 229,
+        "extracto": "const claim = await SubscriptionEvent.reclamar(eventoGuardado._id, claimToken);"
+      }
+    ],
+    "correccion": "Claim atomico y reintentos por estado, con ledger atomico de efectos en el tenant.",
+    "prueba": {
+      "archivo": "backend/__tests__/onvoController.test.js",
+      "linea": 69,
+      "caso": "test('S-06: fallo antes del efecto permite reentrega del mismo evento', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-07",
+    "problema": "Migración tenant no reanuda backfill tras fallo parcial",
+    "severidad": "alta",
+    "archivo": "backend/scripts/migrateTenant.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/scripts/migrateTenant.js",
+        "linea": 38,
+        "extracto": "async function propagarTenantADocumentos(usuarioId, tenantId, dryRun = false) {"
+      }
+    ],
+    "correccion": "Backfill reanudable para usuarios ya asociados y documentos null/ausentes, sin otra finca.",
+    "prueba": {
+      "archivo": "backend/__tests__/backupMigrationRemediacion.test.js",
+      "linea": 44,
+      "caso": "test('S-07: usuario ya asociado reanuda documentos null y ausentes sin crear otra finca', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-08",
+    "problema": "El certificado P12 se guarda sin el cifrado adicional por tenant disponible",
+    "severidad": "alta",
+    "archivo": "backend/controllers/haciendaConfigController.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/haciendaConfigController.js",
+        "linea": 60,
+        "extracto": "if (certificadoP12Base64) hc.establecerCertificadoP12(certificadoP12Base64.replace(/^data:[^,]*;base64,/i, '').replace(/\\s/g, ''));"
+      }
+    ],
+    "correccion": "Se conserva el cifrado SDK por tenant/campo y sus getters; no hay fallback entre fincas.",
+    "prueba": {
+      "archivo": "backend/test-sdk/worker.test.cjs",
+      "linea": 53,
+      "caso": "test('cifrado fiscal queda vinculado a tenant y campo, getter correcto y sin fallback global',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-09",
+    "problema": "Vite no carga el .env raíz documentado",
+    "severidad": "media",
+    "archivo": "frontend/vite.config.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/vite.config.js",
+        "linea": 10,
+        "extracto": "envDir: path.resolve(__dirname, '..'),"
+      }
+    ],
+    "correccion": "Vite carga el directorio raiz; conserva el prefijo publico VITE_ y compila.",
+    "prueba": {
+      "archivo": "frontend/tests/viteEnv.test.js",
+      "linea": 9,
+      "caso": "test('S-09: envDir apunta a raiz y Vite expone exclusivamente VITE_ por defecto',()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-10",
+    "problema": "Doble clic duplica ingresos en Declaraciones",
+    "severidad": "media",
+    "archivo": "frontend/src/pages/DeclaracionesPage.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/pages/DeclaracionesPage.jsx",
+        "linea": 3,
+        "extracto": "import { singleFlight } from '../utils/singleFlight';"
+      }
+    ],
+    "correccion": "Guard inmediato compartido por la operacion pendiente y boton deshabilitado mientras guarda.",
+    "prueba": {
+      "archivo": "frontend/tests/fechaCivilSingleFlight.test.js",
+      "linea": 9,
+      "caso": "test('S-10: dos envios simultaneos ejecutan una operacion y permiten otro tras terminar',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-11",
+    "problema": "Etiquetas de inventario no nombran los controles",
+    "severidad": "media",
+    "archivo": "frontend/src/components/inventario/BovinoForm.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/components/inventario/BovinoForm.jsx",
+        "linea": 1,
+        "extracto": "import { useState, useId } from 'react';"
+      }
+    ],
+    "correccion": "Etiquetas asociadas mediante id/htmlFor en formularios de las cuatro especies.",
+    "prueba": {
+      "archivo": "frontend/tests/uiRegresiones.test.js",
+      "linea": 27,
+      "caso": "test('S-11: formularios de cuatro especies tienen nombres accesibles y labels asociados',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-12",
+    "problema": "Exportación y chat omiten datos de compañeros del tenant",
+    "severidad": "media",
+    "archivo": "backend/services/declaracionService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/contabilidadService.js",
+        "linea": 37,
+        "extracto": "const scope = tenantId ? { tenantId } : { usuario: usuarioId };"
+      }
+    ],
+    "correccion": "Exportacion y chat consultan toda la finca, con normalizacion contable compartida.",
+    "prueba": {
+      "archivo": "backend/__tests__/contabilidadRemediacion.test.js",
+      "linea": 22,
+      "caso": "test('F-10/S-12: venta emitida se incluye, ingreso por misma clave no se duplica y compañero ve datos', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-13",
+    "problema": "La exclusión de webhooks del limitador usa rutas con un prefijo ya retirado",
+    "severidad": "media",
+    "archivo": "backend/middleware/rateLimiters.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/middleware/rateLimiters.js",
+        "linea": 46,
+        "extracto": "skip: (req) => req.path === '/onvo/webhook' || req.path.startsWith('/webhooks/') || req.path === '/api/onvo/webhook' || req.path.startsWith('/api/webhooks/'),"
+      }
+    ],
+    "correccion": "Exclusiones sobre rutas efectivas relativas al montaje /api, sin coincidencias de prefijos ambiguos.",
+    "prueba": {
+      "archivo": "backend/__tests__/limiterParserRemediacion.test.js",
+      "linea": 4,
+      "caso": "test('S-13: webhooks siguen accesibles tras agotar limitador montado en /api',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-14",
+    "problema": "KPIs mezclan unidades admitidas por el esquema",
+    "severidad": "media",
+    "archivo": "backend/models/CostoProduccion.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/models/CostoProduccion.js",
+        "linea": 24,
+        "extracto": "pesoUnidadKg: { type: Number, min: 0.00001, required: function () {"
+      }
+    ],
+    "correccion": "Alimento por presentacion exige peso; huevos y docenas se normalizan a cartones.",
+    "prueba": {
+      "archivo": "backend/__tests__/inventoryCostsRemediacion.test.js",
+      "linea": 16,
+      "caso": "test('S-14: alimento por presentacion y huevos por unidad/docena usan kg/cartones',()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "S-15",
+    "problema": "migrateNewCollections ignora --dry-run",
+    "severidad": "media",
+    "archivo": "backend/utils/migrateNewCollections.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/utils/migrateNewCollections.js",
+        "linea": 14,
+        "extracto": "async function migrate({ dryRun = true } = {}) {"
+      }
+    ],
+    "correccion": "Dry-run sin creacion ni escrituras; ejecucion explicita e idempotente.",
+    "prueba": {
+      "archivo": "backend/__tests__/backupMigrationRemediacion.test.js",
+      "linea": 56,
+      "caso": "test('S-15: dry-run no crea colecciones/indices ni actualiza usuarios; aplicacion idempotente', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-01",
+    "problema": "Emisor vacío bloquea comprobantes Hacienda",
+    "severidad": "alta",
+    "archivo": "frontend/src/components/hacienda/EmitirComprobanteModal.jsx",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/components/hacienda/EmitirComprobanteModal.jsx",
+        "linea": 5,
+        "extracto": "import { useAuth } from '../../context/AuthContext';"
+      }
+    ],
+    "correccion": "Emisor tomado de AuthContext, sin dependencia de localStorage.usuario.",
+    "prueba": {
+      "archivo": "frontend/tests/uiRegresiones.test.js",
+      "linea": 103,
+      "caso": "test('P-01: emisor se obtiene de sesion React con localStorage.usuario ausente',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-02",
+    "problema": "La firma llamada XAdES-EPES solo contiene XML-DSig",
+    "severidad": "alta",
+    "archivo": "backend/services/hacienda/signer.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/hacienda/signer.js",
+        "linea": 5,
+        "extracto": "const { cargarSdk } = require('./sdkLoader');"
+      }
+    ],
+    "correccion": "Firma SDK XAdES con politica, SignedProperties y verificacion matematica con certificado sintetico.",
+    "prueba": {
+      "archivo": "backend/test-sdk/sdk.test.cjs",
+      "linea": 59,
+      "caso": "test('firma XAdES real con P12 efímero: política, digest, certificado y RSA verifican', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-03",
+    "problema": "No se conservan datos fiscales que el XML necesita",
+    "severidad": "alta",
+    "archivo": "backend/models/FacturaEmision.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/models/FacturaEmision.js",
+        "linea": 111,
+        "extracto": "codigoActividadEmisor: { type: String, trim: true },"
+      }
+    ],
+    "correccion": "Conserva actividad, ubicacion, moneda y datos fiscales requeridos por el adaptador XML.",
+    "prueba": {
+      "archivo": "backend/test-sdk/worker.test.cjs",
+      "linea": 107,
+      "caso": "test('API local: configura finca, crea FE y TE, firma, conserva XML y bloquea consulta de borrador',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-04",
+    "problema": "WhatsApp anuncia fotos guardadas sin descargarlas",
+    "severidad": "alta",
+    "archivo": "backend/routes/whatsappWebhookRoutes.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/routes/whatsappWebhookRoutes.js",
+        "linea": 183,
+        "extracto": "`📸 *Foto de comprobante recibida.*\\n\\nEl registro de fotos no est\\u00e1 disponible. Esta imagen no se guard\\u00f3 como gasto. Reenv\\u00eda el XML de la factura para registrarla.`"
+      }
+    ],
+    "correccion": "Fotos informadas como funcion no disponible; no se afirma persistencia ni gasto ficticio.",
+    "prueba": {
+      "archivo": "backend/__tests__/inboxRecovery.test.js",
+      "linea": 46,
+      "caso": "test('P-04: foto no anuncia almacenamiento ni deduccion que no ocurrieron',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-05",
+    "problema": "Cancelar Pro deja el plan Gratis bloqueado como tenant cancelado",
+    "severidad": "alta",
+    "archivo": "backend/controllers/onvoController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/onvoController.js",
+        "linea": 82,
+        "extracto": "const cancelarSuscripcionTenant = async (req, res, next) => {"
+      }
+    ],
+    "correccion": "Cancelar Pro deja finca activa en free, accesible por perfil y renovacion de sesion.",
+    "prueba": {
+      "archivo": "backend/__tests__/onvoController.test.js",
+      "linea": 111,
+      "caso": "test('P-05: cancelar Pro permite perfil y refresh del plan gratuito', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-06",
+    "problema": "El CLI documentado de backup no ejecuta ninguna copia",
+    "severidad": "alta",
+    "archivo": "backend/scripts/backup-mongodb.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/scripts/backup-mongodb.js",
+        "linea": 87,
+        "extracto": "if (require.main === module) {"
+      }
+    ],
+    "correccion": "CLI operativo con codigo de salida, copia cifrada, checksum y dry-run sin archivos.",
+    "prueba": {
+      "archivo": "backend/__tests__/backupMigrationRemediacion.test.js",
+      "linea": 36,
+      "caso": "test('P-06: CLI crea respaldo y dry-run no crea archivos', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-07",
+    "problema": "Plan global desactualizado después de pago/cancelación",
+    "severidad": "media",
+    "archivo": "frontend/src/pages/PlanesPage.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/pages/PlanesPage.jsx",
+        "linea": 12,
+        "extracto": "const { actualizarUsuario } = useAuth();"
+      }
+    ],
+    "correccion": "Estado confirmado de suscripcion actualiza AuthContext y conserva datos de la finca.",
+    "prueba": {
+      "archivo": "frontend/tests/uiRegresiones.test.js",
+      "linea": 137,
+      "caso": "test('P-07: estado confirmado del plan actualiza AuthContext sin perder la finca',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-08",
+    "problema": "El modelo impide tiquetes sin receptor",
+    "severidad": "media",
+    "archivo": "backend/models/FacturaEmision.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/models/FacturaEmision.js",
+        "linea": 88,
+        "extracto": "enum: ['FE', 'TE', 'NC', 'ND', 'FEC', 'REP'],"
+      }
+    ],
+    "correccion": "TE admite receptor opcional; FE conserva requisitos y validacion XML.",
+    "prueba": {
+      "archivo": "backend/test-sdk/sdk.test.cjs",
+      "linea": 29,
+      "caso": "test(`${tipo}: modelo a XML válido por XSD del SDK`, async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-09",
+    "problema": "Las cuotas mensuales de Gratis nunca se renuevan automáticamente",
+    "severidad": "media",
+    "archivo": "backend/models/Tenant.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/models/Tenant.js",
+        "linea": 297,
+        "extracto": "tenantSchema.statics.actualizarCiclo = async function (id, ahora = new Date()) {"
+      }
+    ],
+    "correccion": "Cambio de periodo Costa Rica reclamado atomicamente; reinicia solo consumos mensuales.",
+    "prueba": {
+      "archivo": "backend/__tests__/onvoController.test.js",
+      "linea": 125,
+      "caso": "test('P-09/F-41: cambio mensual concurrente no borra consumos del mes nuevo y gracia vence', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "P-10",
+    "problema": "Migración GCM busca campos inexistentes",
+    "severidad": "media",
+    "archivo": "backend/scripts/migrateCryptoGcm.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/scripts/migrateCryptoGcm.js",
+        "linea": 18,
+        "extracto": "'configuracionHacienda.certificadoP12Base64',"
+      }
+    ],
+    "correccion": "Migra campos reales, verifica lectura, admite dry-run e idempotencia; AAD incompatible exige sustitucion explicita.",
+    "prueba": {
+      "archivo": "backend/__tests__/backupMigrationRemediacion.test.js",
+      "linea": 66,
+      "caso": "test('P-10/S-08: migra campos reales, certifica roundtrip y no adivina AAD incorrecto', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-01",
+    "problema": "La eliminación de datos anuncia éxito incluso cuando falla o no existe la solicitud",
+    "severidad": "alta",
+    "archivo": "backend/controllers/dataDeletionController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/dataDeletionController.js",
+        "linea": 269,
+        "extracto": "async function reanudarEliminacion(codigo) {"
+      }
+    ],
+    "correccion": "Solicitud durable antes de borrar; fallos recuperables registrados y codigo inexistente devuelve 404.",
+    "prueba": {
+      "archivo": "backend/__tests__/deletionRecovery.test.js",
+      "linea": 8,
+      "caso": "test('F-01: borrado parcial no informa completado y puede reanudarse idempotentemente', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-02",
+    "problema": "Login no completa MFA",
+    "severidad": "alta",
+    "archivo": "frontend/src/pages/LoginPage.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/pages/LoginPage.jsx",
+        "linea": 16,
+        "extracto": "const { login, registro, completarMfa, usuario, cargando: authCargando } = useAuth();"
+      }
+    ],
+    "correccion": "Formulario de desafio MFA comun, sin sesion completa antes de validar TOTP o recuperacion.",
+    "prueba": {
+      "archivo": "backend/__tests__/mfaRemediacion.test.js",
+      "linea": 20,
+      "caso": "test('F-02/F-22: desafio comun no emite sesion hasta TOTP y no admite replay', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-03",
+    "problema": "Paginación ignorada trunca resúmenes y listados",
+    "severidad": "alta",
+    "archivo": "frontend/src/pages/GastosPage.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/facturaController.js",
+        "linea": 40,
+        "extracto": "async function resumenGastos(req, res, next) {"
+      }
+    ],
+    "correccion": "Agregados completos en backend; filtros antes de paginar, controles visibles y calendario recorre paginas filtradas.",
+    "prueba": {
+      "archivo": "backend/__tests__/paginationDates.test.js",
+      "linea": 3,
+      "caso": "test('F-03: resumen incluye mas de 100 facturas y calendario filtra antes de paginar',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-04",
+    "problema": "Credenciales Hacienda de todos los tenants se leen desde el objeto equivocado",
+    "severidad": "alta",
+    "archivo": "backend/services/haciendaWorker.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/haciendaWorker.js",
+        "linea": 15,
+        "extracto": "function getTenantConfig(tenant, { conSecretos = true } = {}) {"
+      }
+    ],
+    "correccion": "Credenciales obtenidas del subdocumento y getters de la finca, con aislamiento OAuth.",
+    "prueba": {
+      "archivo": "backend/test-sdk/worker.test.cjs",
+      "linea": 91,
+      "caso": "test('otra finca no puede firmar el documento fuera de su contexto',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-05",
+    "problema": "Un PKCS12 válido provoca TypeError antes de firmar",
+    "severidad": "alta",
+    "archivo": "backend/services/hacienda/signer.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/hacienda/signer.js",
+        "linea": 47,
+        "extracto": "async function firmarDocumento(xmlString, config = {}) {"
+      }
+    ],
+    "correccion": "PKCS12 sintetico firmado correctamente mediante SDK; prueba criptografica real local.",
+    "prueba": {
+      "archivo": "backend/test-sdk/sdk.test.cjs",
+      "linea": 59,
+      "caso": "test('firma XAdES real con P12 efímero: política, digest, certificado y RSA verifican', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-06",
+    "problema": "El builder no genera estructura v4.4 conforme al contrato externo",
+    "severidad": "alta",
+    "archivo": "backend/services/hacienda/xmlBuilder.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/hacienda/xmlBuilder.js",
+        "linea": 203,
+        "extracto": "async function buildXml(factura) {"
+      }
+    ],
+    "correccion": "Adaptadores SDK y fixtures FE/TE/NC/ND/FEC validados con XSD; REP real permanece bloqueado.",
+    "prueba": {
+      "archivo": "backend/test-sdk/sdk.test.cjs",
+      "linea": 29,
+      "caso": "test(`${tipo}: modelo a XML válido por XSD del SDK`, async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-07",
+    "problema": "Tipos y situación de la clave numérica son incorrectos",
+    "severidad": "alta",
+    "archivo": "backend/services/hacienda/clave50.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/hacienda/clave50.js",
+        "linea": 5,
+        "extracto": "const TIPO_DOC_CODIGO = Object.freeze({ FE: '01', ND: '02', NC: '03', TE: '04', FEC: '08', REP: '10' });"
+      }
+    ],
+    "correccion": "Catalogo oficial en claves y fallback parser: FEC08, exportacion09, REP10; fecha CR y situacion validadas tambien por SDK.",
+    "prueba": {
+      "archivo": "backend/__tests__/limiterParserRemediacion.test.js",
+      "linea": 18,
+      "caso": "test('F-07: deteccion por consecutivo conserva codigos oficiales de FEC y REP',()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-08",
+    "problema": "Consulta de estado ignora el nombre oficial del campo y pierde el XML respuesta",
+    "severidad": "alta",
+    "archivo": "backend/services/hacienda/recepcion.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/hacienda/recepcion.js",
+        "linea": 75,
+        "extracto": "mockStore.update(clave, { estado: 'aceptado', respuesta: {"
+      }
+    ],
+    "correccion": "Consulta conserva XML respuesta y estado oficial; errores HTTP no se convierten en rechazo fiscal.",
+    "prueba": {
+      "archivo": "backend/test-sdk/sdk.test.cjs",
+      "linea": 80,
+      "caso": "test('transporte SDK: tenants aislados, rotación, URL sandbox, estados y POST sin replay', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-09",
+    "problema": "Importes emitidos son incoherentes con tarifa, descuentos y etiquetas XML",
+    "severidad": "alta",
+    "archivo": "backend/models/FacturaEmision.js",
+    "estado": "corregido previamente",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/models/FacturaEmision.js",
+        "linea": 169,
+        "extracto": "totalVentaNeta: { type: Number, default: 0 },"
+      }
+    ],
+    "correccion": "Recalculo de descuentos, tarifas e importes y rechazo de montos manipulados antes del XML.",
+    "prueba": {
+      "archivo": "backend/test-sdk/sdk.test.cjs",
+      "linea": 39,
+      "caso": "test(`IVA ${tarifa}%: descuento antes de IVA, factor cliente ignorado y XSD válido`, async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-10",
+    "problema": "Las ventas de FacturaEmision no alimentan IVA, renta ni exportación general",
+    "severidad": "alta",
+    "archivo": "backend/services/impuestoService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/contabilidadService.js",
+        "linea": 44,
+        "extracto": "const ventasEmision = emitidas.filter(d => d.tipoDocumento !== 'FEC').map(normalizarFactura);"
+      }
+    ],
+    "correccion": "FE/TE/NC/ND aceptadas alimentan ingresos; deduplicacion por finca/clave frente a ingresos manuales.",
+    "prueba": {
+      "archivo": "backend/__tests__/contabilidadRemediacion.test.js",
+      "linea": 22,
+      "caso": "test('F-10/S-12: venta emitida se incluye, ingreso por misma clave no se duplica y compañero ve datos', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-11",
+    "problema": "Montos de facturas USD se suman como CRC",
+    "severidad": "alta",
+    "archivo": "backend/services/impuestoService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/contabilidadService.js",
+        "linea": 28,
+        "extracto": "return { ...doc, _contabilidadNormalizada: true, monedaOriginal: moneda, tipoCambioOriginal: cambio,"
+      }
+    ],
+    "correccion": "Conversion a CRC una sola vez, preservando moneda y cambio originales en la proyeccion.",
+    "prueba": {
+      "archivo": "backend/__tests__/contabilidadRemediacion.test.js",
+      "linea": 35,
+      "caso": "test('F-11/F-12: compra USD y NC compensan base e IVA en reportes sin doble conversion', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-12",
+    "problema": "Notas de crédito recibidas aumentan compras e IVA en lugar de reducirlos",
+    "severidad": "alta",
+    "archivo": "backend/services/impuestoService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/contabilidadService.js",
+        "linea": 10,
+        "extracto": "const esNC = value => /^(NC|Nota de Cr[eé]dito)$/i.test(value || '');"
+      }
+    ],
+    "correccion": "Notas de credito aplican signo negativo a bases e impuestos sin reescribir XML historico.",
+    "prueba": {
+      "archivo": "backend/__tests__/contabilidadRemediacion.test.js",
+      "linea": 35,
+      "caso": "test('F-11/F-12: compra USD y NC compensan base e IVA en reportes sin doble conversion', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-13",
+    "problema": "La renta y exportación deducen precio bruto anterior al descuento",
+    "severidad": "alta",
+    "archivo": "backend/services/impuestoService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/contabilidadService.js",
+        "linea": 18,
+        "extracto": "const neto = resumen.totalVentaNeta ?? (numero(resumen.totalVenta) - numero(resumen.totalDescuentos));"
+      }
+    ],
+    "correccion": "Renta y exportacion usan base neta; descuento total y cero explicito respetados.",
+    "prueba": {
+      "archivo": "backend/__tests__/contabilidadRemediacion.test.js",
+      "linea": 47,
+      "caso": "test('F-13/F-14/F-35: base neta y cero explicito respetados; no deducible no genera credito IVA', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-14",
+    "problema": "Conciliación acredita impuesto bruto aunque exista exoneración",
+    "severidad": "alta",
+    "archivo": "backend/services/d150Service.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/d150Service.js",
+        "linea": 103,
+        "extracto": "const iva = (l.impuestoNeto ?? l.impuesto?.monto ?? 0) * factorSigno;"
+      }
+    ],
+    "correccion": "Credito neto tras exoneracion completa/parcial; cero declarado no genera impuesto por fallback.",
+    "prueba": {
+      "archivo": "backend/__tests__/contabilidadRemediacion.test.js",
+      "linea": 47,
+      "caso": "test('F-13/F-14/F-35: base neta y cero explicito respetados; no deducible no genera credito IVA', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-15",
+    "problema": "Sanitización CSV se salta cuando la celda contiene separadores",
+    "severidad": "alta",
+    "archivo": "backend/services/declaracionService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/declaracionService.js",
+        "linea": 10,
+        "extracto": "function sanitizarFormulaExcel(val) {"
+      }
+    ],
+    "correccion": "Neutraliza formulas antes de escapar delimitadores; claves largas conservadas como texto.",
+    "prueba": {
+      "archivo": "backend/__tests__/remediacion.test.js",
+      "linea": 61,
+      "caso": "test('F-15: formulas con delimitadores y saltos siguen neutralizadas',()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-16",
+    "problema": "Email confirma resultados parciales y pierde reintentos",
+    "severidad": "alta",
+    "archivo": "backend/routes/emailWebhookRoutes.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/routes/emailWebhookRoutes.js",
+        "linea": 102,
+        "extracto": "await inbox.recibir({ eventKey: `pdf:${toLimpio}:${inbox.hash(pdf.buffer)}`, canal: 'pdf_pendiente',"
+      }
+    ],
+    "correccion": "Cada adjunto queda durable antes del reconocimiento; transitorios quedan pendientes y completados no se repiten.",
+    "prueba": {
+      "archivo": "backend/__tests__/inboxRecovery.test.js",
+      "linea": 9,
+      "caso": "test('F-16: correo parcial conserva XML pendiente y reintenta sin repetir completados', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-17",
+    "problema": "WhatsApp responde éxito antes de persistir el evento",
+    "severidad": "alta",
+    "archivo": "backend/routes/whatsappWebhookRoutes.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/routes/whatsappWebhookRoutes.js",
+        "linea": 90,
+        "extracto": "events.push(await inbox.recibir({ eventKey: `whatsapp:${message.id}`, canal: 'whatsapp', payload: { message } }));"
+      }
+    ],
+    "correccion": "Todos los mensajes verificados se persisten por identidad antes de responder exito; claims recuperables.",
+    "prueba": {
+      "archivo": "backend/__tests__/inboxRecovery.test.js",
+      "linea": 24,
+      "caso": "test('F-16/F-17: claim expirado se recupera tras reinicio y dos workers no procesan simultaneamente', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-18",
+    "problema": "ZIP descomprime por completo antes de aplicar tamaño máximo",
+    "severidad": "alta",
+    "archivo": "backend/routes/emailWebhookRoutes.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/utils/limitedZip.js",
+        "linea": 11,
+        "extracto": "stream.on('data', chunk => {"
+      }
+    ],
+    "correccion": "Limita durante lectura: XML2MiB PDF10MiB total20MiB, 20 entradas y profundidad3; corta antes de materializar exceso.",
+    "prueba": {
+      "archivo": "backend/__tests__/zipLimits.test.js",
+      "linea": 7,
+      "caso": "test('F-18: lectura ZIP interrumpe descompresion al superar limite por entrada', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-19",
+    "problema": "La restauración convierte ObjectId y Date a strings",
+    "severidad": "alta",
+    "archivo": "backend/scripts/restore-mongodb.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/scripts/restore-mongodb.js",
+        "linea": 25,
+        "extracto": "const dump = mongoose.mongo.BSON.EJSON.parse(jsonBuffer.toString('utf8'), { relaxed: false });"
+      }
+    ],
+    "correccion": "EJSON canonico v2 conserva BSON; valida y prepara todas las colecciones antes de reemplazar, con rollback.",
+    "prueba": {
+      "archivo": "backend/__tests__/backupMigrationRemediacion.test.js",
+      "linea": 17,
+      "caso": "test('F-19: BSON ObjectId, Date, Binary y Long sobreviven backup/restore y dry-run no reemplaza datos', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-20",
+    "problema": "Los permisos por rol están definidos pero no se aplican a las rutas de negocio",
+    "severidad": "alta",
+    "archivo": "backend/routes/facturaRoutes.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/middleware/rbacMiddleware.js",
+        "linea": 18,
+        "extracto": "const MATRIZ_PERMISOS = {"
+      }
+    ],
+    "correccion": "Permisos en rutas de negocio y alternativas; pruebas API de cuatro roles, acciones y dos fincas.",
+    "prueba": {
+      "archivo": "backend/__tests__/remediacion.test.js",
+      "linea": 12,
+      "caso": "test('F-20: roles por acciones y dos fincas se aplican en la API real',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-21",
+    "problema": "Reiniciar la configuración MFA desactiva el segundo factor sin reautenticar",
+    "severidad": "alta",
+    "archivo": "backend/controllers/authController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/authController.js",
+        "linea": 897,
+        "extracto": "const usuario = await Usuario.findById(req.usuario._id).select('+password +mfa.secretEncrypted +mfa.pendingSecretEncrypted');"
+      }
+    ],
+    "correccion": "Secreto pendiente separado del activo; reemplazo y desactivacion exigen password y segundo factor.",
+    "prueba": {
+      "archivo": "backend/__tests__/mfaRemediacion.test.js",
+      "linea": 46,
+      "caso": "test('F-21: reemplazo exige reautenticacion y conserva secreto activo hasta confirmar pendiente', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-22",
+    "problema": "El acceso con Google omite el MFA habilitado en la cuenta",
+    "severidad": "alta",
+    "archivo": "backend/controllers/googleAuthController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/googleAuthController.js",
+        "linea": 152,
+        "extracto": "const { crearDesafio, opcionesCookieMfa } = require('../services/mfaService');"
+      }
+    ],
+    "correccion": "Google con MFA entrega solo desafio opaco con cookie, sin refresh de sesion completa.",
+    "prueba": {
+      "archivo": "backend/__tests__/mfaRemediacion.test.js",
+      "linea": 20,
+      "caso": "test('F-02/F-22: desafio comun no emite sesion hasta TOTP y no admite replay', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-23",
+    "problema": "La bitácora descarta eventos de autenticación por valores incompatibles",
+    "severidad": "alta",
+    "archivo": "backend/utils/audit.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/utils/audit.js",
+        "linea": 41,
+        "extracto": "*   metadatos?: object"
+      }
+    ],
+    "correccion": "Normaliza resultados, actor y metadata legacy; prueba persistencia real en Mongo efimero.",
+    "prueba": {
+      "archivo": "backend/__tests__/remediacion.test.js",
+      "linea": 75,
+      "caso": "test('F-23: resultado y metadata legacy se persisten',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-24",
+    "problema": "La recuperación de contraseña crea un token que nunca se entrega al titular",
+    "severidad": "media",
+    "archivo": "backend/controllers/authController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/accountNotifications.js",
+        "linea": 11,
+        "extracto": "doc.tokenEncrypted = encryptSecret(raw, contexto(doc));"
+      }
+    ],
+    "correccion": "Notificacion durable cifrada y adaptador de correo; vistas de recuperacion y consumo atomico de token de un solo uso.",
+    "prueba": {
+      "archivo": "backend/__tests__/accountRecoveryRemediacion.test.js",
+      "linea": 7,
+      "caso": "test('F-24: respuesta uniforme, notificacion cifrada durable y enlace de un solo uso',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-25",
+    "problema": "Resultado fiscal puede quedar bajo período incorrecto",
+    "severidad": "media",
+    "archivo": "frontend/src/pages/ImpuestosPage.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/pages/ImpuestosPage.jsx",
+        "linea": 16,
+        "extracto": "const peticion = useRef(0);"
+      }
+    ],
+    "correccion": "Resultados vinculados a consulta original; descarta respuestas obsoletas y D150 exporta parametros confirmados.",
+    "prueba": {
+      "archivo": "frontend/tests/uiRegresiones.test.js",
+      "linea": 37,
+      "caso": "test('F-25: cambiar periodo oculta resultado anterior y fallo no lo atribuye al periodo nuevo',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-26",
+    "problema": "Perfil excluido del refresh de access token",
+    "severidad": "media",
+    "archivo": "frontend/src/services/api.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/services/api.js",
+        "linea": 51,
+        "extracto": "const esRutaAuth = ['/auth/login', '/auth/registro', '/auth/refresh', '/auth/logout', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-email', '/auth/mfa/verify'].includes(originalRequest?.url);"
+      }
+    ],
+    "correccion": "Perfil y cuenta participan del refresh; solo endpoints que generarian ciclos se excluyen.",
+    "prueba": {
+      "archivo": "frontend/tests/uiRegresiones.test.js",
+      "linea": 65,
+      "caso": "test('F-26: perfil protegido renueva token una vez para peticiones concurrentes y conserva credenciales',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-27",
+    "problema": "Fechas civiles cambian de día por UTC",
+    "severidad": "media",
+    "archivo": "frontend/src/pages/IngresosPage.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/utils/fechaCivil.js",
+        "linea": 5,
+        "extracto": "export function mostrarFechaCivil(valor) {"
+      }
+    ],
+    "correccion": "Fechas civiles conservadas YYYY-MM-DD; limites de periodo explicitos en Costa Rica.",
+    "prueba": {
+      "archivo": "frontend/tests/fechaCivilSingleFlight.test.js",
+      "linea": 5,
+      "caso": "test('F-27: fecha civil de Costa Rica no avanza por UTC ni retrocede al mostrarse',()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-28",
+    "problema": "Refrescar facturas anuncia éxito tras error",
+    "severidad": "media",
+    "archivo": "frontend/src/pages/FacturasPage.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/pages/FacturasPage.jsx",
+        "linea": 46,
+        "extracto": "setErrorCarga('No se pudieron actualizar las facturas. Los datos mostrados pueden estar desactualizados.');"
+      }
+    ],
+    "correccion": "Exito de refresco solo despues de respuesta valida; fallo muestra alerta sin toast de exito.",
+    "prueba": {
+      "archivo": "frontend/tests/uiRegresiones.test.js",
+      "linea": 118,
+      "caso": "test('F-28: refrescar con fallo muestra error sin anunciar exito',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-29",
+    "problema": "SDK pagos no reintenta tras fallo temporal",
+    "severidad": "media",
+    "archivo": "frontend/src/components/billing/OnvoCheckoutModal.jsx",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "frontend/src/services/onvoSdk.js",
+        "linea": 13,
+        "extracto": "script.onerror = fail;"
+      }
+    ],
+    "correccion": "Promesa y script se restablecen tras fallo; modal conserva contenedor y permite reintento.",
+    "prueba": {
+      "archivo": "frontend/tests/onvoSdk.test.js",
+      "linea": 4,
+      "caso": "test('F-29: SDK con fallo temporal se puede cargar de nuevo y comparte peticiones concurrentes', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-30",
+    "problema": "XML v4.4 de tarifa correcta produce falsas alertas por 13%",
+    "severidad": "media",
+    "archivo": "backend/services/xmlParserService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/xmlParserService.js",
+        "linea": 379,
+        "extracto": "const codigoTarifa = String(imp.CodigoTarifaIVA ?? imp.CodigoTarifa ?? '');"
+      }
+    ],
+    "correccion": "Lee CodigoTarifaIVA v4.4 con compatibilidad anterior; conserva parseTagValue:false.",
+    "prueba": {
+      "archivo": "backend/__tests__/limiterParserRemediacion.test.js",
+      "linea": 11,
+      "caso": "test('F-30: CodigoTarifaIVA v4.4 conserva tarifa 1% sin falsa alerta 13%',()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-31",
+    "problema": "El borrador genérico descarta la referencia de NC/ND",
+    "severidad": "media",
+    "archivo": "backend/controllers/haciendaController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/haciendaController.js",
+        "linea": 63,
+        "extracto": "condicionVenta, medioPago, plazoCredito, referencia, documentoReferencia,"
+      }
+    ],
+    "correccion": "Referencia NC/ND validada y persistida desde borrador generico y modelo compartido.",
+    "prueba": {
+      "archivo": "backend/test-sdk/worker.test.cjs",
+      "linea": 107,
+      "caso": "test('API local: configura finca, crea FE y TE, firma, conserva XML y bloquea consulta de borrador',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-32",
+    "problema": "Dos REP en borrador pueden exceder el saldo al firmarse",
+    "severidad": "media",
+    "archivo": "backend/controllers/repController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/repReservations.js",
+        "linea": 15,
+        "extracto": "const updated = await Factura.findOneAndUpdate({ _id: original._id, tenantId: original.tenantId, estado: 'aceptada',"
+      }
+    ],
+    "correccion": "Reserva saldo atomicamente; cancelacion de borrador sin envio libera una vez; REP real bloqueado tambien en worker.",
+    "prueba": {
+      "archivo": "backend/__tests__/repReservations.test.js",
+      "linea": 15,
+      "caso": "test('F-32: reservas concurrentes no exceden saldo y cancelacion libera una sola vez',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-33",
+    "problema": "Chat informa ingresos cero y campos undefined",
+    "severidad": "media",
+    "archivo": "backend/controllers/chatController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/chatController.js",
+        "linea": 116,
+        "extracto": "const totalIngresos = ingresos.reduce((sum, i) => sum + (i.montoTotal ?? 0), 0);"
+      }
+    ],
+    "correccion": "Contexto usa campos reales y totales completos de la finca sin truncar a ultimos registros.",
+    "prueba": {
+      "archivo": "backend/__tests__/contabilidadRemediacion.test.js",
+      "linea": 59,
+      "caso": "test('F-33/S-12: contexto chat suma todos los registros de la finca y usa campos reales', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-34",
+    "problema": "Chat offline no se activa cuando no hay API keys",
+    "severidad": "media",
+    "archivo": "backend/services/aiProvider.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/aiProvider.js",
+        "linea": 67,
+        "extracto": "clasificacionDisponible: true,"
+      }
+    ],
+    "correccion": "Disponibilidad remota separada de clasificacion local; chat sin claves activa resumen local.",
+    "prueba": {
+      "archivo": "backend/__tests__/aiFallbackRemediacion.test.js",
+      "linea": 23,
+      "caso": "test('F-34: sin keys conserva clasificacion heuristica y activa resumen offline',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-35",
+    "problema": "IVA cuatrimestral acredita gastos marcados no deducibles",
+    "severidad": "media",
+    "archivo": "backend/services/impuestoService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/impuestoService.js",
+        "linea": 36,
+        "extracto": "const ivaPagado = f.esDeducible === false ? 0 : (f.resumenFactura?.totalImpuesto ?? 0);"
+      }
+    ],
+    "correccion": "Contrato uniforme: esDeducible:false excluye credito IVA y gasto de renta en todos los reportes.",
+    "prueba": {
+      "archivo": "backend/__tests__/contabilidadRemediacion.test.js",
+      "linea": 47,
+      "caso": "test('F-13/F-14/F-35: base neta y cero explicito respetados; no deducible no genera credito IVA', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-36",
+    "problema": "Editar litros de una venta de leche deja importes anteriores",
+    "severidad": "media",
+    "archivo": "backend/models/Ingreso.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/models/Ingreso.js",
+        "linea": 45,
+        "extracto": "litrosVendidos: {"
+      }
+    ],
+    "correccion": "Recalcula al modificar litros o categoria, ademas de precio/cantidad.",
+    "prueba": {
+      "archivo": "backend/__tests__/remediacion.test.js",
+      "linea": 67,
+      "caso": "test('F-36: editar solamente litros recalcula montos',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-37",
+    "problema": "Todos los XML de un correo reciben el primer PDF",
+    "severidad": "media",
+    "archivo": "backend/routes/emailWebhookRoutes.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/routes/emailWebhookRoutes.js",
+        "linea": 102,
+        "extracto": "await inbox.recibir({ eventKey: `pdf:${toLimpio}:${inbox.hash(pdf.buffer)}`, canal: 'pdf_pendiente',"
+      }
+    ],
+    "correccion": "PDF asociado solo mediante clave comprobada y candidato unico; ambiguos se conservan sin asignar.",
+    "prueba": {
+      "archivo": "backend/__tests__/inboxRecovery.test.js",
+      "linea": 31,
+      "caso": "test('F-37: PDF de identidad incierta se conserva y no se adjunta al XML', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-38",
+    "problema": "IMAP ignora UPLOAD_ROOT configurado",
+    "severidad": "media",
+    "archivo": "backend/services/emailService.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/ingestaFacturaService.js",
+        "linea": 12,
+        "extracto": "const UPLOAD_ROOT = path.resolve(process.env.UPLOAD_ROOT || path.join(__dirname, '..', 'uploads'));"
+      }
+    ],
+    "correccion": "IMAP converge al almacenamiento unificado que respeta UPLOAD_ROOT y contexto tenant.",
+    "prueba": {
+      "archivo": "backend/__tests__/uploadStorage.test.js",
+      "linea": 13,
+      "caso": "it('resolves the relative file paths stored by invoice ingestion under UPLOAD_ROOT', () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-39",
+    "problema": "Movimientos de costos no identifican periodo fiscal",
+    "severidad": "media",
+    "archivo": "backend/controllers/costoController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/costoController.js",
+        "linea": 36,
+        "extracto": "if (!Number.isInteger(periodoFiscal) || periodoFiscal < 2000 || periodoFiscal > 2100) return res.status(400).json({ error: 'periodoFiscal es obligatorio (2000..2100)' });"
+      }
+    ],
+    "correccion": "Consumo, produccion y cierre identifican finca, periodo y centro; falta de periodo devuelve 400.",
+    "prueba": {
+      "archivo": "backend/__tests__/inventoryCostsRemediacion.test.js",
+      "linea": 35,
+      "caso": "test('F-39: referencia repetida entre periodos solo modifica el periodo explicito',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-40",
+    "problema": "Inicialización concurrente crea varios inventarios o costos",
+    "severidad": "media",
+    "archivo": "backend/controllers/inventarioController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/services/tenantSingleton.js",
+        "linea": 8,
+        "extracto": "{ upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true });"
+      }
+    ],
+    "correccion": "Upsert e indices unicos por finca/periodo; migracion detecta duplicados sin borrarlos.",
+    "prueba": {
+      "archivo": "backend/__tests__/inventoryCostsRemediacion.test.js",
+      "linea": 28,
+      "caso": "test('F-40: inicializacion concurrente deja un inventario y un costo por periodo',async()=>{",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-41",
+    "problema": "El período de gracia de pago no vence al alcanzar su fecha límite",
+    "severidad": "media",
+    "archivo": "backend/models/Tenant.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/models/Tenant.js",
+        "linea": 239,
+        "extracto": "periodoGraciaFin: { type: Date },"
+      }
+    ],
+    "correccion": "Vencimiento evaluado centralmente al cargar tenant y en estaActivo; gracia vencida suspende acceso.",
+    "prueba": {
+      "archivo": "backend/__tests__/onvoController.test.js",
+      "linea": 125,
+      "caso": "test('P-09/F-41: cambio mensual concurrente no borra consumos del mes nuevo y gracia vence', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  },
+  {
+    "id": "F-42",
+    "problema": "Dos renovaciones simultáneas aceptan el mismo refresh token",
+    "severidad": "media",
+    "archivo": "backend/controllers/authController.js",
+    "estado": "confirmado",
+    "resultadoRemediacion": "corregido y validado localmente",
+    "evidenciaActual": [
+      {
+        "archivo": "backend/controllers/authController.js",
+        "linea": 490,
+        "extracto": "const claim = await RefreshToken.findOneAndUpdate({ _id: tokenDoc._id, revokedAt: null, expiresAt: { $gt: new Date() } }, { $set: { revokedAt: new Date(), revokedReason: 'rotated', lastUsedAt: new Date() } }, { new: true });"
+      }
+    ],
+    "correccion": "Refresh reclamado por CAS antes del reemplazo; reutilizacion revoca familia/version; cliente comparte renovacion concurrente.",
+    "prueba": {
+      "archivo": "backend/__tests__/mfaRemediacion.test.js",
+      "linea": 61,
+      "caso": "test('F-42: dos refresh del mismo token no crean dos sesiones validas', async () => {",
+      "alcance": "Prueba local sintetica y revision del flujo; ver informe para limites externos."
+    },
+    "resultado": "PASS; backend-verificacion-final.txt / frontend-verificacion-final.txt / lint-verificacion-final.txt / build-verificacion-final.txt",
+    "validacionExterna": "No realizada; no equivale a aceptacion fiscal, entrega real, cobro ni despliegue."
+  }
+]

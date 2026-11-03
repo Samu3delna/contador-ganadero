@@ -1,311 +1,106 @@
-const Tenant = require('../models/Tenant');
+﻿const Tenant = require('../models/Tenant');
+const FacturaEmision = require('../models/FacturaEmision');
 const haciendaWorker = require('../services/haciendaWorker');
-const { firmarDocumento } = require('../services/hacienda').signer;
-const { buildXml } = require('../services/hacienda').xmlBuilder;
-const { getToken } = require('../services/hacienda').auth;
+const { validarCertificado } = require('../services/hacienda').signer;
+const { getToken, limpiarCacheTokens } = require('../services/hacienda').auth;
+const { isConfigured } = require('../utils/crypto');
+const SELECT_CREDS = '+configuracionHacienda.certificadoP12Base64 +configuracionHacienda.pinCertificado +configuracionHacienda.usuarioHacienda +configuracionHacienda.passwordHacienda';
 
-const SELECT_HACIENDA_CREDS = '+configuracionHacienda.certificadoP12Base64 +configuracionHacienda.pinCertificado +configuracionHacienda.usuarioHacienda +configuracionHacienda.passwordHacienda';
-
-async function cargarTenantConCredenciales(req) {
-  if (!req.tenant?._id) return req.tenant;
-  try {
-    const t = await Tenant.findById(req.tenant._id).select(SELECT_HACIENDA_CREDS);
-    return t || req.tenant;
-  } catch {
-    return req.tenant;
-  }
+async function cargarTenant(req) {
+  if (!req.tenant?._id) throw new Error('Se requiere una finca identificada');
+  const tenant = await Tenant.findById(req.tenant._id).select(SELECT_CREDS);
+  if (!tenant) throw new Error('Finca no encontrada');
+  return tenant;
 }
-
-/**
- * GET /api/hacienda/config
- * Obtiene el estado de la configuración Hacienda del tenant actual (sin secrets)
- */
+function errorValidacion(mensaje) { const e = new Error(mensaje); e.status = 400; return e; }
+async function validarCambioAmbiente(tenant, ambiente) {
+  if ((tenant.configuracionHacienda?.ambiente || 'local') === ambiente) return;
+  const pendientes = await FacturaEmision.exists({ tenantId: tenant._id, estado: { $in: ['firmada', 'enviada_hacienda', 'procesando'] } });
+  if (pendientes) throw errorValidacion('Hay comprobantes pendientes en el ambiente actual; resuélvalos antes de cambiarlo');
+}
 const obtenerConfig = async (req, res, next) => {
   try {
-    const tenant = await cargarTenantConCredenciales(req);
+    const tenant = await cargarTenant(req);
     const hc = tenant.configuracionHacienda || {};
-
-    res.json({
-      configurado: hc.estaConfigurado?.() || false,
-      ambiente: hc.ambiente || 'local',
-      sucursal: hc.sucursal || '001',
-      terminal: hc.terminal || '00001',
-      codigoActividad: hc.codigoActividad || '000000',
-      configuradoEn: hc.configuradoEn || null,
-      ultimoError: hc.ultimoError || null,
-      // No devolver: certificadoP12Base64, pinCertificado, usuarioHacienda, passwordHacienda
-    });
-  } catch (error) { next(error); }
+    res.json({ configurado: hc.estaConfigurado?.() || hc.ambiente === 'local', ambiente: hc.ambiente || 'local',
+      sucursal: hc.sucursal, terminal: hc.terminal, codigoActividad: hc.codigoActividad,
+      proveedorSistemas: hc.proveedorSistemas || '', configuradoEn: hc.configuradoEn || null, ultimoError: hc.ultimoError || null });
+  } catch (e) { next(e); }
 };
-
-/**
- * POST /api/hacienda/config
- * Guarda/actualiza la configuración Hacienda del tenant actual
- * Body: { ambiente, certificadoP12Base64, pinCertificado, usuarioHacienda, passwordHacienda, sucursal, terminal, codigoActividad }
- */
 const guardarConfig = async (req, res, next) => {
   try {
-    const tenant = await cargarTenantConCredenciales(req);
-    const {
-      ambiente,
-      certificadoP12Base64,
-      pinCertificado,
-      usuarioHacienda,
-      passwordHacienda,
-      sucursal,
-      terminal,
-      codigoActividad,
-    } = req.body;
-
-    // Validaciones
-    if (!ambiente || !['local', 'sandbox', 'produccion'].includes(ambiente)) {
-      res.status(400);
-      throw new Error('Ambiente inválido: debe ser local, sandbox o produccion');
+    const tenant = await cargarTenant(req);
+    const { ambiente, certificadoP12Base64, pinCertificado, usuarioHacienda, passwordHacienda,
+      sucursal = '001', terminal = '00001', codigoActividad, proveedorSistemas } = req.body;
+    if (!['local', 'sandbox', 'produccion'].includes(ambiente)) throw errorValidacion('Ambiente inválido');
+    if (!/^\d{3}$/.test(sucursal) || Number(sucursal) < 1 || !/^\d{5}$/.test(terminal) || Number(terminal) < 1) throw errorValidacion('Sucursal y terminal requieren 3 y 5 dígitos positivos');
+    if (!/^\d{6}$/.test(codigoActividad || '') || codigoActividad === '000000') throw errorValidacion('Indique el código de actividad económica de seis dígitos');
+    if (!/^[A-Za-z0-9]{9,20}$/.test(proveedorSistemas || '')) throw errorValidacion('Indique la identificación del proveedor del sistema');
+    await validarCambioAmbiente(tenant, ambiente);
+    // Never allow the development plaintext fallback when storing fiscal secrets.
+    if ((certificadoP12Base64 || pinCertificado || passwordHacienda || ambiente !== 'local') && !isConfigured()) {
+      throw errorValidacion('Configure EMAIL_ENC_KEY o MASTER_KEK_CURRENT de 64 caracteres hexadecimales para cifrar las credenciales');
     }
-
+    tenant.configuracionHacienda ||= {};
+    const hc = tenant.configuracionHacienda;
+    // Read old credentials only when necessary. A complete replacement also repairs old AAD records.
+    const p12 = certificadoP12Base64 || (ambiente !== 'local' ? hc.obtenerCertificadoP12?.() : '');
+    const pin = pinCertificado || (ambiente !== 'local' ? hc.obtenerPinCertificado?.() : '');
+    const usuario = usuarioHacienda || hc.usuarioHacienda;
+    const password = passwordHacienda || (ambiente !== 'local' ? hc.obtenerPasswordHacienda?.() : '');
     if (ambiente !== 'local') {
-      if (!certificadoP12Base64) {
-        res.status(400);
-        throw new Error('certificadoP12Base64 es obligatorio para sandbox/produccion');
-      }
-      if (!pinCertificado) {
-        res.status(400);
-        throw new Error('pinCertificado es obligatorio');
-      }
-      if (!usuarioHacienda || !usuarioHacienda.startsWith('cpf-')) {
-        res.status(400);
-        throw new Error('usuarioHacienda debe ser un usuario Hacienda válido (cpf-...)');
-      }
-      if (!passwordHacienda) {
-        res.status(400);
-        throw new Error('passwordHacienda es obligatorio');
-      }
+      if (!p12 || !pin || !password || typeof usuario !== 'string' || !usuario.startsWith('cpf-')) throw errorValidacion('Complete certificado, PIN, usuario cpf- y contraseña propios de esta finca');
+      try { await validarCertificado({ p12Base64: p12, pin, cacheKey: String(tenant._id) }); }
+      catch { throw errorValidacion('No se pudo abrir un certificado vigente con ese PIN'); }
+    } else if (certificadoP12Base64 || pinCertificado) {
+      if (!p12 || !pin) throw errorValidacion('Indique certificado y PIN juntos');
+      await validarCertificado({ p12Base64: p12, pin, cacheKey: String(tenant._id) });
     }
-
-    // Validar formato del certificado (debe ser base64 válido)
-    if (certificadoP12Base64) {
-      try {
-        const base64Data = certificadoP12Base64.includes('base64,')
-          ? certificadoP12Base64.split('base64,')[1]
-          : certificadoP12Base64;
-        Buffer.from(base64Data, 'base64');
-      } catch {
-        res.status(400);
-        throw new Error('certificadoP12Base64 no es un Base64 válido');
-      }
-    }
-
-    // Actualizar configuración
-    tenant.configuracionHacienda = tenant.configuracionHacienda || {};
-    tenant.configuracionHacienda.ambiente = ambiente;
-    tenant.configuracionHacienda.sucursal = sucursal || '001';
-    tenant.configuracionHacienda.terminal = terminal || '00001';
-    tenant.configuracionHacienda.codigoActividad = codigoActividad || '000000';
-
-    if (certificadoP12Base64) {
-      tenant.configuracionHacienda.certificadoP12Base64 = certificadoP12Base64;
-    }
-    if (pinCertificado) {
-      tenant.configuracionHacienda.establecerPinCertificado(pinCertificado);
-    }
-    if (usuarioHacienda) {
-      tenant.configuracionHacienda.usuarioHacienda = usuarioHacienda;
-    }
-    if (passwordHacienda) {
-      tenant.configuracionHacienda.establecerPasswordHacienda(passwordHacienda);
-    }
-
-    tenant.configuracionHacienda.configuradoEn = new Date();
-    tenant.configuracionHacienda.ultimoError = null;
-
+    Object.assign(hc, { ambiente, sucursal, terminal, codigoActividad, proveedorSistemas, configuradoEn: new Date(), ultimoError: null });
+    if (certificadoP12Base64) hc.establecerCertificadoP12(certificadoP12Base64.replace(/^data:[^,]*;base64,/i, '').replace(/\s/g, ''));
+    if (pinCertificado) hc.establecerPinCertificado(pinCertificado);
+    if (usuarioHacienda) hc.usuarioHacienda = usuarioHacienda;
+    if (passwordHacienda) hc.establecerPasswordHacienda(passwordHacienda);
     await tenant.save();
-    if (tenant._id) {
-      haciendaWorker.limpiarCacheLlave(tenant._id.toString());
-    }
-
-    res.json({
-      mensaje: 'Configuración Hacienda guardada correctamente',
-      configurado: tenant.configuracionHacienda.estaConfigurado(),
-    });
-  } catch (error) { next(error); }
+    limpiarCacheTokens(String(tenant._id));
+    haciendaWorker.limpiarCacheLlave(String(tenant._id));
+    res.json({ mensaje: 'Configuración Hacienda guardada', configurado: ambiente === 'local' || hc.estaConfigurado() });
+  } catch (e) { next(e); }
 };
-
-/**
- * POST /api/hacienda/config/test
- * Prueba la conexión a Hacienda y firma un XML de prueba
- */
 const probarConexion = async (req, res, next) => {
   try {
-    const tenant = await cargarTenantConCredenciales(req);
-    const hc = tenant.configuracionHacienda || {};
-
-    if (!hc.estaConfigurado?.()) {
-      res.status(400);
-      throw new Error('Configuración Hacienda incompleta');
-    }
-
+    const tenant = await cargarTenant(req);
     const cfg = haciendaWorker.getTenantConfig(tenant);
-
-    // 1. Probar autenticación (obtener token)
-    let token;
+    if (cfg.ambiente === 'local') return res.json({ success: true, mensaje: 'Modo local de simulación; no verifica acceso a Hacienda', simulacion: true, enviado: false });
+    let certificado;
     try {
-      token = await getToken({
-        ambiente: cfg.ambiente,
-        usuario: cfg.usuario,
-        password: cfg.password,
-      });
-    } catch (e) {
-      tenant.configuracionHacienda.ultimoError = `Auth falló: ${e.message}`;
+      certificado = await validarCertificado({ p12Base64: cfg.p12Base64, pin: cfg.pin, cacheKey: cfg.tenantId });
+      await getToken({ ambiente: cfg.ambiente, usuario: cfg.usuario, password: cfg.password, tenantId: cfg.tenantId });
+    } catch {
+      tenant.configuracionHacienda.ultimoError = 'No se pudo validar certificado o autenticación. Revise PIN y credenciales del ambiente seleccionado.';
       await tenant.save();
-      res.status(422);
-      throw new Error(`Error de autenticación: ${e.message}`);
+      const error = new Error(tenant.configuracionHacienda.ultimoError); error.status = 422; throw error;
     }
-
-    // 2. Generar XML de prueba y firmar
-    const facturaPrueba = {
-      tipoDocumento: 'FE',
-      ambiente: cfg.ambiente,
-      claveNumerica: '506' + '010124' + '000000000123' + '00100001010000000001' + '123456789',
-      consecutivo: '00100001010000000001',
-      codigoActividadEmisor: cfg.codigoActividad,
-      indicadorAutomatico: '0',
-      fechaEmision: new Date(),
-      emisor: {
-        nombre: 'Finca Prueba',
-        nombreComercial: 'Finca Prueba',
-        cedula: { tipo: '01', numero: '123456789' },
-        telefono: '22223333',
-        correo: 'test@finca.com',
-        provincia: '1', canton: '01', distrito: '01', barrio: '01',
-        ubicacion: 'San José',
-      },
-      receptor: {
-        nombre: 'Cliente Prueba',
-        cedula: { tipo: '02', numero: '3101234567' },
-        telefono: '22224444',
-        correo: 'cliente@test.com',
-        provincia: '1', canton: '01', distrito: '01', barrio: '01',
-      },
-      condicionVenta: '01',
-      medioPago: ['04'],
-      plazoCredito: '0',
-      lineaDetalle: [{
-        numeroLinea: 1,
-        codigo: '5010150100000',
-        descripcion: 'Servicio de prueba',
-        cantidad: 1,
-        unidadMedida: 'Sp',
-        precioUnitario: 10000,
-        subtotal: 10000,
-        descuento: { monto: 0 },
-        impuesto: { codigo: '01', codigoTarifa: '02', tarifa: 1, monto: 100, factorIVA: 0.01 },
-        impuestoNeto: 100,
-        montoTotal: 10100,
-      }],
-      resumenFactura: {
-        totalServGravados: 0,
-        totalServExentos: 0,
-        totalMercanciasGravadas: 10000,
-        totalMercanciasExentas: 0,
-        totalGravado: 10000,
-        totalExento: 0,
-        totalVenta: 10000,
-        totalDescuentos: 0,
-        totalVentaNeta: 10000,
-        totalImpuesto: 100,
-        totalComprobante: 10100,
-      },
-    };
-
-    const xml = buildXml(facturaPrueba);
-    let xmlFirmado;
-    try {
-      xmlFirmado = firmarDocumento(xml, {
-        p12Base64: cfg.p12Base64,
-        pin: cfg.pin,
-        cacheKey: cfg.tenantId,
-        ambiente: cfg.ambiente,
-      });
-    } catch (e) {
-      tenant.configuracionHacienda.ultimoError = `Firma falló: ${e.message}`;
-      await tenant.save();
-      res.status(422);
-      throw new Error(`Error firmando XML: ${e.message}`);
-    }
-
-    // 3. Si es ambiente local, simular éxito
-    if (cfg.ambiente === 'local') {
-      tenant.configuracionHacienda.ultimoError = null;
-      await tenant.save();
-      return res.json({
-        success: true,
-        mensaje: 'Configuración válida (ambiente local - simulación)',
-        token: token?.access_token ? 'OK' : 'MOCK',
-        xmlFirmado: xmlFirmado.length > 100 ? xmlFirmado.substring(0, 200) + '...' : xmlFirmado,
-      });
-    }
-
-    // 4. En sandbox/produccion: enviar a Hacienda (solo test de recepción)
-    const { enviarComprobante } = require('../services/hacienda').recepcion;
-    const documento = {
-      clave: facturaPrueba.claveNumerica,
-      fecha: facturaPrueba.fechaEmision.toISOString(),
-      emisorTipoId: '01',
-      emisorNumeroId: '123456789',
-      receptorTipoId: '02',
-      receptorNumeroId: '3101234567',
-      xmlFirmado,
-    };
-
-    const resp = await enviarComprobante({
-      ambiente: cfg.ambiente,
-      documento,
-      token,
-      credenciales: { usuario: cfg.usuario, password: cfg.password },
-    });
-
-    if (resp.httpStatus === 201) {
-      tenant.configuracionHacienda.ultimoError = null;
-      await tenant.save();
-      res.json({
-        success: true,
-        mensaje: 'Conexión exitosa con Hacienda',
-        location: resp.location,
-        clave: facturaPrueba.claveNumerica,
-      });
-    } else {
-      tenant.configuracionHacienda.ultimoError = `Envío falló: ${JSON.stringify(resp.error)}`;
-      await tenant.save();
-      res.status(422);
-      throw new Error(`Error enviando a Hacienda: ${JSON.stringify(resp.error)}`);
-    }
-  } catch (error) { next(error); }
+    tenant.configuracionHacienda.ultimoError = null;
+    await tenant.save();
+    res.json({ success: true, mensaje: 'Certificado y autenticación válidos. La aceptación de comprobantes requiere una prueba separada.', certificado, enviado: false });
+  } catch (e) { next(e); }
 };
-
-/**
- * DELETE /api/hacienda/config
- * Elimina la configuración Hacienda del tenant
- */
 const eliminarConfig = async (req, res, next) => {
   try {
-    const tenant = req.tenant;
-    tenant.configuracionHacienda = {
-      ambiente: 'local',
-      sucursal: '001',
-      terminal: '00001',
-      codigoActividad: '000000',
-    };
-    await tenant.save();
-    if (tenant._id) {
-      haciendaWorker.limpiarCacheLlave(tenant._id.toString());
+    const tenant = await cargarTenant(req);
+    // Keep counters: deleting credentials must never reset the fiscal sequence.
+    const pendientes = await FacturaEmision.exists({ tenantId: tenant._id, estado: { $in: ['firmada', 'enviada_hacienda', 'procesando'] } });
+    if (pendientes) throw errorValidacion('Resuelva los comprobantes pendientes antes de eliminar la configuración');
+    const hc = tenant.configuracionHacienda;
+    if (hc) {
+      for (const field of ['certificadoP12Base64', 'pinCertificado', 'usuarioHacienda', 'passwordHacienda', 'configuradoEn', 'ultimoError']) hc[field] = undefined;
+      hc.ambiente = 'local';
     }
-    res.json({ mensaje: 'Configuración Hacienda eliminada' });
-  } catch (error) { next(error); }
+    await tenant.save();
+    limpiarCacheTokens(String(tenant._id));
+    haciendaWorker.limpiarCacheLlave(String(tenant._id));
+    res.json({ mensaje: 'Credenciales Hacienda eliminadas; consecutivos conservados' });
+  } catch (e) { next(e); }
 };
-
-module.exports = {
-  obtenerConfig,
-  guardarConfig,
-  probarConexion,
-  eliminarConfig,
-};
+module.exports = { obtenerConfig, guardarConfig, probarConexion, eliminarConfig };

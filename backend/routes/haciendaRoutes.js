@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protegerRuta } = require('../middleware/authMiddleware');
 const { extraerTenant } = require('../middleware/tenantGuard');
+const { puedeFacturar } = require('../middleware/haciendaGuard');
 const {
   infoAmbiente,
   crearBorrador,
@@ -22,6 +23,13 @@ router.get('/interno/consulta/:clave', consultaMockLocal);
 
 router.use(protegerRuta);
 router.use(extraerTenant);
+router.use(['/emision', '/rep', '/fec', '/d150', '/ambiente'], require('../middleware/rbacMiddleware').permitir('facturas:leer'));
+
+// Signing or changing fiscal documents requires a financial role in this finca.
+router.use((req, res, next) => {
+  if (req.method !== 'POST') return next();
+  return puedeFacturar(req, res, next);
+});
 
 // Info del ambiente Hacienda
 router.get('/ambiente', infoAmbiente);
@@ -54,6 +62,8 @@ router.get('/rep/por-factura/:facturaIdOriginal', repController.resumenAbonosPor
 router.post('/fec', fecController.crearFec);
 router.get('/fec', fecController.listarFec);
 router.get('/fec/resumen', fecController.resumenCompras);
+
+router.use('/d150', require('../middleware/rbacMiddleware').permitir('declaraciones:generar_y_exportar'), (req, res, next) => req.tenant?.limites?.moduloD150 === true ? next() : res.status(403).json({ error: 'PLAN_SIN_D150' }));
 
 // ============ D-150 Conciliacion Tributaria ============
 router.get('/d150/conciliacion', d150Controller.conciliacion);

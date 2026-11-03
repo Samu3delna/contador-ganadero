@@ -1,3 +1,4 @@
+const { obtenerFuentes } = require('./contabilidadService');
 /**
  * Servicio de Conciliacion Tributaria D-150 (IVA mensual).
  *
@@ -46,8 +47,8 @@ const CUADROS_COMPRAS = [
  * @param {number} anio
  */
 function rangoMes(mes, anio) {
-  const inicio = new Date(anio, mes - 1, 1, 0, 0, 0, 0);
-  const fin = new Date(anio, mes, 0, 23, 59, 59, 999);
+  const inicio = new Date(Date.UTC(anio, mes - 1, 1, 6));
+  const fin = new Date(Date.UTC(anio, mes, 1, 5, 59, 59, 999));
   return { inicio, fin };
 }
 
@@ -71,44 +72,11 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
   if (!mes || !anio) throw new Error('mes y anio son requeridos');
 
   const { inicio, fin } = rangoMes(mes, anio);
-  const scope = tenantId ? { tenantId } : { usuario: usuarioId };
-
-  // ============ VENTAS (Debito Fiscal) ============
-  // 1) Documentos emitidos electrónicamente por el usuario: FE, TE, REP, NC, ND
-  const ventasEmision = await FacturaEmision.find({
-    ...scope,
-    estado: 'aceptada',
-    tipoDocumento: { $in: ['FE', 'TE', 'NC', 'ND'] },
-    fechaEmision: { $gte: inicio, $lte: fin },
-  }).lean();
-
-  // 2) Ingresos registrados en el sistema (ventas en pie, leche, etc.)
-  const ingresosRegistrados = await Ingreso.find({
-    ...scope,
-    fecha: { $gte: inicio, $lte: fin },
-  }).lean();
-
-  // ============ COMPRAS (Credito Fiscal) ============
-  // 1) FEC emitidas por el usuario (compra a no emisores)
-  const comprasFec = await FacturaEmision.find({
-    ...scope,
-    estado: 'aceptada',
-    tipoDocumento: 'FEC',
-    fechaEmision: { $gte: inicio, $lte: fin },
-  }).lean();
-
-  // 2) Facturas recibidas (IMAP) válidas de proveedores con FE
-  let comprasRecibidas = [];
-  try {
-    comprasRecibidas = await Factura.find({
-      ...scope,
-      estado: { $ne: 'error' },
-      'emisor.cedula.numero': { $exists: true },
-      fechaEmision: { $gte: inicio, $lte: fin },
-    }).lean();
-  } catch (e) {
-    console.warn('[D-150] coleccion Factura error:', e.message);
-  }
+  const fuentes = await obtenerFuentes({ usuarioId, tenantId, inicio, fin });
+  const ventasEmision = fuentes.ventasEmision;
+  const ingresosRegistrados = fuentes.ingresos;
+  const comprasFec = []; // Included once in normalized purchases.
+  const comprasRecibidas = fuentes.facturas;
 
   // ============ Procesar lineas por tarifa ============
   const ventasPorTarifa = {};      // tarifa -> { base, iva, count, ncMonto }
@@ -128,11 +96,11 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
   for (const d of ventasEmision) {
     if (d.claveNumerica) clavesVentasProcesadas.add(d.claveNumerica);
     const esNC = d.tipoDocumento === 'NC';
-    const factorSigno = esNC ? -1 : 1;
+    const factorSigno = 1; // Normalized source already applies the document sign.
     for (const l of d.lineaDetalle || []) {
       const tarifa = l.impuesto?.tarifa || 0;
       const base = (l.subtotal || 0) * factorSigno;
-      const iva = (l.impuesto?.monto || 0) * factorSigno;
+      const iva = (l.impuestoNeto ?? l.impuesto?.monto ?? 0) * factorSigno;
       acumular(ventasPorTarifa, tarifa, base, iva, esNC);
     }
   }
@@ -140,12 +108,12 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
   // Acumular ventas de Ingresos (evitando duplicar si ya están en FacturaEmision)
   for (const ing of ingresosRegistrados) {
     const claveIngreso = ing.facturaElectronica?.claveNumerica;
-    if (claveIngreso && clavesVentasProcesadas.has(claveIngreso)) {
+    if (ing._contabilidadNormalizada || (claveIngreso && clavesVentasProcesadas.has(claveIngreso))) {
       continue;
     }
     const tarifa = ing.tasaIVA != null ? ing.tasaIVA : 0;
     const base = ing.montoSubtotal || 0;
-    const iva = ing.ivaVenta || (tarifa > 0 ? (base * tarifa) / 100 : 0);
+    const iva = ing.ivaVenta ?? (tarifa > 0 ? (base * tarifa) / 100 : 0);
     acumular(ventasPorTarifa, tarifa, base, iva, false);
   }
 
@@ -153,7 +121,7 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
   for (const d of comprasFec) {
     for (const l of d.lineaDetalle || []) {
       const tarifa = l.impuesto?.tarifa || 0;
-      acumular(comprasPorTarifa, tarifa, l.subtotal || 0, l.impuesto?.monto || 0);
+      acumular(comprasPorTarifa, tarifa, l.subtotal || 0, l.impuestoNeto ?? l.impuesto?.monto ?? 0);
     }
   }
 
@@ -163,7 +131,7 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
 
     // Si NO es deducible, se asigna a "Compras sin IVA soportado o no acreditable" (tarifa 0)
     if (!esDeducible) {
-      const subtotalNoDed = Number(f.resumenFactura?.totalVentaNeta || f.resumenFactura?.totalVenta || 0);
+      const subtotalNoDed = Number(f.resumenFactura?.totalVentaNeta ?? f.resumenFactura?.totalVenta ?? 0);
       acumular(comprasPorTarifa, 0, subtotalNoDed, 0);
       continue;
     }
@@ -172,14 +140,14 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
     if (Array.isArray(f.lineaDetalle) && f.lineaDetalle.length > 0) {
       for (const l of f.lineaDetalle) {
         const tarifa = l.impuesto?.tarifa != null ? Number(l.impuesto.tarifa) : (Number(f.tasaIVA) || 13);
-        const base = Number(l.subtotal || l.baseImponible || 0);
-        const iva = Number(l.impuesto?.monto != null ? l.impuesto.monto : (tarifa > 0 ? (base * tarifa) / 100 : 0));
+        const base = Number(l.subtotal ?? l.baseImponible ?? 0);
+        const iva = Number(l.impuestoNeto ?? l.impuesto?.monto ?? (tarifa > 0 ? (base * tarifa) / 100 : 0));
         acumular(comprasPorTarifa, tarifa, base, iva);
       }
     } else {
       // Fallback a resumenFactura
       const resumen = f.resumenFactura || {};
-      const base = Number(resumen.totalVentaNeta || resumen.totalVenta || 0);
+      const base = Number(resumen.totalVentaNeta ?? resumen.totalVenta ?? 0);
       const iva = Number(resumen.totalImpuesto || 0);
       let tarifa = f.tasaIVA != null ? Number(f.tasaIVA) : 0;
       if (iva > 0 && base > 0 && tarifa === 0) {
@@ -297,7 +265,7 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
 
   for (const ing of ingresosRegistrados) {
     const clave = ing.facturaElectronica?.claveNumerica;
-    if (clave && clavesVentasProcesadas.has(clave)) continue;
+    if (ing._contabilidadNormalizada || (clave && clavesVentasProcesadas.has(clave))) continue;
     listaDocumentos.push({
       tipo: 'VENTA',
       tipoDoc: 'INGRESO',
@@ -322,7 +290,7 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
       cedula: c.emisor?.cedula?.numero ? String(c.emisor.cedula.numero).trim() : '',
       consecutivo: String(c.consecutivo || '').trim(),
       claveNumerica: String(c.claveNumerica || '').trim(),
-      subtotal: c.resumenFactura?.totalVentaNeta || c.resumenFactura?.totalVenta || 0,
+      subtotal: c.resumenFactura?.totalVentaNeta ?? c.resumenFactura?.totalVenta ?? 0,
       iva: c.resumenFactura?.totalImpuesto || 0,
       total: c.resumenFactura?.totalComprobante || 0,
       tasaIVA: c.tasaIVA || 13,
@@ -360,8 +328,8 @@ async function generarConciliacion({ usuarioId, tenantId = null, mes, anio, rete
     },
     meta: {
       cantidadVentas: ventasEmision.length,
-      cantidadComprasFEC: comprasFec.length,
-      cantidadComprasRecibidas: comprasRecibidas.length,
+      cantidadComprasFEC: fuentes.comprasFec.length,
+      cantidadComprasRecibidas: comprasRecibidas.filter(c => c.tipoDocumento !== 'FEC').length,
       generadoEn: new Date().toISOString(),
     },
   };

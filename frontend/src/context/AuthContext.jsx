@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   loginAPI,
   registroAPI,
@@ -6,6 +6,7 @@ import {
   obtenerPerfilAPI,
   logoutAPI,
   setAccessToken,
+  verificarMfaAPI,
 } from '../services/api';
 import { esAdministrador } from '../utils/adminHelper';
 
@@ -77,6 +78,14 @@ export function AuthProvider({ children }) {
     return datosNormalizados;
   };
 
+  const completarMfa = async (datos) => {
+    const res = await verificarMfaAPI(datos);
+    const sesion = { ...res.data, esSuperAdmin: esAdministrador(res.data) };
+    setAccessToken(sesion.token);
+    setUsuario(sesion);
+    return sesion;
+  };
+
   const refrescarSesion = async () => {
     try {
       const res = await obtenerPerfilAPI();
@@ -100,12 +109,13 @@ export function AuthProvider({ children }) {
     setUsuario(null);
   };
 
-  const actualizarUsuario = (datosActualizados) => {
-    setUsuario((prev) => ({ ...prev, ...datosActualizados }));
-  };
+  const actualizarUsuario = useCallback((datosActualizados) => {
+    setUsuario((prev) => prev ? ({ ...prev, ...datosActualizados,
+      ...(datosActualizados.tenant ? { tenant: { ...prev.tenant, ...datosActualizados.tenant } } : {}) }) : prev);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ usuario, cargando, login, registro, logout, refrescarSesion, actualizarUsuario }}>
+    <AuthContext.Provider value={{ usuario, cargando, login, registro, logout, refrescarSesion, actualizarUsuario, completarMfa }}>
       {children}
     </AuthContext.Provider>
   );

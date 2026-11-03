@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { hoyCivil, mostrarFechaCivil } from '../utils/fechaCivil';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { singleFlight } from '../utils/singleFlight';
 import {
   Settings, TrendingUp, Receipt, Percent, Calculator, Download,
   Save, CheckCircle, XCircle, AlertTriangle, FileText, FileSpreadsheet, Landmark,
@@ -84,7 +86,7 @@ export default function DeclaracionesPage() {
 
   // Formularios
   const [nuevoIngreso, setNuevoIngreso] = useState({
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: hoyCivil(),
     categoriaIngreso: 'venta_ganado_pie',
     descripcion: '',
     tipoGanado: 'novillo',
@@ -102,7 +104,7 @@ export default function DeclaracionesPage() {
   });
 
   const [nuevoGasto, setNuevoGasto] = useState({
-    fechaEmision: new Date().toISOString().split('T')[0],
+    fechaEmision: hoyCivil(),
     emisorNombre: '',
     descripcion: '',
     totalVenta: '',
@@ -177,7 +179,10 @@ export default function DeclaracionesPage() {
     }
   };
 
-  const guardarIngreso = async () => {
+  const ingresoEnVuelo = useRef(singleFlight());
+  const [guardandoIngreso, setGuardandoIngreso] = useState(false);
+  const guardarIngreso = () => ingresoEnVuelo.current(async () => {
+    setGuardandoIngreso(true);
     try {
       const payload = {
         fecha: nuevoIngreso.fecha,
@@ -210,7 +215,7 @@ export default function DeclaracionesPage() {
       await crearIngresoAPI(payload);
       mostrarMensaje('exito', 'Ingreso registrado');
       setNuevoIngreso({
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: hoyCivil(),
         categoriaIngreso: 'venta_ganado_pie',
         descripcion: '',
         tipoGanado: 'novillo',
@@ -230,8 +235,10 @@ export default function DeclaracionesPage() {
     } catch (err) {
       console.error(err);
       mostrarMensaje('error', 'Error guardando ingreso');
+    } finally {
+      setGuardandoIngreso(false);
     }
-  };
+  });
 
   const guardarGastoManual = async () => {
     try {
@@ -246,7 +253,7 @@ export default function DeclaracionesPage() {
       });
       mostrarMensaje('exito', 'Gasto registrado');
       setNuevoGasto({
-        fechaEmision: new Date().toISOString().split('T')[0],
+        fechaEmision: hoyCivil(),
         emisorNombre: '',
         descripcion: '',
         totalVenta: '',
@@ -605,7 +612,7 @@ export default function DeclaracionesPage() {
                   <div className="form-group"><label>N° Factura Electrónica Emitida</label><input className="input" type="text" placeholder="Consecutivo o clave numérica" value={nuevoIngreso.facturaNumero} onChange={(e) => setNuevoIngreso({ ...nuevoIngreso, facturaNumero: e.target.value })} /></div>
                 </div>
                 <div style={{ marginTop: 'var(--espacio-md)' }}>
-                  <button className="btn-primary" onClick={guardarIngreso}><Plus size={16} /> Registrar Ingreso</button>
+                  <button className="btn-primary" onClick={guardarIngreso} disabled={guardandoIngreso}><Plus size={16} /> {guardandoIngreso ? 'Registrando…' : 'Registrar Ingreso'}</button>
                 </div>
               </div>
 
@@ -623,7 +630,7 @@ export default function DeclaracionesPage() {
                     <tbody>
                       {(ingresos.ingresos || []).map((ing) => (
                         <tr key={ing._id}>
-                          <td>{new Date(ing.fecha).toLocaleDateString('es-CR')}</td>
+                          <td>{mostrarFechaCivil(ing.fecha)}</td>
                           <td><span className={`badge badge-${ing.categoriaIngreso === 'venta_ganado_pie' ? 'primario' : ing.categoriaIngreso === 'venta_leche' ? 'exito' : 'secundario'}`}>{CAT_INGRESO_LABEL[ing.categoriaIngreso]}</span></td>
                           <td>{ing.descripcion}</td>
                           <td>{ing.comprador?.nombre || '-'}</td>

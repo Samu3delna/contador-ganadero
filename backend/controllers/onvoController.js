@@ -89,8 +89,8 @@ const cancelarSuscripcionTenant = async (req, res, next) => {
 
     await onvo.cancelarSuscripcion(tenant.onvoSubscriptionId);
 
-    tenant.onvoSubscriptionId = null;
-    tenant.estado = 'cancelado';
+    tenant.onvoSubscriptionId = undefined;
+    tenant.estado = 'activo';
     tenant.canceladoEn = new Date();
     tenant.aplicarPlan('free');
     await tenant.save();
@@ -170,7 +170,7 @@ const secretoWebhookValido = (req) => {
  * ONVO no envía un ID de evento global; usamos type + id del objeto.
  */
 const construirEventoId = (type, data) => {
-  const objetoId = data?.id || data?.paymentIntentId || data?.subscriptionId;
+  const objetoId = data?.id || data?.paymentIntentId || (data?.subscriptionId && data?.periodEnd ? `${data.subscriptionId}:${data.periodEnd}` : null);
   if (objetoId) return `${type}:${objetoId}`;
   const hash = crypto.createHash('sha256').update(JSON.stringify(data || {})).digest('hex');
   return `${type}:${hash}`;
@@ -214,7 +214,7 @@ const webhookOnvo = async (req, res) => {
   }
 
   try {
-    const { created: creado, event: eventoGuardado } = await SubscriptionEvent.registrarSiNoExiste({
+    const { event: eventoGuardado } = await SubscriptionEvent.registrarSiNoExiste({
       eventoId: construirEventoId(type, data),
       type,
       data,
@@ -222,11 +222,19 @@ const webhookOnvo = async (req, res) => {
       subscriptionId: data.subscriptionId,
     });
 
-    if (!creado) {
+    if (eventoGuardado.procesado) {
       return res.json({ received: true, duplicate: true });
     }
-
-    await procesarEventoOnvo(type, data, eventoGuardado);
+    const claimToken = crypto.randomUUID();
+    const claim = await SubscriptionEvent.reclamar(eventoGuardado._id, claimToken);
+    if (!claim) return res.status(503).json({ error: 'EVENTO_EN_PROCESO' });
+    try {
+      await procesarEventoOnvo(type, data, claim);
+    } catch (error) {
+      await SubscriptionEvent.updateOne({ _id: claim._id, claimToken },
+        { $set: { error: 'No se pudo aplicar el evento' }, $unset: { claimToken: 1, claimHasta: 1 } }, { skipTenant: true });
+      throw error;
+    }
     return res.json({ received: true });
   } catch (err) {
     console.error('Error procesando webhook ONVO:', err.message);
@@ -238,67 +246,53 @@ const webhookOnvo = async (req, res) => {
  * Lógica interna: procesar un evento ONVO y actualizar el Tenant correspondiente
  */
 const procesarEventoOnvo = async (type, datos, subscriptionEvent) => {
-  switch (type) {
-    case 'subscription.renewal.succeeded': {
-      const tenant = await buscarTenantParaEvento(datos);
-      if (!tenant) {
-        await subscriptionEvent.marcarError(`Tenant no encontrado para suscripción ${datos.subscriptionId}`);
-        return;
-      }
-
-      // Si el tenant tenía otra suscripción activa (cambio de plan), cancelarla
-      if (tenant.onvoSubscriptionId && tenant.onvoSubscriptionId !== datos.subscriptionId) {
-        try {
-          await onvo.cancelarSuscripcion(tenant.onvoSubscriptionId);
-        } catch (err) {
-          console.warn('No se pudo cancelar la suscripción anterior en ONVO:', err.message);
-        }
-      }
-
-      tenant.onvoCustomerId = datos.customerId || tenant.onvoCustomerId;
-      tenant.onvoSubscriptionId = datos.subscriptionId;
-
+  const tenant = await buscarTenantParaEvento(datos);
+  const renewal = ['subscription.renewal.succeeded', 'subscription.renewal.failed'].includes(type);
+  if (renewal && !tenant) throw new Error('Tenant del evento no encontrado');
+  const eventoId = subscriptionEvent.eventoId;
+  if (renewal) {
+    const cambios = {};
+    if (type === 'subscription.renewal.succeeded') {
       const planId = datos.metadata?.planId;
-      if (planId && PLANES_VALIDOS.includes(planId)) {
-        tenant.aplicarPlan(planId);
-      }
-
-      tenant.estado = 'activo';
-      tenant.resetearConsumo();
-      tenant.periodoRenovacion = datos.periodEnd
-        ? new Date(datos.periodEnd)
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      await tenant.save();
-
-      subscriptionEvent.tenantId = tenant._id;
-      await subscriptionEvent.marcarProcesado(tenant._id);
-      break;
+      if (planId && !PLANES_VALIDOS.includes(planId)) throw new Error('Plan inválido');
+      if (planId) { cambios.plan = planId; cambios.limites = Tenant.obtenerLimitesPlan(planId); }
+      Object.assign(cambios, { estado: 'activo', onvoSubscriptionId: datos.subscriptionId,
+        onvoCustomerId: datos.customerId || tenant.onvoCustomerId,
+        periodoRenovacion: datos.periodEnd ? new Date(datos.periodEnd) : new Date(subscriptionEvent.createdAt.getTime() + 30 * 86400000),
+        periodoGraciaFin: null, 'consumoActual.conteosMes': 0, 'consumoActual.tokensChatMes': 0,
+        'consumoActual.periodoActual': require('../utils/periodoCR').periodoCR() });
+    } else {
+      Object.assign(cambios, { estado: 'periodo_gracia',
+        periodoGraciaFin: new Date(subscriptionEvent.createdAt.getTime() + 7 * 86400000), suspendidoEn: subscriptionEvent.createdAt });
     }
-
-    case 'subscription.renewal.failed': {
-      const tenant = await buscarTenantParaEvento(datos);
-      if (!tenant) {
-        await subscriptionEvent.marcarError(`Tenant no encontrado para suscripción ${datos.subscriptionId}`);
-        return;
-      }
-
-      tenant.estado = 'periodo_gracia';
-      tenant.periodoGraciaFin = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      tenant.suspendidoEn = new Date();
-      await tenant.save();
-
-      await subscriptionEvent.marcarProcesado(tenant._id);
-      break;
-    }
-
-    default: {
-      // payment-intent.*, checkout-session.succeeded, mobile-transfer.received, etc.
-      // No requieren acción: las renovaciones gobiernan el estado del plan.
-      const tenant = await buscarTenantParaEvento(datos);
-      await subscriptionEvent.marcarProcesado(tenant?._id || null);
+    const aplicado = await Tenant.updateOne({ _id: tenant._id, onvoEventosAplicados: { $ne: eventoId } },
+      { $set: cambios, $addToSet: { onvoEventosAplicados: eventoId } }, { runValidators: true });
+    if (aplicado.modifiedCount && type === 'subscription.renewal.succeeded' && tenant.onvoSubscriptionId && tenant.onvoSubscriptionId !== datos.subscriptionId) {
+      try { await onvo.cancelarSuscripcion(tenant.onvoSubscriptionId); }
+      catch { console.warn('Cancelación de suscripción anterior requiere conciliación operativa'); }
     }
   }
+  await SubscriptionEvent.updateOne({ _id: subscriptionEvent._id, claimToken: subscriptionEvent.claimToken },
+    { $set: { procesado: true, procesadoAt: new Date(), ...(tenant ? { tenantId: tenant._id } : {}) },
+      $unset: { claimToken: 1, claimHasta: 1, error: 1 } }, { skipTenant: true });
 };
+
+// Called by the background process after a crash or a transient processing failure.
+async function reconciliarEventosPendientes() {
+  const pendientes = await SubscriptionEvent.find({ procesado: { $ne: true },
+    $or: [{ claimHasta: { $exists: false } }, { claimHasta: null }, { claimHasta: { $lte: new Date() } }] }, null,
+  { skipTenant: true }).sort({ createdAt: 1 }).limit(25);
+  for (const evento of pendientes) {
+    const token = crypto.randomUUID();
+    const claim = await SubscriptionEvent.reclamar(evento._id, token);
+    if (!claim) continue;
+    try { await procesarEventoOnvo(claim.type, claim.data, claim); }
+    catch {
+      await SubscriptionEvent.updateOne({ _id: claim._id, claimToken: token },
+        { $set: { error: 'Procesamiento pendiente', claimHasta: new Date(Date.now() + 60000) } }, { skipTenant: true });
+    }
+  }
+}
 
 module.exports = {
   crearSesionCheckout,
@@ -306,4 +300,5 @@ module.exports = {
   obtenerEstadoSuscripcion,
   obtenerPlanes,
   webhookOnvo,
+  reconciliarEventosPendientes,
 };

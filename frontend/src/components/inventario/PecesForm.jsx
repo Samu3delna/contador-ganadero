@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 const ESPECIES_PECES = [
   { value: 'tilapia', label: 'Tilapia' },
@@ -18,6 +18,7 @@ const ESTADOS_ESTANQUE = [
 ];
 
 export default function PecesForm({ animal, onSave, onCancel, guardando }) {
+  const formId = useId();
   const initialForm = animal ? {
     estanqueId: animal.estanqueId || '',
     especie: animal.especie || 'tilapia',
@@ -84,8 +85,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
   return (
     <form onSubmit={handleSubmit} className="form-grid">
       <div className="form-group">
-        <label>Estanque ID *</label>
-        <input
+        <label htmlFor={`${formId}-1`}>Estanque ID *</label>
+        <input id={`${formId}-1`}
           className="input"
           type="text"
           value={form.estanqueId}
@@ -96,8 +97,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Especie *</label>
-        <select
+        <label htmlFor={`${formId}-2`}>Especie *</label>
+        <select id={`${formId}-2`}
           className="input"
           value={form.especie}
           onChange={e => setForm({ ...form, especie: e.target.value })}
@@ -107,8 +108,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Capacidad (m³)</label>
-        <input
+        <label htmlFor={`${formId}-3`}>Capacidad (m³)</label>
+        <input id={`${formId}-3`}
           className="input"
           type="number"
           min="0"
@@ -118,8 +119,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Fecha de Siembra *</label>
-        <input
+        <label htmlFor={`${formId}-4`}>Fecha de Siembra *</label>
+        <input id={`${formId}-4`}
           className="input"
           type="date"
           value={form.fechaSiembra}
@@ -129,8 +130,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Número de Alevines Inicial *</label>
-        <input
+        <label htmlFor={`${formId}-5`}>Número de Alevines Inicial *</label>
+        <input id={`${formId}-5`}
           className="input"
           type="number"
           min="1"
@@ -143,8 +144,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
       {animal && (
         <>
           <div className="form-group">
-            <label>Peces Actuales</label>
-            <input
+            <label htmlFor={`${formId}-6`}>Peces Actuales</label>
+            <input id={`${formId}-6`}
               className="input"
               type="number"
               min="0"
@@ -154,8 +155,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Mortalidad Acumulada</label>
-            <input
+            <label htmlFor={`${formId}-7`}>Mortalidad Acumulada</label>
+            <input id={`${formId}-7`}
               className="input"
               type="number"
               min="0"
@@ -165,8 +166,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Peso Promedio Actual (kg)</label>
-            <input
+            <label htmlFor={`${formId}-8`}>Peso Promedio Actual (kg)</label>
+            <input id={`${formId}-8`}
               className="input"
               type="number"
               step="0.001"
@@ -177,8 +178,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Biomasa Total (kg)</label>
-            <input
+            <label htmlFor={`${formId}-9`}>Biomasa Total (kg)</label>
+            <input id={`${formId}-9`}
               className="input"
               type="number"
               step="0.1"
@@ -189,8 +190,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Tipo de Alimento</label>
-            <input
+            <label htmlFor={`${formId}-10`}>Tipo de Alimento</label>
+            <input id={`${formId}-10`}
               className="input"
               type="text"
               value={form.tipoAlimento}
@@ -199,8 +200,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Alimento Consumido Acumulado (kg)</label>
-            <input
+            <label htmlFor={`${formId}-11`}>Alimento Consumido Acumulado (kg)</label>
+            <input id={`${formId}-11`}
               className="input"
               type="number"
               min="0"
@@ -210,8 +211,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>FCA (Factor Conversión)</label>
-            <input
+            <label htmlFor={`${formId}-12`}>FCA (Factor Conversión)</label>
+            <input id={`${formId}-12`}
               className="input"
               type="number"
               step="0.01"
@@ -222,8 +223,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Costo de Alevines (₡)</label>
-            <input
+            <label htmlFor={`${formId}-13`}>Costo de Alevines (₡)</label>
+            <input id={`${formId}-13`}
               className="input"
               type="number"
               min="0"
@@ -233,8 +234,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Costo de Alimento (₡)</label>
-            <input
+            <label htmlFor={`${formId}-14`}>Costo de Alimento (₡)</label>
+            <input id={`${formId}-14`}
               className="input"
               type="number"
               min="0"
@@ -244,8 +245,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Costo de Medicamentos (₡)</label>
-            <input
+            <label htmlFor={`${formId}-15`}>Costo de Medicamentos (₡)</label>
+            <input id={`${formId}-15`}
               className="input"
               type="number"
               min="0"
@@ -257,8 +258,8 @@ export default function PecesForm({ animal, onSave, onCancel, guardando }) {
       )}
 
       <div className="form-group">
-        <label>Estado</label>
-        <select
+        <label htmlFor={`${formId}-16`}>Estado</label>
+        <select id={`${formId}-16`}
           className="input"
           value={form.estado}
           onChange={e => setForm({ ...form, estado: e.target.value })}

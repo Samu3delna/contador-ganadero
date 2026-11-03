@@ -13,6 +13,7 @@ const {
 
 router.use(protegerRuta);
 router.use(extraerTenant);
+router.use((req, res, next) => require('../middleware/rbacMiddleware').permitir(req.method === 'GET' ? 'costos:leer' : 'costos:crear')(req, res, next));
 
 router.get('/', obtenerCostos);
 router.get('/resumen', obtenerResumenCostos);

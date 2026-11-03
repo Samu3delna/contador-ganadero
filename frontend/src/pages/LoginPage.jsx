@@ -13,7 +13,7 @@ import fondoLogin from '../Recursos/fondo_login.webm';
 import './LoginPage.css';
 
 export default function LoginPage() {
-  const { login, registro, usuario, cargando: authCargando } = useAuth();
+  const { login, registro, completarMfa, usuario, cargando: authCargando } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -45,6 +45,9 @@ export default function LoginPage() {
   const [animandoCambio, setAnimandoCambio] = useState(false);
   const [saliendoInicio, setSaliendoInicio] = useState(false);
   const [error, setError] = useState('');
+  const [mfa, setMfa] = useState(() => new URLSearchParams(window.location.search).get('mfa') === '1' ? {} : null);
+  const [codigoMfa, setCodigoMfa] = useState('');
+  const [usarRecuperacion, setUsarRecuperacion] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [form, setForm] = useState({
     nombre: '',
@@ -95,7 +98,9 @@ export default function LoginPage() {
     setCargando(true);
     try {
       let datosSesion;
-      if (esRegistro) {
+      if (mfa) {
+        datosSesion = await completarMfa({ ...(mfa.mfaToken ? { mfaToken: mfa.mfaToken } : {}), [usarRecuperacion ? 'backupCode' : 'totpCode']: codigoMfa });
+      } else if (esRegistro) {
         let datosRegistro = { ...form }; // incluye aceptaTerminos, que el backend valida obligatoriamente
         if (datosRegistro.telefono) {
           const digits = datosRegistro.telefono.replace(/\D/g, '');
@@ -111,6 +116,8 @@ export default function LoginPage() {
       } else {
         datosSesion = await login(form.email, form.password);
       }
+
+      if (datosSesion?.mfaRequired) { setMfa(datosSesion); return; }
 
       // Variable y condición: Si ingresa como administrador o el correo electrónico es de administrador,
       // se redirige al panel de administración (/admin) y NO al dashboard de usuario (/dashboard).
@@ -194,15 +201,23 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <LoginForm
+        {mfa ? <form onSubmit={handleSubmit} className="space-y-4">
+          <label htmlFor="codigo-mfa">{usarRecuperacion ? 'Código de recuperación' : 'Código de autenticación'}</label>
+          <input id="codigo-mfa" autoComplete="one-time-code" value={codigoMfa} onChange={e => setCodigoMfa(e.target.value)} required className="w-full rounded border p-3 bg-slate-900" />
+          {error && <p role="alert">{error}</p>}
+          <Button type="submit" disabled={cargando}>{cargando ? 'Verificando…' : 'Verificar e ingresar'}</Button>
+          <button type="button" onClick={() => { setUsarRecuperacion(v => !v); setCodigoMfa(''); }}>Usar {usarRecuperacion ? 'autenticador' : 'código de recuperación'}</button>
+          <button type="button" onClick={() => { setMfa(null); setCodigoMfa(''); }}>Volver al inicio de sesión</button>
+        </form> : <LoginForm
           form={form}
           setForm={setForm}
           handleSubmit={handleSubmit}
           error={error}
           cargando={cargando}
           esRegistro={esRegistro}
-        />
+        />}
 
+        {!mfa && !esRegistro && <Link to="/recuperar-password">Olvidé mi contraseña</Link>}
         <div className="login-divider my-5">
           <span>{esRegistro ? '¿Ya tienes una cuenta?' : '¿Nuevo productor en la plataforma?'}</span>
         </div>

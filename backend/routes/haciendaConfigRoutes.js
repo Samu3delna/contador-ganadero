@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protegerRuta } = require('../middleware/authMiddleware');
 const { extraerTenant } = require('../middleware/tenantGuard');
+const { esDueñoTenant } = require('../middleware/adminGuard');
 const {
   obtenerConfig,
   guardarConfig,
@@ -16,12 +17,12 @@ router.use(extraerTenant);
 router.get('/config', obtenerConfig);
 
 // POST /api/hacienda/config - Guardar/actualizar configuración
-router.post('/config', guardarConfig);
+router.post('/config', esDueñoTenant, guardarConfig);
 
 // POST /api/hacienda/config/test - Probar conexión y firma
-router.post('/config/test', probarConexion);
+router.post('/config/test', esDueñoTenant, probarConexion);
 
 // DELETE /api/hacienda/config - Eliminar configuración
-router.delete('/config', eliminarConfig);
+router.delete('/config', esDueñoTenant, eliminarConfig);
 
 module.exports = router;

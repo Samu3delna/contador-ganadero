@@ -12,10 +12,12 @@
 
 const FacturaEmision = require('../models/FacturaEmision');
 const hacienda = require('../services/hacienda');
+const haciendaWorker = require('../services/haciendaWorker');
+const Tenant = require('../models/Tenant');
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 
 const TIPO_REP = 'REP';
-const CODIGO_REFERENCIA_PAGO = '04'; //04 = Pago parcial / abono (tabla Hacienda)
+const CODIGO_REFERENCIA_PAGO = '17'; //04 = Pago parcial / abono (tabla Hacienda)
 //Otros: 01=Anulacion, 02=Devolucion, 05=NotaDebito, 99=Otros
 
 // ============ CREAR REP ============
@@ -31,8 +33,21 @@ const crearRep = async (req, res, next) => {
     } = req.body;
 
     if (!facturaIdOriginal) { res.status(400); throw new Error('facturaIdOriginal es obligatorio'); }
-    if (!montoAbono || montoAbono <= 0) { res.status(400); throw new Error('montoAbono inválido'); }
+    if (typeof montoAbono !== 'number' || !Number.isFinite(montoAbono) || montoAbono <= 0) { res.status(400); throw new Error('montoAbono inválido'); }
+    const idempotenciaRep = req.headers['idempotency-key'];
+    if (idempotenciaRep && !/^[a-zA-Z0-9_-]{1,128}$/.test(idempotenciaRep)) return res.status(400).json({ error: 'Idempotency-Key inválida' });
+    const repSolicitudHash = require('crypto').createHash('sha256').update(JSON.stringify({ facturaIdOriginal, montoAbono,
+      fechaPago: req.body.fechaPago || null, medioPago, referenciaPago, descripcion })).digest('hex');
+    if (idempotenciaRep) {
+      const previo = await FacturaEmision.findOne({ ...req.filtrarPorTenant(), idempotenciaRep });
+      if (previo) return previo.repSolicitudHash === repSolicitudHash ? res.json(previo) : res.status(409).json({ error: 'Idempotency-Key usada con otro pago' });
+    }
 
+    const tenant = await Tenant.findById(req.tenant._id);
+    const cfg = haciendaWorker.getTenantConfig(tenant);
+    if (cfg.ambiente !== 'local') {
+      res.status(422); throw new Error('REP disponible solo en simulación en esta etapa: falta validar la distribución de IVA de los pagos con Hacienda');
+    }
     const facturaOriginal = await FacturaEmision.findOne({
       _id: facturaIdOriginal,
       ...req.filtrarPorTenant(),
@@ -42,8 +57,8 @@ const crearRep = async (req, res, next) => {
     if (facturaOriginal.tipoDocumento !== 'FE' && facturaOriginal.tipoDocumento !== 'TE') {
       res.status(400); throw new Error(`Solo se puede aplicar REP a FE/TE, no a ${facturaOriginal.tipoDocumento}`);
     }
-    if (facturaOriginal.condicionVenta !== '02') {
-      res.status(400); throw new Error('La factura original no es de crédito (condicionVenta=02)');
+    if (!['08', '10'].includes(facturaOriginal.condicionVenta)) {
+      res.status(400); throw new Error('El REP requiere una factura original con condición 08 o 10');
     }
     if (facturaOriginal.estado !== 'aceptada') {
       res.status(400); throw new Error(`La factura original debe estar aceptada. Estado actual: ${facturaOriginal.estado}`);
@@ -56,7 +71,7 @@ const crearRep = async (req, res, next) => {
           ...req.filtrarPorTenant(),
           tipoDocumento: TIPO_REP,
           'documentoReferencia.numeroReferencia': facturaOriginal.claveNumerica,
-          estado: { $in: ['firmada', 'procesando', 'aceptada'] },
+          estado: { $in: ['borrador', 'firmada', 'enviada_hacienda', 'procesando', 'aceptada'] },
         },
       },
       { $group: { _id: null, total: { $sum: '$resumenFactura.totalComprobante' } } },
@@ -71,12 +86,15 @@ const crearRep = async (req, res, next) => {
     //Construir una factura tipo REP con una sola línea "Abono a factura X"
     const fechaEmision = new Date(fechaPago);
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
-    const seqNum = typeof req.tenant?.siguienteConsecutivo === 'function' ? await req.tenant.siguienteConsecutivo(TIPO_REP) : Number(String(Date.now()).slice(-10));
-    const consecutivo = `00100001${hacienda.clave50.TIPO_DOC_CODIGO[TIPO_REP]}${String(seqNum).padStart(10, '0')}`;
+    const seqNum = await tenant.siguienteConsecutivo(TIPO_REP);
+    const consecutivo = hacienda.clave50.generarConsecutivo({ ...cfg, tipoDocumento: TIPO_REP, secuencia: seqNum });
 
-    const nuevoRep = await FacturaEmision.create(req.aplicarTenant({
+    const nuevoRep = new FacturaEmision(req.aplicarTenant({
+      repOriginalId: facturaOriginal._id,
+      ...(idempotenciaRep ? { idempotenciaRep, repSolicitudHash } : {}),
       tipoDocumento: TIPO_REP,
-      ambiente: process.env.HACIENDA_AMBIENTE || 'local',
+      ambiente: cfg.ambiente, proveedorSistemas: cfg.proveedorSistemas,
+      moneda: facturaOriginal.moneda, tipoCambio: facturaOriginal.tipoCambio,
       consecutivo,
       emisor: facturaOriginal.emisor,
       receptor: facturaOriginal.receptor,
@@ -94,10 +112,10 @@ const crearRep = async (req, res, next) => {
         montoTotal: montoAbono,
       }],
       tipoProducto: 'otros_productos_rea',
-      condicionVenta: '01',
+      condicionVenta: facturaOriginal.condicionVenta === '08' ? '09' : '11',
       medioPago: [medioPago],
       documentoReferencia: {
-        tipoDocReferencia: '01', //01 = Factura electrónica
+        tipoDocReferencia: hacienda.clave50.TIPO_DOC_CODIGO[facturaOriginal.tipoDocumento], //01 = Factura electrónica
         numeroReferencia: facturaOriginal.claveNumerica,
         fechaEmisionReferencia: facturaOriginal.fechaEmision,
         codigoReferencia: CODIGO_REFERENCIA_PAGO,
@@ -111,6 +129,20 @@ const crearRep = async (req, res, next) => {
       usuario: req.usuario._id,
     }));
 
+    await nuevoRep.validate();
+    const reservations = require('../services/repReservations');
+    await reservations.reservar(facturaOriginal, nuevoRep._id, nuevoRep.resumenFactura.totalComprobante);
+    try { await nuevoRep.save(); }
+    catch (error) {
+      // Release only when absence is proved; an uncertain write keeps the reservation.
+      const existe = await FacturaEmision.exists({ _id: nuevoRep._id, tenantId: req.tenant._id }).catch(() => true);
+      if (!existe) await reservations.liberar(nuevoRep);
+      if (error.code === 11000 && idempotenciaRep) {
+        const previo = await FacturaEmision.findOne({ ...req.filtrarPorTenant(), idempotenciaRep });
+        if (previo?.repSolicitudHash === repSolicitudHash) return res.json(previo);
+      }
+      throw error;
+    }
     res.status(201).json(nuevoRep);
   } catch (error) { next(error); }
 };
@@ -122,12 +154,12 @@ const listarRep = async (req, res, next) => {
     const filtro = { ...req.filtrarPorTenant(), tipoDocumento: TIPO_REP };
     if (periodoFiscal) filtro.periodoFiscal = Number(periodoFiscal);
     if (estado) filtro.estado = estado;
-    const skip = (Number(page) - 1) * Number(limit);
+    const { skip, pageNum, limitNum } = require('../utils/paginacion').paginacion({ page, limit });
     const [docs, total] = await Promise.all([
-      FacturaEmision.find(filtro).sort({ fechaEmision: -1 }).skip(skip).limit(Number(limit)),
+      FacturaEmision.find(filtro).sort({ fechaEmision: -1 }).skip(skip).limit(limitNum),
       FacturaEmision.countDocuments(filtro),
     ]);
-    res.json({ docs, total, pagina: Number(page), totalPaginas: Math.ceil(total / Number(limit)) });
+    res.json({ docs, total, pagina: pageNum, totalPaginas: Math.ceil(total / limitNum) });
   } catch (error) { next(error); }
 };
 
@@ -145,7 +177,7 @@ const resumenAbonosPorFactura = async (req, res, next) => {
       ...req.filtrarPorTenant(),
       tipoDocumento: TIPO_REP,
       'documentoReferencia.numeroReferencia': facturaOriginal.claveNumerica,
-      estado: { $in: ['firmada', 'procesando', 'aceptada'] },
+      estado: { $in: ['borrador', 'firmada', 'enviada_hacienda', 'procesando', 'aceptada'] },
     }).sort({ fechaEmision: 1 });
 
     const totalAbonado = abonos.reduce((s, a) => s + (a.resumenFactura?.totalComprobante || 0), 0);

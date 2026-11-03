@@ -1,3 +1,4 @@
+import Paginacion from '../components/common/Paginacion';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, AlertTriangle, Loader2, Upload } from 'lucide-react';
 import {
@@ -16,31 +17,38 @@ import './FacturasPage.css';
 export default function FacturasPage() {
   const [facturas, setFacturas] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [pagina, setPagina] = useState(1);
+  const [meta, setMeta] = useState({});
   const [sincronizando, setSincronizando] = useState(false);
   const [subiendoXML, setSubiendoXML] = useState(false);
   const [alertasTarifa, setAlertasTarifa] = useState(null);
   const [filtroAlertas, setFiltroAlertas] = useState(false);
   const [detalleExpandido, setDetalleExpandido] = useState(null);
   const [descargando, setDescargando] = useState(null);
+  const [errorCarga, setErrorCarga] = useState('');
   const fileInputRef = useRef(null);
 
   const cargar = useCallback(async () => {
+    setErrorCarga('');
     try {
-      const params = { limit: 50 };
+      const params = { limit: 50, page: pagina };
       if (filtroAlertas) params.soloAlertas = 'true';
 
       const [fRes, aRes] = await Promise.all([
         obtenerFacturasAPI(params),
         obtenerAlertasTarifaAPI().catch(() => null),
       ]);
-      setFacturas(fRes.data.facturas);
+      setFacturas(fRes.data.facturas); setMeta(fRes.data);
       if (aRes) setAlertasTarifa(aRes.data);
+      return true;
     } catch(err) { 
-      console.error(err); 
+      console.error(err);
+      setErrorCarga('No se pudieron actualizar las facturas. Los datos mostrados pueden estar desactualizados.');
+      return false;
     } finally { 
       setCargando(false); 
     }
-  }, [filtroAlertas]);
+  }, [filtroAlertas, pagina]);
 
   useEffect(() => {
     const run = async () => {
@@ -54,8 +62,8 @@ export default function FacturasPage() {
   async function handleSincronizar() {
     setSincronizando(true);
     try {
-      await cargar();
-      toast.success('Facturas actualizadas');
+      if (await cargar()) toast.success('Facturas actualizadas');
+      else toast.error('No se pudieron actualizar las facturas');
     } catch(err) {
       console.error(err);
       toast.error('Error al recargar facturas');
@@ -136,6 +144,8 @@ export default function FacturasPage() {
 
   return (
     <div className="page-content">
+      <Paginacion pagina={pagina} {...meta} onChange={setPagina} cargando={cargando} />
+      {errorCarga && <p role="alert">{errorCarga}</p>}
       <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2">
@@ -185,7 +195,7 @@ export default function FacturasPage() {
             variant={filtroAlertas ? 'destructive' : 'outline'}
             size="sm"
             className="gap-1.5 h-9"
-            onClick={() => setFiltroAlertas(!filtroAlertas)}
+            onClick={() => { setFiltroAlertas(!filtroAlertas); setPagina(1); }}
             id="btn-filtro-alertas"
           >
             <AlertTriangle size={15} />

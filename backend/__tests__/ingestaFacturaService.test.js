@@ -53,3 +53,25 @@ describe('Resolución de destinatario de facturas', () => {
     expect(String(resultado.tenantId)).toBe(String(finca.tenant._id));
   });
 });
+
+
+test('S-05: alias parciales, sufijos y correo personal no asignan finca', async () => {
+  await crearTenantYUsuario({ nombre:'Esperanza',alias:'esperanza-abcd',email:'esperanza@example.test',cedula:'101110111' });
+  await crearTenantYUsuario({ nombre:'Otra',alias:'otra-abcd',email:'otra@example.test',cedula:'202220222' });
+  for (const alias of ['esperanza','abcd','inventado-abcd']) {
+    const r=await resolverDestinatario({emailDestino:`${alias}@contadorganandero.com`});
+    expect(r.usuario).toBeNull(); expect(r.tenantId).toBeNull();
+  }
+  const exacto=await resolverDestinatario({emailDestino:'esperanza-abcd@contadorganandero.com'});
+  expect(exacto.tenantId).toBeTruthy();
+});
+
+test('S-05: cedula o telefono compartidos entre fincas quedan sin asignar sin fallback a alias',async()=>{
+  const a=await crearTenantYUsuario({nombre:'A',alias:'finca-a',email:'a@ambiguo.test',cedula:'109990888'});
+  const b=await crearTenantYUsuario({nombre:'B',alias:'finca-b',email:'b@ambiguo.test',cedula:'109990888'});
+  await Usuario.updateMany({_id:{$in:[a.usuario._id,b.usuario._id]}},{$set:{telefono:'88887777'}});
+  const ambigua=await resolverDestinatario({cedulaReceptor:'109990888',emailDestino:'finca-a@contadorganandero.com'});
+  expect(ambigua.usuario).toBeNull();expect(ambigua.tenantId).toBeNull();
+  expect((await resolverDestinatario({telefono:'+50688887777'})).usuario).toBeNull();
+  expect((await resolverDestinatario({telefono:'+188887777'})).usuario).toBeNull();
+});

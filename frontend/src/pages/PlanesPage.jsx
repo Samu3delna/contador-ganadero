@@ -6,8 +6,10 @@ import PlanCard from '../components/billing/PlanCard';
 import OnvoCheckoutModal from '../components/billing/OnvoCheckoutModal';
 import '../components/billing/OnvoCheckoutModal.css';
 import './PlanesPage.css';
+import { useAuth } from '../context/AuthContext';
 
 export default function PlanesPage() {
+  const { actualizarUsuario } = useAuth();
   const [planActual, setPlanActual] = useState(undefined);
   const [planes, setPlanes] = useState(PLANES_FALLBACK);
   const [cargando, setCargando] = useState(true);
@@ -17,9 +19,9 @@ export default function PlanesPage() {
   const refrescarPlan = useCallback(async () => {
     const estadoRes = await obtenerEstadoSuscripcionAPI().catch(() => null);
     const plan = estadoRes?.data?.tenant?.plan || estadoRes?.data?.plan;
-    if (plan) setPlanActual(plan);
+    if (plan) { setPlanActual(plan); actualizarUsuario({ plan, tenant: estadoRes.data.tenant }); }
     return plan;
-  }, []);
+  }, [actualizarUsuario]);
 
   useEffect(() => {
     const cargarTodo = async () => {

@@ -15,7 +15,7 @@ const Declaracion = require('../models/Declaracion');
 const { getJwtSecret, getJwtRefreshSecret } = require('../config/env');
 const { JWT_ISSUER, JWT_AUDIENCE } = require('../middleware/authMiddleware');
 const { validarPoliticaPassword, verificarPasswordFiltradoHIBP } = require('../utils/pwnedPassword');
-const { generateTotpSecret, buildOtpAuthUrl, verifyTotpToken, generateBackupCodes, verifyBackupCode } = require('../utils/totp');
+const { generateTotpSecret, buildOtpAuthUrl, verifyTotpToken, generateBackupCodes } = require('../utils/totp');
 const { audit } = require('../utils/audit');
 
 const DUMMY_HASH = '$2a$12$e8Ov5y2ZJ7m6V3QvX7fX9.kX6f8oFzN0zJz5t1Z5V3m6V3QvX7fX9';
@@ -23,13 +23,14 @@ const DUMMY_HASH = '$2a$12$e8Ov5y2ZJ7m6V3QvX7fX9.kX6f8oFzN0zJz5t1Z5V3m6V3QvX7fX9
 /**
  * Genera access token JWT con claims { id, tenantId, rol, tokenVersion } y algoritmo HS256 explícito.
  */
-const generarToken = (usuario, tenantId) => {
+const generarToken = (usuario, tenantId, mfaVerifiedAt = null) => {
   return jwt.sign(
     {
       id: usuario._id,
       tenantId,
       rol: usuario.rol || 'dueño',
       tokenVersion: usuario.tokenVersion || 0,
+      mfaVerifiedAt,
     },
     getJwtSecret(),
     {
@@ -44,7 +45,7 @@ const generarToken = (usuario, tenantId) => {
 /**
  * Genera y persiste un refresh token con rotación y detección de reúso por familia.
  */
-const emitirRefreshToken = async (usuario, tenantId, req, familyId = null) => {
+const emitirRefreshToken = async (usuario, tenantId, req, familyId = null, mfaVerifiedAt = null) => {
   const jti = crypto.randomUUID();
   const jtiHash = RefreshToken.hashTokenId(jti);
   const familia = familyId || crypto.randomUUID();
@@ -56,6 +57,7 @@ const emitirRefreshToken = async (usuario, tenantId, req, familyId = null) => {
       tenantId,
       rol: usuario.rol || 'dueño',
       type: 'refresh',
+      mfaVerifiedAt,
       jti,
       familyId: familia,
       tokenVersion: usuario.tokenVersion || 0,
@@ -211,6 +213,7 @@ const registro = async (req, res, next) => {
     tenant.owner = usuario._id;
     tenant.usuarios = [{ usuarioId: usuario._id, rol: 'dueño', agregadoEn: ahora }];
     await tenant.save();
+    await require('../services/accountNotifications').encolar(usuario, tokenVerificacionRaw, 'verify');
 
     const accessToken = generarToken(usuario, tenant._id);
     const { token: refreshToken } = await emitirRefreshToken(usuario, tenant._id, req);
@@ -333,11 +336,7 @@ const login = async (req, res, next) => {
     // Verificación MFA TOTP si está habilitada para el usuario
     if (usuario.mfa?.enabled) {
       if (!totpCode && !backupCode) {
-        const mfaChallengeToken = jwt.sign(
-          { id: usuario._id, tenantId: tenant._id, type: 'mfa_challenge' },
-          getJwtSecret(),
-          { algorithm: 'HS256', expiresIn: '5m', issuer: JWT_ISSUER, audience: JWT_AUDIENCE }
-        );
+        const mfaChallengeToken = await require('../services/mfaService').crearDesafio(usuario);
         return res.status(200).json({
           mfaRequired: true,
           mfaToken: mfaChallengeToken,
@@ -345,18 +344,7 @@ const login = async (req, res, next) => {
         });
       }
 
-      let mfaOk = false;
-      if (totpCode) {
-        const secretBase32 = usuario.getMfaSecret();
-        mfaOk = Boolean(secretBase32 && verifyTotpToken(secretBase32, totpCode));
-      } else if (backupCode) {
-        const check = verifyBackupCode(backupCode, usuario.mfa.backupCodesHash || []);
-        if (check.valid) {
-          mfaOk = true;
-          usuario.mfa.backupCodesHash = check.remainingHashes;
-          await usuario.save();
-        }
-      }
+      const mfaOk = await require('../services/mfaService').verificarFactor(usuario, { totpCode, backupCode });
 
       if (!mfaOk) {
         await usuario.registrarIntentoFallido();
@@ -377,8 +365,9 @@ const login = async (req, res, next) => {
       await Tenant.updateOne({ _id: tenant._id }, { emailAlias: tenant.emailAlias });
     }
 
-    const accessToken = generarToken(usuario, tenant._id);
-    const { token: refreshToken } = await emitirRefreshToken(usuario, tenant._id, req);
+    const verifiedAt = usuario.mfa?.enabled ? Date.now() : null;
+    const accessToken = generarToken(usuario, tenant._id, verifiedAt);
+    const { token: refreshToken } = await emitirRefreshToken(usuario, tenant._id, req, null, verifiedAt);
     setRefreshCookie(res, refreshToken);
 
     await audit(req, {
@@ -482,8 +471,7 @@ const refrescarToken = async (req, res, next) => {
     if (tokenDoc.revokedAt) {
       await RefreshToken.revocarFamilia(tokenDoc.familyId, 'reuse_detected');
       await RefreshToken.revocarTodosDeUsuario(usuario._id, 'reuse_detected');
-      usuario.tokenVersion = (usuario.tokenVersion || 0) + 1;
-      await usuario.save();
+      await Usuario.updateOne({ _id: usuario._id }, { $inc: { tokenVersion: 1 } });
       clearRefreshCookie(res);
 
       await audit(req, {
@@ -499,7 +487,14 @@ const refrescarToken = async (req, res, next) => {
     }
 
     // Rotar refresh token
-    const nuevoRefresh = await emitirRefreshToken(usuario, tenant._id, req, tokenDoc.familyId);
+    const claim = await RefreshToken.findOneAndUpdate({ _id: tokenDoc._id, revokedAt: null, expiresAt: { $gt: new Date() } }, { $set: { revokedAt: new Date(), revokedReason: 'rotated', lastUsedAt: new Date() } }, { new: true });
+    if (!claim) {
+      await Usuario.updateOne({ _id: usuario._id }, { $inc: { tokenVersion: 1 } });
+      await RefreshToken.revocarFamilia(tokenDoc.familyId, 'reuse_detected');
+      clearRefreshCookie(res);
+      return res.status(401).json({ error: 'Refresh token ya utilizado' });
+    }
+    const nuevoRefresh = await emitirRefreshToken(usuario, tenant._id, req, tokenDoc.familyId, decoded.mfaVerifiedAt);
     tokenDoc.revokedAt = new Date();
     tokenDoc.revokedReason = 'rotated';
     tokenDoc.replacedByJtiHash = nuevoRefresh.jtiHash;
@@ -507,7 +502,7 @@ const refrescarToken = async (req, res, next) => {
     await tokenDoc.save();
 
     setRefreshCookie(res, nuevoRefresh.token);
-    const accessToken = generarToken(usuario, tenant._id);
+    const accessToken = generarToken(usuario, tenant._id, decoded.mfaVerifiedAt);
 
     res.json({ token: accessToken });
   } catch (error) {
@@ -793,9 +788,10 @@ const forgotPassword = async (req, res, next) => {
     if (usuario && !usuario.suspendido) {
       const rawToken = crypto.randomBytes(32).toString('hex');
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-      usuario.passwordResetTokenHash = tokenHash;
-      usuario.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
+      usuario.resetPasswordTokenHash = tokenHash;
+      usuario.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
       await usuario.save();
+      await require('../services/accountNotifications').encolar(usuario, rawToken, 'reset');
 
       await audit(req, {
         accion: 'auth.password_reset_requested',
@@ -834,23 +830,12 @@ const resetPassword = async (req, res, next) => {
     }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const usuario = await Usuario.findOne({
-      passwordResetTokenHash: tokenHash,
-      passwordResetExpires: { $gt: new Date() },
-    }).select('+password +passwordResetTokenHash +passwordResetExpires');
-
-    if (!usuario) {
-      res.status(400);
-      throw new Error('El enlace de recuperación es inválido o ha expirado');
-    }
-
-    usuario.password = passwordNueva;
-    usuario.passwordResetTokenHash = null;
-    usuario.passwordResetExpires = null;
-    usuario.tokenVersion = (usuario.tokenVersion || 0) + 1;
-    usuario.loginAttempts = 0;
-    usuario.lockUntil = null;
-    await usuario.save();
+    const passwordHash = await bcrypt.hash(passwordNueva, 12);
+    const usuario = await Usuario.findOneAndUpdate({ resetPasswordTokenHash: tokenHash,
+      resetPasswordExpires: { $gt: new Date() } },
+    { $set: { password: passwordHash, resetPasswordTokenHash: null, resetPasswordExpires: null,
+      loginAttempts: 0, lockUntil: null }, $inc: { tokenVersion: 1 } }, { new: true });
+    if (!usuario) { res.status(400); throw new Error('El enlace de recuperacion es invalido o ha expirado'); }
 
     await RefreshToken.revocarTodosDeUsuario(usuario._id, 'password_reset');
 
@@ -909,15 +894,18 @@ const verifyEmail = async (req, res, next) => {
  */
 const mfaSetup = async (req, res, next) => {
   try {
-    const usuario = await Usuario.findById(req.usuario._id).select('+mfa.secretEncrypted');
+    const usuario = await Usuario.findById(req.usuario._id).select('+password +mfa.secretEncrypted +mfa.pendingSecretEncrypted');
     if (!usuario) {
       res.status(404);
       throw new Error('Usuario no encontrado');
     }
 
+    if (usuario.mfa?.enabled && (!req.body?.password || !await usuario.compararPassword(req.body.password) || !await require('../services/mfaService').verificarFactor(usuario, req.body))) {
+      return res.status(409).json({ error: 'Confirme contraseña y segundo factor para sustituir MFA.' });
+    }
     const secret = generateTotpSecret();
-    usuario.setMfaSecret(secret);
-    usuario.mfa.enabled = false;
+    usuario.mfa.pendingSecretEncrypted = require('../utils/crypto').encryptSecret(secret, { tenantId: String(usuario.tenantId || usuario._id), fieldName: 'usuario.mfa.pendingSecret' });
+    usuario.mfa.pendingExpiresAt = new Date(Date.now() + 600000);
     await usuario.save();
 
     const otpauthUrl = buildOtpAuthUrl({
@@ -945,19 +933,23 @@ const mfaSetup = async (req, res, next) => {
 const mfaEnable = async (req, res, next) => {
   try {
     const { totpCode } = req.body;
-    const usuario = await Usuario.findById(req.usuario._id).select('+mfa.secretEncrypted +mfa.backupCodesHash');
+    const usuario = await Usuario.findById(req.usuario._id).select('+mfa.secretEncrypted +mfa.backupCodesHash +mfa.pendingSecretEncrypted');
     if (!usuario) {
       res.status(404);
       throw new Error('Usuario no encontrado');
     }
 
-    const secret = usuario.getMfaSecret();
+    const secret = usuario.mfa.pendingSecretEncrypted && usuario.mfa.pendingExpiresAt > new Date()
+      ? require('../utils/crypto').decryptSecret(usuario.mfa.pendingSecretEncrypted, { tenantId: String(usuario.tenantId || usuario._id), fieldName: 'usuario.mfa.pendingSecret' }) : null;
     if (!secret || !verifyTotpToken(secret, totpCode)) {
       res.status(400);
       throw new Error('Código TOTP inválido. Verifica la hora de tu dispositivo.');
     }
 
     const { plainCodes, hashedCodes } = generateBackupCodes(8);
+    usuario.setMfaSecret(secret);
+    usuario.mfa.pendingSecretEncrypted = undefined;
+    usuario.mfa.pendingExpiresAt = undefined;
     usuario.mfa.enabled = true;
     usuario.mfa.verifiedAt = new Date();
     usuario.mfa.backupCodesHash = hashedCodes;
@@ -997,6 +989,10 @@ const mfaDisable = async (req, res, next) => {
     if (!usuario || !(await usuario.compararPassword(password))) {
       res.status(401);
       throw new Error('Contraseña incorrecta');
+    }
+
+    if (usuario.mfa?.enabled && !await require('../services/mfaService').verificarFactor(usuario, req.body)) {
+      return res.status(401).json({ error: 'Confirme su segundo factor para desactivar MFA' });
     }
 
     usuario.mfa = {
@@ -1084,4 +1080,5 @@ module.exports = {
   generarToken,
   emitirRefreshToken,
   setRefreshCookie,
+  clearRefreshCookie,
 };

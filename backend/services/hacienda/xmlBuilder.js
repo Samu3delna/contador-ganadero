@@ -1,266 +1,219 @@
 /**
- * Generador de XML v4.4 para Hacienda CR.
- * Estructura conforme al esquema oficial de comprobantes electronicos.
- * Soporta: FE, TE, NC, ND, FEC, REP.
- *
- * Produces XML string WITHOUT signature. El signer.js inyecta la firma
- * XAdES-EPES envolviendo este XML.
+ * Adaptación del documento persistido a los builders y XSD v4.4 del SDK.
+ * La construcción es asíncrona y nunca utiliza credenciales ni realiza peticiones.
  */
-
+const { cargarSdk } = require('./sdkLoader');
 const { TIPO_DOC_CODIGO } = require('./clave50');
-const TIPO_DOC_CONFIG = {
-  FE: {
-    rootElement: 'FacturaElectronica',
-    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica',
-    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronica_V4.4.xsd',
-  },
-  TE: {
-    rootElement: 'TiqueteElectronico',
-    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/tiqueteElectronico',
-    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/tiqueteElectronico_V4.4.xsd',
-  },
-  NC: {
-    rootElement: 'NotaCreditoElectronica',
-    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaCreditoElectronica',
-    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaCreditoElectronica_V4.4.xsd',
-  },
-  ND: {
-    rootElement: 'NotaDebitoElectronica',
-    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaDebitoElectronica',
-    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/notaDebitoElectronica_V4.4.xsd',
-  },
-  FEC: {
-    rootElement: 'FacturaElectronicaCompra',
-    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronicaCompra',
-    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/facturaElectronicaCompra_V4.4.xsd',
-  },
-  REP: {
-    rootElement: 'ReciboElectronicoPago',
-    namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/reciboElectronicoPago',
-    schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml/v4.4/reciboElectronicoPago_V4.4.xsd',
-  },
-};
 
-// Entidades XML ########################################################
-const AMP = String.fromCharCode(38) + 'amp;';      // &
-const LT = String.fromCharCode(38) + 'lt;';        // <
-const GT = String.fromCharCode(38) + 'gt;';        // >
-const QUOT = String.fromCharCode(38) + 'quot;';     // "
-const APOS = String.fromCharCode(38) + 'apos;';     // '
-const XML_ENTITIES = {
-  '&': AMP,
-  '<': LT,
-  '>': GT,
-  '"': QUOT,
-  "'": APOS,
-};
+const TIPO_DOC_CONFIG = Object.freeze(Object.fromEntries([
+  ['FE', 'FacturaElectronica', 'facturaElectronica', 'buildFacturaXml'],
+  ['TE', 'TiqueteElectronico', 'tiqueteElectronico', 'buildTiqueteXml'],
+  ['NC', 'NotaCreditoElectronica', 'notaCreditoElectronica', 'buildNotaCreditoXml'],
+  ['ND', 'NotaDebitoElectronica', 'notaDebitoElectronica', 'buildNotaDebitoXml'],
+  ['FEC', 'FacturaElectronicaCompra', 'facturaElectronicaCompra', 'buildFacturaCompraXml'],
+  ['REP', 'ReciboElectronicoPago', 'reciboElectronicoPago', 'buildReciboPagoXml'],
+].map(([tipo, rootElement, fragmento, builder]) => [tipo, {
+  rootElement, namespace: 'https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/' + fragmento,
+  schemaLocation: 'https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/' + rootElement + '_V4.4.xsd',
+  builder,
+}])));
 
-function escapeXml(str) {
-  if (str == null) return '';
-  return String(str).replace(/[&<>"']/g, (ch) => XML_ENTITIES[ch] || ch);
+const TARIFAS = Object.freeze({ '01': 0, '02': 1, '03': 2, '04': 4, '05': 0, '06': 4, '07': 8, '08': 13, '09': 0.5, '10': 0, '11': 0 });
+// Match the persisted model's rounding at the five decimals used by the SDK.
+const round5 = (valor) => Number(valor.toFixed(5));
+const texto = (valor) => valor == null || valor === '' ? undefined : String(valor);
+const escapeXml = (valor) => String(valor ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]);
+
+function fmtFecha(valor) {
+  const fecha = valor instanceof Date ? valor : new Date(valor);
+  if (Number.isNaN(fecha.getTime())) throw new Error('fechaEmision inválida');
+  return new Date(fecha.getTime() - 6 * 60 * 60 * 1000).toISOString().slice(0, 19) + '-06:00';
 }
 
-function fmtFecha(d) {
-  if (!d) d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}-06:00`;
+function monto(valor, campo) {
+  if (typeof valor !== 'number' || !Number.isFinite(valor) || valor < 0) throw new Error(campo + ' debe ser un número finito no negativo');
+  if (Math.abs(valor - round5(valor)) > 1e-9) throw new Error(campo + ' admite hasta cinco decimales');
+  return valor;
 }
 
-/**
- * Mapea tipoCedula de Hacienda:
- *  01 Fisica, 02 Juridica, 03 DIMEX, 04 NITE
- */
-function tipoIdentificacionXml(tipo) {
-  return ['01', '02', '03', '04'].includes(tipo) ? tipo : '01';
+function igual(actual, esperado, campo) {
+  if (Math.abs(monto(actual, campo) - round5(esperado)) > 0.000005) {
+    throw new Error(campo + ' no coincide con los importes del comprobante; revise el borrador');
+  }
 }
 
-function buildLinea(linea, idx) {
-  const unidad = linea.unidadMedida || 'kg';
-  const cabys = String(linea.codigo || '').padStart(13, '0').slice(-13);
-  const subTot = Number(linea.subtotal).toFixed(2);
-  const montoTotal = Number(linea.montoTotal).toFixed(2);
+function parte(persona, esEmisor, tipoDoc) {
+  if (!persona?.nombre) {
+    if (!esEmisor && ['TE', 'NC', 'ND'].includes(tipoDoc)) return undefined;
+    throw new Error((esEmisor ? 'emisor' : 'receptor') + '.nombre es obligatorio');
+  }
+  const identificacion = persona.cedula?.numero
+    ? { tipo: persona.cedula.tipo, numero: String(persona.cedula.numero) }
+    : undefined;
+  if ((esEmisor || tipoDoc !== 'TE') && !identificacion) throw new Error('La identificación de ambas partes es obligatoria');
+  const ubicacion = persona.provincia ? {
+    provincia: String(persona.provincia), canton: texto(persona.canton),
+    distrito: texto(persona.distrito), barrio: texto(persona.barrio),
+    otrasSenas: texto(persona.otrasSenas || persona.ubicacion),
+  } : undefined;
+  if (esEmisor && tipoDoc !== 'REP' && (!ubicacion?.canton || !ubicacion?.distrito || !ubicacion?.otrasSenas)) {
+    throw new Error('Complete provincia, cantón, distrito y otras señas del emisor');
+  }
+  if (esEmisor && !persona.correo) throw new Error('El correo del emisor es obligatorio');
+  const telefono = texto(persona.telefono);
+  if (telefono && !/^\d{8,20}$/.test(telefono)) throw new Error('El teléfono debe contener de 8 a 20 dígitos, sin código de país');
+  return {
+    nombre: persona.nombre, identificacion,
+    nombreComercial: texto(persona.nombreComercial), ubicacion,
+    telefono: telefono ? { codigoPais: String(persona.codigoPais || '506'), numTelefono: telefono } : undefined,
+    correoElectronico: texto(persona.correo),
+  };
+}
+
+function mapearLinea(linea, indice, tipoDoc) {
+  const prefijo = 'lineaDetalle.' + indice;
+  if (tipoDoc !== 'REP' && !/^\d{13}$/.test(String(linea.codigo || ''))) throw new Error(prefijo + '.codigo requiere CABYS de 13 dígitos');
+  if (!Number.isFinite(linea.cantidad) || linea.cantidad <= 0) throw new Error(prefijo + '.cantidad debe ser positiva');
+  const bruto = round5(linea.cantidad * monto(linea.precioUnitario, prefijo + '.precioUnitario'));
+  const descuento = monto(linea.descuento?.monto || 0, prefijo + '.descuento');
+  if (descuento > bruto) throw new Error(prefijo + ': el descuento supera el importe bruto');
+  if (tipoDoc === 'REP' && descuento) throw new Error('El REP no admite descuentos en esta integración');
+  if (descuento && !linea.descuento?.codigoDescuento) throw new Error(prefijo + ': indique codigoDescuento v4.4');
+  const subtotal = round5(bruto - descuento);
+  igual(linea.subtotal, subtotal, prefijo + '.subtotal');
   const imp = linea.impuesto || {};
-
-  let xml = `      <LineaDetalle>
-        <NumeroLinea>${idx + 1}</NumeroLinea>
-        <Codigo>
-          <Tipo>04</Tipo>
-          <Codigo>${escapeXml(cabys)}</Codigo>
-        </Codigo>
-        <Cantidad>${Number(linea.cantidad).toFixed(3)}</Cantidad>
-        <UnidadMedida>${escapeXml(unidad)}</UnidadMedida>
-        <UnidadMedidaComercial>${escapeXml(linea.unidadMedidaComercial || unidad)}</UnidadMedidaComercial>
-        <Detalle>${escapeXml(linea.descripcion)}</Detalle>
-        <PrecioUnitario>${Number(linea.precioUnitario).toFixed(2)}</PrecioUnitario>
-        <MontoTotal>${montoTotal}</MontoTotal>`;
-  if (linea.descuento?.monto) {
-    xml += `
-        <Descuento>
-          <MontoDescuento>${Number(linea.descuento.monto).toFixed(2)}</MontoDescuento>
-          <NaturalezaDescuento>${escapeXml(linea.descuento.naturalezaDescuento || 'Descuento comercial')}</NaturalezaDescuento>
-        </Descuento>`;
-  }
-  xml += `
-        <SubTotal>${subTot}</SubTotal>`;
-  //Impuesto (IVA)
-  if (imp.tarifa != null && imp.tarifa > 0) {
-    xml += `
-        <Impuesto>
-          <Codigo>${escapeXml(imp.codigo || '01')}</Codigo>
-          <CodigoTarifa>${escapeXml(imp.codigoTarifa || '02')}</CodigoTarifa>
-          <Tarifa>${Number(imp.tarifa).toFixed(2)}</Tarifa>
-          <Monto>${Number(imp.monto || 0).toFixed(2)}</Monto>`;
-    if (imp.exoneracion?.montoExoneracion) {
-      xml += `
-          <Exoneracion>
-            <TipoDocumento>${escapeXml(imp.exoneracion.tipoDocumento || '01')}</TipoDocumento>
-            <NumeroDocumento>${escapeXml(imp.exoneracion.numeroDocumento || '')}</NumeroDocumento>
-            <NombreInstitucion>${escapeXml(imp.exoneracion.nombreInstitucion || '')}</NombreInstitucion>
-            <FechaEmision>${escapeXml(imp.exoneracion.fechaEmision || fmtFecha(new Date()))}</FechaEmision>
-            <MontoExoneracion>${Number(imp.exoneracion.montoExoneracion).toFixed(2)}</MontoExoneracion>
-            <PorcentajeExoneracion>${Number(imp.exoneracion.porcentajeExoneracion).toFixed(2)}</PorcentajeExoneracion>
-          </Exoneracion>`;
+  if (imp.codigo !== '01') throw new Error(prefijo + ': esta integración admite IVA (código 01)');
+  if (!Object.hasOwn(TARIFAS, imp.codigoTarifa) || TARIFAS[imp.codigoTarifa] !== imp.tarifa) throw new Error(prefijo + ': código y tarifa de IVA no coinciden');
+  const impuesto = round5(subtotal * imp.tarifa / 100);
+  igual(imp.monto, impuesto, prefijo + '.impuesto.monto');
+  const exo = imp.exoneracion;
+  const montoExoneracion = monto(exo?.montoExoneracion || 0, prefijo + '.exoneracion');
+  if (montoExoneracion > impuesto) throw new Error(prefijo + ': la exoneración supera el impuesto');
+  let exoneracion;
+  if (montoExoneracion || exo?.numeroDocumento) {
+    const tarifaExonerada = exo.tarifaExonerada ?? exo.porcentajeExoneracion;
+    if (!Number.isFinite(tarifaExonerada) || tarifaExonerada < 0 || tarifaExonerada > imp.tarifa) {
+      throw new Error(prefijo + ': tarifaExonerada debe estar entre cero y la tarifa del IVA');
     }
-    xml += `
-        </Impuesto>`;
+    igual(montoExoneracion, subtotal * tarifaExonerada / 100, prefijo + '.exoneracion.montoExoneracion');
+    exoneracion = {
+      tipoDocumento: texto(exo.tipoDocumento), tipoDocumentoOtros: texto(exo.tipoDocumentoOtros),
+      numeroDocumento: texto(exo.numeroDocumento), articulo: exo.articulo, inciso: exo.inciso,
+      nombreInstitucion: texto(exo.nombreInstitucion), nombreInstitucionOtros: texto(exo.nombreInstitucionOtros),
+      fechaEmision: fmtFecha(exo.fechaEmision), tarifaExonerada, montoExoneracion,
+    };
   }
-  xml += `
-        <ImpuestoNeto>${Number(linea.impuestoNeto || 0).toFixed(2)}</ImpuestoNeto>
-        <MontoTotalLinea>${montoTotal}</MontoTotalLinea>
-      </LineaDetalle>`;
-  return xml;
+  const impuestoNeto = round5(impuesto - montoExoneracion);
+  igual(linea.impuestoNeto, impuestoNeto, prefijo + '.impuestoNeto');
+  igual(linea.montoTotal, subtotal + impuestoNeto, prefijo + '.montoTotal');
+  return {
+    numeroLinea: indice + 1, codigoCabys: tipoDoc === 'REP' ? undefined : String(linea.codigo),
+    cantidad: linea.cantidad, unidadMedida: linea.unidadMedida === 'kg' ? 'Kg' : linea.unidadMedida,
+    detalle: linea.descripcion, precioUnitario: linea.precioUnitario,
+    montoTotal: bruto, subTotal: subtotal, baseImponible: subtotal,
+    descuento: descuento ? [{
+      montoDescuento: descuento, codigoDescuento: linea.descuento.codigoDescuento,
+      codigoDescuentoOtros: texto(linea.descuento.codigoDescuentoOtros),
+      naturalezaDescuento: texto(linea.descuento.naturalezaDescuento),
+    }] : undefined,
+    impuesto: [{ codigo: '01', codigoTarifaIVA: imp.codigoTarifa, tarifa: imp.tarifa, monto: impuesto, exoneracion }],
+    impuestoNeto, montoTotalLinea: linea.montoTotal,
+  };
 }
 
-function buildResumen(resumen) {
-  const r = resumen || {};
-  return `    <ResumenFactura>
-      <CodigoTipoMoneda>
-        <CodigoMoneda>CRC</CodigoMoneda>
-        <TipoCambio>1.00000</TipoCambio>
-      </CodigoTipoMoneda>
-      <TotalServGravados>${Number(r.totalServGravados || 0).toFixed(2)}</TotalServGravados>
-      <TotalServExentos>${Number(r.totalServExentos || 0).toFixed(2)}</TotalServExentos>
-      <TotalMercanciasGravadas>${Number(r.totalMercanciasGravadas || 0).toFixed(2)}</TotalMercanciasGravadas>
-      <TotalMercanciasExentas>${Number(r.totalMercanciasExentas || 0).toFixed(2)}</TotalMercanciasExentas>
-      <TotalGravado>${Number(r.totalGravado || 0).toFixed(2)}</TotalGravado>
-      <TotalExento>${Number(r.totalExento || 0).toFixed(2)}</TotalExento>
-      <TotalVenta>${Number(r.totalVenta || 0).toFixed(2)}</TotalVenta>
-      <TotalDescuentos>${Number(r.totalDescuentos || 0).toFixed(2)}</TotalDescuentos>
-      <TotalVentaNeta>${Number(r.totalVentaNeta || 0).toFixed(2)}</TotalVentaNeta>
-      <TotalImpuesto>${Number(r.totalImpuesto || 0).toFixed(2)}</TotalImpuesto>
-      <TotalComprobante>${Number(r.totalComprobante || 0).toFixed(2)}</TotalComprobante>
-    </ResumenFactura>`;
+function mapearResumen(factura, lineas, tipoDoc) {
+  const r = factura.resumenFactura || {};
+  const suma = (get) => round5(lineas.reduce((total, linea) => total + get(linea), 0));
+  igual(r.totalVenta, suma((l) => l.montoTotal), 'resumenFactura.totalVenta');
+  igual(r.totalDescuentos || 0, suma((l) => l.descuento?.[0]?.montoDescuento || 0), 'resumenFactura.totalDescuentos');
+  igual(r.totalVentaNeta, suma((l) => l.subTotal), 'resumenFactura.totalVentaNeta');
+  igual(r.totalImpuesto, suma((l) => l.impuestoNeto), 'resumenFactura.totalImpuesto');
+  igual(r.totalComprobante, suma((l) => l.montoTotalLinea), 'resumenFactura.totalComprobante');
+  const moneda = factura.moneda || 'CRC';
+  const tipoCambio = factura.tipoCambio ?? (moneda === 'CRC' ? 1 : undefined);
+  if (!Number.isFinite(tipoCambio) || tipoCambio <= 0 || (moneda === 'CRC' && tipoCambio !== 1)) throw new Error('Tipo de cambio inválido para la moneda del documento');
+  let pagos = factura.pagos?.length ? factura.pagos.map((p) => ({
+    tipoMedioPago: p.tipoMedioPago, totalMedioPago: monto(p.totalMedioPago, 'pagos.totalMedioPago'),
+    medioPagoOtros: texto(p.medioPagoOtros),
+  })) : undefined;
+  if (!pagos && factura.medioPago?.length) {
+    if (factura.medioPago.length !== 1) throw new Error('Indique el importe de cada medio de pago en pagos');
+    pagos = [{ tipoMedioPago: factura.medioPago[0], totalMedioPago: r.totalComprobante }];
+  }
+  if (pagos) igual(pagos.reduce((sum, pago) => sum + pago.totalMedioPago, 0), r.totalComprobante, 'Suma de medios de pago');
+  if (tipoDoc === 'REP' && !pagos?.length) throw new Error('El REP requiere medio de pago e importe');
+  const desglose = new Map();
+  for (const linea of lineas) {
+    const tax = linea.impuesto[0];
+    const key = tax.codigoTarifaIVA;
+    const anterior = desglose.get(key) || 0;
+    desglose.set(key, round5(anterior + linea.impuestoNeto));
+  }
+  const resumen = {
+    codigoTipoMoneda: { codigoMoneda: moneda, tipoCambio },
+    totalVenta: r.totalVenta, totalVentaNeta: r.totalVentaNeta,
+    totalDesgloseImpuesto: [...desglose].map(([codigoTarifaIVA, totalMontoImpuesto]) => ({ codigo: '01', codigoTarifaIVA, totalMontoImpuesto })),
+    totalImpuesto: r.totalImpuesto, medioPago: pagos, totalComprobante: r.totalComprobante,
+  };
+  if (tipoDoc !== 'REP') {
+    for (const campo of ['totalServGravados', 'totalServExentos', 'totalServExonerado', 'totalServNoSujeto', 'totalMercanciasGravadas', 'totalMercanciasExentas', 'totalMercExonerada', 'totalMercNoSujeta', 'totalGravado', 'totalExento', 'totalExonerado', 'totalNoSujeto', 'totalDescuentos']) {
+      if (r[campo] !== undefined) resumen[campo] = monto(r[campo], 'resumenFactura.' + campo);
+    }
+    igual((r.totalGravado || 0) + (r.totalExento || 0) + (r.totalExonerado || 0) + (r.totalNoSujeto || 0), r.totalVenta, 'Clasificación del total de venta');
+  }
+  return resumen;
 }
 
-function buildInfoReferencia(ref) {
-  if (!ref || !ref.numeroReferencia) return '';
-  return `    <InformacionReferencia>
-      <TipoDoc>${escapeXml(ref.tipoDocReferencia || '01')}</TipoDoc>
-      <Numero>${escapeXml(ref.numeroReferencia)}</Numero>
-      <FechaEmision>${escapeXml(ref.fechaEmisionReferencia || fmtFecha(new Date()))}</FechaEmision>
-      <Codigo>${escapeXml(ref.codigoReferencia || '01')}</Codigo>
-      <Razon>${escapeXml(ref.razonReferencia || 'Referencia')}</Razon>
-    </InformacionReferencia>`;
-}
-
-/**
- * Construye el XML v4.4 (sin firmar).
- * @returns {string} XML string
- */
-function buildXml(factura) {
+/** Mapeo puro, exportado para pruebas de contrato sin ESM ni servicios externos. */
+function mapearDocumento(factura) {
   if (!factura) throw new Error('factura requerida');
-  if (!factura.claveNumerica || factura.claveNumerica.length !== 50) {
-    throw new Error('claveNumerica invalida (debe ser 50 digitos)');
-  }
-  if (!factura.consecutivo || factura.consecutivo.length !== 20) {
-    throw new Error('consecutivo invalido (debe ser 20 digitos)');
-  }
-
   const tipoDoc = factura.tipoDocumento || 'FE';
-  const config = TIPO_DOC_CONFIG[tipoDoc] || TIPO_DOC_CONFIG.FE;
-  const fechaStr = fmtFecha(factura.fechaEmision || new Date());
-  const ambienteCod = factura.ambiente === 'produccion' ? '1' : '2';
+  if (!Object.hasOwn(TIPO_DOC_CONFIG, tipoDoc)) throw new Error('Tipo de documento desconocido');
+  if (!/^506\d{6}[A-Za-z0-9]{12}\d{29}$/.test(factura.claveNumerica || '')) throw new Error('claveNumerica inválida (debe seguir el formato de 50 posiciones)');
+  if (!/^\d{20}$/.test(factura.consecutivo || '')) throw new Error('consecutivo inválido (debe ser 20 dígitos)');
+  if (!/^[A-Za-z0-9]{9,20}$/.test(String(factura.proveedorSistemas || ''))) throw new Error('Configure la identificación del proveedor del sistema (proveedorSistemas)');
+  if (['FE', 'TE'].includes(tipoDoc) && !factura.codigoActividadEmisor) throw new Error('codigoActividadEmisor es obligatorio');
+  if (tipoDoc === 'FEC' && !factura.codigoActividadReceptor) throw new Error('FEC requiere codigoActividadReceptor del comprador');
+  const ref = factura.documentoReferencia;
+  if (['NC', 'ND', 'FEC', 'REP'].includes(tipoDoc) && !ref?.numeroReferencia) throw new Error(tipoDoc + ' requiere documentoReferencia');
+  if (tipoDoc === 'REP' && (!['09', '11'].includes(factura.condicionVenta) || ref?.codigoReferencia !== '17')) {
+    throw new Error('El REP requiere condición 09/11 y referencia con código 17 (pago de comprobante)');
+  }
+  if (tipoDoc !== 'REP' && ['09', '11'].includes(factura.condicionVenta)) throw new Error('La condición 09/11 está reservada al REP');
+  if (['02', '10'].includes(factura.condicionVenta) && (!/^\d+$/.test(String(factura.plazoCredito || '')) || Number(factura.plazoCredito) <= 0)) throw new Error('Indique un plazo de crédito positivo');
+  if (!Array.isArray(factura.lineaDetalle) || !factura.lineaDetalle.length) throw new Error('El comprobante requiere líneas de detalle');
+  const lineas = factura.lineaDetalle.map((l, i) => mapearLinea(l, i, tipoDoc));
+  return {
+    clave: factura.claveNumerica, proveedorSistemas: String(factura.proveedorSistemas),
+    numeroConsecutivo: factura.consecutivo, fechaEmision: fmtFecha(factura.fechaEmision),
+    codigoActividadEmisor: texto(factura.codigoActividadEmisor),
+    codigoActividadReceptor: texto(factura.codigoActividadReceptor),
+    emisor: parte(factura.emisor, true, tipoDoc), receptor: parte(factura.receptor, false, tipoDoc),
+    condicionVenta: factura.condicionVenta, plazoCredito: texto(factura.plazoCredito),
+    detalleServicio: lineas, resumenFactura: mapearResumen(factura, lineas, tipoDoc),
+    informacionReferencia: ref?.numeroReferencia ? [{
+      tipoDoc: ref.tipoDocReferencia, numero: ref.numeroReferencia,
+      fechaEmision: fmtFecha(ref.fechaEmisionReferencia), codigo: texto(ref.codigoReferencia),
+      razon: texto(ref.razonReferencia),
+    }] : undefined,
+    otros: factura.referencia ? [{ contenido: factura.referencia }] : undefined,
+  };
+}
 
-  const lineasXml = (factura.lineaDetalle || [])
-    .map((l, i) => buildLinea(l, i))
-    .join('\n');
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<${config.rootElement}
-  xmlns="${config.namespace}"
-  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"
-  xsi:schemaLocation="${config.namespace} ${config.schemaLocation}">
-  <Clave>${factura.claveNumerica}</Clave>
-  <CodigoActividad>${escapeXml(factura.codigoActividadEmisor || '000000')}</CodigoActividad>
-  <NumeroConsecutivo>${factura.consecutivo}</NumeroConsecutivo>
-  <FechaEmision>${fechaStr}</FechaEmision>
-  <IndicadorAutomatico>${escapeXml(factura.indicadorAutomatico || '0')}</IndicadorAutomatico>
-  <Emisor>
-    <Nombre>${escapeXml(factura.emisor.nombre)}</Nombre>
-    <Identificacion>
-      <Tipo>${tipoIdentificacionXml(factura.emisor.cedula?.tipo || '01')}</Tipo>
-      <Numero>${escapeXml(factura.emisor.cedula?.numero)}</Numero>
-    </Identificacion>
-    <NombreComercial>${escapeXml(factura.emisor.nombreComercial || factura.emisor.nombre)}</NombreComercial>${factura.emisor.provincia ? `
-    <Ubicacion>
-      <Provincia>${escapeXml(factura.emisor.provincia)}</Provincia>
-      <Canton>${escapeXml(factura.emisor.canton || '')}</Canton>
-      <Distrito>${escapeXml(factura.emisor.distrito || '')}</Distrito>
-      <Barrio>${escapeXml(factura.emisor.barrio || '01')}</Barrio>
-      <OtrasSenas>${escapeXml(factura.emisor.ubicacion || factura.emisor.otrasSenas || '')}</OtrasSenas>
-    </Ubicacion>` : ''}
-    <Telefono>
-      <CodigoPais>506</CodigoPais>
-      <NumTelefono>${escapeXml((factura.emisor.telefono || '').replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
-    </Telefono>
-    <CorreoElectronico>${escapeXml(factura.emisor.correo || 'noreply@hacienda.go.cr')}</CorreoElectronico>
-  </Emisor>${factura.receptor && tipoDoc !== 'TE' ? `
-  <Receptor>
-    <Nombre>${escapeXml(factura.receptor.nombre)}</Nombre>${factura.receptor.cedula?.numero ? `
-    <Identificacion>
-      <Tipo>${tipoIdentificacionXml(factura.receptor.cedula?.tipo || '02')}</Tipo>
-      <Numero>${escapeXml(factura.receptor.cedula?.numero)}</Numero>
-    </Identificacion>` : ''}${factura.receptor.provincia ? `
-    <Ubicacion>
-      <Provincia>${escapeXml(factura.receptor.provincia)}</Provincia>
-      <Canton>${escapeXml(factura.receptor.canton || '')}</Canton>
-      <Distrito>${escapeXml(factura.receptor.distrito || '')}</Distrito>
-      <Barrio>${escapeXml(factura.receptor.barrio || '01')}</Barrio>
-      <OtrasSenas>${escapeXml(factura.receptor.ubicacion || factura.receptor.otrasSenas || '')}</OtrasSenas>
-    </Ubicacion>` : ''}${factura.receptor.telefono ? `
-    <Telefono>
-      <CodigoPais>506</CodigoPais>
-      <NumTelefono>${escapeXml(String(factura.receptor.telefono).replace(/\D/g, '').slice(0, 8).padStart(8, '0'))}</NumTelefono>
-    </Telefono>` : ''}${factura.receptor.correo ? `
-    <CorreoElectronico>${escapeXml(factura.receptor.correo)}</CorreoElectronico>` : ''}
-  </Receptor>` : ''}
-  <CondicionVenta>${factura.condicionVenta || '01'}</CondicionVenta>
-  <PlazoCredito>${escapeXml(factura.plazoCredito || '0')}</PlazoCredito>
-  <MedioPago>${(factura.medioPago || ['01']).map((m) => escapeXml(m)).slice(0, 4).join('</MedioPago><MedioPago>')}</MedioPago>
-  <DetalleServicio>
-${lineasXml}
-  </DetalleServicio>
-  ${buildResumen(factura.resumenFactura)}
-  ${buildInfoReferencia(factura.documentoReferencia)}
-  <Normativa>
-    <NumeroResolucion>DGT-R-48-2016</NumeroResolucion>
-    <FechaResolucion>07-10-2016</FechaResolucion>
-  </Normativa>
-  <Otros>
-    <OtroTexto>${escapeXml(factura.referencia || '')}</OtroTexto>
-    <OtroContenido>${ambienteCod}</OtroContenido>
-  </Otros>
-</${config.rootElement}>`;
-
+async function buildXml(factura) {
+  const input = mapearDocumento(factura);
+  const sdk = await cargarSdk();
+  const tipoDoc = factura.tipoDocumento || 'FE';
+  if (tipoDoc === 'FE') {
+    const resultado = sdk.validateFacturaInput(input);
+    if (!resultado.valid) {
+      throw new Error('Comprobante inválido: ' + resultado.errors.map((e) => e.path + ': ' + e.message).join('; '));
+    }
+  }
+  const xml = sdk[TIPO_DOC_CONFIG[tipoDoc].builder](input);
+  const validacion = await sdk.validateDocumentXml(xml);
+  if (!validacion.valid) throw new Error('XML v4.4 inválido: ' + validacion.issues.join('; '));
   return xml;
 }
 
-module.exports = {
-  buildXml,
-  TIPO_DOC_CONFIG,
-  TIPO_DOC_CODIGO,
-  fmtFecha,
-  escapeXml,
-};
+module.exports = { buildXml, mapearDocumento, TIPO_DOC_CONFIG, TIPO_DOC_CODIGO, fmtFecha, escapeXml };

@@ -21,6 +21,7 @@ const {
 
 router.use(protegerRuta);
 router.use(extraerTenant);
+router.use((req, res, next) => require('../middleware/rbacMiddleware').permitir(req.method === 'GET' ? 'inventario:leer' : req.method === 'DELETE' ? 'inventario:eliminar' : 'inventario:registrar_eventos')(req, res, next));
 
 // Inventario general
 router.get('/', obtenerInventario);

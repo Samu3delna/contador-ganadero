@@ -9,17 +9,15 @@
  */
 
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
 const mongoose = require('mongoose');
 const Tenant = require('../models/Tenant');
-const { needsReencryption, reencryptSecret } = require('../utils/crypto');
+const Usuario = require('../models/Usuario');
+const { needsReencryption, reencryptSecret, decryptSecret } = require('../utils/crypto');
 
 const SECRET_FIELDS = [
-  'haciendaConfig.certificadoP12Enc',
-  'haciendaConfig.pinP12Enc',
-  'haciendaConfig.haciendaUserEnc',
-  'haciendaConfig.haciendaPassEnc',
-  'imapConfig.passEnc',
+  'configuracionHacienda.certificadoP12Base64',
+  'configuracionHacienda.pinCertificado',
+  'configuracionHacienda.passwordHacienda',
 ];
 
 function getNested(obj, pathStr) {
@@ -37,8 +35,9 @@ function setNested(obj, pathStr, val) {
 }
 
 async function migrateTenants({ dryRun = true } = {}) {
-  const tenants = await Tenant.find({});
+  const tenants = await Tenant.find({}).select(SECRET_FIELDS.map(p => `+${p}`).join(' '));
   let migrados = 0;
+  const pendientesReconfiguracion = [];
 
   for (const tenant of tenants) {
     let modificado = false;
@@ -46,13 +45,19 @@ async function migrateTenants({ dryRun = true } = {}) {
 
     for (const fieldPath of SECRET_FIELDS) {
       const currentVal = getNested(tenant, fieldPath);
-      if (currentVal && needsReencryption(currentVal)) {
-        const nuevoVal = reencryptSecret(currentVal, {
+      if (currentVal) {
+        const context = {
           tenantId: tenantIdStr,
           fieldName: fieldPath,
-        });
-        setNested(tenant, fieldPath, nuevoVal);
-        modificado = true;
+        };
+        try {
+          const plain = decryptSecret(currentVal, context);
+          if (needsReencryption(currentVal)) {
+            const nuevoVal = reencryptSecret(currentVal, context);
+            if (decryptSecret(nuevoVal, context) !== plain) throw new Error('Roundtrip fallido');
+            setNested(tenant, fieldPath, nuevoVal); modificado = true;
+          }
+        } catch { pendientesReconfiguracion.push({ id: tenantIdStr, campo: fieldPath }); }
       }
     }
 
@@ -64,7 +69,23 @@ async function migrateTenants({ dryRun = true } = {}) {
     }
   }
 
-  return { totalRevisados: tenants.length, migrados, dryRun };
+  const users = await Usuario.find({ 'configEmail.password': { $exists: true } }).select('+configEmail.password');
+  let usuariosMigrados = 0;
+  for (const user of users) {
+    const current = user.configEmail?.password;
+    if (!current) continue;
+    const ctx = { tenantId: String(user.tenantId || user._id), fieldName: 'configEmail.password' };
+    try {
+      const plain = decryptSecret(current, ctx);
+      if (needsReencryption(current)) {
+        const next = reencryptSecret(current, ctx);
+        if (decryptSecret(next, ctx) !== plain) throw new Error('Roundtrip fallido');
+        if (!dryRun) await Usuario.updateOne({ _id: user._id, 'configEmail.password': current }, { $set: { 'configEmail.password': next } });
+        usuariosMigrados++;
+      }
+    } catch { pendientesReconfiguracion.push({ id: String(user._id), campo: 'configEmail.password' }); }
+  }
+  return { totalRevisados: tenants.length, migrados, usuariosMigrados, pendientesReconfiguracion, dryRun };
 }
 
 async function main() {
@@ -73,13 +94,14 @@ async function main() {
     console.error('Falta MONGODB_URI');
     process.exit(1);
   }
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(process.env.MONGODB_URI, { autoIndex: false, autoCreate: false });
   const res = await migrateTenants({ dryRun });
   console.log(JSON.stringify(res, null, 2));
   await mongoose.disconnect();
 }
 
 if (require.main === module) {
+  require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
   main().catch((err) => {
     console.error('Error en migración GCM:', err.message);
     process.exit(1);

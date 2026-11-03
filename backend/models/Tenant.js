@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { LIMITES_POR_PLAN, PLANES_VALIDOS } = require('../config/planes');
 const { encrypt, decrypt } = require('../utils/crypto');
 const { KeyProvider } = require('../utils/keyProvider');
+const { periodoCR } = require('../utils/periodoCR');
 
 /**
  * Modelo Tenant (Inquilino / Finca) — Aislamiento multi-tenant SaaS
@@ -73,6 +74,7 @@ const haciendaConfigSchema = new mongoose.Schema({
     default: '000000',
     trim: true,
   },
+  proveedorSistemas: { type: String, trim: true },
   consecutivos: {
     type: consecutivosHaciendaSchema,
     default: () => ({ FE: 0, TE: 0, NC: 0, ND: 0, FEC: 0, REP: 0 }),
@@ -87,48 +89,36 @@ const haciendaConfigSchema = new mongoose.Schema({
 
 // Métodos de cifrado autenticado para configuración Hacienda (con AAD vinculado al tenant y campo)
 haciendaConfigSchema.methods.establecerPinCertificado = function (pin) {
-  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  const parentTenantId = String(this.ownerDocument()._id);
   this.pinCertificado = encrypt(pin, { tenantId: parentTenantId, field: 'configuracionHacienda.pinCertificado' });
 };
 
 haciendaConfigSchema.methods.obtenerPinCertificado = function () {
   if (!this.pinCertificado) return null;
-  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
-  try {
-    return decrypt(this.pinCertificado, { tenantId: parentTenantId, field: 'configuracionHacienda.pinCertificado' });
-  } catch {
-    return decrypt(this.pinCertificado);
-  }
+  const parentTenantId = String(this.ownerDocument()._id);
+  return decrypt(this.pinCertificado, { tenantId: parentTenantId, field: 'configuracionHacienda.pinCertificado' });
 };
 
 haciendaConfigSchema.methods.establecerPasswordHacienda = function (password) {
-  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  const parentTenantId = String(this.ownerDocument()._id);
   this.passwordHacienda = encrypt(password, { tenantId: parentTenantId, field: 'configuracionHacienda.passwordHacienda' });
 };
 
 haciendaConfigSchema.methods.obtenerPasswordHacienda = function () {
   if (!this.passwordHacienda) return null;
-  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
-  try {
-    return decrypt(this.passwordHacienda, { tenantId: parentTenantId, field: 'configuracionHacienda.passwordHacienda' });
-  } catch {
-    return decrypt(this.passwordHacienda);
-  }
+  const parentTenantId = String(this.ownerDocument()._id);
+  return decrypt(this.passwordHacienda, { tenantId: parentTenantId, field: 'configuracionHacienda.passwordHacienda' });
 };
 
 haciendaConfigSchema.methods.establecerCertificadoP12 = function (base64) {
-  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
+  const parentTenantId = String(this.ownerDocument()._id);
   this.certificadoP12Base64 = encrypt(base64, { tenantId: parentTenantId, field: 'configuracionHacienda.certificadoP12Base64' });
 };
 
 haciendaConfigSchema.methods.obtenerCertificadoP12 = function () {
   if (!this.certificadoP12Base64) return null;
-  const parentTenantId = this.$parent ? String(this.$parent._id) : 'tenant';
-  try {
-    return decrypt(this.certificadoP12Base64, { tenantId: parentTenantId, field: 'configuracionHacienda.certificadoP12Base64' });
-  } catch {
-    return decrypt(this.certificadoP12Base64);
-  }
+  const parentTenantId = String(this.ownerDocument()._id);
+  return decrypt(this.certificadoP12Base64, { tenantId: parentTenantId, field: 'configuracionHacienda.certificadoP12Base64' });
 };
 
 haciendaConfigSchema.methods.estaConfigurado = function () {
@@ -211,6 +201,8 @@ const tenantSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  // Applied with the subscription effect in the same atomic document update.
+  onvoEventosAplicados: { type: [String], default: [], select: false },
 
   // === Límites y consumo ===
   limites: {
@@ -282,7 +274,7 @@ tenantSchema.methods.resetearConsumo = function () {
     conteosMes: 0,
     tokensChatMes: 0,
     almacenamientoUsadoMB: this.consumoActual?.almacenamientoUsadoMB || 0,
-    periodoActual: `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`,
+    periodoActual: periodoCR(ahora),
   };
   return this;
 };
@@ -299,7 +291,18 @@ tenantSchema.methods.tieneCreditoChat = function () {
 };
 
 tenantSchema.methods.estaActivo = function () {
-  return ['activo', 'periodo_gracia'].includes(this.estado);
+  return this.estado === 'activo' || (this.estado === 'periodo_gracia' && (!this.periodoGraciaFin || this.periodoGraciaFin > new Date()));
+};
+
+tenantSchema.statics.actualizarCiclo = async function (id, ahora = new Date()) {
+  await this.updateOne({ _id: id, estado: 'periodo_gracia', periodoGraciaFin: { $lte: ahora } },
+    { $set: { estado: 'suspendido', suspendidoEn: ahora } });
+  const periodo = periodoCR(ahora);
+  await this.updateOne({ _id: id, $or: [
+    { 'consumoActual.periodoActual': { $lt: periodo } },
+    { 'consumoActual.periodoActual': { $exists: false } },
+    { 'consumoActual.periodoActual': null },
+  ] }, { $set: { 'consumoActual.periodoActual': periodo, 'consumoActual.conteosMes': 0, 'consumoActual.tokensChatMes': 0 } });
 };
 
 /**
@@ -310,22 +313,25 @@ tenantSchema.methods.estaActivo = function () {
  */
 tenantSchema.methods.siguienteConsecutivo = async function (tipoDoc = 'FE') {
   const tiposValidos = ['FE', 'TE', 'NC', 'ND', 'FEC', 'REP'];
-  const tipo = tiposValidos.includes(tipoDoc) ? tipoDoc : 'FE';
+  if (!tiposValidos.includes(tipoDoc)) throw new Error('Tipo de comprobante inválido');
+  const tipo = tipoDoc;
   const campo = `configuracionHacienda.consecutivos.${tipo}`;
 
   const actualizado = await this.constructor.findOneAndUpdate(
-    { _id: this._id },
+    { _id: this._id, $or: [{ [campo]: { $lt: 9999999999 } }, { [campo]: { $exists: false } }] },
     { $inc: { [campo]: 1 } },
     { new: true }
   );
 
-  return actualizado?.configuracionHacienda?.consecutivos?.[tipo] || 1;
+  const siguiente = actualizado?.configuracionHacienda?.consecutivos?.[tipo];
+  if (!Number.isSafeInteger(siguiente) || siguiente < 1) throw new Error('No se pudo reservar el consecutivo de esta finca');
+  return siguiente;
 };
 
 tenantSchema.statics.crearParaUsuario = async function ({ nombreFinca, owner, plan = 'free' }) {
   const limites = this.obtenerLimitesPlan(plan);
   const ahora = new Date();
-  const periodoActual = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
+  const periodoActual = periodoCR(ahora);
 
   const usuarios = owner ? [{ usuarioId: owner, rol: 'dueño', agregadoEn: new Date() }] : [];
 

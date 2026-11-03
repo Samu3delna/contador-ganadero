@@ -37,6 +37,8 @@ const AdminTenantsPage = lazy(() => import('./pages/admin/AdminTenantsPage'));
 const AdminMonitoreoPage = lazy(() => import('./pages/admin/AdminMonitoreoPage'));
 const AdminSoportePage = lazy(() => import('./pages/admin/AdminSoportePage'));
 
+const RecuperarCuentaPage = lazy(() => import('./pages/RecuperarCuentaPage'));
+
 function PageLoader() {
   return <div className="loader-center"><div className="loader" /></div>;
 }
@@ -106,6 +108,9 @@ function App() {
           <Route path="/" element={<Suspense fallback={<PageLoader />}><LandingPage /></Suspense>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<LoginPage />} />
+          <Route path="/recuperar-password" element={<Suspense fallback={<PageLoader />}><RecuperarCuentaPage /></Suspense>} />
+          <Route path="/restablecer-password" element={<Suspense fallback={<PageLoader />}><RecuperarCuentaPage /></Suspense>} />
+          <Route path="/verificar-email" element={<Suspense fallback={<PageLoader />}><RecuperarCuentaPage verificar /></Suspense>} />
           
           {/* Páginas Legales Públicas */}
           <Route path="/terminos" element={<Suspense fallback={<PageLoader />}><TerminosCondicionesPage /></Suspense>} />

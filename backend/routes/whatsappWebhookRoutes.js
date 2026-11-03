@@ -80,26 +80,24 @@ router.get('/', (req, res) => {
  * POST /api/webhooks/whatsapp
  * Recepción y procesamiento de mensajes de WhatsApp
  */
+const inbox = require('../services/ingestionInbox');
 router.post('/', verificarFirmaMeta, async (req, res) => {
-  // Responder 200 de inmediato a Meta para evitar reintentos duplicados
-  res.status(200).send('EVENT_RECEIVED');
-
   try {
-    const body = req.body;
-    if (!body || body.object !== 'whatsapp_business_account') {
-      return;
+    const messages = (req.body?.entry || []).flatMap(entry => (entry.changes || []).flatMap(change => change.value?.messages || []));
+    const events = [];
+    for (const message of messages) {
+      if (!message.id) return res.status(400).json({ error: 'MESSAGE_ID_REQUERIDO' });
+      events.push(await inbox.recibir({ eventKey: `whatsapp:${message.id}`, canal: 'whatsapp', payload: { message } }));
     }
+    res.status(200).send('EVENT_RECEIVED');
+    for (const event of events) await inbox.procesar(event._id);
+  } catch {
+    if (!res.headersSent) res.status(503).json({ error: 'No se pudo guardar el evento' });
+  }
+});
 
-    const entry = body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value;
-    const messages = value?.messages;
-
-    if (!messages || messages.length === 0) {
-      return; // Notificaciones de status (sent, delivered, read), no mensajes nuevos
-    }
-
-    const message = messages[0];
+async function procesarMensaje(message) {
+  try {
     const fromPhone = message.from; // Número del remitente (ej: "50688888888")
     const msgType = message.type;
     const messageId = message.id || null;
@@ -167,10 +165,7 @@ router.post('/', verificarFirmaMeta, async (req, res) => {
           }
         } catch (err) {
           console.error(JSON.stringify({ event: 'whatsapp_invoice_processing_failed', messageId, error: err?.name || 'Error' }));
-          await enviarMensajeWhatsApp(
-            fromPhone,
-            `❌ Hubo un error al procesar tu factura XML: ${err.message}`
-          );
+          throw err;
         }
       }
       // Es un PDF
@@ -185,7 +180,7 @@ router.post('/', verificarFirmaMeta, async (req, res) => {
     else if (msgType === 'image') {
       await enviarMensajeWhatsApp(
         fromPhone,
-        `📸 *Foto de comprobante recibida.*\n\nLa hemos guardado en tu cuenta para que el asistente de IA analice los montos y puedas deducirla en tus gastos.`
+        `📸 *Foto de comprobante recibida.*\n\nEl registro de fotos no est\u00e1 disponible. Esta imagen no se guard\u00f3 como gasto. Reenv\u00eda el XML de la factura para registrarla.`
       );
     }
     // Es un mensaje de texto
@@ -217,8 +212,9 @@ router.post('/', verificarFirmaMeta, async (req, res) => {
     }
   } catch (error) {
     console.error(JSON.stringify({ event: 'whatsapp_event_processing_failed', error: error?.name || 'Error' }));
+    throw error;
   }
-});
+}
 
 /**
  * Devolución de llamada de solicitud de eliminación de datos de Meta (Facebook / WhatsApp)
@@ -233,3 +229,4 @@ router.get('/data-deletion/status/:code', obtenerEstadoEliminacion);
 router.post('/data-deletion/solicitud', crearSolicitudEliminacionPublica);
 
 module.exports = router;
+module.exports.procesarMensaje = procesarMensaje;

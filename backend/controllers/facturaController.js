@@ -16,6 +16,12 @@ const obtenerFacturas = async (req, res, next) => {
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);
     if (categoriaIA) filtro.categoriaIA = categoriaIA;
     if (estado) filtro.estado = estado;
+    if (req.query.mes !== undefined) {
+      const mes = Number(req.query.mes), anio = Number(req.query.anio);
+      if (!Number.isInteger(mes) || mes < 1 || mes > 12 || !Number.isInteger(anio) || anio < 2000 || anio > 2100) return res.status(400).json({ error: 'Mes/año inválido' });
+      const { inicioMesCR } = require('../utils/fechaCivil');
+      filtro.fechaEmision = { $gte: inicioMesCR(anio, mes - 1), $lt: inicioMesCR(anio, mes) };
+    }
     if (deducible !== undefined) filtro.esDeducible = deducible === 'true';
     if (soloAlertas === 'true') {
       filtro['resumenValidacionTarifa.alertasError'] = { $gt: 0 };
@@ -30,6 +36,20 @@ const obtenerFacturas = async (req, res, next) => {
     res.json({ facturas, total, pagina: pageNum, totalPaginas: Math.ceil(total / limitNum) });
   } catch (error) { next(error); }
 };
+
+async function resumenGastos(req, res, next) {
+  try {
+    const { facturas } = await require('../services/contabilidadService').obtenerFuentes({ usuarioId: req.usuario._id, tenantId: req.tenant._id });
+    const categorias = Object.create(null);
+    for (const f of facturas) {
+      const cat = f.categoriaManual || f.categoriaIA || 'sin_clasificar';
+      categorias[cat] = (categorias[cat] || 0) + f.resumenFactura.totalComprobante;
+    }
+    const filtradas = req.query.categoria ? facturas.filter(f => (f.categoriaManual || f.categoriaIA || 'sin_clasificar') === req.query.categoria) : facturas;
+    const { pageNum, limitNum, skip } = require('../utils/paginacion').paginacion(req.query);
+    res.json({ categorias, facturas: filtradas.slice(skip, skip + limitNum), total: filtradas.length, pagina: pageNum, totalPaginas: Math.ceil(filtradas.length / limitNum) });
+  } catch (error) { next(error); }
+}
 
 const obtenerFacturaPorId = async (req, res, next) => {
   try {
@@ -363,6 +383,7 @@ const diagnosticarIMAP = async (req, res, next) => {
 };
 
 module.exports = {
+  resumenGastos,
   obtenerFacturas,
   obtenerFacturaPorId,
   actualizarCategoriaFactura,

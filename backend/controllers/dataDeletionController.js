@@ -111,8 +111,9 @@ async function ejecutarEliminacionDatos({
   usuarioId = null,
   origen = 'meta_callback',
   ip = '',
+  codigoConfirmacion: codigoPrevio = null,
 }) {
-  const codigoConfirmacion = generarCodigoConfirmacion();
+  const codigoConfirmacion = codigoPrevio || generarCodigoConfirmacion();
   const baseUrl = obtenerBaseUrlPublica();
   const statusUrl = `${baseUrl}/eliminacion-datos?id=${codigoConfirmacion}`;
 
@@ -120,6 +121,12 @@ async function ejecutarEliminacionDatos({
   let usuarioEncontrado = false;
   let datosEliminados = [];
   let tenantIdEliminado = null;
+  let solicitud = codigoPrevio ? await SolicitudEliminacion.findOne({ codigoConfirmacion }) : null;
+  if (codigoPrevio && !solicitud) throw new Error('Solicitud inexistente');
+  if (solicitud?.estado === 'completada') return { url: statusUrl, confirmation_code: codigoConfirmacion, solicitud };
+  if (!solicitud) solicitud = await SolicitudEliminacion.create({ codigoConfirmacion, origen, metaUserId,
+    usuarioId: usuarioId || undefined, email: enmascararIdentificador(email), telefono: enmascararIdentificador(telefono),
+    estado: 'en_proceso', explicacionEstado: 'Solicitud registrada; eliminación pendiente de completar.', ipSolicitante: ip });
 
   try {
     if (usuarioId) {
@@ -146,6 +153,7 @@ async function ejecutarEliminacionDatos({
     if (usuario) {
       usuarioEncontrado = true;
       tenantIdEliminado = usuario.tenantId;
+      await SolicitudEliminacion.updateOne({ _id: solicitud._id }, { $set: { estado: 'en_proceso', usuarioId: usuario._id, tenantId: usuario.tenantId } });
 
       datosEliminados.push(
         'Perfil de usuario y credenciales de acceso',
@@ -154,6 +162,10 @@ async function ejecutarEliminacionDatos({
       );
 
       await RefreshToken.revocarTodosDeUsuario(usuario._id, 'account_deleted');
+      await Promise.all([
+        require('../models/AccountNotification').deleteMany({ usuarioId: usuario._id }),
+        require('../models/MfaChallenge').deleteMany({ usuarioId: usuario._id }),
+      ]);
       await ChatFeedback.deleteMany({ usuario: usuario._id }, { skipTenant: true });
 
       if (usuario.tenantId) {
@@ -164,6 +176,14 @@ async function ejecutarEliminacionDatos({
           );
 
           if (otrosMiembros.length === 0) {
+            await require('../models/IngestionEvent').deleteMany({ $or: [{ tenantId: tenant._id },
+              { usuarioId: usuario._id }, { 'payload.opciones.usuarioId': usuario._id },
+              { 'resultado.usuario._id': usuario._id }, { 'resultado.factura.usuario': usuario._id },
+              { 'payload.message.from': { $in: generarVariantesTelefono(usuario.telefono || '') } },
+              { 'payload.emailDestino': usuario.email },
+              { 'resultado.factura.tenantId': tenant._id },
+              ...(tenant.emailAlias ? [{ 'payload.emailDestino': `${tenant.emailAlias}@contadorganandero.com` },
+                { 'payload.opciones.emailDestino': `${tenant.emailAlias}@contadorganandero.com` }] : [])] });
             await Promise.all([
               Factura.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
               FacturaEmision.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
@@ -215,7 +235,7 @@ async function ejecutarEliminacionDatos({
       ? `Su solicitud de eliminación de datos (código ${codigoConfirmacion}) ha sido procesada y completada exitosamente. Se eliminaron de forma permanente su perfil de usuario, su vinculación con el bot de WhatsApp y los registros asociados en ContadorGanadero.`
       : `Su solicitud de eliminación de datos (código ${codigoConfirmacion}) ha sido registrada y completada. Confirmamos que no existen registros personales activos asociados a su identificador en nuestras bases de datos operativas.`;
 
-    const solicitud = await SolicitudEliminacion.create({
+    solicitud = await SolicitudEliminacion.findOneAndUpdate({ _id: solicitud._id }, { $set: {
       codigoConfirmacion,
       origen,
       metaUserId: metaUserId ? String(metaUserId) : undefined,
@@ -230,33 +250,27 @@ async function ejecutarEliminacionDatos({
       justificacionLegal: JUSTIFICACION_LEGAL_CR,
       ipSolicitante: ip,
       completadaEn: new Date(),
-    });
+    }, $unset: { errorProcesamiento: 1 } }, { new: true, runValidators: true });
 
     return {
       url: statusUrl,
       confirmation_code: codigoConfirmacion,
       solicitud,
     };
-  } catch {
-    return {
-      url: statusUrl,
-      confirmation_code: codigoConfirmacion,
-      solicitud: {
-        codigoConfirmacion,
-        origen,
-        estado: 'completada',
-        usuarioEncontrado: false,
-        datosEliminados: [
-          'Perfil de usuario y credenciales de acceso',
-          'Número de teléfono vinculado al bot de WhatsApp',
-          'Registros operativos asociados al identificador del solicitante',
-        ],
-        explicacionEstado: `Su solicitud de eliminación de datos (código ${codigoConfirmacion}) ha sido recibida y completada.`,
-        justificacionLegal: JUSTIFICACION_LEGAL_CR,
-        completadaEn: new Date().toISOString(),
-      },
-    };
+  } catch (error) {
+    await SolicitudEliminacion.updateOne({ _id: solicitud._id }, { $set: { estado: 'fallida',
+      explicacionEstado: 'Eliminación no completada. Requiere reanudación; algunos pasos pueden haberse aplicado.',
+      errorProcesamiento: 'Fallo operativo durante la eliminación' }, $unset: { completadaEn: 1 } }).catch(() => {});
+    const fallo = new Error('Eliminación no completada'); fallo.status = 503; fallo.confirmation_code = codigoConfirmacion;
+    throw fallo;
   }
+}
+
+async function reanudarEliminacion(codigo) {
+  const solicitud = await SolicitudEliminacion.findOne({ codigoConfirmacion: codigo });
+  if (!solicitud || solicitud.origen === 'web_formulario') throw new Error('Solicitud sin autorización de borrado');
+  return ejecutarEliminacionDatos({ codigoConfirmacion: codigo, usuarioId: solicitud.usuarioId,
+    metaUserId: solicitud.metaUserId, origen: solicitud.origen });
 }
 
 /**
@@ -357,26 +371,7 @@ const obtenerEstadoEliminacion = async (req, res) => {
       });
     }
   } catch {
-    // Fallback
-  }
-
-  if (/^[a-zA-Z0-9_-]{3,40}$/.test(rawCode)) {
-    return res.status(200).json({
-      encontrada: true,
-      confirmation_code: rawCode.toUpperCase(),
-      estado: 'completada',
-      origen: 'meta_callback',
-      fechaSolicitud: new Date().toISOString(),
-      completadaEn: new Date().toISOString(),
-      datosEliminados: [
-        'Perfil de usuario, nombre, cédula y credenciales de autenticación',
-        'Vínculo de número telefónico con el bot de WhatsApp (Meta Cloud API)',
-        'Historial de mensajes e interacciones con el asistente contable IA',
-        'Registros operativos de inventario, ingresos y gastos asociados a la cuenta',
-      ],
-      explicacion: `La solicitud de eliminación de datos identificada con el código de confirmación ${rawCode.toUpperCase()} se encuentra registrada.`,
-      justificacionLegal: JUSTIFICACION_LEGAL_CR,
-    });
+    return res.status(503).json({ error: 'No se pudo consultar el estado de la solicitud' });
   }
 
   return res.status(404).json({
@@ -500,6 +495,7 @@ module.exports = {
   parseSignedRequest,
   generarCodigoConfirmacion,
   ejecutarEliminacionDatos,
+  reanudarEliminacion,
   handleMetaDataDeletionCallback,
   infoMetaDataDeletionWebhook,
   obtenerEstadoEliminacion,

@@ -1,3 +1,4 @@
+const { parsearFechaCivil } = require('../utils/fechaCivil');
 const Ingreso = require('../models/Ingreso');
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 
@@ -9,12 +10,12 @@ const obtenerIngresos = async (req, res, next) => {
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);
     if (tipoGanado) filtro.tipoGanado = tipoGanado;
     if (categoriaIngreso) filtro.categoriaIngreso = categoriaIngreso;
-    const skip = (Number(page) - 1) * Number(limit);
+    const { skip, pageNum, limitNum } = require('../utils/paginacion').paginacion({ page, limit });
     const [ingresos, total] = await Promise.all([
-      Ingreso.find(filtro).sort({ fecha: -1 }).skip(skip).limit(Number(limit)),
+      Ingreso.find(filtro).sort({ fecha: -1 }).skip(skip).limit(limitNum),
       Ingreso.countDocuments(filtro),
     ]);
-    res.json({ ingresos, total, pagina: Number(page), totalPaginas: Math.ceil(total / Number(limit)) });
+    res.json({ ingresos, total, pagina: pageNum, totalPaginas: Math.ceil(total / limitNum) });
   } catch (error) { next(error); }
 };
 
@@ -35,7 +36,7 @@ const crearIngreso = async (req, res, next) => {
       comprador, facturaElectronica
     } = req.body;
 
-    const fechaObj = new Date(fecha);
+    const fechaObj = parsearFechaCivil(fecha);
 
     const ingreso = await Ingreso.create(req.aplicarTenant({
       fecha: fechaObj,
@@ -76,7 +77,7 @@ const actualizarIngreso = async (req, res, next) => {
     campos.forEach(c => { if (req.body[c] !== undefined) ingreso[c] = req.body[c]; });
 
     if (req.body.fecha) {
-      const f = new Date(req.body.fecha);
+      const f = parsearFechaCivil(req.body.fecha);
       ingreso.fecha = f;
       ingreso.cuatrimestre = obtenerCuatrimestre(f);
       ingreso.periodoFiscal = f.getFullYear();

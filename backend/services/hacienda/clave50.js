@@ -1,98 +1,50 @@
-/**
- * Generador de Clave Numerica de 50 digitos (v4.4 Hacienda CR)
- *
- * Estructura oficial (50 posiciones):
- *  pos 1-3    : codigo pais (506)
- *  pos 4-9    : fecha DDMMYY (6 digitos)
- *  pos 10-21  : identificacion emisor padded a 12 (fisica 9->12, juridica 10->12)
- *  pos 22-41  : consecutivo completo de 20 digitos
- *  pos 42-50  : codigo de seguridad (9 digitos numericos)
- *
- * Consecutivo de 20 digitos:
- *  pos 1-3  : sucursal (3)
- *  pos 4-8  : terminal (5)
- *  pos 9-10 : tipo documento (01 FE, 02 TE, 03 NC, 04 ND, 05 FEC, 06 REP)
- *  pos 11-20 : secuencia (10)
- */
+/** Claves v4.4: país + fecha CR + identificación + consecutivo + situación + seguridad. */
+const crypto = require('node:crypto');
+const { cargarSdk } = require('./sdkLoader');
 
-const crypto = require('crypto');
+const TIPO_DOC_CODIGO = Object.freeze({ FE: '01', ND: '02', NC: '03', TE: '04', FEC: '08', REP: '10' });
 
-const TIPO_DOC_CODIGO = {
-  FE: '01',
-  TE: '02',
-  NC: '03',
-  ND: '04',
-  FEC: '05',
-  REP: '06',
-};
-
-/**
- * Padding de cedula segun tipo:
- *  Fisica (01)        -> 9 digitos -> padStart(12, '0')
- *  Juridica (02)      -> 10 digitos -> padStart(12, '0')
- *  DIMEX (03)         -> 11 o 12 digitos -> padStart(12, '0')
- *  NITE (04)          -> 10 digitos -> padStart(12, '0')
- */
-function padCedula(numero, _tipo) {
-  const limpio = String(numero || '').replace(/[^0-9]/g, '');
-  return limpio.padStart(12, '0').slice(-12);
+function padCedula(numero, tipo) {
+  const identificacion = String(numero ?? '').trim();
+  if (!/^[A-Za-z0-9]{9,12}$/.test(identificacion) || (/[A-Za-z]/.test(identificacion) && tipo !== '02')) {
+    throw new Error('cedulaEmisor debe tener entre 9 y 12 caracteres válidos; letras solo para identificación jurídica');
+  }
+  return identificacion.padStart(12, '0');
 }
 
-/**
- * Genera consecutivo de 20 digitos.
- * sucursal (3) + terminal (5) + tipo (2) + secuencia (10)
- */
+function segmento(value, longitud, nombre) {
+  const texto = String(value);
+  if (!new RegExp('^\\d{1,' + longitud + '}$').test(texto) || Number(texto) < 1) {
+    throw new Error(nombre + ' debe tener entre 1 y ' + longitud + ' dígitos y ser mayor que cero');
+  }
+  return texto.padStart(longitud, '0');
+}
+
+/** La asignación atómica de la secuencia pertenece a MongoDB, no al SDK en disco. */
 function generarConsecutivo({ sucursal = '001', terminal = '00001', tipoDocumento = 'FE', secuencia = 1 } = {}) {
-  const tipo = TIPO_DOC_CODIGO[tipoDocumento] || '01';
-  const suc = String(sucursal).padStart(3, '0').slice(0, 3);
-  const ter = String(terminal).padStart(5, '0').slice(0, 5);
-  const seq = String(secuencia).padStart(10, '0').slice(-10);
-  return `${suc}${ter}${tipo}${seq}`;
+  if (!Object.hasOwn(TIPO_DOC_CODIGO, tipoDocumento)) throw new Error('Tipo de documento desconocido');
+  return segmento(sucursal, 3, 'sucursal') + segmento(terminal, 5, 'terminal') + TIPO_DOC_CODIGO[tipoDocumento] + segmento(secuencia, 10, 'secuencia');
 }
 
-/**
- * Genera la clave numerica de 50 digitos.
- */
-function generarClave({
-  fecha = new Date(),
-  tipoDocumento = 'FE',
-  cedulaEmisor,
-  tipoCedula = '01',
-  sucursal = '001',
-  terminal = '00001',
-  secuencia = 1,
-  codigoSeguridad,
+async function generarClave({
+  fecha = new Date(), tipoDocumento = 'FE', cedulaEmisor, tipoCedula = '01',
+  sucursal = '001', terminal = '00001', secuencia = 1, codigoSeguridad, situacion = '1',
 } = {}) {
-  if (!cedulaEmisor) throw new Error('cedulaEmisor es obligatoria para la clave');
-
-  const pais = '506';
-  const dia = String(fecha.getDate()).padStart(2, '0');
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const anio = String(fecha.getFullYear()).slice(-2);
-  const fechaStr = `${dia}${mes}${anio}`;
-
-  const cedulaPadded = padCedula(cedulaEmisor, tipoCedula);
-
+  padCedula(cedulaEmisor, tipoCedula);
   const consecutivo = generarConsecutivo({ sucursal, terminal, tipoDocumento, secuencia });
-
-  // Codigo de seguridad de 9 digitos criptograficamente aleatorio (CSPRNG)
-  const seg = codigoSeguridad != null
-    ? String(codigoSeguridad).padStart(9, '0').slice(-9)
-    : String(crypto.randomInt(100000000, 1000000000)).slice(0, 9);
-
-  const clave = `${pais}${fechaStr}${cedulaPadded}${consecutivo}${seg}`;
-  if (clave.length !== 50) {
-    throw new Error(`Clave generada con longitud incorrecta: ${clave.length}`);
-  }
-  if (!/^[0-9]{50}$/.test(clave)) {
-    throw new Error('Clave generada con caracteres no numericos');
-  }
-  return { clave, consecutivo, codigoSeguridad: seg };
+  const seguridad = codigoSeguridad == null
+    ? String(crypto.randomInt(0, 100000000)).padStart(8, '0')
+    : String(codigoSeguridad).padStart(8, '0');
+  if (!/^\d{8}$/.test(seguridad)) throw new Error('codigoSeguridad debe tener hasta 8 dígitos');
+  const { buildClave } = await cargarSdk();
+  const clave = buildClave({
+    date: fecha instanceof Date ? fecha : new Date(fecha),
+    taxpayerId: String(cedulaEmisor).trim(),
+    branch: consecutivo.slice(0, 3), pos: consecutivo.slice(3, 8),
+    documentType: TIPO_DOC_CODIGO[tipoDocumento], sequence: Number(secuencia),
+    situation: situacion, securityCode: seguridad,
+  });
+  return { clave, consecutivo, codigoSeguridad: seguridad, situacion };
 }
 
-module.exports = {
-  TIPO_DOC_CODIGO,
-  generarClave,
-  generarConsecutivo,
-  padCedula,
-};
+module.exports = { TIPO_DOC_CODIGO, generarClave, generarConsecutivo, padCedula };

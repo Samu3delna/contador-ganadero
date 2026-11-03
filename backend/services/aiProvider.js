@@ -14,6 +14,7 @@ let proveedorActivo = 'none';
 
 function inicializarProveedores() {
   const config = configurarIA();
+  geminiClient = null; openAIClient = null;
 
   // 1. Intentar Google Gemini primero
   if (config.gemini?.apiKey) {
@@ -29,7 +30,6 @@ function inicializarProveedores() {
       });
       proveedorActivo = 'gemini';
       console.log(`🤖 IA Proveedor Activo: Google Gemini (${config.gemini.modelo})`);
-      return { proveedor: 'gemini', geminiClient, config };
     } catch (err) {
       console.warn('⚠️ No se pudo inicializar @google/genai:', err.message);
     }
@@ -47,15 +47,14 @@ function inicializarProveedores() {
       });
       proveedorActivo = 'nvidia';
       console.log(`🤖 IA Proveedor Activo: NVIDIA NIM (${config.nvidia.modelo})`);
-      return { proveedor: 'nvidia', openAIClient, config };
     } catch (err) {
       console.warn('⚠️ No se pudo inicializar OpenAI client:', err.message);
     }
   }
 
-  proveedorActivo = 'heuristic';
+  proveedorActivo = geminiClient ? 'gemini' : openAIClient ? 'nvidia' : 'heuristic';
   console.log('ℹ️ IA Operando en modo heurístico local (sin API Key configurada)');
-  return { proveedor: 'heuristic', config };
+  return { proveedor: proveedorActivo, geminiClient, openAIClient, config };
 }
 
 function obtenerEstadoIA() {
@@ -64,7 +63,8 @@ function obtenerEstadoIA() {
   }
   return {
     proveedor: proveedorActivo,
-    disponible: proveedorActivo !== 'none',
+    disponible: ['gemini', 'nvidia'].includes(proveedorActivo),
+    clasificacionDisponible: true,
   };
 }
 

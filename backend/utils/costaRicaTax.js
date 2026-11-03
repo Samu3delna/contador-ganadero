@@ -82,8 +82,8 @@ function obtenerCuatrimestre(fecha) {
  */
 function obtenerRangoFechasCuatrimestre(cuatrimestre, anio) {
   const config = CUATRIMESTRES[cuatrimestre];
-  const inicio = new Date(anio, config.inicio.mes, config.inicio.dia);
-  const fin = new Date(anio, config.fin.mes, config.fin.dia, 23, 59, 59, 999);
+  const inicio = new Date(Date.UTC(anio, config.inicio.mes, config.inicio.dia, 6));
+  const fin = new Date(Date.UTC(anio, config.fin.mes, config.fin.dia + 1, 5, 59, 59, 999));
   return { inicio, fin };
 }
 

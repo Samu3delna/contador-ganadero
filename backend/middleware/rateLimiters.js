@@ -43,7 +43,7 @@ const apiLimiter = crearLimiter({
   defaultWindowMs: 15 * 60 * 1000,
   defaultMax: 200,
   mensaje: 'Demasiadas solicitudes a la API. Intenta de nuevo más tarde.',
-  skip: (req) => req.path === '/api/onvo/webhook' || req.path.startsWith('/api/webhooks/'),
+  skip: (req) => req.path === '/onvo/webhook' || req.path.startsWith('/webhooks/') || req.path === '/api/onvo/webhook' || req.path.startsWith('/api/webhooks/'),
 });
 
 // Límite general para el router /api/auth (30 peticiones / 15 minutos)

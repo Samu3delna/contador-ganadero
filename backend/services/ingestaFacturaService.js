@@ -27,20 +27,27 @@ function asegurarDirectorios() {
  * 4. Número de teléfono (para WhatsApp)
  */
 async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, emailDestino, telefono }) {
+  const sinAsignar = { usuario: null, tenantId: null };
+  function identidadUnica(usuarios) {
+    const fincas = new Set(usuarios.map(u => String(u.tenantId || '')));
+    if (fincas.size !== 1 || fincas.has('') || usuarios.length >= 101) return sinAsignar;
+    const usuario = usuarios.find(u => ['owner', 'dueño'].includes(u.rol)) || usuarios[0];
+    return { usuario, tenantId: usuario.tenantId };
+  }
   // 1. La cédula del receptor del XML prevalece sobre el destinatario del correo.
   // Evita asignar una factura al alias equivocado cuando el XML identifica otra finca.
   if (cedulaReceptor) {
     const cedulaLimpia = String(cedulaReceptor).replace(/[-\s]/g, '').trim();
     const cedulaSinCeros = cedulaLimpia.replace(/^0+/, '');
-    const u = await Usuario.findOne({
+    const candidatos = await Usuario.find({
       $or: [
         { 'cedula.numero': cedulaLimpia },
         { 'cedula.numero': cedulaSinCeros },
         { 'cedula.numero': '0' + cedulaSinCeros },
         { 'cedula.numero': String(cedulaReceptor).trim() },
       ],
-    });
-    if (u) return { usuario: u, tenantId: u.tenantId || null };
+    }).limit(101);
+    if (candidatos.length) return identidadUnica(candidatos);
   }
 
   // 2. Resolver el ID explícito de usuario o de finca, cuando el canal ya lo conoce.
@@ -68,25 +75,6 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
     // 2a. Coincidencia exacta con emailAlias del Tenant
     let tenant = await Tenant.findOne({ emailAlias: alias });
 
-    // 2b. Coincidencia por sufijo hexadecimal de 4 caracteres en emailAlias (sin full table scan)
-    if (!tenant) {
-      const matchSuffix = alias.match(/-?([a-f0-9]{4})$/i);
-      if (matchSuffix) {
-        const suffix = escapeRegex(matchSuffix[1].toLowerCase());
-        tenant = await Tenant.findOne({ emailAlias: { $regex: `${suffix}$`, $options: 'i' } });
-      }
-    }
-
-    // 2c. Si el alias coincide con el nombre/slug de la finca (con regex escapado)
-    if (!tenant) {
-      const cleanAlias = escapeRegex(alias.replace(/^finca-/, ''), 50);
-      if (cleanAlias) {
-        tenant = await Tenant.findOne({
-          emailAlias: { $regex: `^${cleanAlias}`, $options: 'i' },
-        });
-      }
-    }
-
     if (tenant) {
       const u =
         (await Usuario.findOne({ tenantId: tenant._id, $or: [{ rol: 'owner' }, { rol: 'dueño' }] })) ||
@@ -94,14 +82,6 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
       if (u) return { usuario: u, tenantId: tenant._id };
     }
 
-    // 2d. Coincidencia por prefijo del correo registrado del usuario (escapado contra ReDoS)
-    const safeAlias = escapeRegex(alias, 50);
-    if (safeAlias) {
-      const uByEmail = await Usuario.findOne({ email: { $regex: `^${safeAlias}@`, $options: 'i' } });
-      if (uByEmail) {
-        return { usuario: uByEmail, tenantId: uByEmail.tenantId };
-      }
-    }
   }
 
   // 4. Por teléfono del usuario (WhatsApp Bot)
@@ -109,17 +89,15 @@ async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, email
     const telLimpio = String(telefono).replace(/\D/g, '');
     const ultimos8 = telLimpio.slice(-8);
     const candidatosTelefono = new Set([telLimpio, `+${telLimpio}`]);
-    if (ultimos8.length === 8) {
+    if (telLimpio.length === 8 || (/^506\d{8}$/.test(telLimpio))) {
       candidatosTelefono.add(ultimos8);
       candidatosTelefono.add(`506${ultimos8}`);
       candidatosTelefono.add(`+506${ultimos8}`);
     }
-    const u = await Usuario.findOne({
+    const candidatos = await Usuario.find({
       $or: Array.from(candidatosTelefono, (valor) => ({ telefono: valor })),
-    });
-    if (u) {
-      return { usuario: u, tenantId: u.tenantId };
-    }
+    }).limit(101);
+    if (candidatos.length) return identidadUnica(candidatos);
   }
 
   return { usuario: null, tenantId: null };
@@ -134,9 +112,12 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
   const xmlString = typeof xmlContent === 'string' ? xmlContent : xmlContent.toString('utf-8');
 
   // Parsear el XML (soporta FacturaElectronica, TiqueteElectronico, NotaCredito, y MensajeHacienda)
-  const datosFactura = parsearFacturaXML(xmlString);
+  let datosFactura;
+  try { datosFactura = parsearFacturaXML(xmlString); }
+  catch (error) { error.code = 'XML_INVALIDO'; throw error; }
   if (!datosFactura || !datosFactura.claveNumerica) {
-    throw new Error('El XML no contiene una factura electrónica válida con Clave de Hacienda.');
+    const error = new Error('El XML no contiene una factura electrónica válida con Clave de Hacienda.');
+    error.code = 'XML_INVALIDO'; throw error;
   }
 
   // Resolver destinatario

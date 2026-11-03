@@ -146,6 +146,13 @@ const googleCallback = async (req, res, next) => {
     await usuario.save();
 
     const tenant = await Tenant.findById(usuario.tenantId);
+    if (!tenant?.estaActivo()) return res.redirect(`${frontendUrl}/login?error=tenant_inactive`);
+    if (usuario.mfa?.enabled) {
+      require('./authController').clearRefreshCookie(res);
+      const { crearDesafio, opcionesCookieMfa } = require('../services/mfaService');
+      res.cookie('mfaChallenge', await crearDesafio(usuario), opcionesCookieMfa());
+      return res.redirect(`${frontendUrl}/login?mfa=1`);
+    }
     const { token: refreshToken } = await emitirRefreshToken(usuario, tenant._id, req);
     setRefreshCookie(res, refreshToken);
 

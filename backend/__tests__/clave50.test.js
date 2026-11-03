@@ -1,47 +1,22 @@
-/**
- * Tests unitarios del generador de Clave Numerica de 50 digitos (v4.4).
- */
-
-const { generarClave, generarConsecutivo, padCedula, TIPO_DOC_CODIGO } = require('../services/hacienda/clave50');
-
-describe('clave50', () => {
-  test('genera una clave de exactamente 50 digitos numericos', () => {
-    const { clave } = generarClave({
-      fecha: new Date(),
-      tipoDocumento: 'FE',
-      cedulaEmisor: '123456789',
-      tipoCedula: '01',
-    });
-    expect(clave).toHaveLength(50);
-    expect(clave).toMatch(/^[0-9]{50}$/);
-    expect(clave.startsWith('506')).toBe(true);
-  });
-
-  test('genera consecutivo de 20 digitos con digito de tipo correcto', () => {
-    for (const [tipo, codigo] of Object.entries(TIPO_DOC_CODIGO)) {
-      const consecutivo = generarConsecutivo({ tipoDocumento: tipo, secuencia: 7 });
+﻿const { generarClave, generarConsecutivo, padCedula, TIPO_DOC_CODIGO } = require('../services/hacienda/clave50');
+describe('contrato de consecutivos v4.4', () => {
+  test('usa los códigos oficiales, sin convertir REP en mensaje receptor', () => {
+    expect(TIPO_DOC_CODIGO).toEqual({ FE: '01', ND: '02', NC: '03', TE: '04', FEC: '08', REP: '10' });
+    for (const [tipoDocumento, codigo] of Object.entries(TIPO_DOC_CODIGO)) {
+      const consecutivo = generarConsecutivo({ tipoDocumento, secuencia: 7 });
       expect(consecutivo).toHaveLength(20);
-      expect(consecutivo).toMatch(/^[0-9]{20}$/);
-      // posiciones 9-10 (index 8-9) = tipo de documento
-      expect(consecutivo.slice(8, 10)).toBe(codigo);
-      // secuencia en las ultimas 10 posiciones
+      expect(consecutivo.slice(8,10)).toBe(codigo);
       expect(consecutivo.slice(-10)).toBe('0000000007');
     }
   });
-
-  test('hace padding de cedula a 12 digitos', () => {
+  test('conserva ceros iniciales y rechaza identidades vacías', async () => {
     expect(padCedula('123456789')).toBe('000123456789');
-    expect(padCedula('3101234567')).toBe('003101234567');
+    await expect(generarClave({ cedulaEmisor: '' })).rejects.toThrow(/cedulaEmisor/);
   });
-
-  test('rechaza cedula vacia', () => {
-    expect(() =>
-      generarClave({ fecha: new Date(), tipoDocumento: 'FE', cedulaEmisor: '' })
-    ).toThrow(/cedulaEmisor/i);
+  test.each(['XX', '__proto__'])('rechaza tipo %s', tipoDocumento => {
+    expect(() => generarConsecutivo({ tipoDocumento })).toThrow(/desconocido/);
   });
-
-  test('rechaza tipo de documento desconocido cayendo a FE (01)', () => {
-    const consecutivo = generarConsecutivo({ tipoDocumento: 'XX', secuencia: 1 });
-    expect(consecutivo.slice(8, 10)).toBe('01');
+  test.each([0,-1,1.5,1e10,NaN])('rechaza secuencia inválida %s', secuencia => {
+    expect(() => generarConsecutivo({ secuencia })).toThrow(/secuencia/);
   });
 });

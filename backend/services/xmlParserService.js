@@ -287,9 +287,9 @@ function detectarTipoDocumento(nodo, rootTagName = '') {
     '02': 'Nota de Débito',
     '03': 'Nota de Crédito',
     '04': 'Tiquete Electrónico',
-    '05': 'Factura Electrónica de Compra',
-    '06': 'Factura de Exportación',
-    '07': 'Recibo Electrónico de Pago',
+    '08': 'Factura Electrónica de Compra',
+    '09': 'Factura de Exportación',
+    '10': 'Recibo Electrónico de Pago',
   };
 
   if (consecutivo.length >= 10) {
@@ -376,7 +376,7 @@ function extraerLineasDetalle(nodoDetalle) {
       const imp = impuestos[0]; // Tomar el primer impuesto (generalmente IVA)
 
       // LECTURA EXPLÍCITA del CodigoTarifa
-      const codigoTarifa = String(imp.CodigoTarifa || '08');
+      const codigoTarifa = String(imp.CodigoTarifaIVA ?? imp.CodigoTarifa ?? '');
       const tarifaPorcentaje = imp.Tarifa != null
         ? Number(imp.Tarifa)
         : codigoTarifaAPorcentaje(codigoTarifa);
@@ -537,4 +537,4 @@ function calcularTasaPredominante(lineas) {
   return tasaPredominante;
 }
 
-module.exports = { parsearFacturaXML };
+module.exports = { parsearFacturaXML, detectarTipoDocumento };

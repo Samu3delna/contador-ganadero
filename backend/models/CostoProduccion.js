@@ -21,6 +21,9 @@ const consumoInsumoSchema = new mongoose.Schema({
   },
   descripcion: { type: String, trim: true },
   cantidad: { type: Number, required: true, min: 0 },
+  pesoUnidadKg: { type: Number, min: 0.00001, required: function () {
+    return ['alimento_concentrado', 'forraje'].includes(this.tipoInsumo) && this.unidadMedida !== 'kg';
+  } },
   unidadMedida: {
     type: String,
     enum: ['kg', 'litro', 'unidad', 'dosis', 'hora', 'kwh', 'm3', 'carton', 'saco', 'bolsa'],
@@ -111,7 +114,7 @@ const costoProduccionSchema = new mongoose.Schema({
 });
 
 // ============ ÍNDICES ============
-costoProduccionSchema.index({ tenantId: 1, periodoFiscal: 1 });
+costoProduccionSchema.index({ tenantId: 1, periodoFiscal: 1 }, { unique: true, name: 'tenant_periodo_unique', partialFilterExpression: { tenantId: { $type: 'objectId' } } });
 costoProduccionSchema.index({ 'centrosCosto.referenciaId': 1 });
 costoProduccionSchema.index({ tenantId: 1, usuario: 1 });
 
@@ -133,13 +136,19 @@ costoProduccionSchema.methods.recalcularIndicadoresCentro = function (referencia
     ingresoTotal += p.ingresoBrutoVenta || 0;
     if (p.unidadMedida === 'kg') produccionTotalKg += p.cantidad;
     if (p.unidadMedida === 'carton') produccionTotalCartones += p.cantidad;
+    if (p.tipoProducto === 'huevo' && p.unidadMedida === 'unidad') produccionTotalCartones += p.cantidad / 30;
+    if (p.tipoProducto === 'huevo' && p.unidadMedida === 'docena') produccionTotalCartones += p.cantidad * 12 / 30;
     if (p.unidadMedida === 'litro') produccionTotalLitros += p.cantidad;
   }
 
   // 3. Calcular FCA (solo si hay alimento)
   const alimentoKg = centro.consumos
     .filter(c => c.tipoInsumo === 'alimento_concentrado' || c.tipoInsumo === 'forraje')
-    .reduce((sum, c) => sum + c.cantidad, 0);
+    .reduce((sum, c) => {
+      if (c.unidadMedida === 'kg') return sum + c.cantidad;
+      if (!(c.pesoUnidadKg > 0)) throw new Error('Indique pesoUnidadKg para convertir alimento a kg');
+      return sum + c.cantidad * c.pesoUnidadKg;
+    }, 0);
 
   const fca = produccionTotalKg > 0 ? (alimentoKg / produccionTotalKg) : 0;
 

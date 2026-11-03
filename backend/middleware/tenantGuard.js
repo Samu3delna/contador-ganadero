@@ -26,6 +26,7 @@ const extraerTenant = async (req, res, next) => {
       });
     }
 
+    await Tenant.actualizarCiclo(tenantId);
     const tenant = await Tenant.findById(tenantId);
 
     if (!tenant) {

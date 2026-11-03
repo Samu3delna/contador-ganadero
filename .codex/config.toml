@@ -1,0 +1,9 @@
+[mcp_servers.memorix]
+command = "cmd"
+args = [
+    "/c",
+    "memorix",
+    "serve",
+    "--mode",
+    "lite",
+]

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 const ESPECIES_AVES = [
   { value: 'gallina_ponedora', label: 'Gallina Ponedora' },
@@ -14,6 +14,7 @@ const ESTADOS_CICLO = [
 ];
 
 export default function AvesForm({ animal, onSave, onCancel, guardando }) {
+  const formId = useId();
   const initialForm = animal ? {
     loteId: animal.loteId || '',
     especie: animal.especie || 'gallina_ponedora',
@@ -80,8 +81,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
   return (
     <form onSubmit={handleSubmit} className="form-grid">
       <div className="form-group">
-        <label>Lote ID *</label>
-        <input
+        <label htmlFor={`${formId}-1`}>Lote ID *</label>
+        <input id={`${formId}-1`}
           className="input"
           type="text"
           value={form.loteId}
@@ -92,8 +93,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Especie *</label>
-        <select
+        <label htmlFor={`${formId}-2`}>Especie *</label>
+        <select id={`${formId}-2`}
           className="input"
           value={form.especie}
           onChange={e => setForm({ ...form, especie: e.target.value })}
@@ -103,8 +104,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Galpón / Ubicación</label>
-        <input
+        <label htmlFor={`${formId}-3`}>Galpón / Ubicación</label>
+        <input id={`${formId}-3`}
           className="input"
           type="text"
           value={form.galpon}
@@ -113,8 +114,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Raza o Línea</label>
-        <input
+        <label htmlFor={`${formId}-4`}>Raza o Línea</label>
+        <input id={`${formId}-4`}
           className="input"
           type="text"
           placeholder="Ej: Hy-Line Brown, Lohmann"
@@ -124,8 +125,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Fecha de Inicio del Ciclo *</label>
-        <input
+        <label htmlFor={`${formId}-5`}>Fecha de Inicio del Ciclo *</label>
+        <input id={`${formId}-5`}
           className="input"
           type="date"
           value={form.fechaInicio}
@@ -135,8 +136,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Aves Iniciales *</label>
-        <input
+        <label htmlFor={`${formId}-6`}>Aves Iniciales *</label>
+        <input id={`${formId}-6`}
           className="input"
           type="number"
           min="1"
@@ -148,8 +149,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
 
       {animal && (
         <div className="form-group">
-          <label>Aves Actuales</label>
-          <input
+          <label htmlFor={`${formId}-7`}>Aves Actuales</label>
+          <input id={`${formId}-7`}
             className="input"
             type="number"
             min="0"
@@ -160,8 +161,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       )}
 
       <div className="form-group">
-        <label>Semana de Vida al Iniciar</label>
-        <input
+        <label htmlFor={`${formId}-8`}>Semana de Vida al Iniciar</label>
+        <input id={`${formId}-8`}
           className="input"
           type="number"
           min="0"
@@ -171,8 +172,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Semanas Producción Esperadas</label>
-        <input
+        <label htmlFor={`${formId}-9`}>Semanas Producción Esperadas</label>
+        <input id={`${formId}-9`}
           className="input"
           type="number"
           min="1"
@@ -182,8 +183,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Huevos Semanales Esperados</label>
-        <input
+        <label htmlFor={`${formId}-10`}>Huevos Semanales Esperados</label>
+        <input id={`${formId}-10`}
           className="input"
           type="number"
           min="0"
@@ -193,8 +194,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Estado del Ciclo</label>
-        <select
+        <label htmlFor={`${formId}-11`}>Estado del Ciclo</label>
+        <select id={`${formId}-11`}
           className="input"
           value={form.estado}
           onChange={e => setForm({ ...form, estado: e.target.value })}
@@ -206,8 +207,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
       {animal && (
         <>
           <div className="form-group">
-            <label>Total Huevos Producidos</label>
-            <input
+            <label htmlFor={`${formId}-12`}>Total Huevos Producidos</label>
+            <input id={`${formId}-12`}
               className="input"
               type="number"
               min="0"
@@ -217,8 +218,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Total Cartones Producidos</label>
-            <input
+            <label htmlFor={`${formId}-13`}>Total Cartones Producidos</label>
+            <input id={`${formId}-13`}
               className="input"
               type="number"
               min="0"
@@ -228,8 +229,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Costo de Alimento Acumulado (₡)</label>
-            <input
+            <label htmlFor={`${formId}-14`}>Costo de Alimento Acumulado (₡)</label>
+            <input id={`${formId}-14`}
               className="input"
               type="number"
               min="0"
@@ -239,8 +240,8 @@ export default function AvesForm({ animal, onSave, onCancel, guardando }) {
           </div>
 
           <div className="form-group">
-            <label>Costo de Vacunas Acumulado (₡)</label>
-            <input
+            <label htmlFor={`${formId}-15`}>Costo de Vacunas Acumulado (₡)</label>
+            <input id={`${formId}-15`}
               className="input"
               type="number"
               min="0"

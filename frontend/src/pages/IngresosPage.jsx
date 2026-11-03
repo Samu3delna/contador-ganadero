@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import Paginacion from '../components/common/Paginacion';
+import { hoyCivil } from '../utils/fechaCivil';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, AlertTriangle } from 'lucide-react';
 import { obtenerIngresosAPI, crearIngresoAPI, eliminarIngresoAPI } from '../services/api';
 import { toast } from 'react-hot-toast';
@@ -13,23 +15,26 @@ export default function IngresosPage() {
   const [ingresos, setIngresos] = useState([]);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [cargando, setCargando] = useState(true);
+  const [pagina, setPagina] = useState(1);
+  const [meta, setMeta] = useState({});
   const [guardando, setGuardando] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(null);
   const [form, setForm] = useState({
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: hoyCivil(),
     descripcion: '', tipoGanado: 'novillo', cantidadCabezas: 1, precioUnitario: 0, tasaIVA: 0,
     comprador: { nombre: '', cedula: '' },
   });
 
-  useEffect(() => { cargarIngresos(); }, []);
 
-  async function cargarIngresos() {
+  const cargarIngresos = useCallback(async () => {
     try {
-      const res = await obtenerIngresosAPI({ limit: 50 });
-      setIngresos(res.data.ingresos);
+      const res = await obtenerIngresosAPI({ limit: 50, page: pagina });
+      setIngresos(res.data.ingresos); setMeta(res.data);
     } catch (err) { console.error(err); }
     finally { setCargando(false); }
-  }
+  }, [pagina]);
+
+  useEffect(() => { Promise.resolve().then(cargarIngresos); }, [cargarIngresos]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -37,7 +42,7 @@ export default function IngresosPage() {
     try {
       await crearIngresoAPI(form);
       setMostrarForm(false);
-      setForm({ fecha: new Date().toISOString().split('T')[0], descripcion:'', tipoGanado:'novillo', cantidadCabezas:1, precioUnitario:0, tasaIVA:0, comprador:{nombre:'',cedula:''} });
+      setForm({ fecha: hoyCivil(), descripcion:'', tipoGanado:'novillo', cantidadCabezas:1, precioUnitario:0, tasaIVA:0, comprador:{nombre:'',cedula:''} });
       cargarIngresos();
       toast.success('Venta registrada correctamente');
     } catch (err) { toast.error(err.response?.data?.error || 'Error al guardar'); }
@@ -67,6 +72,7 @@ export default function IngresosPage() {
 
   return (
     <div className="page-content">
+      <Paginacion pagina={pagina} {...meta} onChange={setPagina} cargando={cargando} />
       <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2">

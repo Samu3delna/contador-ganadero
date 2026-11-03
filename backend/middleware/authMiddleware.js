@@ -106,6 +106,7 @@ const protegerRuta = async (req, res, next) => {
       tenantId: tenantIdEfectivo,
       rol: usuario.rol,
       tokenVersion: versionActual,
+      mfaVerifiedAt: decoded.mfaVerifiedAt || null,
     };
 
     if (typeof res.setHeader === 'function') {

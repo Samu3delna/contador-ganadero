@@ -6,6 +6,8 @@ const { requiereCreditoChat } = require('../middleware/quotaGuard');
 const { chat, chatStream, enviarFeedback } = require('../controllers/chatController');
 
 const router = express.Router();
+const { permitir } = require('../middleware/rbacMiddleware');
+router.use(protegerRuta, extraerTenant, permitir('facturas:leer'));
 
 // Rate limiter per-user para chat normal
 const chatLimiter = rateLimit({

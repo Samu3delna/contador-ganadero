@@ -1,28 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
+import { cargarSdkOnvo } from '../../services/onvoSdk';
 
-const SDK_URL = 'https://sdk.onvopay.com/sdk.js';
-
-let sdkPromise = null;
-
-/**
- * Carga el SDK web de ONVO una sola vez (https://sdk.onvopay.com/sdk.js).
- */
-function cargarSdkOnvo() {
-  if (window.onvo?.pay) return Promise.resolve();
-  if (!sdkPromise) {
-    sdkPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = SDK_URL;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('No se pudo cargar el SDK de ONVO'));
-      document.head.appendChild(script);
-    });
-  }
-  return sdkPromise;
-}
 
 /**
  * Modal con el formulario de tarjeta embebido de ONVO Pay.
@@ -33,15 +13,21 @@ function cargarSdkOnvo() {
  *  - onCerrar: () => void
  */
 export default function OnvoCheckoutModal({ checkout, onExito, onCerrar }) {
+  if (!checkout) return null;
+  return <CheckoutIntento key={checkout.subscriptionId} checkout={checkout} onExito={onExito} onCerrar={onCerrar} />;
+}
+
+function CheckoutIntento({ checkout, onExito, onCerrar }) {
   const contenedorRef = useRef(null);
   const [sdkListo, setSdkListo] = useState(false);
   const [errorSdk, setErrorSdk] = useState(null);
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     if (!checkout) return;
     let cancelado = false;
 
-    cargarSdkOnvo()
+    Promise.resolve().then(() => { if (!cancelado) { setErrorSdk(null); setSdkListo(false); } }).then(cargarSdkOnvo)
       .then(() => {
         if (cancelado || !contenedorRef.current) return;
         contenedorRef.current.innerHTML = '';
@@ -72,7 +58,7 @@ export default function OnvoCheckoutModal({ checkout, onExito, onCerrar }) {
 
     return () => { cancelado = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkout]);
+  }, [checkout, intento]);
 
   return (
     <Modal
@@ -82,18 +68,18 @@ export default function OnvoCheckoutModal({ checkout, onExito, onCerrar }) {
       size="md"
     >
       {errorSdk ? (
-        <p className="onvo-checkout-error">{errorSdk}</p>
+        <div><p className="onvo-checkout-error" role="alert">{errorSdk}</p><button type="button" onClick={() => setIntento(i => i + 1)}>Reintentar</button></div>
       ) : (
         <>
           {!sdkListo && (
             <div className="loader-center"><div className="loader" /></div>
           )}
-          <div ref={contenedorRef} className="onvo-checkout-container" />
           <p className="onvo-checkout-nota">
             Pago procesado de forma segura por ONVO Pay. Tu tarjeta se usará para el cobro mensual del plan.
           </p>
         </>
       )}
+      <div ref={contenedorRef} className="onvo-checkout-container" />
     </Modal>
   );
 }

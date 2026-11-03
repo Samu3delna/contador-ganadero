@@ -38,8 +38,8 @@ const solicitudEliminacionSchema = new mongoose.Schema(
     },
     estado: {
       type: String,
-      enum: ['completada', 'en_proceso', 'rechazada'],
-      default: 'completada',
+      enum: ['completada', 'en_proceso', 'rechazada', 'fallida'],
+      default: 'en_proceso',
     },
     usuarioEncontrado: {
       type: Boolean,
@@ -64,8 +64,8 @@ const solicitudEliminacionSchema = new mongoose.Schema(
     },
     completadaEn: {
       type: Date,
-      default: Date.now,
     },
+    errorProcesamiento: String,
   },
   {
     timestamps: true,

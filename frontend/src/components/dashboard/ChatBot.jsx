@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, X, Bot, User, Sparkles, Copy, Check, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -12,9 +13,6 @@ import { Card } from '../ui/card';
 import './ChatBot.css';
 
 // ============ CONSTANTES ============
-
-const STORAGE_KEY = 'chatbot_mensajes_v1';
-const MAX_MENSAJES_STORAGE = 50;
 
 const PREGUNTAS_SUGERIDAS = [
   '¿Qué gastos son deducibles en REA?',
@@ -41,33 +39,19 @@ function sanitizarMarkdown(texto) {
 }
 
 function cargarMensajesGuardados() {
-  try {
-    const guardados = localStorage.getItem(STORAGE_KEY);
-    if (!guardados) return [MENSAJE_BIENVENIDA];
-    const parsed = JSON.parse(guardados);
-    if (!Array.isArray(parsed) || parsed.length === 0) return [MENSAJE_BIENVENIDA];
-    return parsed;
-  } catch {
-    return [MENSAJE_BIENVENIDA];
-  }
+  try { localStorage.removeItem('chatbot_mensajes_v1'); } catch { /* storage unavailable */ }
+  return [MENSAJE_BIENVENIDA];
 }
-
-function guardarMensajes(mensajes) {
-  try {
-    const paraGuardar = mensajes
-      .filter(m => !m.cargando)
-      .slice(-MAX_MENSAJES_STORAGE);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(paraGuardar));
-  } catch {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch { /* ignore */ }
-  }
-}
+function guardarMensajes() { /* El contexto contable vive solamente en la sesi?n React. */ }
 
 // ============ COMPONENTE PRINCIPAL ============
 
 export default function ChatBot() {
+  const { usuario } = useAuth();
+  if (!usuario) return null;
+  return <ChatBotSesion key={`${usuario.tenantId?._id || usuario.tenantId || ''}:${usuario._id}`} />;
+}
+function ChatBotSesion() {
   const [abierto, setAbierto] = useState(false);
   const [mensajes, setMensajes] = useState(() => cargarMensajesGuardados());
   const [input, setInput] = useState('');
@@ -241,7 +225,7 @@ export default function ChatBot() {
   function limpiarHistorial() {
     setMensajes([MENSAJE_BIENVENIDA]);
     setFeedbackEnviado({});
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('chatbot_mensajes_v1');
   }
 
   function toggleChat() {

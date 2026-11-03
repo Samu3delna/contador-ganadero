@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   FileDown,
   FileSpreadsheet,
@@ -31,7 +31,11 @@ export default function D150Page() {
   const [retencionesTexto, setRetencionesTexto] = useState('');
   const [ivaRetenido, setIvaRetenido] = useState(0);
   const [cargando, setCargando] = useState(false);
-  const [resultado, setResultado] = useState(null);
+  const [respuesta, setResultado] = useState(null);
+  const peticion = useRef(0);
+  const claveConsulta = JSON.stringify({ mes, anio, retencionesTexto, ivaRetenido });
+  const resultado = respuesta?.clave === claveConsulta ? respuesta.datos : null;
+  const cambiarConsulta = (setter, valor) => { peticion.current++; setResultado(null); setCargando(false); setter(valor); };
   const [descargando, setDescargando] = useState('');
 
   // Wizard TRIBU-CR (1: Ventas generales, 2: Compras totales, 3: Crédito fiscal, 4: Cálculo impuesto, 5: Auditoría)
@@ -58,36 +62,38 @@ export default function D150Page() {
   };
 
   const cargar = async () => {
+    const id = ++peticion.current;
     setCargando(true);
+    setResultado(null);
     try {
       const crudo = (retencionesTexto || '')
         .split(/[,\n]/)
         .map((r) => Number(r.trim()))
         .filter((n) => !isNaN(n) && n > 0);
       const retenciones = crudo.length > 0 ? crudo : [];
-      const r = await conciliacionD150GETAPI({
+      const params = {
         mes,
         anio,
         retencionesTarjeta: retenciones.join(','),
         ivaRetenidoPorTerceros: ivaRetenido,
-      });
-      setResultado(r.data);
+      };
+      const r = await conciliacionD150GETAPI(params);
+      if (id !== peticion.current) return;
+      setResultado({ datos: r.data, consulta: params, clave: claveConsulta });
       toast.success('Conciliación calculada');
     } catch (e) {
       console.error(e);
-      toast.error(e.response?.data?.error || e.message);
+      if (id === peticion.current) toast.error(e.response?.data?.error || e.message);
     } finally {
-      setCargando(false);
+      if (id === peticion.current) setCargando(false);
     }
   };
 
   const descargar = async (fmt) => {
+    if (!resultado || !respuesta?.consulta) return;
     setDescargando(fmt);
     try {
-      const retenciones = retencionesTexto
-        ? retencionesTexto.split(/[,\n]/).map((r) => Number(r.trim())).filter((n) => !isNaN(n) && n > 0).join(',')
-        : '';
-      const params = { mes, anio, retencionesTarjeta: retenciones, ivaRetenidoPorTerceros: ivaRetenido };
+      const params = respuesta.consulta;
       const r = fmt === 'pdf'
         ? await reporteD150PDFAPI(params)
         : await reporteD150ExcelAPI(params);
@@ -121,25 +127,25 @@ export default function D150Page() {
         <div className="filtros-row">
           <div className="form-group form-group--md">
             <label>Mes</label>
-            <select className="input" value={mes} onChange={(e) => setMes(Number(e.target.value))}>
+            <select className="input" value={mes} onChange={(e) => cambiarConsulta(setMes, Number(e.target.value))}>
               {MESES.map((m) => <option key={m.v} value={m.v}>{m.label}</option>)}
             </select>
           </div>
           <div className="form-group form-group--sm">
             <label>Año</label>
             <input className="input" type="number" min="2024" max="2099" value={anio}
-              onChange={(e) => setAnio(Number(e.target.value))} />
+              onChange={(e) => cambiarConsulta(setAnio, Number(e.target.value))} />
           </div>
           <div className="form-group form-group--auto">
             <label>Retenciones tarjeta (separadas por coma)</label>
             <input className="input" type="text" value={retencionesTexto}
               placeholder="ej: 12000, 8500, 4300"
-              onChange={(e) => setRetencionesTexto(e.target.value)} />
+              onChange={(e) => cambiarConsulta(setRetencionesTexto, e.target.value)} />
           </div>
           <div className="form-group form-group--md">
             <label>IVA retenido por terceros</label>
             <input className="input" type="number" min="0" step="any" value={ivaRetenido}
-              onChange={(e) => setIvaRetenido(Number(e.target.value))} />
+              onChange={(e) => cambiarConsulta(setIvaRetenido, Number(e.target.value))} />
           </div>
           <button className="btn btn-primary" onClick={cargar} disabled={cargando}>
             <Calculator size={18} /> {cargando ? 'Calculando...' : 'Calcular'}

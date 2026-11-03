@@ -23,13 +23,10 @@ const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 const SELECT_HACIENDA_CREDS = '+configuracionHacienda.certificadoP12Base64 +configuracionHacienda.pinCertificado +configuracionHacienda.usuarioHacienda +configuracionHacienda.passwordHacienda';
 
 async function obtenerTenantHacienda(req) {
-  if (!req.tenant?._id) return req.tenant || {};
-  try {
-    const t = await Tenant.findById(req.tenant._id).select(SELECT_HACIENDA_CREDS);
-    return t || req.tenant;
-  } catch {
-    return req.tenant;
-  }
+  if (!req.tenant?._id) throw new Error('La facturación requiere una finca identificada');
+  const tenant = await Tenant.findById(req.tenant._id).select(SELECT_HACIENDA_CREDS);
+  if (!tenant) throw new Error('Finca no encontrada');
+  return tenant;
 }
 
 // ============ AMBIENTE ============
@@ -37,17 +34,19 @@ const infoAmbiente = async (req, res, next) => {
   try {
     const tenant = await obtenerTenantHacienda(req);
     const hc = tenant.configuracionHacienda || {};
-    const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
+    const cfg = haciendaWorker.getTenantConfig(tenant, { conSecretos: false });
 
     res.json({
       ambiente: cfg.ambiente,
-      p12Configurado: !!cfg.p12Base64 || !!cfg.p12Path,
+      p12Configurado: !!hc.certificadoP12Base64,
       usuarioConfigurado: cfg.usuario?.startsWith('cpf-') || false,
       workerActivo: true,
       tenantConfigurado: hc.estaConfigurado?.() || false,
       sucursal: cfg.sucursal,
       terminal: cfg.terminal,
       codigoActividad: cfg.codigoActividad,
+      proveedorSistemas: cfg.proveedorSistemas,
+      motorHacienda: haciendaWorker.MOTOR_HACIENDA,
       endpoints: {
         sandbox: hacienda.auth.ENDPOINTS.sandbox,
         produccion: hacienda.auth.ENDPOINTS.produccion,
@@ -61,16 +60,20 @@ const crearBorrador = async (req, res, next) => {
   try {
     const {
       emisor, receptor, lineaDetalle, tipoProducto, tipoDocumento = 'FE',
-      condicionVenta, medioPago, plazoCredito, referencia,
+      condicionVenta, medioPago, plazoCredito, referencia, documentoReferencia,
+      codigoActividadReceptor, moneda, tipoCambio, pagos,
     } = req.body;
 
     if (!emisor || !lineaDetalle || lineaDetalle.length === 0 || !tipoProducto) {
       res.status(400);
       throw new Error('Faltan campos: emisor, lineaDetalle, tipoProducto');
     }
+    if (!['FE', 'TE', 'NC', 'ND'].includes(tipoDocumento)) {
+      res.status(400); throw new Error('Use la ruta específica para FEC o REP');
+    }
     // CABYS obligatorio en v4.4
     for (const l of lineaDetalle) {
-      if (!l.codigo || String(l.codigo).length !== 13) {
+      if (!/^\d{13}$/.test(String(l.codigo || ''))) {
         res.status(400);
         throw new Error(`Linea sin CABYS de 13 digitos: ${l.descripcion || '(sin descripcion)'}`);
       }
@@ -78,22 +81,24 @@ const crearBorrador = async (req, res, next) => {
 
     const tenant = await obtenerTenantHacienda(req);
     const hc = tenant.configuracionHacienda || {};
-    const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
+    const cfg = haciendaWorker.getTenantConfig(tenant, { conSecretos: false });
 
     const fechaEmision = new Date();
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
     const periodoFiscal = fechaEmision.getFullYear();
 
-    // consecutivo temporal sin firma - se regenera al firmar
-    const seqNum = typeof tenant.siguienteConsecutivo === 'function' ? await tenant.siguienteConsecutivo(tipoDocumento) : Number(String(Date.now()).slice(-10));
-    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO[tipoDocumento] || '01'}${String(seqNum).padStart(10, '0')}`;
+    // La reserva atómica no cambia al firmar ni al consultar.
+    const seqNum = await tenant.siguienteConsecutivo(tipoDocumento);
+    const consecutivoTemporal = hacienda.clave50.generarConsecutivo({ ...cfg, tipoDocumento, secuencia: seqNum });
 
     const nueva = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento,
       ambiente: cfg.ambiente,
       consecutivo: consecutivoTemporal,
+      codigoActividadEmisor: cfg.codigoActividad, proveedorSistemas: cfg.proveedorSistemas,
+      codigoActividadReceptor, moneda, tipoCambio, pagos, documentoReferencia,
       emisor: { ...emisor, regimen: 'Régimen Especial Agropecuario (REA)' },
-      receptor,
+      receptor: tipoDocumento === 'TE' && !receptor?.nombre ? undefined : receptor,
       lineaDetalle,
       tipoProducto,
       condicionVenta: condicionVenta || '01',
@@ -181,13 +186,11 @@ const consultarEstado = async (req, res, next) => {
     });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
 
-    // Obtener config del tenant
-    let cfg;
-    if (factura.tenantId && factura.tenantId.configuracionHacienda?.estaConfigurado?.()) {
-      cfg = haciendaWorker.getTenantConfig(factura.tenantId);
-    } else {
-      cfg = haciendaWorker.getGlobalConfig();
+    const consultaLegada = factura.estado === 'firmada' && factura.motorHacienda !== haciendaWorker.MOTOR_HACIENDA && factura.claveNumerica;
+    if (!consultaLegada && !['enviada_hacienda', 'procesando', 'aceptada', 'rechazada'].includes(factura.estado)) {
+      res.status(400); throw new Error('El comprobante aún no tiene un envío registrado');
     }
+    const cfg = haciendaWorker.validarConfigDocumento(factura.tenantId, factura);
 
     // Forzar consulta sincrona (afuera del loop del worker)
     const haciendaRecepcion = hacienda.recepcion;
@@ -195,13 +198,14 @@ const consultarEstado = async (req, res, next) => {
       ambiente: cfg.ambiente,
       clave: factura.claveNumerica,
       location: factura.respuestaHacienda?.location,
-      credenciales: { usuario: cfg.usuario, password: cfg.password },
+      credenciales: { usuario: cfg.usuario, password: cfg.password, tenantId: cfg.tenantId },
     });
 
     // Actualizar si cambio
     if (resultado.estado === 'aceptado' || resultado.estado === 'rechazado') {
       factura.estado = resultado.estado === 'aceptado' ? 'aceptada' : 'rechazada';
       factura.fechaRespuestaHacienda = new Date();
+      factura.xmlRespuestaHacienda = resultado.xmlRespuesta || '';
       factura.respuestaHacienda = {
         ...factura.respuestaHacienda?.toObject?.() || factura.respuestaHacienda,
         clave: factura.claveNumerica,
@@ -227,27 +231,37 @@ const cancelarDocumento = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
+    if (['borrador', 'generada', 'anulada'].includes(factura.estado) && !factura.envioIntentadoEn && !factura.xmlFirmado) {
+      return require('./facturaEmisionController').anularFactura(req, res, next);
+    }
     if (factura.estado !== 'aceptada') {
       res.status(400); throw new Error('Solo se pueden anular mediante NC las facturas aceptadas por Hacienda');
+    }
+    if (!['FE', 'TE'].includes(factura.tipoDocumento)) {
+      res.status(400); throw new Error('Este flujo de anulación solo admite FE y TE');
     }
 
     const { razon = 'Anulación de factura por acuerdo mutuo' } = req.body || {};
     const tenant = await obtenerTenantHacienda(req);
-    const hc = tenant?.configuracionHacienda || {};
-    const cfg = hc.estaConfigurado?.() ? haciendaWorker.getTenantConfig(tenant) : haciendaWorker.getGlobalConfig();
+    const cfg = haciendaWorker.getTenantConfig(tenant, { conSecretos: false });
+    if (cfg.ambiente !== factura.ambiente) {
+      res.status(400); throw new Error('Restaure el ambiente de la factura original para generar su nota de crédito');
+    }
 
     const fechaEmision = new Date();
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
     const periodoFiscal = fechaEmision.getFullYear();
-    const seqNumNC = typeof tenant?.siguienteConsecutivo === 'function'
-      ? await tenant.siguienteConsecutivo('NC')
-      : Number(String(Date.now()).slice(-10));
-    const consecutivoTemporal = `${cfg.sucursal}${cfg.terminal}${hacienda.clave50.TIPO_DOC_CODIGO.NC}${String(seqNumNC).padStart(10, '0')}`;
+    const seqNumNC = await tenant.siguienteConsecutivo('NC');
+    const consecutivoTemporal = hacienda.clave50.generarConsecutivo({ ...cfg, tipoDocumento: 'NC', secuencia: seqNumNC });
 
     const notaCredito = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento: 'NC',
       ambiente: cfg.ambiente,
       consecutivo: consecutivoTemporal,
+      codigoActividadEmisor: factura.codigoActividadEmisor || cfg.codigoActividad,
+      codigoActividadReceptor: factura.codigoActividadReceptor, proveedorSistemas: cfg.proveedorSistemas,
+      moneda: factura.moneda, tipoCambio: factura.tipoCambio, plazoCredito: factura.plazoCredito,
+      pagos: factura.pagos,
       emisor: factura.emisor,
       receptor: factura.receptor,
       lineaDetalle: factura.lineaDetalle,
@@ -256,7 +270,7 @@ const cancelarDocumento = async (req, res, next) => {
       medioPago: factura.medioPago || ['04'],
       referencia: `Nota de Crédito por anulación de ${factura.claveNumerica || factura.consecutivo}`,
       documentoReferencia: {
-        tipoDocReferencia: '01',
+        tipoDocReferencia: hacienda.clave50.TIPO_DOC_CODIGO[factura.tipoDocumento],
         numeroReferencia: factura.claveNumerica,
         fechaEmisionReferencia: factura.fechaEmision,
         codigoReferencia: '01', // 01 = Anula documento de referencia

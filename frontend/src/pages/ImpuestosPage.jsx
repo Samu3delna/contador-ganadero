@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { calcularIVA_API, calcularRentaAPI } from '../services/api';
 import PanelIVA from '../components/impuestos/PanelIVA';
 import PanelRenta from '../components/impuestos/PanelRenta';
@@ -10,24 +10,32 @@ export default function ImpuestosPage() {
   const [tab, setTab] = useState('iva');
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [cuatrimestre, setCuatrimestre] = useState(Math.ceil((new Date().getMonth()+1)/4));
-  const [iva, setIva] = useState(null);
-  const [renta, setRenta] = useState(null);
+  const [ivaResultado, setIva] = useState(null);
+  const [rentaResultado, setRenta] = useState(null);
+  const [error, setError] = useState(null);
+  const peticion = useRef(0);
+  const consulta = JSON.stringify({ tab, anio, cuatrimestre });
+  const iva = ivaResultado?.consulta === consulta ? ivaResultado.datos : null;
+  const renta = rentaResultado?.consulta === consulta ? rentaResultado.datos : null;
   const [cargando, setCargando] = useState(false);
 
   const calcular = useCallback(async () => {
+    const id = ++peticion.current;
     setCargando(true);
+    setError(null);
     try {
       if (tab === 'iva') {
         const res = await calcularIVA_API(cuatrimestre, anio);
-        setIva(res.data);
+        if (id === peticion.current) setIva({ consulta, datos: res.data });
       } else {
         const res = await calcularRentaAPI(anio);
-        setRenta(res.data);
+        if (id === peticion.current) setRenta({ consulta, datos: res.data });
       }
-    } catch(err) { console.error(err); }
-    finally { setCargando(false); }
-  }, [tab, anio, cuatrimestre]);
+    } catch(err) { if (id === peticion.current) setError({ consulta, mensaje: err.response?.data?.error || 'No se pudo calcular el período seleccionado' }); }
+    finally { if (id === peticion.current) setCargando(false); }
+  }, [tab, anio, cuatrimestre, consulta]);
 
+  const invalidar = useCallback(() => { peticion.current++; }, []);
   useEffect(() => {
     const run = async () => {
       await Promise.resolve();
@@ -35,10 +43,12 @@ export default function ImpuestosPage() {
       calcular();
     };
     run();
-  }, [calcular]);
+    return invalidar;
+  }, [calcular, invalidar]);
 
   return (
     <div className="page-content">
+      {error?.consulta === consulta && <p role="alert">{error.mensaje}</p>}
       <div className="page-header">
         <div>
           <h1 className="page-title">Cálculo de Impuestos</h1>

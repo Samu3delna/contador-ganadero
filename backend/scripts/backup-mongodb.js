@@ -11,7 +11,6 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
-require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
 const mongoose = require('mongoose');
 
 function cifrarBufferGcm(buffer, hexKey) {
@@ -47,17 +46,19 @@ async function crearRespaldoCifrado({ outputDir, encryptionKey, dryRun = false }
   const key = encryptionKey || process.env.BACKUP_ENCRYPTION_KEY || process.env.EMAIL_ENC_KEY;
   const colecciones = await mongoose.connection.db.listCollections().toArray();
   const dump = {
-    version: 1,
+    version: 2,
     createdAt: new Date().toISOString(),
-    collections: {},
+    collections: Object.create(null),
+    indexes: Object.create(null),
   };
 
   for (const col of colecciones) {
     const docs = await mongoose.connection.db.collection(col.name).find({}).toArray();
     dump.collections[col.name] = docs;
+    dump.indexes[col.name] = await mongoose.connection.db.collection(col.name).indexes();
   }
 
-  const jsonBuffer = Buffer.from(JSON.stringify(dump), 'utf8');
+  const jsonBuffer = Buffer.from(mongoose.mongo.BSON.EJSON.stringify(dump, { relaxed: false }), 'utf8');
   const compressed = zlib.gzipSync(jsonBuffer);
   const encrypted = cifrarBufferGcm(compressed, key);
   const sha256 = crypto.createHash('sha256').update(encrypted).digest('hex');
@@ -71,8 +72,8 @@ async function crearRespaldoCifrado({ outputDir, encryptionKey, dryRun = false }
 
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const filePath = path.join(dir, `backup-${ts}.cgbk`);
-  fs.writeFileSync(filePath, encrypted);
-  fs.writeFileSync(`${filePath}.sha256`, `${sha256}  ${path.basename(filePath)}\n`, 'utf8');
+  fs.writeFileSync(filePath, encrypted, { flag: 'wx', mode: 0o600 });
+  fs.writeFileSync(`${filePath}.sha256`, `${sha256}  ${path.basename(filePath)}\n`, { flag: 'wx', mode: 0o600 });
 
   return { filePath, sha256, bytes: encrypted.length, collections: Object.keys(dump.collections) };
 }
@@ -82,3 +83,13 @@ module.exports = {
   descifrarBufferGcm,
   crearRespaldoCifrado,
 };
+
+if (require.main === module) {
+  if (process.env.NODE_ENV !== 'test') require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
+  (async () => {
+    if (!process.env.MONGODB_URI) throw new Error('Falta MONGODB_URI');
+    await mongoose.connect(process.env.MONGODB_URI, { autoIndex: false });
+    const outputDir = process.argv.find(a => a.startsWith('--output-dir='))?.slice('--output-dir='.length);
+    console.log(JSON.stringify(await crearRespaldoCifrado({ outputDir, dryRun: process.argv.includes('--dry-run') })));
+  })().catch(error => { console.error(error.message); process.exitCode = 1; }).finally(() => mongoose.disconnect());
+}

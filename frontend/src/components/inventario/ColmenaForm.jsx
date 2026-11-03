@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 const ESPECIES_ABEJAS = [
   { value: 'africanizada', label: 'Africanizada' },
@@ -24,6 +24,7 @@ const ESTADOS_COLONIA = [
 ];
 
 export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
+  const formId = useId();
   const initialForm = animal ? {
     colmenaId: animal.colmenaId || '',
     especie: animal.especie || 'africanizada',
@@ -60,8 +61,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
   return (
     <form onSubmit={handleSubmit} className="form-grid">
       <div className="form-group">
-        <label>Colmena ID *</label>
-        <input
+        <label htmlFor={`${formId}-1`}>Colmena ID *</label>
+        <input id={`${formId}-1`}
           className="input"
           type="text"
           value={form.colmenaId}
@@ -72,8 +73,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Especie *</label>
-        <select
+        <label htmlFor={`${formId}-2`}>Especie *</label>
+        <select id={`${formId}-2`}
           className="input"
           value={form.especie}
           onChange={e => setForm({ ...form, especie: e.target.value })}
@@ -83,8 +84,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Ubicación / Apiario</label>
-        <input
+        <label htmlFor={`${formId}-3`}>Ubicación / Apiario</label>
+        <input id={`${formId}-3`}
           className="input"
           type="text"
           value={form.ubicacion}
@@ -93,8 +94,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Tipo de Colmena *</label>
-        <select
+        <label htmlFor={`${formId}-4`}>Tipo de Colmena *</label>
+        <select id={`${formId}-4`}
           className="input"
           value={form.tipoColmena}
           onChange={e => setForm({ ...form, tipoColmena: e.target.value })}
@@ -104,8 +105,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Estado de la Colonia</label>
-        <select
+        <label htmlFor={`${formId}-5`}>Estado de la Colonia</label>
+        <select id={`${formId}-5`}
           className="input"
           value={form.estadoColonia}
           onChange={e => setForm({ ...form, estadoColonia: e.target.value })}
@@ -115,8 +116,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Cuerpos de Alza</label>
-        <input
+        <label htmlFor={`${formId}-6`}>Cuerpos de Alza</label>
+        <input id={`${formId}-6`}
           className="input"
           type="number"
           min="0"
@@ -126,8 +127,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Cuadros de Cera</label>
-        <input
+        <label htmlFor={`${formId}-7`}>Cuadros de Cera</label>
+        <input id={`${formId}-7`}
           className="input"
           type="number"
           min="0"
@@ -137,8 +138,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Cuadros de Miel</label>
-        <input
+        <label htmlFor={`${formId}-8`}>Cuadros de Miel</label>
+        <input id={`${formId}-8`}
           className="input"
           type="number"
           min="0"
@@ -148,8 +149,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Cuadros de Cría</label>
-        <input
+        <label htmlFor={`${formId}-9`}>Cuadros de Cría</label>
+        <input id={`${formId}-9`}
           className="input"
           type="number"
           min="0"
@@ -159,8 +160,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Cuadros de Alimento</label>
-        <input
+        <label htmlFor={`${formId}-10`}>Cuadros de Alimento</label>
+        <input id={`${formId}-10`}
           className="input"
           type="number"
           min="0"
@@ -170,8 +171,8 @@ export default function ColmenaForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group" style={{ gridColumn: 'span 2' }}>
-        <label>Observaciones</label>
-        <textarea
+        <label htmlFor={`${formId}-11`}>Observaciones</label>
+        <textarea id={`${formId}-11`}
           className="input"
           rows="3"
           placeholder="Notas de salud de la reina, producción de propóleo, etc."

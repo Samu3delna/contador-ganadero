@@ -99,6 +99,8 @@ const usuarioSchema = new mongoose.Schema({
   },
   // Autenticación Multifactor (MFA TOTP + códigos de respaldo hasheados)
   mfa: {
+    pendingSecretEncrypted: { type: String, select: false },
+    pendingExpiresAt: Date,
     enabled: {
       type: Boolean,
       default: false,

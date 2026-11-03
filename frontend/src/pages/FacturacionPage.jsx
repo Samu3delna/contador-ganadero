@@ -1,3 +1,4 @@
+import Paginacion from '../components/common/Paginacion';
 import { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { obtenerFacturasEmisionAPI, obtenerResumenEmisionAPI, crearFacturaEmisionAPI } from '../services/api';
@@ -9,6 +10,8 @@ export default function FacturacionPage() {
   const [facturas, setFacturas] = useState([]);
   const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [pagina, setPagina] = useState(1);
+  const [meta, setMeta] = useState({});
   const [error, setError] = useState('');
 
   // Control de modal
@@ -19,10 +22,10 @@ export default function FacturacionPage() {
     try {
       setCargando(true);
       const [facturasRes, resumenRes] = await Promise.all([
-        obtenerFacturasEmisionAPI(),
+        obtenerFacturasEmisionAPI({ page: pagina, limit: 50 }),
         obtenerResumenEmisionAPI(),
       ]);
-      setFacturas(facturasRes.data.facturas || []);
+      setFacturas(facturasRes.data.facturas || []); setMeta(facturasRes.data);
       setResumen(resumenRes.data);
     } catch (err) {
       console.error(err);
@@ -30,7 +33,7 @@ export default function FacturacionPage() {
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [pagina]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -70,6 +73,7 @@ export default function FacturacionPage() {
 
   return (
     <div className="page-content">
+      <Paginacion pagina={pagina} {...meta} onChange={setPagina} cargando={cargando} />
       <div className="page-header">
         <div>
           <h1 className="page-title">Facturación Electrónica REA</h1>

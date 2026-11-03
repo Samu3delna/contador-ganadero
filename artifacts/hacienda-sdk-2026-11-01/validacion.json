@@ -1,0 +1,35 @@
+{
+  "fecha": "2026-11-01",
+  "sdk": "@dojocoding/hacienda-sdk@0.12.1",
+  "resultado": "primera etapa implementada y validada localmente",
+  "validacion": {
+    "jest": {
+      "suites": 20,
+      "passed": 192,
+      "failed": 0
+    },
+    "node_sdk": {
+      "passed": 26,
+      "failed": 0
+    },
+    "frontend": {
+      "passed": 44,
+      "failed": 0
+    },
+    "lint": "passed",
+    "build": "passed",
+    "git_diff_check": "passed"
+  },
+  "red_hacienda_real": false,
+  "desplegado": false,
+  "ui_validada_visualmente": false,
+  "limites": [
+    "REP real bloqueado; simulación local únicamente",
+    "Aceptación sandbox no probada por este proyecto",
+    "Credenciales v2 con AAD incorrecto requieren sustitución completa",
+    "Documentos firmados con motor anterior requieren conciliación antes de sustitución",
+    "No resuelve el resto de incidencias de la auditoría general"
+  ],
+  "guia": "docs/HACIENDA_SDK.md",
+  "deska": "No disponible; artifacts guardados como archivos del proyecto"
+}

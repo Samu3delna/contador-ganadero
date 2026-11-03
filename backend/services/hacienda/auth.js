@@ -1,85 +1,35 @@
-/**
- * Autenticacion con Hacienda CR (OAuth2/OpenID Connect).
- *
- * Flujo:
- *  1. POST a /token?grant_type=password con credenciales de usuario (cpf-...)
- *  2. Captura access_token (JWT) y refresh_token
- *  3. Usa access_token en Authorization: Bearer <token>
- *
- * En ambiente local no llama a Hacienda y devuelve un token mock.
- */
+/** OAuth2 managed by the SDK, with isolated tenant/environment token caches. */
+const { obtenerClienteSdk, limpiarCacheClientes, SANDBOX_API_BASE_URL } = require('./sdkAdapter');
 
-const axios = require('axios');
-
-const ENDPOINTS = {
-  sandbox: {
+const ENDPOINTS = Object.freeze({
+  sandbox: Object.freeze({
     auth: 'https://idp.comprobanteselectronicos.go.cr/auth/realms/rut-stag/protocol/openid-connect/token',
-    recepcion: 'https://api.sandbox.comprobanteselectronicos.go.cr/recepcion/v1/recepcion',
-    consulta: 'https://api.sandbox.comprobanteselectronicos.go.cr/recepcion/v1/',
+    recepcion: `${SANDBOX_API_BASE_URL}/recepcion`,
+    consulta: `${SANDBOX_API_BASE_URL}/recepcion/`,
     clienteId: 'api-stag',
-  },
-  produccion: {
+  }),
+  produccion: Object.freeze({
     auth: 'https://idp.comprobanteselectronicos.go.cr/auth/realms/rut/protocol/openid-connect/token',
     recepcion: 'https://api.comprobanteselectronicos.go.cr/recepcion/v1/recepcion',
-    consulta: 'https://api.comprobanteselectronicos.go.cr/recepcion/v1/',
+    consulta: 'https://api.comprobanteselectronicos.go.cr/recepcion/v1/recepcion/',
     clienteId: 'api-prod',
-  },
-};
-
-const TOKEN_CACHE = new Map();
+  }),
+});
 
 function getEndpoint(ambiente) {
-  if (ambiente === 'produccion') return ENDPOINTS.produccion;
-  if (ambiente === 'sandbox') return ENDPOINTS.sandbox;
-  return null; //local
+  if (ambiente === 'local') return null;
+  if (!Object.hasOwn(ENDPOINTS, ambiente)) throw new Error('Ambiente de Hacienda inválido');
+  return ENDPOINTS[ambiente];
 }
 
-async function getToken({ ambiente, usuario, password, tenantId } = {}) {
-  if (ambiente === 'local') {
-    return {
-      access_token: 'mock_local_token_no_usar_en_produccion',
-      expires_in: 300,
-      token_type: 'Bearer',
-      mock: true,
-    };
+async function getToken(config = {}) {
+  if (config.ambiente === 'local') {
+    return { access_token: 'mock_local_token_no_usar_en_produccion', token_type: 'Bearer', mock: true };
   }
-  const ep = getEndpoint(ambiente);
-  if (!ep) throw new Error('Ambiente invalido para auth');
-  if (!usuario || !password) throw new Error('usuario y password requeridos');
-
-  const cacheKey = `${tenantId || 'global'}:${ambiente}:${usuario}`;
-  const cached = TOKEN_CACHE.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now() + 5000) return cached.payload;
-
-  const params = new URLSearchParams();
-  params.append('grant_type', 'password');
-  params.append('client_id', ep.clienteId);
-  params.append('username', usuario);
-  params.append('password', password);
-
-  const { data } = await axios.post(ep.auth, params.toString(), {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    timeout: 15000,
-    maxRedirects: 0,
-  });
-
-  const payload = {
-    access_token: data.access_token,
-    expires_in: data.expires_in || 300,
-    token_type: data.token_type || 'Bearer',
-    refresh_token: data.refresh_token,
-  };
-  TOKEN_CACHE.set(cacheKey, { payload, expiresAt: Date.now() + (data.expires_in - 30) * 1000 });
-  return payload;
+  const { tokenManager } = await obtenerClienteSdk(config);
+  return { access_token: await tokenManager.getAccessToken(), token_type: 'Bearer' };
 }
 
-function limpiarCacheTokens() {
-  TOKEN_CACHE.clear();
-}
+function limpiarCacheTokens(tenantId) { limpiarCacheClientes(tenantId); }
 
-module.exports = {
-  getToken,
-  limpiarCacheTokens,
-  getEndpoint,
-  ENDPOINTS,
-};
+module.exports = { getToken, limpiarCacheTokens, getEndpoint, ENDPOINTS };

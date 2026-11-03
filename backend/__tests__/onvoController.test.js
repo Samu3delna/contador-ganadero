@@ -66,6 +66,78 @@ describe('controllers/onvoController - webhookOnvo', () => {
     jest.clearAllMocks();
   });
 
+  test('S-06: fallo antes del efecto permite reentrega del mismo evento', async () => {
+    const tenant = await crearTenantPrueba();
+    const event = buildEventoRenovacion(); event.data.metadata.tenantId = String(tenant._id);
+    const spy = jest.spyOn(Tenant, 'updateOne').mockRejectedValueOnce(new Error('fallo transitorio'));
+    const first = buildReqRes(event); await webhookOnvo(first.req, first.res);
+    expect(first.res.status).toHaveBeenCalledWith(500); spy.mockRestore();
+    const retry = buildReqRes(event); await webhookOnvo(retry.req, retry.res);
+    expect(retry.res.json).toHaveBeenCalledWith({ received: true });
+    expect((await Tenant.findById(tenant._id)).plan).toBe('pro');
+  });
+
+  test('S-06: fallo al cerrar evento no repite el efecto ni reinicia consumo', async () => {
+    const tenant = await crearTenantPrueba();
+    const event = buildEventoRenovacion(); event.data.metadata.tenantId = String(tenant._id);
+    const spy = jest.spyOn(SubscriptionEvent, 'updateOne');
+    spy.mockRejectedValueOnce(new Error('fallo despues del efecto'));
+    const first = buildReqRes(event); await webhookOnvo(first.req, first.res); spy.mockRestore();
+    await Tenant.updateOne({ _id: tenant._id }, { $set: { 'consumoActual.conteosMes': 9 } });
+    const retry = buildReqRes(event); await webhookOnvo(retry.req, retry.res);
+    expect((await Tenant.findById(tenant._id)).consumoActual.conteosMes).toBe(9);
+    expect((await SubscriptionEvent.findOne({ eventoId: `${event.type}:${event.data.id}` })).procesado).toBe(true);
+  });
+
+  test('S-06: entregas concurrentes conservan un evento y un efecto', async () => {
+    await SubscriptionEvent.init();
+    const tenant = await crearTenantPrueba();
+    const event = buildEventoRenovacion(); event.data.metadata.tenantId = String(tenant._id);
+    const reqs = Array.from({ length: 5 }, () => buildReqRes(event));
+    await Promise.all(reqs.map(({ req, res }) => webhookOnvo(req, res)));
+    expect(await SubscriptionEvent.countDocuments({ eventoId: `${event.type}:${event.data.id}` })).toBe(1);
+    const t = await Tenant.findById(tenant._id).select('+onvoEventosAplicados');
+    expect(t.onvoEventosAplicados).toEqual([`${event.type}:${event.data.id}`]);
+  });
+
+  test('S-06: worker recupera un claim abandonado despues de reinicio', async () => {
+    const tenant = await crearTenantPrueba(); const event=buildEventoRenovacion(); event.data.metadata.tenantId=String(tenant._id);
+    await SubscriptionEvent.create({eventoId:`${event.type}:${event.data.id}`,type:event.type,data:event.data,claimToken:'proceso-muerto',claimHasta:new Date(0)});
+    await require('../controllers/onvoController').reconciliarEventosPendientes();
+    expect((await Tenant.findById(tenant._id)).plan).toBe('pro');
+    expect((await SubscriptionEvent.findOne({eventoId:`${event.type}:${event.data.id}`})).procesado).toBe(true);
+  });
+
+  test('P-05: cancelar Pro permite perfil y refresh del plan gratuito', async () => {
+    const request=require('supertest'), app=require('../server'), Usuario=require('../models/Usuario');
+    const u=await Usuario.create({nombre:'Cancelar',email:'cancel@example.test',password:'SyntheticPassword123!',rol:'owner'});
+    const t=await Tenant.crearParaUsuario({nombreFinca:'Gratis',owner:u._id,plan:'pro'});
+    u.tenantId=t._id; await u.save(); t.onvoSubscriptionId='sub-cancel-test'; await t.save();
+    const login=await request(app).post('/api/auth/login').send({email:u.email,password:'SyntheticPassword123!'});
+    const token=login.body.token;
+    expect((await request(app).post('/api/onvo/cancelar').set('Authorization',`Bearer ${token}`)).status).toBe(200);
+    const perfil=await request(app).get('/api/auth/perfil').set('Authorization',`Bearer ${token}`);
+    expect(perfil.status).toBe(200);expect(perfil.body.tenant.plan).toBe('free');
+    const cookie=login.headers['set-cookie'].find(c=>c.startsWith('refreshToken=')).split(';')[0];
+    expect((await request(app).post('/api/auth/refresh').set('Cookie',cookie)).status).toBe(200);
+  });
+
+  test('P-09/F-41: cambio mensual concurrente no borra consumos del mes nuevo y gracia vence', async () => {
+    const tenant = await crearTenantPrueba();
+    await Tenant.updateOne({ _id: tenant._id }, { $set: {
+      'consumoActual.periodoActual': '2026-10', 'consumoActual.conteosMes': 10,
+      'consumoActual.almacenamientoUsadoMB': 25, estado: 'periodo_gracia', periodoGraciaFin: new Date('2026-11-01T06:00:00Z'),
+    } });
+    const ahora = new Date('2026-11-01T06:00:00Z');
+    await Promise.all(Array.from({length: 5}, () => Tenant.actualizarCiclo(tenant._id, ahora)));
+    await Tenant.updateOne({ _id: tenant._id }, { $inc: { 'consumoActual.conteosMes': 1 } });
+    await Tenant.actualizarCiclo(tenant._id, ahora);
+    const t = await Tenant.findById(tenant._id);
+    expect(t.estado).toBe('suspendido'); expect(t.consumoActual.periodoActual).toBe('2026-11');
+    expect(t.consumoActual.conteosMes).toBe(1); expect(t.consumoActual.almacenamientoUsadoMB).toBe(25);
+    expect(require('../utils/periodoCR').periodoCR(new Date('2026-11-01T05:59:59Z'))).toBe('2026-10');
+  });
+
   test('(a) secreto inválido -> 401 WEBHOOK_NO_AUTORIZADO', async () => {
     const { req, res } = buildReqRes({ type: 'x', data: {} }, 'secreto_incorrecto');
     await webhookOnvo(req, res);

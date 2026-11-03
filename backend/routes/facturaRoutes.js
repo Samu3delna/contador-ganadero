@@ -34,7 +34,13 @@ const { extraerTenant } = require('../middleware/tenantGuard');
 
 router.use(protegerRuta);
 router.use(extraerTenant);
+const { permitir } = require('../middleware/rbacMiddleware');
+router.use((req, res, next) => {
+ const accion = req.method === 'DELETE' ? 'facturas:eliminar' : req.method === 'GET' ? 'facturas:leer' : req.path === '/upload' ? 'facturas:subir_xml' : req.path === '/manual' ? 'facturas:crear_manual' : 'facturas:editar_deducibilidad';
+ return permitir(accion)(req,res,next);
+});
 router.route('/').get(obtenerFacturas);
+router.get('/resumen', require('../controllers/facturaController').resumenGastos);
 router.post('/manual', crearGastoManual);
 router.post('/upload', uploadLimiter, upload.single('archivoXML'), subirXMLManual);
 

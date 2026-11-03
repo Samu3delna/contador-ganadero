@@ -192,11 +192,8 @@ app.post('/api/cron/sync-emails', async (req, res) => {
     const tieneImap = process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_');
     if (tieneImap) {
       const { sincronizarManual } = require('./services/emailService');
-      const usuario = await Usuario.findOne();
-      if (usuario) {
-        const result = await sincronizarManual(usuario._id, { soloNoLeidos: true });
-        return res.json({ success: true, keepAlive: true, canal: 'imap', ...result });
-      }
+      const result = await sincronizarManual(undefined, { soloNoLeidos: true });
+      return res.json({ success: true, keepAlive: true, canal: 'imap', ...result });
     }
 
     res.json({
@@ -262,10 +259,7 @@ if (require.main === module) {
 
         if (process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_')) {
           try {
-            const usuario = await Usuario.findOne();
-            if (usuario) {
-              await iniciarListener(usuario._id);
-            }
+            await iniciarListener();
           } catch (error) {
             console.error('Error al iniciar listener IMAP:', error.message);
           }

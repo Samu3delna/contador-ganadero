@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+function requiereReferencia() { return ['NC','ND','FEC','REP'].includes(this.tipoDocumento || this.ownerDocument?.().tipoDocumento); }
 
 /**
  * Modelo de Facturación Electrónica (Emisión)
@@ -11,45 +12,76 @@ const lineaEmisionSchema = new mongoose.Schema({
   //Codigo CABYS de 13 digitos (obligatorio v4.4)
   codigo: {
     type: String,
-    required: true,
+    required: function () { return this.ownerDocument().tipoDocumento !== 'REP'; },
     trim: true,
     minlength: 13,
     maxlength: 13,
+    match: /^\d{13}$/,
     description: 'Codigo CABYS de 13 digitos obligatorio v4.4',
   },
   descripcion: { type: String, required: true, trim: true },
-  cantidad: { type: Number, required: true, min: 0 },
-  unidadMedida: { type: String, default: 'kg', trim: true },
+  cantidad: { type: Number, required: true, min: 0.00001 },
+  unidadMedida: { type: String, default: 'Kg', trim: true },
   precioUnitario: { type: Number, required: true, min: 0 },
   subtotal: { type: Number, required: true, min: 0 },
+  montoBruto: { type: Number, min: 0 },
   descuento: {
     monto: { type: Number, default: 0, min: 0 },
     naturalezaDescuento: { type: String, trim: true },
+    codigoDescuento: { type: String, trim: true },
+    codigoDescuentoOtros: { type: String, trim: true },
   },
   impuesto: {
     codigo: { type: String, default: '01' }, // 01 = IVA
     codigoTarifa: {
       type: String,
-      enum: ['01', '02', '03', '04', '05', '06', '07', '08'],
-      default: '02', // 02 = 1% (REA)
+      enum: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11'],
     },
     tarifa: { type: Number, default: 1 },         // 1%
     monto: { type: Number, default: 0 },
-    factorIVA: { type: Number, default: 0.01 },
+    factorIVA: { type: Number }, // Derivado de tarifa; nunca se usa como entrada del cálculo.
     exoneracion: {
       tipoDocumento: { type: String, trim: true },
       numeroDocumento: { type: String, trim: true },
       nombreInstitucion: { type: String, trim: true },
+      nombreInstitucionOtros: { type: String, trim: true },
+      tipoDocumentoOtros: { type: String, trim: true },
+      articulo: { type: Number },
+      inciso: { type: Number },
       fechaEmision: { type: String },
       montoExoneracion: { type: Number, default: 0 },
       porcentajeExoneracion: { type: Number, default: 0 },
+      tarifaExonerada: { type: Number, min: 0, max: 13 },
     },
   },
   impuestoNeto: { type: Number, default: 0 },
   montoTotal: { type: Number, required: true, min: 0 },
 }, { _id: false });
 
+const receptorSchema = new mongoose.Schema({
+  nombre: { type: String, required: true, trim: true },
+  nombreComercial: { type: String, trim: true },
+  cedula: {
+    tipo: { type: String, default: '02' },
+    numero: { type: String, required: true },
+  },
+  correo: { type: String, trim: true },
+  telefono: { type: String, trim: true },
+  ubicacion: { type: String, trim: true },
+  provincia: { type: String, trim: true },
+  canton: { type: String, trim: true },
+  distrito: { type: String, trim: true },
+  barrio: { type: String, trim: true },
+  identificacionExtranjera: { type: String, trim: true },
+}, { _id: false });
+
 const facturaEmisionSchema = new mongoose.Schema({
+  repOriginalId: { type: mongoose.Schema.Types.ObjectId, ref: 'FacturaEmision' },
+  idempotenciaRep: String,
+  repSolicitudHash: String,
+  reservasRep: [{ _id: false, facturaId: mongoose.Schema.Types.ObjectId, monto: Number }],
+  saldoRepReservado: { type: Number, default: 0 },
+  reservaRepInicializada: { type: Boolean, default: false },
   // === Identificacion v4.4 ===
   tipoDocumento: {
     type: String,
@@ -66,7 +98,6 @@ const facturaEmisionSchema = new mongoose.Schema({
   },
   claveNumerica: {
     type: String,
-    index: true,
     minlength: 50,
     maxlength: 50,
     description: 'Clave numerica de 50 digitos (v4.4)',
@@ -75,15 +106,22 @@ const facturaEmisionSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    description: 'Consecutivo de 20 digitos (3 sucursal + 3 terminal + 2 tipo + 10 secuencia)',
+    description: 'Consecutivo de 20 digitos (3 sucursal + 5 terminal + 2 tipo + 10 secuencia)',
   },
+  codigoActividadEmisor: { type: String, trim: true },
+  codigoActividadReceptor: { type: String, trim: true },
+  proveedorSistemas: { type: String, trim: true, maxlength: 20 },
+  moneda: { type: String, default: 'CRC', match: /^[A-Z]{3}$/ },
+  tipoCambio: { type: Number, min: 0.00001, default: 1 },
   //Documento de referencia (para NC/ND/REP)
   documentoReferencia: {
-    tipoDocReferencia: { type: String, trim: true },
-    numeroReferencia: { type: String, trim: true },
-    fechaEmisionReferencia: { type: String },
-    codigoReferencia: { type: String, trim: true },
-    razonReferencia: { type: String, trim: true },
+    tipoDocReferencia: { type: String, trim: true, required: requiereReferencia, match: /^\d{2}$/ },
+    numeroReferencia: { type: String, trim: true, required: requiereReferencia, minlength: 1, maxlength: 50 },
+    fechaEmisionReferencia: { type: Date, required: requiereReferencia },
+    codigoReferencia: { type: String, trim: true, required: requiereReferencia, match: /^\d{2}$/ },
+    razonReferencia: { type: String, trim: true, required: requiereReferencia, minlength: 1, maxlength: 180 },
+    tipoDocReferenciaOtros: { type: String, trim: true },
+    codigoReferenciaOtros: { type: String, trim: true },
   },
 
   // === Emisor (productor agropecuario) ===
@@ -97,6 +135,10 @@ const facturaEmisionSchema = new mongoose.Schema({
     telefono: { type: String, trim: true },
     correo: { type: String, trim: true },
     ubicacion: { type: String, trim: true },
+    provincia: { type: String, trim: true },
+    canton: { type: String, trim: true },
+    distrito: { type: String, trim: true },
+    barrio: { type: String, trim: true },
     regimen: { type: String, default: 'Régimen Especial Agropecuario (REA)' },
     // Número de inscripción ante el MAG (obligatorio para tarifa 1%)
     numeroMAG: { type: String, trim: true },
@@ -104,13 +146,8 @@ const facturaEmisionSchema = new mongoose.Schema({
 
   // === Receptor (comprador) ===
   receptor: {
-    nombre: { type: String, required: true },
-    cedula: {
-      tipo: { type: String, default: '02' }, // 02 = Jurídica
-      numero: { type: String, required: true },
-    },
-    correo: { type: String, trim: true },
-    telefono: { type: String, trim: true },
+    type: receptorSchema,
+    required: function () { return !['TE', 'NC', 'ND'].includes(this.tipoDocumento); },
   },
 
   // === Detalle ===
@@ -120,10 +157,13 @@ const facturaEmisionSchema = new mongoose.Schema({
   resumenFactura: {
     totalServGravados: { type: Number, default: 0 },
     totalServExentos: { type: Number, default: 0 },
+    totalServExonerado: { type: Number, default: 0 },
     totalMercanciasGravadas: { type: Number, default: 0 },
     totalMercanciasExentas: { type: Number, default: 0 },
+    totalMercExonerada: { type: Number, default: 0 },
     totalGravado: { type: Number, default: 0 },
     totalExento: { type: Number, default: 0 },
+    totalExonerado: { type: Number, default: 0 },
     totalVenta: { type: Number, default: 0 },
     totalDescuentos: { type: Number, default: 0 },
     totalVentaNeta: { type: Number, default: 0 },
@@ -135,9 +175,10 @@ const facturaEmisionSchema = new mongoose.Schema({
   fechaEmision: { type: Date, required: true, default: Date.now },
   condicionVenta: {
     type: String,
-    enum: ['01', '02', '03'], // 01=Contado, 02=Crédito, 03=Consignación
+    match: /^\d{2}$/,
     default: '01',
   },
+  pagos: [{ _id: false, tipoMedioPago: String, totalMedioPago: { type: Number, min: 0 }, medioPagoOtros: String }],
   medioPago: [{ type: String }], // 01=Efectivo, 02=Tarjeta, 03=Cheque, 04=Transferencia...
   plazoCredito: { type: String },
   referencia: { type: String, trim: true }, // Número de orden de compra del cliente
@@ -174,6 +215,8 @@ const facturaEmisionSchema = new mongoose.Schema({
     default: 'borrador',
   },
   fechaEnvioHacienda: { type: Date },
+  envioIntentadoEn: { type: Date },
+  motorHacienda: { type: String },
   fechaRespuestaHacienda: { type: Date },
   respuestaHacienda: {
     clave: String,
@@ -218,59 +261,108 @@ facturaEmisionSchema.index({ tenantId: 1, periodoFiscal: 1, cuatrimestre: 1 });
 facturaEmisionSchema.index({ tenantId: 1, fechaEmision: -1 });
 facturaEmisionSchema.index({ 'emisor.cedula.numero': 1 });
 facturaEmisionSchema.index({ tenantId: 1, usuario: 1 });
+facturaEmisionSchema.index({ tenantId: 1, idempotenciaRep: 1 }, { unique: true, partialFilterExpression: { idempotenciaRep: { $type: 'string' } } });
 
-// ============ PRE-SAVE: Calcular resumen ============
-facturaEmisionSchema.pre('save', function () {
+// Cálculo ordinario a cinco decimales, igual que el contrato numérico del SDK.
+// La tarifa procede del catálogo; montos/factorIVA recibidos del cliente se reemplazan.
+const TARIFA_POR_CODIGO = Object.freeze({
+  '01': 0, '02': 1, '03': 2, '04': 4, '05': 0, '06': 4,
+  '07': 8, '08': 13, '09': 0.5, '10': 0, '11': 0,
+});
+const CODIGO_POR_TARIFA = Object.freeze({ 0: '10', 0.5: '09', 1: '02', 2: '03', 4: '04', 13: '08' });
+const round5 = (value) => Number(value.toFixed(5));
+
+facturaEmisionSchema.pre('validate', function () {
   if (!this.isModified('lineaDetalle')) return;
-
-  let totalServGravados = 0;
-  let totalServExentos = 0;
-  let totalMercanciasGravadas = 0;
-  let totalMercanciasExentas = 0;
-  let totalDescuentos = 0;
-  let totalImpuesto = 0;
-
-  const TARIFA_REA = 0.01;
-
-  for (const linea of this.lineaDetalle) {
-    linea.subtotal = Math.round((linea.precioUnitario * linea.cantidad) * 100) / 100;
-    const factor = linea.impuesto?.factorIVA != null ? linea.impuesto.factorIVA : TARIFA_REA;
-    linea.impuesto.monto = Math.round(linea.subtotal * factor * 100) / 100;
-    linea.impuestoNeto = linea.impuesto.monto;
-    linea.montoTotal = Math.round((linea.subtotal - (linea.descuento?.monto || 0) + linea.impuestoNeto) * 100) / 100;
-
-    totalDescuentos += linea.descuento?.monto || 0;
-    totalImpuesto += linea.impuesto.monto;
-
-    //Clasificar servicio vs mercancia, gravado vs exento
-    const tarifa = linea.impuesto?.tarifa ?? 1;
-    const esServicio = this.tipoProducto === 'leche' || this.tipoProducto === 'huevo';
-    if (tarifa === 0) {
-      if (esServicio) totalServExentos += linea.subtotal;
-      else totalMercanciasExentas += linea.subtotal;
-    } else {
-      if (esServicio) totalServGravados += linea.subtotal;
-      else totalMercanciasGravadas += linea.subtotal;
-    }
+  const resumen = {
+    totalServGravados: 0, totalServExentos: 0, totalServExonerado: 0,
+    totalMercanciasGravadas: 0, totalMercanciasExentas: 0, totalMercExonerada: 0,
+    totalGravado: 0, totalExento: 0, totalExonerado: 0,
+    totalVenta: 0, totalDescuentos: 0, totalVentaNeta: 0,
+    totalImpuesto: 0, totalComprobante: 0,
+  };
+  if (!this.lineaDetalle?.length) {
+    this.invalidate('lineaDetalle', 'El comprobante requiere al menos una línea');
+    return;
   }
 
-  const totalVenta = this.lineaDetalle.reduce((sum, l) => sum + l.subtotal, 0);
-  const totalVentaNeta = totalVenta - totalDescuentos;
-  const totalComprobante = totalVentaNeta + totalImpuesto;
+  for (const [index, linea] of this.lineaDetalle.entries()) {
+    const path = `lineaDetalle.${index}`;
+    const tarifa = linea.impuesto?.tarifa ?? 1;
+    const codigoTarifa = linea.impuesto?.codigoTarifa || CODIGO_POR_TARIFA[tarifa];
+    const descuento = linea.descuento?.monto || 0;
+    if (![linea.precioUnitario, linea.cantidad, tarifa, descuento].every(Number.isFinite)) {
+      this.invalidate(path, 'Cantidad, precio, descuento y tarifa deben ser números finitos');
+      continue;
+    }
+    if (linea.precioUnitario < 0 || linea.cantidad <= 0 || descuento < 0) {
+      this.invalidate(path, 'Cantidad debe ser positiva; precio y descuento no pueden ser negativos');
+      continue;
+    }
+    if (linea.impuesto?.codigo !== '01' || TARIFA_POR_CODIGO[codigoTarifa] !== tarifa) {
+      this.invalidate(`${path}.impuesto`, 'La tarifa debe coincidir con el código de IVA v4.4');
+      continue;
+    }
+    if (['05', '06', '07'].includes(codigoTarifa)) {
+      this.invalidate(`${path}.impuesto.codigoTarifa`, 'Las tarifas transitorias 05, 06 y 07 no se admiten en comprobantes nuevos');
+      continue;
+    }
+    const bruto = round5(linea.precioUnitario * linea.cantidad);
+    if (!Number.isFinite(bruto) || descuento > bruto) {
+      this.invalidate(`${path}.descuento`, 'El descuento no puede superar el importe bruto de la línea');
+      continue;
+    }
+    if (descuento > 0 && (!linea.descuento.codigoDescuento || !linea.descuento.naturalezaDescuento)) {
+      this.invalidate(`${path}.descuento`, 'Un descuento requiere código y naturaleza de descuento v4.4');
+      continue;
+    }
+    const neto = round5(bruto - descuento);
+    const montoImpuesto = round5(neto * tarifa / 100);
+    const exoneracion = linea.impuesto.exoneracion;
+    const tieneExoneracion = !!(exoneracion?.tipoDocumento || exoneracion?.numeroDocumento ||
+      exoneracion?.tarifaExonerada != null || exoneracion?.porcentajeExoneracion);
+    let tarifaExonerada = 0;
+    if (tieneExoneracion) {
+      tarifaExonerada = exoneracion.tarifaExonerada;
+      if (!Number.isFinite(tarifaExonerada) || tarifaExonerada < 0 || tarifaExonerada > tarifa ||
+          !exoneracion.tipoDocumento || !exoneracion.numeroDocumento ||
+          !exoneracion.nombreInstitucion || !exoneracion.fechaEmision) {
+        this.invalidate(`${path}.impuesto.exoneracion`, 'Exoneración v4.4 incompleta o tarifaExonerada fuera de la tarifa de IVA');
+        continue;
+      }
+      exoneracion.montoExoneracion = round5(neto * tarifaExonerada / 100);
+    }
+    const montoExoneracion = tieneExoneracion ? exoneracion.montoExoneracion : 0;
+    linea.numeroLinea = index + 1;
+    linea.montoBruto = bruto;
+    linea.subtotal = neto;
+    linea.impuesto.codigoTarifa = codigoTarifa;
+    linea.impuesto.factorIVA = tarifa / 100;
+    linea.impuesto.monto = montoImpuesto;
+    linea.impuestoNeto = round5(montoImpuesto - montoExoneracion);
+    linea.montoTotal = round5(neto + linea.impuestoNeto);
 
-  this.resumenFactura = {
-    totalServGravados: Math.round(totalServGravados * 100) / 100,
-    totalServExentos: Math.round(totalServExentos * 100) / 100,
-    totalMercanciasGravadas: Math.round(totalMercanciasGravadas * 100) / 100,
-    totalMercanciasExentas: Math.round(totalMercanciasExentas * 100) / 100,
-    totalGravado: Math.round((totalServGravados + totalMercanciasGravadas) * 100) / 100,
-    totalExento: Math.round((totalServExentos + totalMercanciasExentas) * 100) / 100,
-    totalVenta: Math.round(totalVenta * 100) / 100,
-    totalDescuentos: Math.round(totalDescuentos * 100) / 100,
-    totalVentaNeta: Math.round(totalVentaNeta * 100) / 100,
-    totalImpuesto: Math.round(totalImpuesto * 100) / 100,
-    totalComprobante: Math.round(totalComprobante * 100) / 100,
-  };
+    // CABYS 0–4 identifica bienes; 5–9 servicios. Leche/huevo son mercancías.
+    const esServicio = Number(String(linea.codigo || '0')[0]) >= 5;
+    const exonerado = tarifa > 0 ? round5(bruto * tarifaExonerada / tarifa) : 0;
+    const gravado = tarifa > 0 ? round5(bruto - exonerado) : 0;
+    const exento = tarifa === 0 ? bruto : 0;
+    const nombres = esServicio
+      ? ['totalServGravados', 'totalServExentos', 'totalServExonerado']
+      : ['totalMercanciasGravadas', 'totalMercanciasExentas', 'totalMercExonerada'];
+    [gravado, exento, exonerado].forEach((monto, i) => {
+      resumen[nombres[i]] = round5(resumen[nombres[i]] + monto);
+    });
+    resumen.totalDescuentos = round5(resumen.totalDescuentos + descuento);
+    resumen.totalImpuesto = round5(resumen.totalImpuesto + linea.impuestoNeto);
+  }
+  resumen.totalGravado = round5(resumen.totalServGravados + resumen.totalMercanciasGravadas);
+  resumen.totalExento = round5(resumen.totalServExentos + resumen.totalMercanciasExentas);
+  resumen.totalExonerado = round5(resumen.totalServExonerado + resumen.totalMercExonerada);
+  resumen.totalVenta = round5(resumen.totalGravado + resumen.totalExento + resumen.totalExonerado);
+  resumen.totalVentaNeta = round5(resumen.totalVenta - resumen.totalDescuentos);
+  resumen.totalComprobante = round5(resumen.totalVentaNeta + resumen.totalImpuesto);
+  this.resumenFactura = resumen;
 });
 
 const tenantPlugin = require('./plugins/tenantPlugin');

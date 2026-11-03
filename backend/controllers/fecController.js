@@ -1,25 +1,10 @@
-/**
- * Controller dedicado para Factura Electronica de Compra (FEC).
- *
- * La FEC procede cuando el emisor en su contabilidad tiene que respaldar
- * un gasto (ej. compra de ganado a un productor del régimen simplificado
- * que no emite FE). En la FEC el ROL se invierte: el emisor es quien
- * genera la FEC pero como "comprador"; el "receptor" (campo receptor de
- * la FEC) es el vendedor original.  En la práctica el nodo <Receptor>
- * lleva al vendedor y <Emisor> a quien emite la FEC (comprador).
- *
- * Complejidad: Hacienda pide que la FEC siempre lleve tanto emisor como
- * receptor; ademas, si desconoce al receptor (no está inscrito), hay
- * que usar Identificacion Extranjera. Para tipica ganadera CR se asume
- * receptor conocido.
- *
- * Flujo:
- *   1. POST /api/hacienda/fec              Crea FEC
- *   2. Firmar/enviar: mismo que FE (worker utiliza tipoDocumento=FEC)
- */
+/** FEC: el comprador genera y firma; XML Emisor=proveedor, Receptor=comprador.
+ * La API conserva los nombres del formulario: emisor=comprador, receptor=proveedor. */
 
 const FacturaEmision = require('../models/FacturaEmision');
 const hacienda = require('../services/hacienda');
+const haciendaWorker = require('../services/haciendaWorker');
+const Tenant = require('../models/Tenant');
 const { obtenerCuatrimestre } = require('../utils/costaRicaTax');
 
 const TIPO_FEC = 'FEC';
@@ -34,7 +19,7 @@ const crearFec = async (req, res, next) => {
       condicionVenta = '01',
       medioPago = ['04'],
       plazoCredito,
-      referencia,
+      referencia, documentoReferencia, moneda, tipoCambio,
     } = req.body;
 
     if (!emisor || !receptor || !lineaDetalle || lineaDetalle.length === 0) {
@@ -43,7 +28,7 @@ const crearFec = async (req, res, next) => {
     }
     // CABYS obligatorio
     for (const l of lineaDetalle) {
-      if (!l.codigo || String(l.codigo).length !== 13) {
+      if (!/^\d{13}$/.test(String(l.codigo || ''))) {
         res.status(400);
         throw new Error(`Linea sin CABYS de 13 digitos: ${l.descripcion || '(sin descripcion)'}`);
       }
@@ -55,17 +40,22 @@ const crearFec = async (req, res, next) => {
       throw new Error('La FEC requiere identificacion del receptor (vendedor)');
     }
 
+    if (!documentoReferencia?.numeroReferencia) { res.status(400); throw new Error('Indique el documento de referencia de la compra'); }
+    const tenant = await Tenant.findById(req.tenant._id);
+    const cfg = haciendaWorker.getTenantConfig(tenant, { conSecretos: false });
     const fechaEmision = new Date();
     const cuatrimestre = obtenerCuatrimestre(fechaEmision);
-    const seqNum = typeof req.tenant?.siguienteConsecutivo === 'function' ? await req.tenant.siguienteConsecutivo(TIPO_FEC) : Number(String(Date.now()).slice(-10));
-    const consecutivo = `00100001${hacienda.clave50.TIPO_DOC_CODIGO[TIPO_FEC]}${String(seqNum).padStart(10, '0')}`;
+    const seqNum = await tenant.siguienteConsecutivo(TIPO_FEC);
+    const consecutivo = hacienda.clave50.generarConsecutivo({ ...cfg, tipoDocumento: TIPO_FEC, secuencia: seqNum });
 
     const nuevoFec = await FacturaEmision.create(req.aplicarTenant({
       tipoDocumento: TIPO_FEC,
-      ambiente: process.env.HACIENDA_AMBIENTE || 'local',
+      ambiente: cfg.ambiente,
+      proveedorSistemas: cfg.proveedorSistemas, codigoActividadReceptor: cfg.codigoActividad,
+      documentoReferencia, moneda, tipoCambio,
       consecutivo,
-      emisor,
-      receptor,
+      emisor: receptor,
+      receptor: emisor,
       lineaDetalle,
       tipoProducto: 'otros_productos_rea',
       condicionVenta,
@@ -91,12 +81,12 @@ const listarFec = async (req, res, next) => {
     const filtro = { ...req.filtrarPorTenant(), tipoDocumento: TIPO_FEC };
     if (periodoFiscal) filtro.periodoFiscal = Number(periodoFiscal);
     if (estado) filtro.estado = estado;
-    const skip = (Number(page) - 1) * Number(limit);
+    const { skip, pageNum, limitNum } = require('../utils/paginacion').paginacion({ page, limit });
     const [docs, total] = await Promise.all([
-      FacturaEmision.find(filtro).sort({ fechaEmision: -1 }).skip(skip).limit(Number(limit)),
+      FacturaEmision.find(filtro).sort({ fechaEmision: -1 }).skip(skip).limit(limitNum),
       FacturaEmision.countDocuments(filtro),
     ]);
-    res.json({ docs, total, pagina: Number(page), totalPaginas: Math.ceil(total / Number(limit)) });
+    res.json({ docs, total, pagina: pageNum, totalPaginas: Math.ceil(total / limitNum) });
   } catch (error) { next(error); }
 };
 

@@ -15,7 +15,6 @@ require('dotenv').config({ path: envPath });
 const { conectarDB } = require('./config/db');
 const { iniciarListener, sincronizarManual, detenerListener } = require('./services/emailService');
 const haciendaWorker = require('./services/haciendaWorker');
-const Usuario = require('./models/Usuario');
 
 console.log('🔧 Iniciando Background Worker — Contador Ganadero');
 console.log('====================================================');
@@ -35,18 +34,15 @@ async function main() {
     // Iniciar listener IMAP únicamente si las credenciales están configuradas
     const tieneImap = process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_');
     if (tieneImap) {
-      const usuario = await Usuario.findOne();
-      if (usuario) {
         console.log(`📧 Credenciales IMAP detectadas para: ${process.env.IMAP_USER}`);
         try {
-          await iniciarListener(usuario._id);
+          await iniciarListener();
           console.log('📧 Listener IMAP iniciado correctamente');
-          const result = await sincronizarManual(usuario._id, { soloNoLeidos: true });
+          const result = await sincronizarManual(undefined, { soloNoLeidos: true });
           console.log('📊 Stats IMAP:', result.estadisticas);
         } catch (err) {
           console.warn('⚠️ No se pudo conectar a IMAP:', err.message);
         }
-      }
     } else {
       console.log('ℹ️ IMAP no configurado. La ingesta principal opera en tiempo real vía Cloudflare Email Worker y WhatsApp.');
     }
@@ -55,6 +51,11 @@ async function main() {
     const ambienteHacienda = process.env.HACIENDA_AMBIENTE || 'local';
     console.log(`🧾 Iniciando worker de Hacienda (ambiente: ${ambienteHacienda})...`);
     haciendaWorker.iniciar(Number(process.env.HACIENDA_WORKER_INTERVAL_MS) || 15000);
+    const onvoTimer = setInterval(() => {
+      require('./controllers/onvoController').reconciliarEventosPendientes().catch(() => console.warn('Conciliación ONVO pendiente'));
+      require('./services/ingestionInbox').tick().catch(() => console.warn('Ingesta pendiente de recuperar'));
+      require('./services/accountNotifications').tick().catch(() => console.warn('Notificaciones de cuenta pendientes'));
+    }, 30000);
 
     // Mantener proceso vivo
     console.log('✅ Worker corriendo. Presiona Ctrl+C para detener.');
@@ -63,6 +64,7 @@ async function main() {
     process.on('SIGTERM', async () => {
       console.log('\n🛑 SIGTERM recibido, cerrando worker...');
       haciendaWorker.detener();
+      clearInterval(onvoTimer);
       await detenerListener();
       process.exit(0);
     });
@@ -70,6 +72,7 @@ async function main() {
     process.on('SIGINT', async () => {
       console.log('\n🛑 SIGINT recibido, cerrando worker...');
       haciendaWorker.detener();
+      clearInterval(onvoTimer);
       await detenerListener();
       process.exit(0);
     });

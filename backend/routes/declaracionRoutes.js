@@ -18,6 +18,7 @@ const { extraerTenant } = require('../middleware/tenantGuard');
 
 router.use(protegerRuta);
 router.use(extraerTenant);
+router.use(require('../middleware/rbacMiddleware').permitir('declaraciones:generar_y_exportar'));
 
 router.get('/configuracion', obtenerConfiguracionFiscal);
 router.put('/configuracion', actualizarConfiguracionFiscal);

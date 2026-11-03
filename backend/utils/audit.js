@@ -43,7 +43,7 @@ function registrarContador(clave, umbral) {
  */
 async function audit(req, evento) {
   try {
-    const actorId = evento.actorId || req?.usuario?._id || null;
+    const actorId = evento.actorId || evento.usuarioId || req?.usuario?._id || null;
     const tenantId =
       evento.tenantId ||
       req?.tenant?._id ||
@@ -64,10 +64,10 @@ async function audit(req, evento) {
       recursoId: evento.recursoId ? String(evento.recursoId) : null,
       ip: ip ? String(ip).slice(0, 64) : null,
       userAgent,
-      resultado: evento.resultado || 'exito',
+      resultado: ({ success: 'exito', failure: 'fallo', denied: 'bloqueado' })[evento.resultado] || evento.resultado || 'exito',
       motivo: evento.motivo ? String(evento.motivo).slice(0, 500) : null,
       requestId,
-      metadatos: redactarValor(evento.metadatos || {}),
+      metadatos: redactarValor(evento.metadatos || evento.metadata || {}),
     };
 
     logger.security(`audit:${payload.accion}`, {
@@ -80,7 +80,7 @@ async function audit(req, evento) {
     });
 
     // Reglas de detección de anomalías
-    if (ip && (evento.accion === 'auth.login_fallido' || evento.accion === 'auth.acceso_denegado')) {
+    if (ip && (['auth.login_fallido', 'auth.login_failed', 'auth.mfa_failed'].includes(evento.accion) || evento.accion === 'auth.acceso_denegado')) {
       if (registrarContador(`auth_fail:${ip}`, UMBRAL_ERRORES_AUTH_IP)) {
         logger.security('ALERTA_SEGURIDAD: Pico de fallos 401/403 desde una misma IP', { ip, accion: evento.accion });
       }

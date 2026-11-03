@@ -1,3 +1,4 @@
+const { obtenerFuentes } = require('../services/contabilidadService');
 const { randomUUID: uuidv4 } = require('crypto');
 const Factura = require('../models/Factura');
 const Ingreso = require('../models/Ingreso');
@@ -103,15 +104,16 @@ async function obtenerContextoUsuario(usuarioId, tenantId = null) {
   const cached = contextCache.get(cacheKey);
   if (cached) return cached;
 
-  const [facturas, ingresos, inventario, costos] = await Promise.all([
-    Factura.find({ usuario: usuarioId }).sort({ fechaEmision: -1 }).limit(20).lean(),
-    Ingreso.find({ usuario: usuarioId }).sort({ fecha: -1 }).limit(10).lean(),
-    Inventario.findOne({ usuario: usuarioId }).lean(),
-    CostoProduccion.find({ usuario: usuarioId }).sort({ createdAt: -1 }).limit(5).lean(),
+  const scope = tenantId ? { tenantId } : { usuario: usuarioId };
+  const [fuentes, inventario, costos] = await Promise.all([
+    obtenerFuentes({ usuarioId, tenantId }),
+    Inventario.findOne(scope).lean(),
+    CostoProduccion.find(scope).sort({ createdAt: -1 }).lean(),
   ]);
+  const { facturas, ingresos } = fuentes;
 
   const totalGastos = facturas.reduce((sum, f) => sum + (f.resumenFactura?.totalComprobante || 0), 0);
-  const totalIngresos = ingresos.reduce((sum, i) => sum + (i.monto || 0), 0);
+  const totalIngresos = ingresos.reduce((sum, i) => sum + (i.montoTotal ?? 0), 0);
   const gastosPorCategoria = {};
   facturas.forEach(f => {
     const cat = f.categoriaIA || 'sin_clasificar';
@@ -168,8 +170,8 @@ async function obtenerContextoUsuario(usuarioId, tenantId = null) {
     ultimosIngresos: ingresos.slice(0, 3).map(i => ({
       id: i._id?.toString(),
       fecha: i.fecha,
-      concepto: i.concepto,
-      monto: i.monto,
+      concepto: i.descripcion,
+      monto: i.montoTotal,
     })),
     centrosCostoActivos: costosAbiertos.length,
   };

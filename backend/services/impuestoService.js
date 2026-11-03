@@ -1,3 +1,4 @@
+const { obtenerFuentes } = require('./contabilidadService');
 /**
  * Motor de cálculo tributario de Costa Rica
  * IVA Cuatrimestral (D-135-1) y Renta Anual (D-101)
@@ -24,18 +25,7 @@ const {
 async function calcularIVACuatrimestral(usuarioId, cuatrimestre, anio, tenantId) {
   const { inicio, fin } = obtenerRangoFechasCuatrimestre(cuatrimestre, anio);
 
-  const filtroBase = tenantId ? { tenantId } : { usuario: usuarioId };
-
-  const facturas = await Factura.find({
-    ...filtroBase,
-    fechaEmision: { $gte: inicio, $lte: fin },
-    estado: { $ne: 'error' },
-  });
-
-  const ingresos = await Ingreso.find({
-    ...filtroBase,
-    fecha: { $gte: inicio, $lte: fin },
-  });
+  const { facturas, ingresos } = await obtenerFuentes({ usuarioId, tenantId, inicio, fin });
 
   // Agrupar IVA pagado por tasa
   const ivaPagadoPorTasa = {};
@@ -43,15 +33,16 @@ async function calcularIVACuatrimestral(usuarioId, cuatrimestre, anio, tenantId)
   let totalGastos = 0;
 
   facturas.forEach((f) => {
-    const tasa = f.tasaIVA || 13;
-    const ivaPagado = f.resumenFactura?.totalImpuesto || 0;
-    const baseGasto = f.resumenFactura?.totalVenta || 0;
-
-    if (!ivaPagadoPorTasa[tasa]) {
-      ivaPagadoPorTasa[tasa] = { tasa, basePagada: 0, ivaPagado: 0, baseCobrada: 0, ivaCobrado: 0 };
+    const ivaPagado = f.esDeducible === false ? 0 : (f.resumenFactura?.totalImpuesto ?? 0);
+    const partidas = f.lineaDetalle?.length ? f.lineaDetalle.map(l => ({ tasa: l.impuesto?.tarifa ?? f.tasaIVA ?? 0,
+      base: l.subtotal ?? 0, iva: l.impuestoNeto ?? l.impuesto?.monto ?? 0 }))
+      : [{ tasa: f.tasaIVA ?? 0, base: f.resumenFactura?.totalVentaNeta ?? 0, iva: ivaPagado }];
+    for (const p of partidas) {
+      const tasa = f.esDeducible === false ? 0 : p.tasa;
+      ivaPagadoPorTasa[tasa] ||= { tasa, basePagada: 0, ivaPagado: 0, baseCobrada: 0, ivaCobrado: 0 };
+      ivaPagadoPorTasa[tasa].basePagada += p.base;
+      ivaPagadoPorTasa[tasa].ivaPagado += f.esDeducible === false ? 0 : p.iva;
     }
-    ivaPagadoPorTasa[tasa].basePagada += baseGasto;
-    ivaPagadoPorTasa[tasa].ivaPagado += ivaPagado;
     totalIVAPagado += ivaPagado;
     totalGastos += f.resumenFactura?.totalComprobante || 0;
   });
@@ -61,15 +52,15 @@ async function calcularIVACuatrimestral(usuarioId, cuatrimestre, anio, tenantId)
   let totalIngresos = 0;
 
   ingresos.forEach((ing) => {
-    const tasa = ing.tasaIVA || 0;
     const ivaCobrado = ing.ivaVenta || 0;
-    const baseIngreso = ing.montoSubtotal || 0;
-
-    if (!ivaPagadoPorTasa[tasa]) {
-      ivaPagadoPorTasa[tasa] = { tasa, basePagada: 0, ivaPagado: 0, baseCobrada: 0, ivaCobrado: 0 };
+    const partidas = ing.lineaDetalle?.length ? ing.lineaDetalle.map(l => ({ tasa: l.impuesto?.tarifa ?? 0, base: l.subtotal ?? 0, iva: l.impuestoNeto ?? l.impuesto?.monto ?? 0 }))
+      : [{ tasa: ing.tasaIVA ?? 0, base: ing.montoSubtotal ?? 0, iva: ivaCobrado }];
+    for (const p of partidas) {
+      const tasa = p.tasa;
+      ivaPagadoPorTasa[tasa] ||= { tasa, basePagada: 0, ivaPagado: 0, baseCobrada: 0, ivaCobrado: 0 };
+      ivaPagadoPorTasa[tasa].baseCobrada += p.base;
+      ivaPagadoPorTasa[tasa].ivaCobrado += p.iva;
     }
-    ivaPagadoPorTasa[tasa].baseCobrada += baseIngreso;
-    ivaPagadoPorTasa[tasa].ivaCobrado += ivaCobrado;
     totalIVACobrado += ivaCobrado;
     totalIngresos += ing.montoTotal || 0;
   });
@@ -105,33 +96,13 @@ async function calcularIVACuatrimestral(usuarioId, cuatrimestre, anio, tenantId)
  * @param {import('mongoose').ObjectId|string} [tenantId] -preferido para aislamiento
  */
 async function calcularRentaAnual(usuarioId, anio, tenantId) {
-  const inicioAnio = new Date(anio, 0, 1);
-  const finAnio = new Date(anio, 11, 31, 23, 59, 59, 999);
+  const inicioAnio = new Date(Date.UTC(anio, 0, 1, 6));
+  const finAnio = new Date(Date.UTC(anio+1, 0, 1, 5, 59, 59, 999));
 
-  const filtroBase = tenantId ? { tenantId } : { usuario: usuarioId };
-
-  const ingresos = await Ingreso.find({
-    ...filtroBase,
-    fecha: { $gte: inicioAnio, $lte: finAnio },
-  });
-
-  const ingresosBrutos = ingresos.reduce((sum, i) => {
-    return sum + (i.montoSubtotal || 0);
-  }, 0);
-
-  const todasFacturas = await Factura.find({
-    ...filtroBase,
-    fechaEmision: { $gte: inicioAnio, $lte: finAnio },
-    estado: { $ne: 'error' },
-  });
-
-  const gastosBrutos = todasFacturas.reduce((sum, f) => {
-    return sum + (f.resumenFactura?.totalComprobante || 0);
-  }, 0);
-
-  const gastosDeducibles = todasFacturas.filter(f => f.esDeducible).reduce((sum, f) => {
-    return sum + (f.resumenFactura?.totalVenta || f.resumenFactura?.totalComprobante || 0);
-  }, 0);
+  const { facturas: todasFacturas, ingresos } = await obtenerFuentes({ usuarioId, tenantId, inicio: inicioAnio, fin: finAnio });
+  const ingresosBrutos = ingresos.reduce((sum, i) => sum + (i.montoSubtotal ?? 0), 0);
+  const gastosBrutos = todasFacturas.reduce((sum, f) => sum + (f.resumenFactura?.totalComprobante ?? 0), 0);
+  const gastosDeducibles = todasFacturas.filter(f => f.esDeducible !== false).reduce((sum, f) => sum + (f.resumenFactura?.totalVentaNeta ?? 0), 0);
 
   // Utilidad neta
   const utilidadNeta = Math.max(ingresosBrutos - gastosDeducibles, 0);
@@ -161,7 +132,7 @@ async function calcularRentaAnual(usuarioId, anio, tenantId) {
     creditosFiscales: creditos,
     detalleTramos,
     impuestoFinal,
-    totalFacturasDeducibles: todasFacturas.filter(f => f.esDeducible).length,
+    totalFacturasDeducibles: todasFacturas.filter(f => f.esDeducible !== false).length,
     totalRegistrosIngresos: ingresos.length,
   };
 }

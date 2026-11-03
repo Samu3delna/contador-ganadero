@@ -11,12 +11,12 @@ const obtenerFacturasEmision = async (req, res, next) => {
     if (cuatrimestre) filtro.cuatrimestre = Number(cuatrimestre);
     if (estado) filtro.estado = estado;
 
-    const skip = (Number(page) - 1) * Number(limit);
+    const { skip, pageNum, limitNum } = require('../utils/paginacion').paginacion({ page, limit });
     const [facturas, total] = await Promise.all([
-      FacturaEmision.find(filtro).sort({ fechaEmision: -1 }).skip(skip).limit(Number(limit)),
+      FacturaEmision.find(filtro).sort({ fechaEmision: -1 }).skip(skip).limit(limitNum),
       FacturaEmision.countDocuments(filtro),
     ]);
-    res.json({ facturas, total, pagina: Number(page), totalPaginas: Math.ceil(total / Number(limit)) });
+    res.json({ facturas, total, pagina: pageNum, totalPaginas: Math.ceil(total / limitNum) });
   } catch (error) { next(error); }
 };
 
@@ -28,65 +28,14 @@ const obtenerFacturaEmision = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-const crearFacturaEmision = async (req, res, next) => {
-  try {
-    const {
-      consecutivo, emisor, receptor, lineaDetalle, tipoProducto,
-      condicionVenta, medioPago, plazoCredito, referencia, esPFyAE,
-      tipoDocumento = 'FE', documentoReferencia, codigoActividadEmisor,
-    } = req.body;
-
-    if (!consecutivo || !emisor || !receptor || !lineaDetalle || !tipoProducto) {
-      res.status(400);
-      throw new Error('Faltan campos requeridos: consecutivo, emisor, receptor, lineaDetalle, tipoProducto');
-    }
-
-    const fechaEmision = new Date();
-    const cuatrimestre = obtenerCuatrimestre(fechaEmision);
-    const periodoFiscal = fechaEmision.getFullYear();
-
-    const nuevaFactura = await FacturaEmision.create(req.aplicarTenant({
-      tipoDocumento,
-      consecutivo,
-      emisor: { ...emisor, regimen: 'Régimen Especial Agropecuario (REA)' },
-      receptor,
-      lineaDetalle,
-      tipoProducto,
-      condicionVenta: condicionVenta || '01',
-      medioPago: medioPago || ['04'],
-      plazoCredito,
-      referencia,
-      documentoReferencia,
-      codigoActividadEmisor,
-      esPFyAE: esPFyAE || false,
-      esFacturaREA: true,
-      fechaEmision,
-      cuatrimestre,
-      periodoFiscal,
-      estado: 'borrador',
-      usuario: req.usuario._id,
-    }));
-
-    res.status(201).json(nuevaFactura);
-  } catch (error) { next(error); }
-};
+// Ambas pantallas usan la misma reserva de consecutivos y contrato fiscal.
+const crearFacturaEmision = (req, res, next) => require('./haciendaController').crearBorrador(req, res, next);
 
 const actualizarEstadoFactura = async (req, res, next) => {
   try {
-    const { estado, respuestaHacienda } = req.body;
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
-    if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
-
-    if (estado) factura.estado = estado;
-    if (respuestaHacienda) {
-      factura.respuestaHacienda = { ...factura.respuestaHacienda, ...respuestaHacienda, fecha: new Date() };
-    }
-    if (estado === 'enviada_hacienda') {
-      factura.fechaEnvioHacienda = new Date();
-    }
-
-    await factura.save();
-    res.json(factura);
+    if (!factura) return res.status(404).json({ error: 'Factura no encontrada' });
+    return res.status(422).json({ error: 'El estado fiscal solo cambia mediante firma, envio y consulta de Hacienda. Use el flujo de emision.' });
   } catch (error) { next(error); }
 };
 
@@ -94,11 +43,16 @@ const anularFactura = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
-    if (factura.estado === 'aceptada') {
-      res.status(400); throw new Error('No se puede anular una factura ya aceptada por Hacienda');
+    if (factura.tipoDocumento === 'REP' && factura.estado === 'anulada' && !factura.envioIntentadoEn && !factura.xmlFirmado) {
+      await require('../services/repReservations').liberar(factura);
+      return res.json({ mensaje: 'Borrador REP anulado', factura });
+    }
+    if (!['borrador', 'generada'].includes(factura.estado) || factura.envioIntentadoEn || factura.xmlFirmado) {
+      res.status(400); throw new Error('Solo se puede descartar un borrador sin firma ni intento de envío; para facturas aceptadas genere una nota de crédito');
     }
     factura.estado = 'anulada';
     await factura.save();
+    if (factura.tipoDocumento === 'REP') await require('../services/repReservations').liberar(factura);
     res.json({ mensaje: 'Factura anulada', factura });
   } catch (error) { next(error); }
 };

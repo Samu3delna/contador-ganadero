@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 
 const TIPOS_BOVINO = [
   { value: 'novillo', label: 'Novillo' },
@@ -28,6 +28,7 @@ const ESTADOS_REPRODUCTIVOS = [
 ];
 
 export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
+  const formId = useId();
   const initialForm = animal ? {
     tagId: animal.tagId || '',
     nombre: animal.nombre || '',
@@ -62,8 +63,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
   return (
     <form onSubmit={handleSubmit} className="form-grid">
       <div className="form-group">
-        <label>Tag / Ficha ID *</label>
-        <input
+        <label htmlFor={`${formId}-1`}>Tag / Ficha ID *</label>
+        <input id={`${formId}-1`}
           className="input"
           type="text"
           value={form.tagId}
@@ -74,8 +75,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Nombre / Apodo</label>
-        <input
+        <label htmlFor={`${formId}-2`}>Nombre / Apodo</label>
+        <input id={`${formId}-2`}
           className="input"
           type="text"
           value={form.nombre}
@@ -84,8 +85,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Tipo *</label>
-        <select
+        <label htmlFor={`${formId}-3`}>Tipo *</label>
+        <select id={`${formId}-3`}
           className="input"
           value={form.tipo}
           onChange={e => setForm({ ...form, tipo: e.target.value })}
@@ -95,8 +96,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Sexo *</label>
-        <select
+        <label htmlFor={`${formId}-4`}>Sexo *</label>
+        <select id={`${formId}-4`}
           className="input"
           value={form.sexo}
           onChange={e => setForm({ ...form, sexo: e.target.value })}
@@ -107,8 +108,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Raza</label>
-        <input
+        <label htmlFor={`${formId}-5`}>Raza</label>
+        <input id={`${formId}-5`}
           className="input"
           type="text"
           placeholder="Ej: Brahman, Holstein"
@@ -118,8 +119,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Peso Actual (kg)</label>
-        <input
+        <label htmlFor={`${formId}-6`}>Peso Actual (kg)</label>
+        <input id={`${formId}-6`}
           className="input"
           type="number"
           min="0"
@@ -129,8 +130,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Fecha de Nacimiento</label>
-        <input
+        <label htmlFor={`${formId}-7`}>Fecha de Nacimiento</label>
+        <input id={`${formId}-7`}
           className="input"
           type="date"
           value={form.fechaNacimiento}
@@ -139,8 +140,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Estado Sanitario</label>
-        <select
+        <label htmlFor={`${formId}-8`}>Estado Sanitario</label>
+        <select id={`${formId}-8`}
           className="input"
           value={form.estadoSanitario}
           onChange={e => setForm({ ...form, estadoSanitario: e.target.value })}
@@ -150,8 +151,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group">
-        <label>Estado Reproductivo</label>
-        <select
+        <label htmlFor={`${formId}-9`}>Estado Reproductivo</label>
+        <select id={`${formId}-9`}
           className="input"
           value={form.estadoReproductivo}
           onChange={e => setForm({ ...form, estadoReproductivo: e.target.value })}
@@ -161,8 +162,8 @@ export default function BovinoForm({ animal, onSave, onCancel, guardando }) {
       </div>
 
       <div className="form-group" style={{ gridColumn: 'span 2' }}>
-        <label>Observaciones</label>
-        <textarea
+        <label htmlFor={`${formId}-10`}>Observaciones</label>
+        <textarea id={`${formId}-10`}
           className="input"
           rows="3"
           placeholder="Notas de salud, genealogía, etc."

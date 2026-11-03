@@ -71,6 +71,7 @@ const resetPasswordSchema = {
 // Rutas públicas de autenticación con rate limiters dedicados
 router.post('/registro', registerLimiter, validar(registroSchema), registro);
 router.post('/login', loginLimiter, validar(loginSchema), login);
+router.post('/mfa/verify', loginLimiter, require('../services/mfaService').verificarDesafio);
 router.post('/forgot-password', passwordResetLimiter, validar(forgotPasswordSchema), forgotPassword);
 router.post('/reset-password', passwordResetLimiter, validar(resetPasswordSchema), resetPassword);
 router.post('/verify-email', passwordResetLimiter, verifyEmail);

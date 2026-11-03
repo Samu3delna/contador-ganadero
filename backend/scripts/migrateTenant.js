@@ -1,5 +1,4 @@
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
 const mongoose = require('mongoose');
 const { conectarDB } = require('../config/db');
 const Usuario = require('../models/Usuario');
@@ -39,16 +38,16 @@ const MODELOS_USUARIO = [
 async function propagarTenantADocumentos(usuarioId, tenantId, dryRun = false) {
   let totalActualizados = 0;
   for (const Modelo of MODELOS_USUARIO) {
-    const filtro = { usuario: usuarioId, tenantId: { $exists: false } };
+    const filtro = { usuario: usuarioId, tenantId: null };
     if (dryRun) {
-      const conteo = await Modelo.countDocuments(filtro);
+      const conteo = await Modelo.countDocuments(filtro).setOptions({ skipTenant: true });
       if (conteo > 0) {
         console.log(`  [DRY-RUN] ${Modelo.modelName}: ${conteo} documentos pendientes`);
         totalActualizados += conteo;
       }
       continue;
     }
-    const res = await Modelo.updateMany(filtro, { $set: { tenantId } });
+    const res = await Modelo.updateMany(filtro, { $set: { tenantId } }, { skipTenant: true });
     if (res.modifiedCount > 0) {
       console.log(`  ${Modelo.modelName}: ${res.modifiedCount} documentos actualizados`);
       totalActualizados += res.modifiedCount;
@@ -66,6 +65,10 @@ async function propagarTenantADocumentos(usuarioId, tenantId, dryRun = false) {
 async function migrarUsuario(usuario, options = {}) {
   const dryRun = options.dryRun !== undefined ? options.dryRun : process.argv.includes('--dry-run');
   const nombreFinca = usuario.nombreFinca || 'Mi Finca';
+  if (usuario.tenantId) {
+    if (!await Tenant.exists({ _id: usuario.tenantId })) throw new Error('Tenant asociado no existe; requiere revisión');
+    return { tenantCreado: false, docsActualizados: await propagarTenantADocumentos(usuario._id, usuario.tenantId, dryRun) };
+  }
 
   if (dryRun) {
     console.log(`\n[DRY-RUN] Usuario ${usuario.email} (${usuario._id})`);
@@ -77,7 +80,9 @@ async function migrarUsuario(usuario, options = {}) {
 
   console.log(`\nMigrando usuario ${usuario.email} (${usuario._id})`);
 
-  const tenant = await Tenant.crearParaUsuario({
+  let tenant = await Tenant.findOne({ owner: usuario._id });
+  const tenantCreado = !tenant;
+  tenant ||= await Tenant.crearParaUsuario({
     nombreFinca,
     owner: usuario._id,
     plan: 'free',
@@ -91,7 +96,7 @@ async function migrarUsuario(usuario, options = {}) {
   console.log(`  Usuario actualizado: tenantId=${tenant._id}, rol=dueño`);
 
   const docsActualizados = await propagarTenantADocumentos(usuario._id, tenant._id, false);
-  return { tenantCreado: true, docsActualizados };
+  return { tenantCreado, docsActualizados };
 }
 
 /**
@@ -99,13 +104,11 @@ async function migrarUsuario(usuario, options = {}) {
  */
 async function main(options = {}) {
   const dryRun = options.dryRun !== undefined ? options.dryRun : process.argv.includes('--dry-run');
-  await conectarDB();
+  if (mongoose.connection.readyState !== 1) await conectarDB();
   console.log('Iniciando migracion tenant...');
   console.log(`Modo: ${dryRun ? 'DRY-RUN (no escribe)' : 'APLICANDO CAMBIOS'}`);
 
-  const usuariosSinTenant = await Usuario.find({
-    $or: [{ tenantId: null }, { tenantId: { $exists: false } }],
-  });
+  const usuariosSinTenant = await Usuario.find({});
 
   if (usuariosSinTenant.length === 0) {
     console.log('\nNo hay usuarios pendientes de migrar. Todo en orden.');
@@ -121,10 +124,6 @@ async function main(options = {}) {
     try {
       // Idempotencia: si el usuario ya tendra tenantId al recargar, omitir
       const fresh = await Usuario.findById(usuario._id);
-      if (fresh.tenantId) {
-        console.log(`Usuario ${fresh.email} ya tiene tenantId, se omite.`);
-        continue;
-      }
       const res = await migrarUsuario(fresh, { dryRun });
       tenantsCreados += res.tenantCreado ? 1 : 0;
       docsActualizados += res.docsActualizados;
@@ -146,6 +145,9 @@ module.exports = { main, propagarTenantADocumentos, migrarUsuario };
 // Auto-ejecutar solo si el modulo se invoca directamente (no cuando se
 // requiere como dependencia, ej. en tests Jest).
 if (require.main === module) {
+  require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
+  mongoose.set('autoIndex', false);
+  mongoose.set('autoCreate', false);
   main()
     .then(() => mongoose.connection.close())
     .then(() => process.exit(0))

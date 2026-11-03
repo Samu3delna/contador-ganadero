@@ -180,13 +180,13 @@ describe('Bloque 4: Aislamiento Obligatorio Multi-Tenant (AsyncLocalStorage + Mo
     const consumo = await request(app)
       .post(`/api/costos/centros/${referenciaId}/consumo`)
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ tipoInsumo: 'forraje', cantidad: 20, unidadMedida: 'kg', costoUnitario: 500 });
+      .send({ periodoFiscal: new Date().getFullYear(), tipoInsumo: 'forraje', cantidad: 20, unidadMedida: 'kg', costoUnitario: 500 });
     expect(consumo.status).toBe(201);
 
     const produccion = await request(app)
       .post(`/api/costos/centros/${referenciaId}/produccion`)
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ tipoProducto: 'carne_bovino', cantidad: 10, unidadMedida: 'kg', ingresoBrutoVenta: 12000 });
+      .send({ periodoFiscal: new Date().getFullYear(), tipoProducto: 'carne_bovino', cantidad: 10, unidadMedida: 'kg', ingresoBrutoVenta: 12000 });
     expect(produccion.status).toBe(201);
 
     const period = new Date().getFullYear();

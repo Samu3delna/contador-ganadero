@@ -29,7 +29,7 @@ const MATRIZ_PERMISOS = {
   'costos:eliminar': ['dueño', 'admin'],
   'hacienda:emitir': ['dueño', 'admin', 'contador'],
   'hacienda:anular': ['dueño', 'admin', 'contador'],
-  'hacienda:configurar_p12': ['dueño'],
+  'hacienda:configurar_p12': ['dueño', 'admin'],
   'declaraciones:generar_y_exportar': ['dueño', 'admin', 'contador'],
   'inventario:leer': ['dueño', 'admin', 'contador', 'peon'],
   'inventario:registrar_eventos': ['dueño', 'admin', 'peon'],
@@ -43,6 +43,7 @@ const MATRIZ_PERMISOS = {
 function normalizarRol(rol) {
   if (!rol || typeof rol !== 'string') return 'peon';
   const limpio = rol.trim().toLowerCase();
+  if (limpio === 'owner') return 'due\u00f1o';
   if (limpio === 'administrador') return 'admin';
   return ROLES_VALIDOS.includes(limpio) ? limpio : 'peon';
 }
@@ -66,7 +67,8 @@ function permitir(accion) {
       return res.status(401).json({ error: 'No autenticado.' });
     }
 
-    if (tienePermiso(req.usuario, accion)) {
+    const esTitular = MATRIZ_PERMISOS[accion] && req.tenant?.owner?.equals?.(req.usuario._id);
+    if (esTitular || tienePermiso(req.usuario, accion)) {
       return next();
     }
 

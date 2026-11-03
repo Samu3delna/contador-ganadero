@@ -5,6 +5,7 @@ import { obtenerEstadoSuscripcionAPI, cancelarSuscripcionAPI } from '../services
 import UsageBar from '../components/billing/UsageBar';
 import { CreditCard, Crown, RefreshCw, ArrowRight, AlertTriangle } from 'lucide-react';
 import './BillingPage.css';
+import { useAuth } from '../context/AuthContext';
 
 const PLAN_NOMBRES = {
   free: 'Gratis',
@@ -29,6 +30,7 @@ function formatFecha(fecha) {
 }
 
 export default function BillingPage() {
+  const { actualizarUsuario } = useAuth();
   const navigate = useNavigate();
   const [estado, setEstado] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -39,12 +41,13 @@ export default function BillingPage() {
     try {
       const res = await obtenerEstadoSuscripcionAPI();
       setEstado(res.data);
+      if (res.data.tenant) actualizarUsuario({ plan: res.data.tenant.plan, tenant: res.data.tenant });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Error al cargar el estado');
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [actualizarUsuario]);
 
   useEffect(() => {
     const run = async () => {

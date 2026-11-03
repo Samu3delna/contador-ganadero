@@ -226,7 +226,6 @@ async function enviarEmailCloudflare({ to, subject, text, html, replyTo }) {
   const apiToken = process.env.CLOUDFLARE_EMAIL_API_TOKEN;
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const fromEmail = process.env.CLOUDFLARE_EMAIL_FROM || 'soporte@contadorganandero.com';
-  const fromName = process.env.CLOUDFLARE_EMAIL_FROM_NAME || 'ContadorGanadero Soporte';
 
   if (!apiToken || !accountId) {
     return {
@@ -244,14 +243,11 @@ async function enviarEmailCloudflare({ to, subject, text, html, replyTo }) {
     };
   }
 
-  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/email/messages`;
+  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/email/sending/send`;
 
   const payload = {
-    from: {
-      email: fromEmail,
-      name: fromName,
-    },
-    to: to.map((email) => ({ email })),
+    from: fromEmail,
+    to,
     subject,
     text,
     html,

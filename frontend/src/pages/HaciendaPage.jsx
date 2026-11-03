@@ -1,3 +1,4 @@
+import Paginacion from '../components/common/Paginacion';
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, PenTool, Send, Search, FilePlus, Receipt, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -17,11 +18,13 @@ import {
 } from '../services/api';
 import EmitirFacturaModalv44 from '../components/hacienda/EmitirComprobanteModal';
 import './HaciendaPage.css';
+import ConfigHaciendaModal from '../components/hacienda/ConfigHaciendaModal';
 
 const ESTADO_BADGE = {
   borrador: 'badge-advertencia',
   firmada: 'badge-primario',
   procesando: 'badge-info',
+  enviada_hacienda: 'badge-advertencia',
   aceptada: 'badge-exito',
   rechazada: 'badge-error',
   anulada: 'badge-secundario',
@@ -34,7 +37,10 @@ const TABS = [
 ];
 
 export default function HaciendaPage() {
+  const [configAbierta, setConfigAbierta] = useState(false);
   const [tab, setTab] = useState('emision');
+  const [pagina, setPagina] = useState(1);
+  const [meta, setMeta] = useState({});
   const [ambiente, setAmbiente] = useState(null);
   const [facturas, setFacturas] = useState([]);
   const [reps, setReps] = useState([]);
@@ -49,11 +55,11 @@ export default function HaciendaPage() {
       setCargando(true);
       const [ambRes, fac, rep, fec] = await Promise.all([
         infoAmbienteHaciendaAPI().catch(() => ({ data: null })),
-        obtenerFacturasEmisionAPI().catch(() => ({ data: { facturas: [] } })),
-        listarRepAPI().catch(() => ({ data: { docs: [] } })),
-        listarFecAPI().catch(() => ({ data: { docs: [] } })),
+        obtenerFacturasEmisionAPI({page:pagina,limit:50}).catch(() => ({ data: { facturas: [] } })),
+        listarRepAPI({page:pagina,limit:50}).catch(() => ({ data: { docs: [] } })),
+        listarFecAPI({page:pagina,limit:50}).catch(() => ({ data: { docs: [] } })),
       ]);
-      setAmbiente(ambRes.data);
+      setAmbiente(ambRes.data); setMeta({emision:fac.data,rep:rep.data,fec:fec.data});
       setFacturas(fac.data?.facturas || []);
       setReps(rep.data?.docs || []);
       setFecs(fec.data?.docs || []);
@@ -63,7 +69,7 @@ export default function HaciendaPage() {
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [pagina]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -91,7 +97,7 @@ export default function HaciendaPage() {
           await firmarDocumentoHaciendaAPI(id);
           toast.success('Firmado ✓');
           await enviarAHaciendaAPI(id);
-          toast.success('Enviado a Hacienda (worker)');
+          toast.success('Encolado para envío; consultá el estado para confirmar la recepción');
           await cargar();
         } catch (e) {
           toast.error(`No se pudo firmar/enviar: ${e.response?.data?.error || e.message}`);
@@ -171,6 +177,8 @@ export default function HaciendaPage() {
 
   return (
     <div className="page-content">
+      <Paginacion pagina={pagina} {...meta[tab]} onChange={setPagina} cargando={cargando} />
+      {configAbierta && <ConfigHaciendaModal isOpen onClose={() => setConfigAbierta(false)} actual={ambiente} onSaved={cargar} />}
       <div className="page-header">
         <div>
           <h1 className="page-title">Hacienda v4.4 — Facturación Nativa</h1>
@@ -183,6 +191,7 @@ export default function HaciendaPage() {
           </p>
         </div>
         <div className="btn-group">
+          <button className="btn btn-secondary" onClick={() => setConfigAbierta(true)}>Configurar Hacienda</button>
           <button className="btn btn-primary" onClick={() => abrirModal('FE')}>
             <FileText size={18} /> Emitir Factura
           </button>
@@ -192,7 +201,7 @@ export default function HaciendaPage() {
           <button className="btn btn-secondary" onClick={() => abrirModal('FEC')}>
             <FilePlus size={18} /> Compra (FEC)
           </button>
-          <button className="btn btn-secondary" onClick={() => abrirModal('REP')}>
+          <button className="btn btn-secondary" onClick={() => abrirModal('REP')} disabled={ambiente?.ambiente !== 'local'} title={ambiente?.ambiente !== 'local' ? 'REP pendiente de validación fiscal de pagos; disponible en simulación' : undefined}>
             <Receipt size={18} /> Abono (REP)
           </button>
         </div>
@@ -204,7 +213,7 @@ export default function HaciendaPage() {
           <button
             key={t.id}
             className={`hacienda-tab ${tab === t.id ? 'hacienda-tab--activo' : ''}`}
-            onClick={() => setTab(t.id)}
+            onClick={() => { setTab(t.id); setPagina(1); }}
           >
             <t.icon size={16} /> {t.label}
           </button>
@@ -261,9 +270,12 @@ function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml, onCa
               </td>
               <td data-label="Receptor">{d.receptor?.nombre || '—'}</td>
               <td data-label="Fecha">{new Date(d.fechaEmision).toLocaleDateString('es-CR')}</td>
-              <td className="text-mono" data-label="Total">₡{d.resumenFactura?.totalComprobante?.toLocaleString('es-CR') || 0}</td>
-              <td className="text-mono" data-label="IVA">₡{d.resumenFactura?.totalImpuesto?.toLocaleString('es-CR') || 0}</td>
-              <td data-label="Estado"><span className={`badge ${ESTADO_BADGE[d.estado] || ''}`}>{d.estado}</span></td>
+              <td className="text-mono" data-label="Total">{new Intl.NumberFormat('es-CR', { style: 'currency', currency: d.moneda || 'CRC' }).format(d.resumenFactura?.totalComprobante || 0)}</td>
+              <td className="text-mono" data-label="IVA">{new Intl.NumberFormat('es-CR', { style: 'currency', currency: d.moneda || 'CRC' }).format(d.resumenFactura?.totalImpuesto || 0)}</td>
+              <td data-label="Estado">
+                <span className={`badge ${ESTADO_BADGE[d.estado] || ''}`}>{d.estado === 'enviada_hacienda' ? 'Envío por confirmar' : d.estado}</span>
+                {d.erroresValidacion?.length > 0 && <p className="text-sm" role="status">{d.erroresValidacion.join(' ')}</p>}
+              </td>
               <td data-label="Acciones">
                 <div className="acciones-cell">
                   {d.estado === 'borrador' && (
@@ -278,10 +290,10 @@ function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml, onCa
                   {d.estado === 'aceptada' && (
                     <>
                       <button className="btn-icon" title="Ver estado" onClick={() => onEstado(d._id)}><Search size={14} /></button>
-                      <button className="btn-icon" style={{ color: '#ef4444' }} title="Anular con Nota de Crédito (NC)" onClick={() => onCancelar(d._id)}><XCircle size={14} /></button>
+                      {['FE', 'TE'].includes(d.tipoDocumento) && <button className="btn-icon" style={{ color: '#ef4444' }} title="Anular con Nota de Crédito (NC)" onClick={() => onCancelar(d._id)}><XCircle size={14} /></button>}
                     </>
                   )}
-                  {d.xmlFirmado && (
+                  {(d.hashFirma || d.xmlFirmado) && (
                     <button className="btn-icon" title="Descargar XML" onClick={() => onXml(d._id, d.claveNumerica)}><FileText size={14} /></button>
                   )}
                 </div>

@@ -1,3 +1,4 @@
+const { obtenerFuentes } = require('./contabilidadService');
 const ExcelJS = require('exceljs');
 const { obtenerRangoFechasCuatrimestre } = require('../utils/costaRicaTax');
 const Factura = require('../models/Factura');
@@ -23,26 +24,15 @@ async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null, ten
     fechaInicio = rango.inicio;
     fechaFin = rango.fin;
   } else {
-    fechaInicio = new Date(anio, 0, 1);
-    fechaFin = new Date(anio, 11, 31, 23, 59, 59, 999);
+    fechaInicio = new Date(Date.UTC(anio, 0, 1, 6));
+    fechaFin = new Date(Date.UTC(anio+1, 0, 1, 5, 59, 59, 999));
   }
 
-  // Obtener facturas (gastos)
-  const facturas = await Factura.find({
-    usuario: usuarioId,
-    fechaEmision: { $gte: fechaInicio, $lte: fechaFin },
-    estado: { $ne: 'error' },
-  }).sort({ fechaEmision: 1 }).lean();
-
-  // Obtener ingresos (ventas)
-  const ingresos = await Ingreso.find({
-    usuario: usuarioId,
-    fecha: { $gte: fechaInicio, $lte: fechaFin },
-  }).sort({ fecha: 1 }).lean();
+  const { facturas, ingresos } = await obtenerFuentes({ usuarioId, tenantId, inicio: fechaInicio, fin: fechaFin });
 
   // Normalizar datos de facturas para exportar
   const gastosExportables = facturas.map(f => {
-    const subtotal = f.resumenFactura?.totalVenta || 0;
+    const subtotal = f.resumenFactura?.totalVentaNeta ?? 0;
     const iva = f.resumenFactura?.totalImpuesto || 0;
     const total = f.resumenFactura?.totalComprobante || 0;
     const categoria = f.categoriaManual || f.categoriaIA || 'sin_clasificar';
@@ -73,7 +63,7 @@ async function generarDatosExportacion(usuarioId, anio, cuatrimestre = null, ten
       consecutivo,
       claveNumerica,
       numComprobante: consecutivo || claveNumerica || '',
-      esDeducible: f.esDeducible ? 'Sí' : 'No',
+      esDeducible: f.esDeducible !== false ? 'Sí' : 'No',
       motivoNoDeducible: f.motivoNoDeducible || '',
       tasaIVA,
       lineas: f.lineaDetalle || [],
@@ -858,9 +848,6 @@ function generarCSV(datos) {
     // Proteger campos numéricos largos y cédulas para que Excel los abra como texto sin truncar dígitos
     if (['consecutivo', 'claveNumerica', 'numComprobante', 'cedulaProveedor'].includes(key) && str.length > 0) {
       return `="${str.replace(/[^a-zA-Z0-9_-]/g, '')}"`;
-    }
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `"${str.replace(/"/g, '""')}"`;
     }
     const safeCsvStr = sanitizarFormulaExcel(str);
     if (safeCsvStr.includes(',') || safeCsvStr.includes('"') || safeCsvStr.includes('\n') || safeCsvStr.startsWith("'")) {

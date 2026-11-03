@@ -10,9 +10,10 @@ const tenantPlugin = require('./plugins/tenantPlugin');
  * Flujo:
  * 1. ONVO envía webhook a /api/onvo/webhook (JSON)
  * 2. Controller valida el header X-Webhook-Secret
- * 3. Busca SubscriptionEvent por eventoId (`<tipo>:<id del objeto>`)
- *    - Si existe → responde 200 {received:true, duplicate:true} y no procesa
- *    - Si no existe → guarda evento, procesa lógica, responde 200 {received:true}
+ * 3. Persiste por eventoId y reclama un lease atómico antes de procesar.
+ *    - Completado: responde duplicado sin repetir efectos.
+ *    - Pendiente o fallido: admite recuperación; ocupado: solicita reentrega.
+ * 4. El ledger del tenant se actualiza atómicamente con cada efecto.
  */
 const subscriptionEventSchema = new mongoose.Schema({
   // Llave única del evento (tipo + id del objeto ONVO) — usada para idempotencia
@@ -63,6 +64,9 @@ const subscriptionEventSchema = new mongoose.Schema({
   procesadoAt: {
     type: Date,
   },
+  claimToken: String,
+  claimHasta: Date,
+  intentos: { type: Number, default: 0 },
 
   // Mensaje de error si el procesamiento falló (no invalida idempotencia)
   error: {
@@ -78,15 +82,24 @@ const subscriptionEventSchema = new mongoose.Schema({
  * @returns {Promise<{created:boolean, event:object}>}
  */
 subscriptionEventSchema.statics.registrarSiNoExiste = async function (params) {
-  const existente = await this.findOne({ eventoId: params.eventoId }, null, { skipTenant: true });
-  if (existente) {
-    return { created: false, event: existente };
+  try {
+    const event = await this.findOneAndUpdate(
+      { eventoId: params.eventoId }, { $setOnInsert: params },
+      { upsert: true, new: true, skipTenant: true, setDefaultsOnInsert: true }
+    );
+    return { created: !event.procesado, event };
+  } catch (error) {
+    if (error.code !== 11000) throw error;
+    return { created: false, event: await this.findOne({ eventoId: params.eventoId }, null, { skipTenant: true }) };
   }
-  const event = new this(params);
-  event.$locals = event.$locals || {};
-  event.$locals.skipTenant = true;
-  await event.save();
-  return { created: true, event };
+};
+
+subscriptionEventSchema.statics.reclamar = function (id, claimToken) {
+  const ahora = new Date();
+  return this.findOneAndUpdate({ _id: id, procesado: { $ne: true },
+    $or: [{ claimHasta: { $exists: false } }, { claimHasta: null }, { claimHasta: { $lte: ahora } }] },
+  { $set: { claimToken, claimHasta: new Date(ahora.getTime() + 60000) }, $inc: { intentos: 1 } },
+  { new: true, skipTenant: true });
 };
 
 /**

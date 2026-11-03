@@ -111,7 +111,7 @@ const ingresoSchema = new mongoose.Schema({
 
 // Calcular monto total e IVA antes de la validación
 ingresoSchema.pre('validate', function () {
-  if (this.isNew || this.isModified('montoSubtotal') || this.isModified('tasaIVA') || this.isModified('cantidadCabezas') || this.isModified('precioUnitario') || this.isModified('pesoTotal') || this.isModified('precioPorKilo')) {
+  if (this.isNew || this.isModified('litrosVendidos') || this.isModified('categoriaIngreso') || this.isModified('montoSubtotal') || this.isModified('tasaIVA') || this.isModified('cantidadCabezas') || this.isModified('precioUnitario') || this.isModified('pesoTotal') || this.isModified('precioPorKilo')) {
     let subtotal = this.montoSubtotal || 0;
     
     // Si es venta de ganado en pie y se ingresó por peso
