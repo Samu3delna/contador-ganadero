@@ -5,11 +5,12 @@ import { esAdministrador } from './utils/adminHelper';
 import Sidebar from './components/layout/Sidebar';
 import LoginPage from './pages/LoginPage';
 import ChatBot from './components/dashboard/ChatBot';
-import AdvertisingSlot from './components/ads/AdvertisingSlot';
+import { publicRoutes } from './publicRoutes';
+import SEOHead from './components/public/SEOHead';
 import './App.css';
 
 // Lazy-loaded pages (code-splitting)
-const LandingPage = lazy(() => import('./pages/LandingPage'));
+
 const TerminosCondicionesPage = lazy(() => import('./pages/TerminosCondicionesPage'));
 const CondicionesServicioPage = lazy(() => import('./pages/CondicionesServicioPage'));
 const PoliticaPrivacidadPage = lazy(() => import('./pages/PoliticaPrivacidadPage'));
@@ -64,7 +65,7 @@ function AppLayout() {
     <div className="app-container">
       <Sidebar />
       <div className="main-content">
-        {!esAdmin && <AdvertisingSlot />}
+        
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Si es Administrador, redirigir rutas de usuario común directamente al panel admin */}
@@ -104,8 +105,8 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Suspense fallback={<PageLoader />}><LandingPage /></Suspense>} />
+        <SEOHead /><Suspense fallback={<PageLoader />}><Routes>
+          {publicRoutes()}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<LoginPage />} />
           <Route path="/recuperar-password" element={<Suspense fallback={<PageLoader />}><RecuperarCuentaPage /></Suspense>} />
@@ -123,8 +124,8 @@ function App() {
           <Route path="/eliminacion-de-datos" element={<Suspense fallback={<PageLoader />}><EliminacionDatosPage /></Suspense>} />
           <Route path="/deletion" element={<Suspense fallback={<PageLoader />}><EliminacionDatosPage /></Suspense>} />
 
-          <Route path="/*" element={<RutaProtegida><AppLayout /></RutaProtegida>} />
-        </Routes>
+          {["/dashboard", "/facturas", "/gastos", "/ingresos", "/impuestos", "/declaraciones", "/inventario", "/costos", "/facturacion", "/hacienda", "/d150", "/calendario", "/planes", "/billing", "/perfil", "/admin/*"].map(path => <Route key={path} path={path} element={<RutaProtegida><AppLayout /></RutaProtegida>} />)}
+        </Routes></Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

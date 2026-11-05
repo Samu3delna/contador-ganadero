@@ -1,27 +1,5 @@
-# ContadorGanadero — robots.txt
-# https://contadorganandero.com/robots.txt
-
 User-agent: *
 Allow: /
 
-# La zona privada de la aplicación no debe indexarse
-Disallow: /dashboard
-Disallow: /facturas
-Disallow: /gastos
-Disallow: /ingresos
-Disallow: /impuestos
-Disallow: /declaraciones
-Disallow: /inventario
-Disallow: /costos
-Disallow: /facturacion
-Disallow: /hacienda
-Disallow: /d150
-Disallow: /calendario
-Disallow: /planes
-Disallow: /billing
-
-# Las páginas de autenticación son públicas y deben indexarse
-Allow: /login
-Allow: /registro
-
-Sitemap: https://contadorganandero.com/sitemap.xml
+# Authentication and noindex govern private routes; robots is not access control.
+Sitemap: https://contadorganadero.com/sitemap.xml

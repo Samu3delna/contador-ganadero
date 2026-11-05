@@ -214,7 +214,7 @@ const estadoEmail = async (req, res, next) => {
     const tenant = req.tenant;
     const suffix = req.usuario?._id ? String(req.usuario._id).slice(-4) : 'finca';
     const alias = tenant?.emailAlias || (req.usuario?.nombreFinca ? `${req.usuario.nombreFinca.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${suffix}` : `finca-${suffix}`);
-    const correoRecepcion = `${alias}@contadorganandero.com`;
+    const correoRecepcion = `${alias}@contadorganadero.com`;
 
     let estadoIMAP = null;
     if (req.usuario?.configEmail?.host && req.usuario?.configEmail?.usuario) {
@@ -229,7 +229,7 @@ const estadoEmail = async (req, res, next) => {
       canalPrincipal: 'cloudflare-email',
       buzon: correoRecepcion,
       alias,
-      dominio: 'contadorganandero.com',
+      dominio: 'contadorganadero.com',
       conectado: true,
       mensaje: 'Recepción en tiempo real activa vía Cloudflare Worker',
       imapLegacy: estadoIMAP,

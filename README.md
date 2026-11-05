@@ -4,7 +4,7 @@ Aplicación MERN full-stack para funcionar como contador personal automatizado p
 
 ## Características Principales
 
-1. **Recepción Automática de Facturas:** Ingesta instantánea de comprobantes electrónicos vía Cloudflare Email Routing (buzón exclusivo `@contadorganandero.com`) y Bot oficial de WhatsApp para archivos XML, acuses (`MensajeHacienda`) y PDFs.
+1. **Recepción Automática de Facturas:** Ingesta instantánea de comprobantes electrónicos vía Cloudflare Email Routing (buzón exclusivo `@contadorganadero.com`) y Bot oficial de WhatsApp para archivos XML, acuses (`MensajeHacienda`) y PDFs.
 2. **Procesamiento Inteligente:** Utiliza IA (OpenRouter / NVIDIA) para categorizar automáticamente los gastos extraídos de las facturas (ej. insumos veterinarios vs gastos generales).
 3. **Módulo de Ingresos:** Registro manual de venta de ganado, leche y otros productos.
 4. **Lógica Tributaria Costarricense (2026):**
@@ -81,6 +81,6 @@ El archivo [`wrangler.toml`](wrangler.toml) sirve `./frontend/dist` con `not_fou
 
 El backend (API + worker IMAP) se despliega en Render.
 
-El Email Worker es un despliegue independiente del frontend: usa `cloudflare-email-worker/wrangler.jsonc` y `npm run deploy:email-worker`. Antes del primer despliegue, configura el secreto `EMAIL_WEBHOOK_SECRET` con Wrangler y comprueba que el catch-all `*@contadorganandero.com` pueda ser administrado por este Worker. No uses el `wrangler.toml` raíz para desplegar el Email Worker; ese archivo publica el frontend.
+El Email Worker es un despliegue independiente del frontend: usa `cloudflare-email-worker/wrangler.jsonc` y `npm run deploy:email-worker`. Antes del primer despliegue, configura el secreto `EMAIL_WEBHOOK_SECRET` con Wrangler y comprueba que el catch-all `*@contadorganadero.com` pueda ser administrado por este Worker. No uses el `wrangler.toml` raíz para desplegar el Email Worker; ese archivo publica el frontend.
 
 Para que los XML y PDF sigan disponibles después de reinicios de Render, monta un Persistent Disk con punto de montaje `/var/data` en el servicio API y define `UPLOAD_ROOT=/var/data/uploads`. El servicio debe usar el mismo disco en todos los despliegues.

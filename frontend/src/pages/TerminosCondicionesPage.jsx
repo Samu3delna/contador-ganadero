@@ -181,8 +181,8 @@ export default function TerminosCondicionesPage() {
             <h4>¿Dudas sobre nuestros términos legales?</h4>
             <p>Escríbenos a nuestro equipo legal y de cumplimiento tributario.</p>
           </div>
-          <a href="mailto:soporte@contadorganandero.com" className="btn btn-secondary btn-sm">
-            soporte@contadorganandero.com
+          <a href="mailto:soporte@contadorganadero.com" className="btn btn-secondary btn-sm">
+            soporte@contadorganadero.com
           </a>
         </div>
       </section>
