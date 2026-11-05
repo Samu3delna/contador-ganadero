@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && vite build",
+    "build": "vite build && node scripts/prerender.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node --test \"tests/**/*.test.js\""
