@@ -3,7 +3,7 @@
   "main": "worker.js",
   "compatibility_date": "2026-10-30",
   "compatibility_flags": ["nodejs_compat"],
-  "addresses": ["*@contadorganadero.com"],
+  "addresses": ["*@contadorganandero.com"],
   "vars": {
     "BACKEND_WEBHOOK_URL": "https://contador-ganadero.onrender.com/api/webhooks/email"
   },

@@ -55,7 +55,7 @@ function construirFeatures(id) {
   const esPro = id === 'pro';
 
   return [
-    { texto: 'Buzón Cloudflare Email exclusivo (@contadorganadero.com)', incluido: true },
+    { texto: 'Buzón Cloudflare Email exclusivo (@contadorganandero.com)', incluido: true },
     { texto: 'Recepción y reenvío de facturas por Bot de WhatsApp', incluido: true },
     { texto: 'Lectura oficial Hacienda v4.4 y auditoría de IVA al 1%', incluido: true },
     { texto: 'Módulo contable: IVA Cuatrimestral y Renta Anual (D-101)', incluido: l.moduloContable },

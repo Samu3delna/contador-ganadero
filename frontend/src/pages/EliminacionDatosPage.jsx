@@ -179,7 +179,7 @@ export default function EliminacionDatosPage() {
     } catch (err) {
       setMensajeErrorForm(
         err.response?.data?.error ||
-          'Ocurrió un error al procesar la solicitud. Intenta de nuevo o escribe a privacidad@contadorganadero.com.'
+          'Ocurrió un error al procesar la solicitud. Intenta de nuevo o escribe a privacidad@contadorganandero.com.'
       );
     } finally {
       setEnviandoSolicitud(false);
@@ -644,8 +644,8 @@ export default function EliminacionDatosPage() {
             <ul>
               <li>
                 Envía un correo a{' '}
-                <a href="mailto:privacidad@contadorganadero.com" style={{ color: '#4ade80' }}>
-                  privacidad@contadorganadero.com
+                <a href="mailto:privacidad@contadorganandero.com" style={{ color: '#4ade80' }}>
+                  privacidad@contadorganandero.com
                 </a>{' '}
                 con el asunto &ldquo;Eliminación de Datos ARCO&rdquo;.
               </li>
@@ -678,7 +678,7 @@ export default function EliminacionDatosPage() {
           <li>
             <strong>Credenciales Criptográficas:</strong> Certificados digitales (<code>.p12</code>
             ), PIN de ATV Hacienda y alias de recepción de correo (
-            <code>@contadorganadero.com</code>).
+            <code>@contadorganandero.com</code>).
           </li>
           <li>
             <strong>Datos Operativos y de IA:</strong> Registros de inventario pecuario, costos de
@@ -714,11 +714,11 @@ export default function EliminacionDatosPage() {
         <ul>
           <li>
             <strong>URL del Endpoint de Devolución de Llamada (POST):</strong>{' '}
-            <code>https://contadorganadero.com/api/webhooks/whatsapp/data-deletion</code>
+            <code>https://contadorganandero.com/api/webhooks/whatsapp/data-deletion</code>
           </li>
           <li>
             <strong>URL de Estado e Instrucciones de Eliminación (GET):</strong>{' '}
-            <code>https://contadorganadero.com/eliminacion-datos</code>
+            <code>https://contadorganandero.com/eliminacion-datos</code>
           </li>
           <li>
             <strong>Verificación de Firma:</strong> Validación criptográfica{' '}
@@ -740,7 +740,7 @@ export default function EliminacionDatosPage() {
               }}
             >
 {`{
-  "url": "https://contadorganadero.com/eliminacion-datos?id=CG2026A1B2C3",
+  "url": "https://contadorganandero.com/eliminacion-datos?id=CG2026A1B2C3",
   "confirmation_code": "CG2026A1B2C3"
 }`}
             </pre>
@@ -766,10 +766,10 @@ export default function EliminacionDatosPage() {
             <p>ContadorGanadero — San José, Costa Rica</p>
           </div>
           <a
-            href="mailto:privacidad@contadorganadero.com"
+            href="mailto:privacidad@contadorganandero.com"
             className="btn btn-secondary btn-sm"
           >
-            privacidad@contadorganadero.com
+            privacidad@contadorganandero.com
           </a>
         </div>
       </section>

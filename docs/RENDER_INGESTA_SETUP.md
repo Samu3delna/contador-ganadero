@@ -10,12 +10,12 @@ En Render, abre `contador-ganadero-api` → **Environment** y configura las vari
 | --- | --- |
 | `JWT_REFRESH_SECRET` | Secreto aleatorio de al menos 32 caracteres y distinto de `JWT_SECRET`. Cambiarlo puede invalidar sesiones de renovación existentes. |
 | `EMAIL_ENC_KEY` | Exactamente 64 caracteres hexadecimales. Debe ser la clave vigente que descifra las credenciales cifradas que ya están en MongoDB. No uses placeholders ni una clave histórica expuesta; rotar exige migrar los datos cifrados. |
-| `FRONTEND_URL` | Origen exacto del frontend, actualmente `https://contadorganadero.com`. El backend ya permite usarlo como alternativa a `CORS_ORIGINS`. |
-| `CORS_ORIGINS` | Configura explícitamente `https://contadorganadero.com` para que el preflight de login/refresh devuelva CORS; si hay más frontends, sepáralos por comas. |
+| `FRONTEND_URL` | Origen exacto del frontend, actualmente `https://contadorganandero.com`. El backend ya permite usarlo como alternativa a `CORS_ORIGINS`. |
+| `CORS_ORIGINS` | Configura explícitamente `https://contadorganandero.com` para que el preflight de login/refresh devuelva CORS; si hay más frontends, sepáralos por comas. |
 | `ONVO_WEBHOOK_SECRET` | Al menos 32 caracteres y el mismo valor configurado para el webhook de ONVO. |
 | `EMAIL_WEBHOOK_SECRET` | Al menos 32 caracteres y el mismo valor configurado como secreto del Worker de Cloudflare. |
 
-Aunque el backend acepta `FRONTEND_URL` como alternativa, deja `CORS_ORIGINS` explícita en producción. Usa orígenes exactos, sin comodines ni rutas, por ejemplo: `https://contadorganadero.com,https://app.contadorganadero.com`.
+Aunque el backend acepta `FRONTEND_URL` como alternativa, deja `CORS_ORIGINS` explícita en producción. Usa orígenes exactos, sin comodines ni rutas, por ejemplo: `https://contadorganandero.com,https://app.contadorganandero.com`.
 
 Para activar WhatsApp también deben estar definidos `META_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN` y `WHATSAPP_PHONE_NUMBER_ID`. `META_APP_SECRET` debe coincidir con la aplicación de Meta; el token de verificación debe coincidir con el usado en el handshake. El backend no imprime estos valores.
 
@@ -37,7 +37,7 @@ El Background Worker que ejecuta Hacienda también debe recibir el mismo `MONGOD
 
 ## Worker de correo de Cloudflare
 
-El Worker tiene su configuración en `cloudflare-email-worker/wrangler.jsonc`; la regla `*@contadorganadero.com` se administra desde ese archivo. El secreto no se guarda en `vars` ni en el repositorio. Configúralo en Cloudflare Wrangler:
+El Worker tiene su configuración en `cloudflare-email-worker/wrangler.jsonc`; la regla `*@contadorganandero.com` se administra desde ese archivo. El secreto no se guarda en `vars` ni en el repositorio. Configúralo en Cloudflare Wrangler:
 
 ```bash
 npx --yes wrangler@4.113.0 secret put EMAIL_WEBHOOK_SECRET --config cloudflare-email-worker/wrangler.jsonc

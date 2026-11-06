@@ -1,0 +1,318 @@
+{
+  "startedAt": "2026-11-06T05:19:24.591Z",
+  "baseUrl": "http://127.0.0.1:4173/",
+  "browser": "156.0.4314.58",
+  "widths": [
+    320,
+    375,
+    768,
+    1024,
+    1440
+  ],
+  "results": [
+    {
+      "name": "320px /",
+      "passed": true
+    },
+    {
+      "name": "320px /producto",
+      "passed": true
+    },
+    {
+      "name": "320px /producto/dashboard",
+      "passed": true
+    },
+    {
+      "name": "320px /producto/facturas",
+      "passed": true
+    },
+    {
+      "name": "320px /producto/ingresos",
+      "passed": true
+    },
+    {
+      "name": "320px /producto/gastos",
+      "passed": true
+    },
+    {
+      "name": "320px /producto/inventario",
+      "passed": true
+    },
+    {
+      "name": "320px /producto/costos",
+      "passed": true
+    },
+    {
+      "name": "320px /producto/impuestos",
+      "passed": true
+    },
+    {
+      "name": "320px /precios",
+      "passed": true
+    },
+    {
+      "name": "320px /preguntas-frecuentes",
+      "passed": true
+    },
+    {
+      "name": "320px /contacto",
+      "passed": true
+    },
+    {
+      "name": "320px /soluciones",
+      "passed": true
+    },
+    {
+      "name": "320px navigation and demo",
+      "passed": true
+    },
+    {
+      "name": "375px /",
+      "passed": true
+    },
+    {
+      "name": "375px /producto",
+      "passed": true
+    },
+    {
+      "name": "375px /producto/dashboard",
+      "passed": true
+    },
+    {
+      "name": "375px /producto/facturas",
+      "passed": true
+    },
+    {
+      "name": "375px /producto/ingresos",
+      "passed": true
+    },
+    {
+      "name": "375px /producto/gastos",
+      "passed": true
+    },
+    {
+      "name": "375px /producto/inventario",
+      "passed": true
+    },
+    {
+      "name": "375px /producto/costos",
+      "passed": true
+    },
+    {
+      "name": "375px /producto/impuestos",
+      "passed": true
+    },
+    {
+      "name": "375px /precios",
+      "passed": true
+    },
+    {
+      "name": "375px /preguntas-frecuentes",
+      "passed": true
+    },
+    {
+      "name": "375px /contacto",
+      "passed": true
+    },
+    {
+      "name": "375px /soluciones",
+      "passed": true
+    },
+    {
+      "name": "375px navigation and demo",
+      "passed": true
+    },
+    {
+      "name": "768px /",
+      "passed": true
+    },
+    {
+      "name": "768px /producto",
+      "passed": true
+    },
+    {
+      "name": "768px /producto/dashboard",
+      "passed": true
+    },
+    {
+      "name": "768px /producto/facturas",
+      "passed": true
+    },
+    {
+      "name": "768px /producto/ingresos",
+      "passed": true
+    },
+    {
+      "name": "768px /producto/gastos",
+      "passed": true
+    },
+    {
+      "name": "768px /producto/inventario",
+      "passed": true
+    },
+    {
+      "name": "768px /producto/costos",
+      "passed": true
+    },
+    {
+      "name": "768px /producto/impuestos",
+      "passed": true
+    },
+    {
+      "name": "768px /precios",
+      "passed": true
+    },
+    {
+      "name": "768px /preguntas-frecuentes",
+      "passed": true
+    },
+    {
+      "name": "768px /contacto",
+      "passed": true
+    },
+    {
+      "name": "768px /soluciones",
+      "passed": true
+    },
+    {
+      "name": "768px navigation and demo",
+      "passed": false,
+      "error": "Expected values to be strictly equal:\n\n4 !== 1\n"
+    },
+    {
+      "name": "1024px /",
+      "passed": true
+    },
+    {
+      "name": "1024px /producto",
+      "passed": true
+    },
+    {
+      "name": "1024px /producto/dashboard",
+      "passed": true
+    },
+    {
+      "name": "1024px /producto/facturas",
+      "passed": true
+    },
+    {
+      "name": "1024px /producto/ingresos",
+      "passed": true
+    },
+    {
+      "name": "1024px /producto/gastos",
+      "passed": true
+    },
+    {
+      "name": "1024px /producto/inventario",
+      "passed": true
+    },
+    {
+      "name": "1024px /producto/costos",
+      "passed": true
+    },
+    {
+      "name": "1024px /producto/impuestos",
+      "passed": true
+    },
+    {
+      "name": "1024px /precios",
+      "passed": true
+    },
+    {
+      "name": "1024px /preguntas-frecuentes",
+      "passed": true
+    },
+    {
+      "name": "1024px /contacto",
+      "passed": true
+    },
+    {
+      "name": "1024px /soluciones",
+      "passed": true
+    },
+    {
+      "name": "1024px navigation and demo",
+      "passed": true
+    },
+    {
+      "name": "1440px /",
+      "passed": true
+    },
+    {
+      "name": "1440px /producto",
+      "passed": true
+    },
+    {
+      "name": "1440px /producto/dashboard",
+      "passed": true
+    },
+    {
+      "name": "1440px /producto/facturas",
+      "passed": true
+    },
+    {
+      "name": "1440px /producto/ingresos",
+      "passed": true
+    },
+    {
+      "name": "1440px /producto/gastos",
+      "passed": true
+    },
+    {
+      "name": "1440px /producto/inventario",
+      "passed": true
+    },
+    {
+      "name": "1440px /producto/costos",
+      "passed": true
+    },
+    {
+      "name": "1440px /producto/impuestos",
+      "passed": true
+    },
+    {
+      "name": "1440px /precios",
+      "passed": true
+    },
+    {
+      "name": "1440px /preguntas-frecuentes",
+      "passed": true
+    },
+    {
+      "name": "1440px /contacto",
+      "passed": true
+    },
+    {
+      "name": "1440px /soluciones",
+      "passed": true
+    },
+    {
+      "name": "1440px navigation and demo",
+      "passed": true
+    }
+  ],
+  "failures": [
+    "768px navigation and demo"
+  ],
+  "limitations": [
+    "API responses are mocked as unauthenticated; no live login, registration, payment or private data is tested.",
+    "External network requests are blocked. This is not a Lighthouse or full WCAG audit."
+  ],
+  "routes": [
+    "/",
+    "/producto",
+    "/producto/dashboard",
+    "/producto/facturas",
+    "/producto/ingresos",
+    "/producto/gastos",
+    "/producto/inventario",
+    "/producto/costos",
+    "/producto/impuestos",
+    "/precios",
+    "/preguntas-frecuentes",
+    "/contacto",
+    "/soluciones"
+  ],
+  "finishedAt": "2026-11-06T05:20:19.100Z"
+}
