@@ -1,10 +1,10 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { esAdministrador } from './utils/adminHelper';
 import Sidebar from './components/layout/Sidebar';
-import LoginPage from './pages/LoginPage';
-import ChatBot from './components/dashboard/ChatBot';
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ChatBot = lazy(() => import('./components/dashboard/ChatBot'));
 import { publicRoutes } from './publicRoutes';
 import SEOHead from './components/public/SEOHead';
 import './App.css';
@@ -57,6 +57,11 @@ function RutaAdmin({ children }) {
   return (usuario?.esSuperAdmin || esAdministrador(usuario)) ? children : <Navigate to="/dashboard" replace />;
 }
 
+function RutaUsuario({ children }) {
+  const { usuario } = useAuth();
+  return (usuario?.esSuperAdmin || esAdministrador(usuario)) ? <Navigate to="/admin" replace /> : children;
+}
+
 function AppLayout() {
   const { usuario } = useAuth();
   const esAdmin = usuario?.esSuperAdmin || esAdministrador(usuario);
@@ -67,36 +72,10 @@ function AppLayout() {
       <div className="main-content">
         
         <Suspense fallback={<PageLoader />}>
-          <Routes>
-            {/* Si es Administrador, redirigir rutas de usuario común directamente al panel admin */}
-            <Route path="/dashboard" element={esAdmin ? <Navigate to="/admin" replace /> : <DashboardPage />} />
-            <Route path="/facturas" element={esAdmin ? <Navigate to="/admin" replace /> : <FacturasPage />} />
-            <Route path="/gastos" element={esAdmin ? <Navigate to="/admin" replace /> : <GastosPage />} />
-            <Route path="/ingresos" element={esAdmin ? <Navigate to="/admin" replace /> : <IngresosPage />} />
-            <Route path="/impuestos" element={esAdmin ? <Navigate to="/admin" replace /> : <ImpuestosPage />} />
-            <Route path="/declaraciones" element={esAdmin ? <Navigate to="/admin" replace /> : <DeclaracionesPage />} />
-            <Route path="/inventario" element={esAdmin ? <Navigate to="/admin" replace /> : <InventarioPage />} />
-            <Route path="/costos" element={esAdmin ? <Navigate to="/admin" replace /> : <CostosPage />} />
-            <Route path="/facturacion" element={esAdmin ? <Navigate to="/admin" replace /> : <FacturacionPage />} />
-            <Route path="/hacienda" element={esAdmin ? <Navigate to="/admin" replace /> : <HaciendaPage />} />
-            <Route path="/d150" element={esAdmin ? <Navigate to="/admin" replace /> : <D150Page />} />
-            <Route path="/calendario" element={esAdmin ? <Navigate to="/admin" replace /> : <CalendarioPage />} />
-            <Route path="/planes" element={esAdmin ? <Navigate to="/admin" replace /> : <PlanesPage />} />
-            <Route path="/billing" element={esAdmin ? <Navigate to="/admin" replace /> : <BillingPage />} />
-            <Route path="/perfil" element={<PerfilPage />} />
-
-            {/* Rutas Super Admin */}
-            <Route path="/admin" element={<RutaAdmin><AdminDashboardPage /></RutaAdmin>} />
-            <Route path="/admin/usuarios" element={<RutaAdmin><AdminUsuariosPage /></RutaAdmin>} />
-            <Route path="/admin/tenants" element={<RutaAdmin><AdminTenantsPage /></RutaAdmin>} />
-            <Route path="/admin/monitoreo" element={<RutaAdmin><AdminMonitoreoPage /></RutaAdmin>} />
-            <Route path="/admin/soporte" element={<RutaAdmin><AdminSoportePage /></RutaAdmin>} />
-
-            <Route path="*" element={<Navigate to={esAdmin ? "/admin" : "/dashboard"} replace />} />
-          </Routes>
+          <Outlet />
         </Suspense>
       </div>
-      {!esAdmin && <ChatBot />}
+      {!esAdmin && <Suspense fallback={null}><ChatBot /></Suspense>}
     </div>
   );
 }
@@ -124,7 +103,28 @@ function App() {
           <Route path="/eliminacion-de-datos" element={<Suspense fallback={<PageLoader />}><EliminacionDatosPage /></Suspense>} />
           <Route path="/deletion" element={<Suspense fallback={<PageLoader />}><EliminacionDatosPage /></Suspense>} />
 
-          {["/dashboard", "/facturas", "/gastos", "/ingresos", "/impuestos", "/declaraciones", "/inventario", "/costos", "/facturacion", "/hacienda", "/d150", "/calendario", "/planes", "/billing", "/perfil", "/admin/*"].map(path => <Route key={path} path={path} element={<RutaProtegida><AppLayout /></RutaProtegida>} />)}
+          <Route element={<RutaProtegida><AppLayout /></RutaProtegida>}>
+            <Route path="/dashboard" element={<RutaUsuario><DashboardPage /></RutaUsuario>} />
+            <Route path="/facturas" element={<RutaUsuario><FacturasPage /></RutaUsuario>} />
+            <Route path="/gastos" element={<RutaUsuario><GastosPage /></RutaUsuario>} />
+            <Route path="/ingresos" element={<RutaUsuario><IngresosPage /></RutaUsuario>} />
+            <Route path="/impuestos" element={<RutaUsuario><ImpuestosPage /></RutaUsuario>} />
+            <Route path="/declaraciones" element={<RutaUsuario><DeclaracionesPage /></RutaUsuario>} />
+            <Route path="/inventario" element={<RutaUsuario><InventarioPage /></RutaUsuario>} />
+            <Route path="/costos" element={<RutaUsuario><CostosPage /></RutaUsuario>} />
+            <Route path="/facturacion" element={<RutaUsuario><FacturacionPage /></RutaUsuario>} />
+            <Route path="/hacienda" element={<RutaUsuario><HaciendaPage /></RutaUsuario>} />
+            <Route path="/d150" element={<RutaUsuario><D150Page /></RutaUsuario>} />
+            <Route path="/calendario" element={<RutaUsuario><CalendarioPage /></RutaUsuario>} />
+            <Route path="/planes" element={<RutaUsuario><PlanesPage /></RutaUsuario>} />
+            <Route path="/billing" element={<RutaUsuario><BillingPage /></RutaUsuario>} />
+            <Route path="/perfil" element={<PerfilPage />} />
+            <Route path="/admin" element={<RutaAdmin><AdminDashboardPage /></RutaAdmin>} />
+            <Route path="/admin/usuarios" element={<RutaAdmin><AdminUsuariosPage /></RutaAdmin>} />
+            <Route path="/admin/tenants" element={<RutaAdmin><AdminTenantsPage /></RutaAdmin>} />
+            <Route path="/admin/monitoreo" element={<RutaAdmin><AdminMonitoreoPage /></RutaAdmin>} />
+            <Route path="/admin/soporte" element={<RutaAdmin><AdminSoportePage /></RutaAdmin>} />
+          </Route>
         </Routes></Suspense>
       </AuthProvider>
     </BrowserRouter>

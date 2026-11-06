@@ -26,7 +26,7 @@ export default function LearningPages() {
   </>;
   return <article className="cg-container cg-section">
     <nav aria-label="Migas de pan"><Link to="/">Inicio</Link> / <Link to={base}>{label}</Link> / <span aria-current="page">{item.title}</span></nav>
-    <header className="cg-hero"><p className="cg-kicker">{item.category}</p><h1>{item.title}</h1><p>{item.intro}</p><p className="cg-note">Actualizado el <time dateTime={updated}>3 de noviembre de 2026</time>{isTutorial ? ' · Guía escrita' : ` · ${item.minutes} min de lectura`}</p></header>
+    <header className="cg-hero"><p className="cg-kicker">{item.category}</p><h1>{item.title}</h1><p>{item.intro}</p><p className="cg-note">Actualizado el <time dateTime={updated}>{new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${updated}T00:00:00Z`))}</time>{isTutorial ? ' · Guía escrita' : ` · ${item.minutes} min de lectura`}</p></header>
     <div className="cg-prose">
       {isTutorial ? <>
         <p className="cg-note">El video está pendiente de grabación. Podés seguir estas instrucciones por escrito. Los ejemplos son sintéticos.</p>

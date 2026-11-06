@@ -30,13 +30,17 @@ export default function PublicLayout() {
 function PublicNavbar() {
   const [open, setOpen] = useState(false);
   const menu = useRef(null);
+  const menuButton = useRef(null);
   return (
     <header
       className="cg-header"
       onKeyDown={event => {
         if (event.key === 'Escape') {
           setOpen(false);
+          const productWasOpen = menu.current?.hasAttribute('open');
           menu.current?.removeAttribute('open');
+          if (open) menuButton.current?.focus();
+          else if (productWasOpen) menu.current?.querySelector('summary')?.focus();
         }
       }}
     >
@@ -50,13 +54,14 @@ function PublicNavbar() {
           <span>CR</span>
         </Link>
         <button
+          ref={menuButton}
           className="cg-menu-button"
           aria-label={open ? 'Cerrar navegación' : 'Abrir navegación'}
           aria-expanded={open}
           aria-controls="public-nav"
           onClick={() => setOpen(!open)}
         >
-          {open ? <X /> : <Menu />}
+          {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
         </button>
         <nav id="public-nav" className={open ? 'cg-navlinks cg-open' : 'cg-navlinks'} aria-label="Navegación principal">
           <details className="cg-product-menu" ref={menu}>

@@ -3,7 +3,23 @@
 Fecha de consolidación: 2026-11-04
 Rama: `feature/landing-saas-adsense-seo`
 
-## 1. Resumen Ejecutivo
+## Cierre verificado ? 2026-11-06
+
+Base revisada: commit `65550d3`, rama `feature/landing-saas-adsense-seo`. Los contenidos presentes en esta base se conservaron; no se recuperaron archivos eliminados desde Git durante este cierre.
+
+- Se corrigi? la navegaci?n privada mediante rutas hijas y `Outlet`, manteniendo los guards de sesi?n y administraci?n.
+- El build fuerza `NODE_ENV=production` sin cambiar el `.env` compartido del backend. Login y chat se cargan de forma diferida. El bundle principal pas? de 846,23 kB a 387,82 kB (sin comprimir, mediciones del build local).
+- El prerender incorpora el CSS p?blico al HTML inicial: 28 p?ginas prerenderizadas y 32 URLs en sitemap. Las cuatro p?ginas legales se renderizan del lado del cliente.
+- Las rutas de producto desconocidas, incluidos nombres heredados de Object, muestran un estado inexistente. Escape devuelve el foco al control del men?.
+- La pol?tica AdSense contin?a desactivada y sin aprobaci?n declarada. Los videos siguen pendientes de grabaci?n; existen gu?as escritas.
+- Se gener? `artifacts/contador-publico-revision.html`, una vista est?tica autocontenida para revisi?n. Deska Artifacts no est? disponible en esta tarea; no se cre? tarjeta ni identificador.
+- El resultado reproducible y los l?mites de validaci?n est?n en `QA_REPORT.md` y `qa/report.json`. No se despleg? a producci?n.
+
+### Equipo del cierre
+
+Dos subagentes reales: revisi?n de componentes p?blicos (skills de React, composici?n, dise?o, Tailwind y accesibilidad) y QA (testing JavaScript, React y rendimiento). El agente principal integr? rutas, build, prerender, revisi?n de capturas e informes. Las pruebas de permisos usan AuthProvider y el ?rbol App reales con respuestas API sint?ticas.
+
+## 1. Resumen Ejecutivo hist?rico
 
 Se completó la transformación integral del ecosistema web público de **ContadorGanadero** bajo una arquitectura separada de la aplicación privada, alineada con las capacidades reales verificadas del código fuente (`AUDITORIA_FUNCIONAL.md`), con prerenderizado estático de 28 páginas públicas, academia y centro de tutoriales con contenido original para productores de Costa Rica, y una arquitectura de Google AdSense de bloqueo por defecto (`fail-closed`) que conserva la verificación de propiedad sin cargar anuncios antes de la aprobación de Google.
 

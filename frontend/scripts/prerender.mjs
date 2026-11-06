@@ -1,5 +1,5 @@
 import { createServer } from 'vite';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
 import path from 'node:path';
 import { resolvePageSeo, SITE_ORIGIN } from '../src/config/seoCatalog.js';
@@ -29,11 +29,15 @@ try {
     dom.window.close();
   }
   const template = await readFile('dist/index.html', 'utf8');
+  const publicCss = (await readdir('dist/assets')).filter(name => /^LandingPage-.*\.css$/.test(name));
   for (const route of routes) {
     const markup = await render(route);
     const dom = new JSDOM(template);
     const { document } = dom.window;
     document.getElementById('root').innerHTML = markup;
+    for (const name of publicCss) {
+      const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = `/assets/${name}`; document.head.append(link);
+    }
     const heading = document.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim();
     if (!heading) throw new Error(`No H1: ${route}`);
     const seo = resolvePageSeo(route, document);
