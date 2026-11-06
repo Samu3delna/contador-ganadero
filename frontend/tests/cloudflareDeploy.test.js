@@ -250,6 +250,9 @@ describe('Cabeceras de seguridad y CSP (frontend/public/_headers)', () => {
 
   test('permite las llamadas a la API de Render (login) y fuentes de Google', () => {
     assert.ok(permitidaPorCsp('https://contador-ganadero.onrender.com/api/auth/login', csp['connect-src']));
+    // VITE_API_URL de producción apunta al subdominio propio de la API
+    assert.ok(permitidaPorCsp('https://api.contadorganadero.com/api/auth/login', csp['connect-src']));
+    assert.ok(!/contadorganandero/.test(contenido), 'dominio mal escrito (contadorganandero) en _headers');
     assert.ok(permitidaPorCsp('https://fonts.googleapis.com/css2?family=Outfit', csp['style-src']));
     assert.ok(permitidaPorCsp('https://fonts.gstatic.com/s/outfit/v1/a.woff2', csp['font-src']));
   });

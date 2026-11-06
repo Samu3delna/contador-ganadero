@@ -33,7 +33,7 @@ El componente no está integrado en los nuevos artículos. No habilitarlo en lay
 
 - Editor existente: `ca-pub-1077407420035302`.
 - `frontend/public/ads.txt` conserva `google.com, pub-1077407420035302, DIRECT, f08c47fec0942fa0`.
-- Consulta HTTP directa de `https://contadorganandero.com/ads.txt`: **200**, contenido coincide con el archivo local. El navegador de búsqueda no pudo abrirlo; PowerShell sí confirmó la respuesta.
+- Consulta HTTP directa de `https://contadorganadero.com/ads.txt`: **200**, contenido coincide con el archivo local. El navegador de búsqueda no pudo abrirlo; PowerShell sí confirmó la respuesta.
 - La nueva meta está comprobada en el checkout mediante prueba automatizada. **Todavía no está desplegada**.
 - No se inspeccionó una sesión del panel AdSense ni Search Console; propiedad aceptada por Google, estado de revisión y anuncios automáticos permanecen sin verificar.
 - `node --test frontend/tests/adPolicy.test.js`: **6/6 pasan**. Incluye denegación por ruta, consentimiento, sesión, plan, configuración; verificación estática y simulación de carga/error del script con JSDOM. No llama a Google ni prueba anuncios reales.
@@ -48,7 +48,7 @@ Desmontar una ubicación SPA evita nuevas solicitudes propias, pero no descarga 
 
 1. Revisar editorialmente el contenido original, afirmaciones del producto, navegación, contacto y políticas de privacidad.
 2. Desplegar solo tras autorización; confirmar meta y ads.txt públicos en el dominio exacto.
-3. En AdSense → Sitios → contadorganandero.com, seleccionar meta/ads.txt como verificación y confirmar el editor. Verificar y solicitar revisión.
+3. En AdSense → Sitios → contadorganadero.com, seleccionar meta/ads.txt como verificación y confirmar el editor. Verificar y solicitar revisión.
 4. Mantener anuncios automáticos y ubicaciones desactivados durante la revisión; verificar el estado real en el panel.
 5. Resolver avisos concretos que Google presente. No prometer aprobación ni plazo.
 6. Tras aprobación y autorización separada: integrar CMP, revisar política de privacidad/proveedores, elegir una ruta editorial, validar posición y configurar su bloque real.

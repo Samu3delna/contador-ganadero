@@ -22,6 +22,17 @@ if (ga4Id) {
   window.gtag = gtag;
 }
 
+// Tras un nuevo despliegue en Cloudflare, los chunks con hash antiguo dejan de existir y el
+// fallback SPA devuelve index.html (text/html). Recargamos una sola vez para obtener los assets nuevos.
+window.addEventListener('vite:preloadError', (event) => {
+  const clave = 'cg-recarga-assets';
+  if (sessionStorage.getItem(clave)) return;
+  sessionStorage.setItem(clave, '1');
+  event.preventDefault();
+  window.location.reload();
+});
+window.addEventListener('load', () => sessionStorage.removeItem('cg-recarga-assets'));
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />

@@ -42,7 +42,7 @@ describe('Meta Data Deletion Callback & Endpoints', () => {
   beforeAll(() => {
     app = createApp();
     process.env.META_APP_SECRET = TEST_APP_SECRET;
-    process.env.PUBLIC_SITE_URL = 'https://contadorganandero.com';
+    process.env.PUBLIC_SITE_URL = 'https://contadorganadero.com';
   });
 
   test('parseSignedRequest verifica correctamente la firma HMAC-SHA256 de Meta', () => {
@@ -112,7 +112,7 @@ describe('Meta Data Deletion Callback & Endpoints', () => {
     expect(res.body).toHaveProperty('confirmation_code');
     expect(res.body.confirmation_code).toMatch(/^[A-Z0-9]+$/);
     expect(res.body.url).toBe(
-      `https://contadorganandero.com/eliminacion-datos?id=${res.body.confirmation_code}`
+      `https://contadorganadero.com/eliminacion-datos?id=${res.body.confirmation_code}`
     );
 
     // Verificar que el usuario fue eliminado de la base de datos
@@ -144,7 +144,7 @@ describe('Meta Data Deletion Callback & Endpoints', () => {
       .send({ signed_request: signedRequest });
 
     expect(res.status).toBe(200);
-    expect(res.body.url).toContain('https://contadorganandero.com/eliminacion-datos?id=');
+    expect(res.body.url).toContain('https://contadorganadero.com/eliminacion-datos?id=');
     expect(res.body.confirmation_code).toMatch(/^[A-Z0-9]+$/);
 
     const guardada = await SolicitudEliminacion.findOne({

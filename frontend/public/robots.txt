@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Authentication and noindex govern private routes; robots is not access control.
-Sitemap: https://contadorganandero.com/sitemap.xml
+Sitemap: https://contadorganadero.com/sitemap.xml

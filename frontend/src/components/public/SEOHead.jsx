@@ -30,12 +30,12 @@ export default function SEOHead() {
       meta('description', description);
       meta('robots', isPublic && !missing ? 'index, follow' : 'noindex, follow');
       meta('og:title', title, true); meta('og:description', description, true);
-      meta('og:url', `https://contadorganandero.com${pathname}`, true);
+      meta('og:url', `https://contadorganadero.com${pathname}`, true);
       meta('og:type', pathname.startsWith('/academia/') ? 'article' : 'website', true);
       meta('twitter:card', 'summary'); meta('twitter:title', title); meta('twitter:description', description);
       let canonical = document.head.querySelector('link[rel="canonical"]');
       if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.append(canonical); }
-      canonical.href = `https://contadorganandero.com${pathname}`;
+      canonical.href = `https://contadorganadero.com${pathname}`;
     };
     update();
     const observer = new MutationObserver(update);

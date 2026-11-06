@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
 import path from 'node:path';
 
-const origin = 'https://contadorganandero.com';
+const origin = 'https://contadorganadero.com';
 const routes = ['/', '/producto', ...['dashboard','facturas','ingresos','gastos','inventario','costos','impuestos'].map(s => `/producto/${s}`), '/precios', '/preguntas-frecuentes', '/contacto', '/soluciones'];
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
 try {
