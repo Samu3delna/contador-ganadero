@@ -161,15 +161,18 @@ function validarEntorno(arg1 = process.env, arg2 = {}) {
     }
   }
 
-  // 7. Secretos de webhooks (>= 32 caracteres cuando están presentes o en producción)
-  const webhookVars = ['ONVO_WEBHOOK_SECRET', 'EMAIL_WEBHOOK_SECRET'];
+  // 7. Secretos de webhooks (EMAIL >= 32 chars; ONVO >= 16 chars porque ONVO genera su propio secreto)
+  const webhookSpecs = [
+    { name: 'ONVO_WEBHOOK_SECRET', minLen: 16 },
+    { name: 'EMAIL_WEBHOOK_SECRET', minLen: 32 },
+  ];
 
-  for (const varName of webhookVars) {
+  for (const { name: varName, minLen } of webhookSpecs) {
     const val = envObj[varName];
-    if (requireWebhooks && (!val || typeof val !== 'string' || val.trim().length < 32 || esPlaceholder(val))) {
-      errores.push(`${varName} es obligatorio y debe tener al menos 32 caracteres.`);
-    } else if (val && (val.trim().length < 32 || esPlaceholder(val))) {
-      errores.push(`${varName} debe tener al menos 32 caracteres.`);
+    if (requireWebhooks && (!val || typeof val !== 'string' || val.trim().length < minLen || esPlaceholder(val))) {
+      errores.push(`${varName} es obligatorio y debe tener al menos ${minLen} caracteres.`);
+    } else if (val && (val.trim().length < minLen || esPlaceholder(val))) {
+      errores.push(`${varName} debe tener al menos ${minLen} caracteres.`);
     }
   }
 

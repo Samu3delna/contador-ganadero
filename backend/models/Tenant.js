@@ -197,6 +197,9 @@ const tenantSchema = new mongoose.Schema({
   onvoSubscriptionId: {
     type: String,
   },
+  onvoSubscriptionIdPendiente: {
+    type: String,
+  },
   onvoPriceId: {
     type: String,
     trim: true,
@@ -245,6 +248,7 @@ const tenantSchema = new mongoose.Schema({
 // === ÍNDICES ===
 tenantSchema.index({ onvoCustomerId: 1 }, { unique: true, sparse: true });
 tenantSchema.index({ onvoSubscriptionId: 1 }, { unique: true, sparse: true });
+tenantSchema.index({ onvoSubscriptionIdPendiente: 1 }, { sparse: true });
 
 tenantSchema.pre('save', function (next) {
   try {

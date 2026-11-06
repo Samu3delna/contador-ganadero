@@ -5,12 +5,36 @@ const { CATALOGO_PLANES, PLANES_VALIDOS } = require('../config/planes');
 const onvo = require('../services/onvoService');
 
 /**
- * Mapeo plan -> priceId de ONVO (precios recurrentes creados en el Dashboard)
- * Cargado desde variables de entorno ONVO_PRICE_*
+ * Resuelve dinámicamente el priceId de ONVO para un plan desde variables de entorno.
+ * Acepta tanto ONVO_PRICE_PRO como el alias ONVO_PRO_PRICE_ID por compatibilidad.
  */
-const PLAN_TO_PRICE = {
-  free: process.env.ONVO_PRICE_FREE,
-  pro: process.env.ONVO_PRICE_PRO,
+const obtenerPriceIdPorPlan = (planId) => {
+  if (planId === 'pro') {
+    return process.env.ONVO_PRICE_PRO || process.env.ONVO_PRO_PRICE_ID;
+  }
+  if (planId === 'free') {
+    return process.env.ONVO_PRICE_FREE;
+  }
+  return undefined;
+};
+
+/**
+ * Convierte fechas de ONVO (ISO string, Unix segundos o Unix milisegundos) a Date válido.
+ */
+const parsearFechaOnvo = (valor, baseDate = new Date()) => {
+  if (valor !== undefined && valor !== null && valor !== '') {
+    let candidato;
+    if (typeof valor === 'number' || /^\d+$/.test(String(valor).trim())) {
+      const num = Number(valor);
+      candidato = new Date(num < 1e12 ? num * 1000 : num);
+    } else {
+      candidato = new Date(valor);
+    }
+    if (!Number.isNaN(candidato.getTime()) && candidato.getFullYear() >= 2020) {
+      return candidato;
+    }
+  }
+  return new Date(baseDate.getTime() + 30 * 86400000);
 };
 
 /**
@@ -28,7 +52,7 @@ const crearSesionCheckout = async (req, res, next) => {
       throw new Error('planId inválido. El único plan de pago es: pro');
     }
 
-    const priceId = PLAN_TO_PRICE[planId];
+    const priceId = obtenerPriceIdPorPlan(planId);
     if (!priceId) {
       res.status(500);
       throw new Error(`Price ID no configurado para el plan ${planId}. Revisa ONVO_PRICE_${planId.toUpperCase()} en .env`);
@@ -50,7 +74,6 @@ const crearSesionCheckout = async (req, res, next) => {
       });
       customerId = cliente.id;
       tenant.onvoCustomerId = customerId;
-      await tenant.save();
     }
 
     const suscripcion = await onvo.crearSuscripcion({
@@ -63,6 +86,10 @@ const crearSesionCheckout = async (req, res, next) => {
         usuarioId: req.usuario._id.toString(),
       },
     });
+
+    tenant.onvoSubscriptionIdPendiente = suscripcion.id;
+    tenant.onvoPriceId = priceId;
+    await tenant.save();
 
     res.json({
       subscriptionId: suscripcion.id,
@@ -82,15 +109,29 @@ const crearSesionCheckout = async (req, res, next) => {
 const cancelarSuscripcionTenant = async (req, res, next) => {
   try {
     const tenant = req.tenant;
-    if (!tenant.onvoSubscriptionId) {
+    const tieneEstadoPagadoOInactivo = tenant.plan !== 'free' || tenant.estado !== 'activo';
+
+    if (!tenant.onvoSubscriptionId && !tieneEstadoPagadoOInactivo) {
       res.status(400);
       throw new Error('No tienes una suscripción de ONVO Pay activa.');
     }
 
-    await onvo.cancelarSuscripcion(tenant.onvoSubscriptionId);
+    if (tenant.onvoSubscriptionId) {
+      try {
+        await onvo.cancelarSuscripcion(tenant.onvoSubscriptionId);
+      } catch (err) {
+        // Si la suscripción ya no existe o ya estaba cancelada en ONVO (404), permitir bajar a free localmente
+        if (err.status !== 404 && !/already cancel|not found|no encontrada/i.test(err.message || '')) {
+          throw err;
+        }
+      }
+    }
 
     tenant.onvoSubscriptionId = undefined;
+    tenant.onvoSubscriptionIdPendiente = undefined;
     tenant.estado = 'activo';
+    tenant.periodoGraciaFin = null;
+    tenant.suspendidoEn = undefined;
     tenant.canceladoEn = new Date();
     tenant.aplicarPlan('free');
     await tenant.save();
@@ -103,20 +144,55 @@ const cancelarSuscripcionTenant = async (req, res, next) => {
 
 /**
  * @desc    Obtener estado de la suscripción del tenant actual
+ *          (incluye auto-conciliación si hay una suscripción recién activada en ONVO)
  * @route   GET /api/onvo/estado
  * @access  Privado (requiere tenant)
  */
 const obtenerEstadoSuscripcion = async (req, res, next) => {
   try {
-    const tenant = req.tenant;
+    let tenant = req.tenant;
     let suscripcionOnvo = null;
+    const subIdAConsultar = tenant.onvoSubscriptionId || tenant.onvoSubscriptionIdPendiente;
 
-    if (tenant.onvoSubscriptionId && process.env.ONVO_SECRET_KEY) {
+    if (subIdAConsultar && process.env.ONVO_SECRET_KEY) {
       try {
-        suscripcionOnvo = await onvo.obtenerSuscripcion(tenant.onvoSubscriptionId);
+        suscripcionOnvo = await onvo.obtenerSuscripcion(subIdAConsultar);
       } catch (err) {
         console.warn('No se pudo recuperar suscripción de ONVO:', err.message);
       }
+    }
+
+    // Auto-conciliación: si el SDK confirmó el pago y ONVO reporta la suscripción activa
+    // antes de que llegue el webhook, activar el plan Pro de forma idempotente.
+    if (
+      suscripcionOnvo &&
+      ['active', 'trialing'].includes(suscripcionOnvo.status) &&
+      (tenant.plan !== 'pro' || tenant.estado !== 'activo' || tenant.onvoSubscriptionId !== suscripcionOnvo.id)
+    ) {
+      const syncKey = `sync:${suscripcionOnvo.id}:${suscripcionOnvo.currentPeriodEnd || suscripcionOnvo.periodEnd || 'active'}`;
+      const fechaRenovacion = parsearFechaOnvo(
+        suscripcionOnvo.currentPeriodEnd || suscripcionOnvo.periodEnd,
+        new Date()
+      );
+      await Tenant.updateOne(
+        { _id: tenant._id, onvoEventosAplicados: { $ne: syncKey } },
+        {
+          $set: {
+            plan: 'pro',
+            limites: Tenant.obtenerLimitesPlan('pro'),
+            estado: 'activo',
+            onvoSubscriptionId: suscripcionOnvo.id,
+            onvoSubscriptionIdPendiente: null,
+            onvoCustomerId: suscripcionOnvo.customerId || tenant.onvoCustomerId,
+            periodoRenovacion: fechaRenovacion,
+            periodoGraciaFin: null,
+          },
+          $addToSet: { onvoEventosAplicados: syncKey },
+        },
+        { runValidators: true }
+      );
+      const recargado = await Tenant.findById(tenant._id);
+      if (recargado) tenant = recargado;
     }
 
     res.json({
@@ -131,7 +207,7 @@ const obtenerEstadoSuscripcion = async (req, res, next) => {
       onvo: suscripcionOnvo ? {
         id: suscripcionOnvo.id,
         status: suscripcionOnvo.status,
-        currentPeriodEnd: suscripcionOnvo.currentPeriodEnd,
+        currentPeriodEnd: suscripcionOnvo.currentPeriodEnd || suscripcionOnvo.periodEnd,
         cancelAtPeriodEnd: suscripcionOnvo.cancelAtPeriodEnd,
       } : null,
     });
@@ -170,7 +246,8 @@ const secretoWebhookValido = (req) => {
  * ONVO no envía un ID de evento global; usamos type + id del objeto.
  */
 const construirEventoId = (type, data) => {
-  const objetoId = data?.id || data?.paymentIntentId || (data?.subscriptionId && data?.periodEnd ? `${data.subscriptionId}:${data.periodEnd}` : null);
+  const finPeriodo = data?.periodEnd || data?.currentPeriodEnd;
+  const objetoId = data?.id || data?.paymentIntentId || (data?.subscriptionId && finPeriodo ? `${data.subscriptionId}:${finPeriodo}` : null);
   if (objetoId) return `${type}:${objetoId}`;
   const hash = crypto.createHash('sha256').update(JSON.stringify(data || {})).digest('hex');
   return `${type}:${hash}`;
@@ -178,7 +255,7 @@ const construirEventoId = (type, data) => {
 
 /**
  * Busca el Tenant asociado a un evento ONVO usando, en orden:
- * metadata.tenantId -> subscriptionId -> customerId.
+ * metadata.tenantId -> subscriptionId (activa o pendiente) -> customerId.
  */
 const buscarTenantParaEvento = async (datos) => {
   const tenantId = datos?.metadata?.tenantId;
@@ -187,7 +264,12 @@ const buscarTenantParaEvento = async (datos) => {
     if (porId) return porId;
   }
   if (datos?.subscriptionId) {
-    const porSub = await Tenant.findOne({ onvoSubscriptionId: datos.subscriptionId });
+    const porSub = await Tenant.findOne({
+      $or: [
+        { onvoSubscriptionId: datos.subscriptionId },
+        { onvoSubscriptionIdPendiente: datos.subscriptionId },
+      ],
+    });
     if (porSub) return porSub;
   }
   const customerId = datos?.customerId || datos?.customer?.id;
@@ -247,29 +329,62 @@ const webhookOnvo = async (req, res) => {
  */
 const procesarEventoOnvo = async (type, datos, subscriptionEvent) => {
   const tenant = await buscarTenantParaEvento(datos);
-  const renewal = ['subscription.renewal.succeeded', 'subscription.renewal.failed'].includes(type);
-  if (renewal && !tenant) throw new Error('Tenant del evento no encontrado');
+  const esRenovacionExito = type === 'subscription.renewal.succeeded';
+  const esRenovacionFallo = type === 'subscription.renewal.failed';
+  const esPagoInicialSuscripcion =
+    ['payment_intent.succeeded', 'payment-intent.succeeded'].includes(type) &&
+    Boolean(datos?.subscriptionId || datos?.metadata?.planId || tenant?.onvoSubscriptionIdPendiente);
+
+  if ((esRenovacionExito || esRenovacionFallo) && !tenant) {
+    throw new Error('Tenant del evento no encontrado');
+  }
+
   const eventoId = subscriptionEvent.eventoId;
-  if (renewal) {
+  if (esRenovacionExito || esRenovacionFallo || (esPagoInicialSuscripcion && tenant)) {
     const cambios = {};
-    if (type === 'subscription.renewal.succeeded') {
-      const planId = datos.metadata?.planId;
-      if (planId && !PLANES_VALIDOS.includes(planId)) throw new Error('Plan inválido');
-      if (planId) { cambios.plan = planId; cambios.limites = Tenant.obtenerLimitesPlan(planId); }
-      Object.assign(cambios, { estado: 'activo', onvoSubscriptionId: datos.subscriptionId,
-        onvoCustomerId: datos.customerId || tenant.onvoCustomerId,
-        periodoRenovacion: datos.periodEnd ? new Date(datos.periodEnd) : new Date(subscriptionEvent.createdAt.getTime() + 30 * 86400000),
-        periodoGraciaFin: null, 'consumoActual.conteosMes': 0, 'consumoActual.tokensChatMes': 0,
-        'consumoActual.periodoActual': require('../utils/periodoCR').periodoCR() });
+    if (esRenovacionExito || esPagoInicialSuscripcion) {
+      const planId = datos.metadata?.planId || 'pro';
+      if (!PLANES_VALIDOS.includes(planId)) throw new Error('Plan inválido');
+      const subIdEfectivo = datos.subscriptionId || tenant.onvoSubscriptionIdPendiente || tenant.onvoSubscriptionId;
+      cambios.plan = planId;
+      cambios.limites = Tenant.obtenerLimitesPlan(planId);
+      Object.assign(cambios, {
+        estado: 'activo',
+        ...(subIdEfectivo ? { onvoSubscriptionId: subIdEfectivo } : {}),
+        onvoSubscriptionIdPendiente: null,
+        onvoCustomerId: datos.customerId || datos.customer?.id || tenant.onvoCustomerId,
+        periodoRenovacion: parsearFechaOnvo(datos.periodEnd || datos.currentPeriodEnd, subscriptionEvent.createdAt),
+        periodoGraciaFin: null,
+        'consumoActual.conteosMes': 0,
+        'consumoActual.tokensChatMes': 0,
+        'consumoActual.periodoActual': require('../utils/periodoCR').periodoCR(),
+      });
+
+      const aplicado = await Tenant.updateOne(
+        { _id: tenant._id, onvoEventosAplicados: { $ne: eventoId } },
+        { $set: cambios, $addToSet: { onvoEventosAplicados: eventoId } },
+        { runValidators: true }
+      );
+      if (
+        aplicado.modifiedCount &&
+        subIdEfectivo &&
+        tenant.onvoSubscriptionId &&
+        tenant.onvoSubscriptionId !== subIdEfectivo
+      ) {
+        try { await onvo.cancelarSuscripcion(tenant.onvoSubscriptionId); }
+        catch { console.warn('Cancelación de suscripción anterior requiere conciliación operativa'); }
+      }
     } else {
-      Object.assign(cambios, { estado: 'periodo_gracia',
-        periodoGraciaFin: new Date(subscriptionEvent.createdAt.getTime() + 7 * 86400000), suspendidoEn: subscriptionEvent.createdAt });
-    }
-    const aplicado = await Tenant.updateOne({ _id: tenant._id, onvoEventosAplicados: { $ne: eventoId } },
-      { $set: cambios, $addToSet: { onvoEventosAplicados: eventoId } }, { runValidators: true });
-    if (aplicado.modifiedCount && type === 'subscription.renewal.succeeded' && tenant.onvoSubscriptionId && tenant.onvoSubscriptionId !== datos.subscriptionId) {
-      try { await onvo.cancelarSuscripcion(tenant.onvoSubscriptionId); }
-      catch { console.warn('Cancelación de suscripción anterior requiere conciliación operativa'); }
+      Object.assign(cambios, {
+        estado: 'periodo_gracia',
+        periodoGraciaFin: new Date(subscriptionEvent.createdAt.getTime() + 7 * 86400000),
+        suspendidoEn: subscriptionEvent.createdAt,
+      });
+      await Tenant.updateOne(
+        { _id: tenant._id, onvoEventosAplicados: { $ne: eventoId } },
+        { $set: cambios, $addToSet: { onvoEventosAplicados: eventoId } },
+        { runValidators: true }
+      );
     }
   }
   await SubscriptionEvent.updateOne({ _id: subscriptionEvent._id, claimToken: subscriptionEvent.claimToken },
