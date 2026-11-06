@@ -1,12 +1,14 @@
-import { Tractor, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 export default function LoginHeader({ esRegistro = false }) {
   return (
     <div className="login-header">
-      <span className={`login-logo ${esRegistro ? 'login-logo--registro' : ''}`}>
-        <Tractor
-          size={44}
-          color="var(--color-primario-claro)"
+      <span className={`login-logo ${esRegistro ? 'login-logo--registro' : ''}`} style={{ background: '#f5f8f5' }}>
+        <img
+          src="/logo.svg"
+          width={48}
+          height={48}
+          alt="Logo de ContadorGanadero"
           className="transition-transform duration-500 ease-out"
         />
       </span>

@@ -1,25 +1,5 @@
 import { useEffect } from 'react';
-
-/**
- * Hook ligero de SEO para SPA (sin dependencias externas).
- *
- * Actualiza dinámicamente:
- *  - <title> (meta-título, distinto del H1)
- *  - meta description
- *  - canonical (URL absoluta limpia)
- *  - Open Graph (og:title, og:description, og:url)
- *  - robots (index/noindex)
- *  - JSON-LD (opcional)
- *
- * Uso:
- *   useSeo({
- *     title: '...',
- *     description: '...',
- *     path: '/',
- *     robots: 'index, follow',
- *     jsonLd: [ {...}, {...} ],
- *   });
- */
+import { DEFAULT_OG_IMAGE, SITE_ORIGIN } from '../config/seoCatalog';
 
 function upsertMeta(attr, key, content) {
   if (!content) return;
@@ -72,17 +52,15 @@ export default function useSeo({
     if (description) upsertMeta('name', 'description', description);
     upsertMeta('name', 'robots', robots);
 
-    const origin = window.location.origin;
     const cleanPath = path || window.location.pathname;
-    upsertCanonical(`${origin}${cleanPath}`);
+    const canonicalUrl = `${SITE_ORIGIN}${cleanPath}`;
+    upsertCanonical(canonicalUrl);
 
-    // Open Graph
     if (title) upsertMeta('property', 'og:title', title);
     if (description) upsertMeta('property', 'og:description', description);
-    upsertMeta('property', 'og:url', `${origin}${cleanPath}`);
-    if (image) upsertMeta('property', 'og:image', `${origin}${image}`);
+    upsertMeta('property', 'og:url', canonicalUrl);
+    upsertMeta('property', 'og:image', image ? `${SITE_ORIGIN}${image}` : DEFAULT_OG_IMAGE);
 
-    // JSON-LD (se limpia al desmontar para no acumular schema)
     if (jsonLd) {
       upsertJsonLd('seo-jsonld', jsonLd);
     }

@@ -2,23 +2,24 @@ import { createServer } from 'vite';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
 import path from 'node:path';
+import { resolvePageSeo, SITE_ORIGIN } from '../src/config/seoCatalog.js';
 
-const origin = 'https://contadorganadero.com';
-const titles = {
-  '/': 'Administración agropecuaria para Costa Rica',
-  '/producto': 'Conoce el producto', '/producto/dashboard': 'Dashboard financiero',
-  '/producto/facturas': 'Organiza tus facturas XML', '/producto/ingresos': 'Registro de ingresos',
-  '/producto/gastos': 'Organiza los gastos de tu finca', '/producto/inventario': 'Inventario agropecuario',
-  '/producto/costos': 'Costos de producción', '/producto/impuestos': 'Información para tus impuestos',
-  '/tutoriales': 'Tutoriales paso a paso', '/academia': 'Academia agropecuaria',
-  '/precios': 'Planes Gratis y Pro', '/soluciones': 'Soluciones para productores y contadores',
-  '/contacto': 'Contacto', '/preguntas-frecuentes': 'Preguntas frecuentes',
-};
-const routes = ['/', '/producto', ...['dashboard','facturas','ingresos','gastos','inventario','costos','impuestos'].map(s => `/producto/${s}`), '/tutoriales', '/academia', '/precios', '/preguntas-frecuentes', '/contacto', '/soluciones'];
+const routes = [
+  '/',
+  '/producto',
+  ...['dashboard', 'facturas', 'ingresos', 'gastos', 'inventario', 'costos', 'impuestos'].map(s => `/producto/${s}`),
+  '/tutoriales',
+  '/academia',
+  '/precios',
+  '/preguntas-frecuentes',
+  '/contacto',
+  '/soluciones',
+];
+const legalSitemapRoutes = ['/privacidad', '/terminos', '/condiciones-servicio', '/eliminacion-datos'];
+
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
 try {
   const { render } = await server.ssrLoadModule('/src/entry-public.jsx');
-  // Discover article URLs from actual library links, keeping one source of truth.
   for (const library of ['/academia', '/tutoriales']) {
     const dom = new JSDOM(await render(library));
     for (const a of dom.window.document.querySelectorAll('a[href]')) {
@@ -35,25 +36,73 @@ try {
     document.getElementById('root').innerHTML = markup;
     const heading = document.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim();
     if (!heading) throw new Error(`No H1: ${route}`);
-    const pageTitle = titles[route] || heading;
-    document.title = `${pageTitle} | ContadorGanadero`;
-    const description = document.querySelector('main p')?.textContent?.slice(0,170) || heading;
-    for (const [attr, key, value] of [['name','description',description],['name','robots','index, follow'],['property','og:title',document.title],['property','og:description',description],['property','og:url',origin+route],['property','og:type',route.startsWith('/academia/')?'article':'website'],['name','twitter:card','summary'],['name','twitter:title',document.title],['name','twitter:description',description]]) {
+    const seo = resolvePageSeo(route, document);
+    document.title = seo.title;
+    for (const [attr, key, value] of [
+      ['name', 'description', seo.description],
+      ['name', 'keywords', seo.keywords],
+      ['name', 'robots', 'index, follow'],
+      ['property', 'og:site_name', 'ContadorGanadero'],
+      ['property', 'og:title', seo.title],
+      ['property', 'og:description', seo.description],
+      ['property', 'og:url', seo.canonical],
+      ['property', 'og:type', seo.ogType],
+      ['property', 'og:image', seo.image],
+      ['property', 'og:image:alt', 'Logo oficial de ContadorGanadero — Contador ganadero y contabilidad ganadera en Costa Rica'],
+      ['name', 'twitter:card', 'summary_large_image'],
+      ['name', 'twitter:title', seo.title],
+      ['name', 'twitter:description', seo.description],
+      ['name', 'twitter:image', seo.image],
+    ]) {
       let el = document.querySelector(`meta[${attr}="${key}"]`);
-      if (!el) { el=document.createElement('meta'); el.setAttribute(attr,key); document.head.append(el); }
-      el.content=value;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.append(el);
+      }
+      el.content = value;
     }
-    let canonical=document.querySelector('link[rel="canonical"]');
-    if (!canonical) { canonical=document.createElement('link'); canonical.rel='canonical'; document.head.append(canonical); }
-    canonical.href=origin+route;
-    const schema=document.createElement('script'); schema.type='application/ld+json';
-    schema.textContent=JSON.stringify({'@context':'https://schema.org','@type':'WebPage',name:heading,url:origin+route,description}).replace(/</g,'\\u003c');
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.append(canonical);
+    }
+    canonical.href = seo.canonical;
+    const schema = document.createElement('script');
+    schema.type = 'application/ld+json';
+    schema.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': seo.ogType === 'article' ? 'Article' : 'WebPage',
+      name: seo.title,
+      headline: heading,
+      url: seo.canonical,
+      description: seo.description,
+      inLanguage: 'es-CR',
+      isPartOf: {
+        '@type': 'WebSite',
+        name: 'ContadorGanadero',
+        alternateName: ['Contador Ganadero', 'Contador Ganadera', 'contadorganadero.com', 'Contabilidad Ganadera Costa Rica'],
+        url: SITE_ORIGIN,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'ContadorGanadero',
+        url: SITE_ORIGIN,
+        logo: { '@type': 'ImageObject', url: `${SITE_ORIGIN}/logo.png` },
+      },
+    }).replace(/</g, '\\u003c');
     document.head.append(schema);
-    const file=path.join('dist',route === '/' ? 'index.html' : `${route.slice(1)}.html`);
-    await mkdir(path.dirname(file),{recursive:true}); await writeFile(file,dom.serialize());
+    const file = path.join('dist', route === '/' ? 'index.html' : `${route.slice(1)}.html`);
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, dom.serialize());
     dom.window.close();
   }
-  const sitemap=`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${routes.map(route=>`\n<url><loc>${origin}${route}</loc></url>`).join('')}\n</urlset>\n`;
-  await writeFile('public/sitemap.xml',sitemap); await writeFile('dist/sitemap.xml',sitemap);
-  console.log(`Prerender: ${routes.length} public pages.`);
-} finally { await server.close(); }
+  const allSitemapRoutes = [...routes, ...legalSitemapRoutes];
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${allSitemapRoutes.map(route => `\n<url><loc>${SITE_ORIGIN}${route}</loc></url>`).join('')}\n</urlset>\n`;
+  await writeFile('public/sitemap.xml', sitemap);
+  await writeFile('dist/sitemap.xml', sitemap);
+  console.log(`Prerender: ${routes.length} public pages (${allSitemapRoutes.length} sitemap URLs).`);
+} finally {
+  await server.close();
+}
