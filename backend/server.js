@@ -23,8 +23,11 @@ const {
   getTrustProxyHops,
 } = require('./config/env');
 
-// Validar variables críticas al arrancar (en producción aborta si falta o es débil algún secreto)
-validarEntorno({ exitOnError: process.env.NODE_ENV === 'production' });
+// Validar variables críticas antes de aceptar solicitudes.
+// En desarrollo también fallar temprano: sin JWT_REFRESH_SECRET el login
+// parece aceptar credenciales, pero termina en 500 al emitir la cookie.
+// Jest inyecta MONGODB_URI después de importar el servidor.
+validarEntorno({ exitOnError: process.env.NODE_ENV !== 'test' });
 
 const express = require('express');
 const cors = require('cors');
