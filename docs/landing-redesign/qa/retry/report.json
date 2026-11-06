@@ -1,0 +1,133 @@
+{
+  "startedAt": "2026-11-06T22:02:46.850Z",
+  "browser": "156.0.4314.58",
+  "widths": [
+    320,
+    375,
+    768,
+    1024,
+    1440
+  ],
+  "results": [
+    {
+      "name": "320px navigation and demo",
+      "passed": true
+    },
+    {
+      "name": "320px unknown /pagina-inexistente-qa is noindex",
+      "passed": true
+    },
+    {
+      "name": "320px unknown /producto/toString is noindex",
+      "passed": true
+    },
+    {
+      "name": "320px unknown /producto/__proto__ is noindex",
+      "passed": true
+    },
+    {
+      "name": "375px navigation and demo",
+      "passed": true
+    },
+    {
+      "name": "375px unknown /pagina-inexistente-qa is noindex",
+      "passed": true
+    },
+    {
+      "name": "375px unknown /producto/toString is noindex",
+      "passed": true
+    },
+    {
+      "name": "375px unknown /producto/__proto__ is noindex",
+      "passed": true
+    },
+    {
+      "name": "768px navigation and demo",
+      "passed": true
+    },
+    {
+      "name": "768px unknown /pagina-inexistente-qa is noindex",
+      "passed": true
+    },
+    {
+      "name": "768px unknown /producto/toString is noindex",
+      "passed": true
+    },
+    {
+      "name": "768px unknown /producto/__proto__ is noindex",
+      "passed": true
+    },
+    {
+      "name": "1024px navigation and demo",
+      "passed": true
+    },
+    {
+      "name": "1024px unknown /pagina-inexistente-qa is noindex",
+      "passed": true
+    },
+    {
+      "name": "1024px unknown /producto/toString is noindex",
+      "passed": true
+    },
+    {
+      "name": "1024px unknown /producto/__proto__ is noindex",
+      "passed": true
+    },
+    {
+      "name": "1440px navigation and demo",
+      "passed": true
+    },
+    {
+      "name": "1440px unknown /pagina-inexistente-qa is noindex",
+      "passed": true
+    },
+    {
+      "name": "1440px unknown /producto/toString is noindex",
+      "passed": true
+    },
+    {
+      "name": "1440px unknown /producto/__proto__ is noindex",
+      "passed": true
+    }
+  ],
+  "failures": [],
+  "limitations": [
+    "External network requests blocked; synthetic unauthenticated API. No live account, payment or production writes.",
+    "Not a Lighthouse or complete WCAG audit."
+  ],
+  "routes": [
+    "/",
+    "/producto",
+    "/producto/dashboard",
+    "/producto/facturas",
+    "/producto/ingresos",
+    "/producto/gastos",
+    "/producto/inventario",
+    "/producto/costos",
+    "/producto/impuestos",
+    "/tutoriales",
+    "/academia",
+    "/precios",
+    "/preguntas-frecuentes",
+    "/contacto",
+    "/soluciones",
+    "/academia/organizar-ingresos-gastos",
+    "/academia/interpretar-facturas-xml",
+    "/academia/costos-produccion-ganadera",
+    "/academia/rentabilidad-agropecuaria",
+    "/academia/inventario-ganado",
+    "/academia/preparar-informacion-rea",
+    "/academia/registrar-ventas-agropecuarias",
+    "/tutoriales/conoce-contadorganadero",
+    "/tutoriales/dashboard",
+    "/tutoriales/registrar-ingresos",
+    "/tutoriales/facturas-xml",
+    "/tutoriales/inventario",
+    "/tutoriales/costos-produccion",
+    "/privacidad",
+    "/terminos",
+    "/condiciones-servicio",
+    "/eliminacion-datos"
+  ],
+  "finishedAt": "2026-11-06T22:03:02.614Z"
+}

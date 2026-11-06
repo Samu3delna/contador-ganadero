@@ -17,13 +17,13 @@
       "source": "cloudflare/skills",
       "sourceType": "github",
       "skillPath": "skills/cf-cli/SKILL.md",
-      "computedHash": "25ef0ab9b9443df2a62cdaefbdc9741ec60c66cc77ca0a5a40b9e1b9dc53e47d"
+      "computedHash": "320aa2e08aa36e62612d3d16648d5cf658f8f39add6d4a464c5305fce56f9907"
     },
     "cloudflare": {
       "source": "cloudflare/skills",
       "sourceType": "github",
       "skillPath": "skills/cloudflare/SKILL.md",
-      "computedHash": "16677254613c400b98dc62a6e46f21d11a38a89dfee54721afc7f213a9ac73e1"
+      "computedHash": "d97832f74387113dfbde08ac0461fa8403d01d6a0ac8726dec80e303911c6fe4"
     },
     "cloudflare-email-service": {
       "source": "cloudflare/skills",
@@ -35,7 +35,7 @@
       "source": "cloudflare/skills",
       "sourceType": "github",
       "skillPath": "skills/cloudflare-one/SKILL.md",
-      "computedHash": "8960cf7d83deb4e03fd22f8fc37dfeb90b2b6edc21745aa0114993159fd7401a"
+      "computedHash": "1d523d1efbd82e867c112a6962e1a49c8ebc4c99549133ae56901b1db64cb860"
     },
     "cloudflare-one-migrations": {
       "source": "cloudflare/skills",
@@ -143,7 +143,7 @@
       "source": "antfu/skills",
       "sourceType": "github",
       "skillPath": "skills/vite/SKILL.md",
-      "computedHash": "8a05956b65faa8131826da179f2d09afe73931971466d5640d95388b4182cda5"
+      "computedHash": "1f96e440b315aa6570b2638d699e339c6838ee99c0c97aad46506498b78bd054"
     },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",

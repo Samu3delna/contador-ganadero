@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía de Activación ONVO Pay LIVE — ContadorGanadero</title>
+  <style>
+    :root {
+      --bg: #0b111e;
+      --surface: #111a2e;
+      --surface-2: #17233d;
+      --border: #24355a;
+      --text: #e6edf7;
+      --muted: #94a3b8;
+      --primary: #10b981;
+      --primary-soft: rgba(16, 185, 129, 0.14);
+      --purple: #8b5cf6;
+      --purple-soft: rgba(139, 92, 246, 0.16);
+      --amber: #f59e0b;
+      --amber-soft: rgba(245, 158, 11, 0.14);
+      --red: #ef4444;
+      --blue: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at top right, #172554 0%, var(--bg) 45%);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 32px 20px 64px;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .hero {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(139, 92, 246, 0.14));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-soft);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.98rem;
+      max-width: 720px;
+    }
+
+    /* Answer Banner */
+    .answer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--purple);
+      border-radius: 14px;
+      padding: 22px 26px;
+      margin-bottom: 28px;
+    }
+
+    .answer-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #c4b5fd;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 18px;
+      margin-top: 16px;
+    }
+
+    .mini-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+
+    .mini-box h3 {
+      font-size: 0.98rem;
+      margin-bottom: 8px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mini-box ul {
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .mini-box li {
+      margin-bottom: 6px;
+    }
+
+    /* Steps */
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 32px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .step-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--purple-soft);
+      border: 1px solid rgba(139, 92, 246, 0.5);
+      color: #c4b5fd;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-header h2 {
+      font-size: 1.18rem;
+      font-weight: 700;
+    }
+
+    .tag {
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      background: rgba(56, 189, 248, 0.14);
+      color: var(--blue);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      margin-left: auto;
+    }
+
+    /* Code & Copy */
+    code {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      background: rgba(15, 23, 42, 0.75);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.86em;
+    }
+
+    .code-block {
+      background: #070b14;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 0.86rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      margin-top: 12px;
+      position: relative;
+    }
+
+    .copy-btn {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      float: right;
+    }
+
+    .copy-btn:hover {
+      background: var(--purple);
+      border-color: var(--purple);
+      color: #fff;
+    }
+
+    /* Alert */
+    .alert-warning {
+      background: var(--amber-soft);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fcd34d;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      margin-top: 14px;
+    }
+
+    .alert-success {
+      background: var(--primary-soft);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      margin-top: 14px;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: rgba(23, 35, 61, 0.5);
+    }
+
+    /* Flow Diagram */
+    .flow-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .flow-node {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+    }
+
+    .flow-node .num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .flow-node h4 {
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+    }
+
+    .flow-node p {
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    /* Checklist */
+    .checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.2s;
+    }
+
+    .check-item.done {
+      border-color: var(--primary);
+      background: rgba(16, 185, 129, 0.07);
+    }
+
+    .check-item input {
+      margin-top: 4px;
+      accent-color: var(--primary);
+      width: 17px;
+      height: 17px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Hero -->
+    <div class="hero">
+      <div>
+        <div class="badge-live"><span class="dot"></span> ONVO Pay Aprobado — Modo LIVE</div>
+        <h1>Guía de Activación ONVO Pay en Producción</h1>
+        <p class="subtitle">
+          Arquitectura real de <strong>ContadorGanadero</strong> (Cloudflare + Render): cómo funcionan juntos la <strong>API REST</strong>, el <strong>SDK Web</strong> y el <strong>Webhook</strong>, y qué configurar exactamente según tus capturas.
+        </p>
+      </div>
+    </div>
+
+    <!-- Direct Answer: API + Webhook -->
+    <div class="answer-card">
+      <div class="answer-title">
+        ⚡ ¿Usaremos Webhook y API? — ¡SÍ, AMBOS trabajan en equipo!
+      </div>
+      <p style="color: var(--muted); font-size: 0.94rem;">
+        El código de <strong>ContadorGanadero</strong> ya tiene programada la integración completa híbrida (<code>backend/services/onvoService.js</code>, <code>backend/controllers/onvoController.js</code> y <code>frontend/src/components/billing/OnvoCheckoutModal.jsx</code>). Cada uno cumple un rol indispensable:
+      </p>
+      <div class="grid-2">
+        <div class="mini-box">
+          <h3>🔌 1. API REST + SDK Web (Inicio y Cancelación)</h3>
+          <ul>
+            <li><strong>Crear Cliente (API):</strong> <code>POST /v1/customers</code> cuando el usuario da clic en <em>Mejorar a Pro</em>.</li>
+            <li><strong>Crear Suscripción (API):</strong> <code>POST /v1/subscriptions</code> con tu <code>ONVO_PRICE_PRO</code> e inyecta <code>metadata: { tenantId, planId: 'pro' }</code>.</li>
+            <li><strong>Cobrar con Tarjeta (SDK Web):</strong> El modal abre <code>window.onvo.pay()</code> con tu <strong>Llave Pública LIVE</strong> para capturar la tarjeta de forma segura.</li>
+            <li><strong>Cancelar (API):</strong> <code>DELETE /v1/subscriptions/:id</code> cuando el usuario cancela desde la app (ONVO no envía webhook de cancelación).</li>
+          </ul>
+        </div>
+        <div class="mini-box">
+          <h3>🔔 2. Webhook (Activación de Plan y Renovación Mensual)</h3>
+          <ul>
+            <li><strong>Endpoint en Render:</strong> <code>POST https://contador-ganadero.onrender.com/api/onvo/webhook</code>.</li>
+            <li><strong>Seguridad:</strong> Verifica el header <code>X-Webhook-Secret</code> con comparación criptográfica <em>timing-safe</em>.</li>
+            <li><strong>Idempotencia:</strong> Guarda cada evento en <code>SubscriptionEvent</code> en MongoDB para nunca duplicar efectos.</li>
+            <li><strong>Activación y Gracia:</strong> Con <code>subscription.renewal.succeeded</code> activa el <strong>Plan Pro</strong> y resetea cuotas; con <code>subscription.renewal.failed</code> da <strong>7 días de gracia</strong>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step by Step -->
+    <div class="section-title">🛠️ Qué debes crear y configurar en ONVO (Modo LIVE)</div>
+
+    <!-- Step 1 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <h2>Crear el Producto y Precio Recurrente ($10/mes) en ONVO</h2>
+        <span class="tag">Catálogo ONVO</span>
+      </div>
+      <p style="color: var(--muted); font-size: 0.93rem;">
+        Antes de cobrar, el backend necesita el <strong>ID del Precio (<code>priceId</code>)</strong> creado dentro del entorno <strong>MODO LIVE</strong>:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Campo en ONVO Dashboard</th>
+            <th>Valor a Configurar</th>
+            <th>Dónde se usa en nuestro código</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Nombre del Producto</strong></td>
+            <td><code>ContadorGanadero — Plan Pro</code></td>
+            <td>Catálogo interno de ONVO</td>
+          </tr>
+          <tr>
+            <td><strong>Tipo de Precio</strong></td>
+            <td><strong>Recurrente (Suscripción mensual)</strong></td>
+            <td>Requerido por <code>POST /v1/subscriptions</code></td>
+          </tr>
+          <tr>
+            <td><strong>Monto y Moneda</strong></td>
+            <td><strong>$10.00 USD</strong> / cada <strong>1 mes</strong></td>
+            <td>Coincide con <code>CATALOGO_PLANES</code> (<code>$10/mes</code>)</td>
+          </tr>
+          <tr>
+            <td><strong>ID del Precio generado</strong></td>
+            <td>Copia el ID del precio creado</td>
+            <td>Variable <code>ONVO_PRICE_PRO</code> en Render</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="alert-warning">
+        ⚠️ <strong>¡Ojo con el nombre de la variable!</strong> En <code>backend/controllers/onvoController.js</code> (línea 13) el servidor lee exactamente <code>ONVO_PRICE_PRO</code> (en <code>.env.example</code> aparecía como <code>ONVO_PRO_PRICE_ID</code>). Configura <strong><code>ONVO_PRICE_PRO</code></strong> en Render para que funcione a la primera.
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <h2>Copiar tus 2 Llaves API en Modo LIVE (Tu Captura #3)</h2>
+        <span class="tag">Credenciales LIVE</span>
+      </div>
+      <p style="color: var(--muted); font-size: 0.93rem;">
+        En tu tercera captura (<strong>Credenciales → Llaves API → MODO LIVE</strong>) ya tienes las 2 llaves activas creadas hoy:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Llave en tu Captura</th>
+            <th>Prefijo Visible</th>
+            <th>Variable en Render (Backend)</th>
+            <th>¿Va en Cloudflare (Frontend)?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Llave pública</strong> (Cliente)</td>
+            <td><code>onvo_live_publishable_key_qOcVef...</code></td>
+            <td><code>ONVO_PUBLISHABLE_KEY</code></td>
+            <td><strong>No hace falta.</strong> El backend se la envía dinámicamente al frontend en <code>POST /api/onvo/checkout</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Llave secreta</strong> (Acceso completo)</td>
+            <td><code>onvo_live_secret_key...vcIA</code></td>
+            <td><code>ONVO_SECRET_KEY</code></td>
+            <td><strong>¡JAMÁS!</strong> Solo vive en Render (Backend).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <h2>Crear el Webhook y Elegir los Eventos (Tus Capturas #1 y #2)</h2>
+        <span class="tag">Webhooks ONVO</span>
+      </div>
+      <p style="color: var(--muted); font-size: 0.93rem;">
+        En la pantalla de <strong>Webhooks → + Agregar webhook → Crear un destino de eventos</strong> (tu Captura #1):
+      </p>
+
+      <div class="grid-2">
+        <div class="mini-box" style="border-color: rgba(16, 185, 129, 0.5);">
+          <h3 style="color: #34d399;">✅ Eventos OBLIGATORIOS (Sección Suscripciones)</h3>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 8px;">
+            Escribe <code>subscription</code> en el buscador de eventos o baja a la sección de cargos recurrentes y marca estos dos:
+          </p>
+          <ul>
+            <li>
+              <code>subscription.renewal.succeeded</code><br/>
+              <small>Activa el Plan Pro en el primer cobro y renueva cuotas cada mes.</small>
+            </li>
+            <li>
+              <code>subscription.renewal.failed</code><br/>
+              <small>Pone la finca en <code>periodo_gracia</code> (7 días) si falla la tarjeta.</small>
+            </li>
+          </ul>
+        </div>
+
+        <div class="mini-box">
+          <h3 style="color: #38bdf8;">📋 Eventos Opcionales (Intenciones de Pago — Captura #1)</h3>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 8px;">
+            Los que aparecen en tu primera captura se pueden marcar como respaldo de auditoría (se guardan en <code>SubscriptionEvent</code>):
+          </p>
+          <ul>
+            <li><code>payment_intent.succeeded</code> (Pago exitoso)</li>
+            <li><code>payment_intent.failed</code> (Pago fallido)</li>
+            <li><code>payment_intent.canceled</code> (Pago cancelado)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('https://contador-ganadero.onrender.com/api/onvo/webhook'); this.innerText='¡Copiado!'; setTimeout(()=>this.innerText='Copiar URL', 2000);">Copiar URL</button>
+        <div style="color: var(--muted); font-size: 0.78rem; margin-bottom: 4px;">URL del destino (Paso 2 "Configurar destino" en ONVO):</div>
+        https://contador-ganadero.onrender.com/api/onvo/webhook
+      </div>
+
+      <div class="alert-success">
+        🔐 <strong>Secreto del Webhook (<code>X-Webhook-Secret</code>):</strong> Cuando termines el paso 3 ("Revisar y crear"), ONVO te entregará el <strong>Secreto de firma</strong> del endpoint. Cópialo y guárdalo en Render como <code>ONVO_WEBHOOK_SECRET</code>.
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <h2>Configurar las 4 Variables en Render (<code>contador-ganadero-api</code>)</h2>
+        <span class="tag">Render Environment</span>
+      </div>
+      <p style="color: var(--muted); font-size: 0.93rem;">
+        Ve a tu servicio <strong><code>contador-ganadero-api</code></strong> en Render → pestaña <strong>Environment</strong> y agrega/actualiza estas 4 variables:
+      </p>
+      <div class="code-block">
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('ONVO_SECRET_KEY=onvo_live_secret_key_...\nONVO_PUBLISHABLE_KEY=onvo_live_publishable_key_...\nONVO_PRICE_PRO=price_live_...\nONVO_WEBHOOK_SECRET=whsec_...'); this.innerText='¡Copiado!'; setTimeout(()=>this.innerText='Copiar bloque', 2000);">Copiar bloque</button>
+ONVO_SECRET_KEY=onvo_live_secret_key_...
+ONVO_PUBLISHABLE_KEY=onvo_live_publishable_key_...
+ONVO_PRICE_PRO=&lt;ID_DEL_PRECIO_MENSUAL_10_USD_EN_ONVO&gt;
+ONVO_WEBHOOK_SECRET=&lt;SECRETO_DEL_WEBHOOK_CREADO_EN_ONVO&gt;
+      </div>
+    </div>
+
+    <!-- Complete Architecture Flow -->
+    <div class="section-title">🔄 Cómo fluye un pago LIVE de principio a fin</div>
+    <div class="flow-steps">
+      <div class="flow-node">
+        <div class="num">Paso 1 • Frontend</div>
+        <h4>Clic en "Mejorar a Pro"</h4>
+        <p>En <code>PlanesPage.jsx</code> el usuario elige Pro ($10/mes) y llama a <code>POST /api/onvo/checkout</code>.</p>
+      </div>
+      <div class="flow-node">
+        <div class="num">Paso 2 • API ONVO</div>
+        <h4>Cliente + Suscripción</h4>
+        <p>Render crea el Customer y la Subscription (<code>allow_incomplete</code>) usando <code>ONVO_SECRET_KEY</code> y <code>ONVO_PRICE_PRO</code>.</p>
+      </div>
+      <div class="flow-node">
+        <div class="num">Paso 3 • SDK Web</div>
+        <h4>Formulario de Tarjeta</h4>
+        <p><code>OnvoCheckoutModal.jsx</code> renderiza <code>window.onvo.pay()</code> con <code>ONVO_PUBLISHABLE_KEY</code> y confirma la tarjeta.</p>
+      </div>
+      <div class="flow-node">
+        <div class="num">Paso 4 • Webhook</div>
+        <h4>Activación Automática</h4>
+        <p>ONVO envía <code>subscription.renewal.succeeded</code> a <code>/api/onvo/webhook</code> y el Tenant pasa a <strong>Plan Pro</strong>.</p>
+      </div>
+    </div>
+
+    <!-- Interactive Checklist -->
+    <div class="section-title">✅ Checklist interactivo para salir a LIVE hoy</div>
+    <div class="checklist">
+      <label class="check-item" onclick="this.classList.toggle('done', this.querySelector('input').checked)">
+        <input type="checkbox" />
+        <div>
+          <strong>1. Crear Producto y Precio Recurrente ($10 USD/mes) en ONVO Modo LIVE</strong><br/>
+          <span style="color: var(--muted); font-size: 0.86rem;">Obtener el ID del precio y guardarlo para <code>ONVO_PRICE_PRO</code>.</span>
+        </div>
+      </label>
+      <label class="check-item" onclick="this.classList.toggle('done', this.querySelector('input').checked)">
+        <input type="checkbox" />
+        <div>
+          <strong>2. Crear el Webhook en ONVO apuntando a Render</strong><br/>
+          <span style="color: var(--muted); font-size: 0.86rem;">URL: <code>https://contador-ganadero.onrender.com/api/onvo/webhook</code> con los eventos <code>subscription.renewal.succeeded</code> y <code>subscription.renewal.failed</code>.</span>
+        </div>
+      </label>
+      <label class="check-item" onclick="this.classList.toggle('done', this.querySelector('input').checked)">
+        <input type="checkbox" />
+        <div>
+          <strong>3. Cargar las 4 variables en Render (<code>contador-ganadero-api</code>)</strong><br/>
+          <span style="color: var(--muted); font-size: 0.86rem;"><code>ONVO_SECRET_KEY</code>, <code>ONVO_PUBLISHABLE_KEY</code>, <code>ONVO_PRICE_PRO</code> y <code>ONVO_WEBHOOK_SECRET</code>.</span>
+        </div>
+      </label>
+      <label class="check-item" onclick="this.classList.toggle('done', this.querySelector('input').checked)">
+        <input type="checkbox" />
+        <div>
+          <strong>4. Probar apertura del modal en <code>/planes</code></strong><br/>
+          <span style="color: var(--muted); font-size: 0.86rem;">Verificar que al pulsar en el Plan Pro se abra el formulario embebido de ONVO Pay sin errores.</span>
+        </div>
+      </label>
+    </div>
+  </div>
+</body>
+</html>

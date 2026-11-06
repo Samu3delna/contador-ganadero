@@ -1,41 +1,44 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { resolvePageSeo } from '../../config/seoCatalog';
 
-const titles = {
-  '/': 'Administración agropecuaria para Costa Rica',
-  '/producto': 'Conoce el producto', '/producto/dashboard': 'Dashboard financiero',
-  '/producto/facturas': 'Organiza tus facturas XML', '/producto/ingresos': 'Registro de ingresos',
-  '/producto/gastos': 'Organiza los gastos de tu finca', '/producto/inventario': 'Inventario agropecuario',
-  '/producto/costos': 'Costos de producción', '/producto/impuestos': 'Información para tus impuestos',
-  '/precios': 'Planes Gratis y Pro', '/soluciones': 'Soluciones para productores y contadores',
-  '/contacto': 'Contacto', '/preguntas-frecuentes': 'Preguntas frecuentes',
-};
 export default function SEOHead() {
   const { pathname } = useLocation();
   useEffect(() => {
-    // Wait for lazy route content before deriving article metadata.
     const update = () => {
-      const heading = document.querySelector('h1')?.textContent;
-      const isPublic = Boolean(titles[pathname]);
-      const missing = /no encontrad|no existe|404/i.test(heading || '');
-      const title = `${titles[pathname] || heading || 'ContadorGanadero'} | ContadorGanadero`;
-      document.title = title;
-      const description = document.querySelector('main p')?.textContent?.slice(0, 170) || 'Organiza la información financiera y productiva de tu actividad agropecuaria en Costa Rica.';
+      const seo = resolvePageSeo(pathname, document);
+      document.title = seo.title;
       const meta = (key, value, property = false) => {
         const attr = property ? 'property' : 'name';
         let node = document.head.querySelector(`meta[${attr}="${key}"]`);
-        if (!node) { node = document.createElement('meta'); node.setAttribute(attr, key); document.head.append(node); }
+        if (!node) {
+          node = document.createElement('meta');
+          node.setAttribute(attr, key);
+          document.head.append(node);
+        }
         node.content = value;
       };
-      meta('description', description);
-      meta('robots', isPublic && !missing ? 'index, follow' : 'noindex, follow');
-      meta('og:title', title, true); meta('og:description', description, true);
-      meta('og:url', `https://contadorganandero.com${pathname}`, true);
-      meta('og:type', pathname.startsWith('/academia/') ? 'article' : 'website', true);
-      meta('twitter:card', 'summary'); meta('twitter:title', title); meta('twitter:description', description);
+      meta('description', seo.description);
+      meta('keywords', seo.keywords);
+      meta('robots', seo.isPublic ? 'index, follow' : 'noindex, follow');
+      meta('og:site_name', 'ContadorGanadero', true);
+      meta('og:title', seo.title, true);
+      meta('og:description', seo.description, true);
+      meta('og:url', seo.canonical, true);
+      meta('og:type', seo.ogType, true);
+      meta('og:image', seo.image, true);
+      meta('og:image:alt', 'Logo oficial de ContadorGanadero — Contador ganadero y contabilidad ganadera en Costa Rica', true);
+      meta('twitter:card', 'summary_large_image');
+      meta('twitter:title', seo.title);
+      meta('twitter:description', seo.description);
+      meta('twitter:image', seo.image);
       let canonical = document.head.querySelector('link[rel="canonical"]');
-      if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.append(canonical); }
-      canonical.href = `https://contadorganandero.com${pathname}`;
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.rel = 'canonical';
+        document.head.append(canonical);
+      }
+      canonical.href = seo.canonical;
     };
     update();
     const observer = new MutationObserver(update);

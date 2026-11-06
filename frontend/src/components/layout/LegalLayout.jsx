@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { 
-  Tractor, 
   ArrowLeft, 
   Printer, 
   FileText, 
@@ -71,8 +70,8 @@ export default function LegalLayout({
       <header className="legal-header">
         <div className="legal-header-inner">
           <Link to="/" className="legal-brand" title="Ir al Inicio de ContadorGanadero">
-            <div className="legal-brand-logo">
-              <Tractor size={22} />
+            <div className="legal-brand-logo" style={{ background: '#f5f8f5', padding: 4 }}>
+              <img src="/logo.svg" width={26} height={26} alt="Logo de ContadorGanadero" />
             </div>
             <div className="legal-brand-text">
               <span className="legal-brand-title">ContadorGanadero</span>

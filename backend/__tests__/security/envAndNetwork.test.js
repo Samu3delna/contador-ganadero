@@ -125,6 +125,20 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
         const res = validarEntorno({ env: envPlaceholder, allowTestDefaults: false, exitOnError: false });
         expect(res.ok).toBe(false);
       });
+
+      it('acepta ONVO_WEBHOOK_SECRET generado por ONVO (>= 16 chars) y rechaza valores débiles', () => {
+        const envOnvo24 = {
+          ...baseSecureEnv,
+          ONVO_WEBHOOK_SECRET: 'whsec_live_AbCdEf1234567',
+        };
+        expect(validarEntorno({ env: envOnvo24, allowTestDefaults: false, exitOnError: false }).ok).toBe(true);
+
+        const envOnvoCorto = {
+          ...baseSecureEnv,
+          ONVO_WEBHOOK_SECRET: 'corto123',
+        };
+        expect(validarEntorno({ env: envOnvoCorto, allowTestDefaults: false, exitOnError: false }).ok).toBe(false);
+      });
     });
   });
 

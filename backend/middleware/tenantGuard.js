@@ -3,12 +3,17 @@ const Tenant = require('../models/Tenant');
 const { enterTenantContext } = require('../utils/tenantContext');
 
 /**
- * Middleware que extrae y valida el Tenant del request.
+ * Crea el middleware que extrae y valida el Tenant del request.
  * Debe ejecutarse DESPUÉS de authMiddleware.protegerRuta.
  * Fail-closed: elimina por completo el tenant demo offline (66554433221100aabbccddff)
  * y sincroniza el tenantId validado en AsyncLocalStorage.
+ *
+ * @param {{ permitirInactivo?: boolean }} options
+ *   - permitirInactivo: true solo en rutas de autogestión de suscripción (/api/onvo/*)
+ *     para que una finca suspendida o cancelada pueda consultar su estado, pagar para
+ *     reactivar su plan o cancelar y volver al plan gratuito.
  */
-const extraerTenant = async (req, res, next) => {
+const crearExtraerTenant = ({ permitirInactivo = false } = {}) => async (req, res, next) => {
   try {
     // Nunca tomar tenantId de req.body, req.query ni req.params
     const tenantId = req.usuario?.tenantId || req.auth?.tenantId;
@@ -36,22 +41,24 @@ const extraerTenant = async (req, res, next) => {
       });
     }
 
-    if (tenant.estado === 'suspendido') {
-      return res.status(402).json({
-        error: 'SUSCRIPCION_SUSPENDIDA',
-        mensaje: 'La suscripción de tu finca está suspendida por falta de pago.',
-        planActual: tenant.plan,
-        estado: tenant.estado,
-      });
-    }
+    if (!permitirInactivo) {
+      if (tenant.estado === 'suspendido') {
+        return res.status(402).json({
+          error: 'SUSCRIPCION_SUSPENDIDA',
+          mensaje: 'La suscripción de tu finca está suspendida por falta de pago.',
+          planActual: tenant.plan,
+          estado: tenant.estado,
+        });
+      }
 
-    if (tenant.estado === 'cancelado') {
-      return res.status(402).json({
-        error: 'SUSCRIPCION_CANCELADA',
-        mensaje: 'La suscripción de tu finca ha sido cancelada.',
-        planActual: tenant.plan,
-        estado: tenant.estado,
-      });
+      if (tenant.estado === 'cancelado') {
+        return res.status(402).json({
+          error: 'SUSCRIPCION_CANCELADA',
+          mensaje: 'La suscripción de tu finca ha sido cancelada.',
+          planActual: tenant.plan,
+          estado: tenant.estado,
+        });
+      }
     }
 
     req.tenant = tenant;
@@ -96,4 +103,7 @@ const extraerTenant = async (req, res, next) => {
   }
 };
 
-module.exports = { extraerTenant };
+const extraerTenant = crearExtraerTenant({ permitirInactivo: false });
+const extraerTenantFacturacion = crearExtraerTenant({ permitirInactivo: true });
+
+module.exports = { extraerTenant, extraerTenantFacturacion, crearExtraerTenant };

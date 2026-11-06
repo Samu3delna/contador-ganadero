@@ -12,8 +12,13 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
     setForm({ ...form, [e.target.name]: valor });
   };
 
+  const pass = String(form.password || '');
+  const cumpleLongitud = pass.length >= 12;
+  const cumpleMayusMinus = /[a-z]/.test(pass) && /[A-Z]/.test(pass);
+  const cumpleNumeroOSimbolo = /[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pass);
+
   return (
-    <form onSubmit={handleSubmit} className="login-form">
+    <form onSubmit={handleSubmit} className="login-form" noValidate={false}>
       {/* Acordeón animado para los campos exclusivos de Registro */}
       <div
         className={`login-collapse-grid ${esRegistro ? 'login-collapse-grid--open' : ''}`}
@@ -25,8 +30,9 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
             <Input
               id="nombre"
               name="nombre"
+              autoComplete="name"
               placeholder="Juan Pérez"
-              value={form.nombre}
+              value={form.nombre || ''}
               onChange={handleChange}
               required={esRegistro}
               disabled={!esRegistro}
@@ -38,8 +44,9 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
             <Input
               id="nombreFinca"
               name="nombreFinca"
+              autoComplete="organization"
               placeholder="Hacienda La Esmeralda"
-              value={form.nombreFinca}
+              value={form.nombreFinca || ''}
               onChange={handleChange}
               disabled={!esRegistro}
               tabIndex={esRegistro ? 0 : -1}
@@ -56,6 +63,7 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
                   id="telefono"
                   name="telefono"
                   type="tel"
+                  autoComplete="tel"
                   placeholder="8888-8888"
                   value={form.telefono || ''}
                   onChange={handleChange}
@@ -66,10 +74,11 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
               </div>
             </div>
             <div className="space-y-1.5 text-left">
-              <Label htmlFor="cedula" className="text-xs text-slate-300">Cédula física o jurídica</Label>
+              <Label htmlFor="cedula" className="text-xs text-slate-300">Cédula física o jurídica (opcional)</Label>
               <Input
                 id="cedula"
                 name="cedula"
+                inputMode="numeric"
                 placeholder="109990888"
                 value={form.cedula || ''}
                 onChange={handleChange}
@@ -87,21 +96,33 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
           id="email"
           name="email"
           type="email"
+          autoComplete="email"
           placeholder="productor@finca.cr"
-          value={form.email}
+          value={form.email || ''}
           onChange={handleChange}
           required
         />
       </div>
       <div className="space-y-1.5 text-left">
-        <Label htmlFor="password" className="text-xs text-slate-300">Contraseña</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="password" className="text-xs text-slate-300">Contraseña</Label>
+          {!esRegistro && (
+            <Link
+              to="/recuperar-password"
+              className="text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:underline transition-colors"
+            >
+              Olvidé mi contraseña
+            </Link>
+          )}
+        </div>
         <div className="relative">
           <Input
             id="password"
             name="password"
             type={mostrarPassword ? 'text' : 'password'}
+            autoComplete={esRegistro ? 'new-password' : 'current-password'}
             placeholder="••••••••"
-            value={form.password}
+            value={form.password || ''}
             onChange={handleChange}
             required
             minLength={esRegistro ? 12 : 6}
@@ -116,6 +137,22 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
             {mostrarPassword ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
         </div>
+        {esRegistro && (
+          <ul className="pt-1 grid grid-cols-1 sm:grid-cols-3 gap-1 text-[11px] text-slate-400" aria-label="Requisitos de contraseña">
+            <li className={`inline-flex items-center gap-1 ${cumpleLongitud ? 'text-emerald-400' : 'text-slate-400'}`}>
+              <Check size={11} className={cumpleLongitud ? 'opacity-100' : 'opacity-40'} />
+              <span>12+ caracteres</span>
+            </li>
+            <li className={`inline-flex items-center gap-1 ${cumpleMayusMinus ? 'text-emerald-400' : 'text-slate-400'}`}>
+              <Check size={11} className={cumpleMayusMinus ? 'opacity-100' : 'opacity-40'} />
+              <span>Mayús. y minús.</span>
+            </li>
+            <li className={`inline-flex items-center gap-1 ${cumpleNumeroOSimbolo ? 'text-emerald-400' : 'text-slate-400'}`}>
+              <Check size={11} className={cumpleNumeroOSimbolo ? 'opacity-100' : 'opacity-40'} />
+              <span>Número o símbolo</span>
+            </li>
+          </ul>
+        )}
       </div>
 
       {/* Acordeón animado para aceptación de términos en Registro */}
@@ -155,7 +192,7 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
       </div>
 
       {error && (
-        <div className="p-3 rounded-lg bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2 login-mode-fade">
+        <div role="alert" className="p-3 rounded-lg bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2 login-mode-fade">
           <AlertCircle size={15} className="shrink-0 text-red-400" />
           <span>{error}</span>
         </div>

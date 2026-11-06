@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { esAdministrador } from './utils/adminHelper';
 import Sidebar from './components/layout/Sidebar';
-import LoginPage from './pages/LoginPage';
-import ChatBot from './components/dashboard/ChatBot';
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ChatBot = lazy(() => import('./components/dashboard/ChatBot'));
 import { publicRoutes } from './publicRoutes';
 import SEOHead from './components/public/SEOHead';
 import './App.css';
@@ -75,7 +75,7 @@ function AppLayout() {
           <Outlet />
         </Suspense>
       </div>
-      {!esAdmin && <ChatBot />}
+      {!esAdmin && <Suspense fallback={null}><ChatBot /></Suspense>}
     </div>
   );
 }

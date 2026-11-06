@@ -1,49 +1,123 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-CR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0B131B" />
+    <meta name="theme-color" content="#101C1B" />
+    <meta name="application-name" content="ContadorGanadero" />
+    <meta name="apple-mobile-web-app-title" content="ContadorGanadero" />
 
-    <!-- SEO base (la landing lo sobrescribe vía useSeo) -->
-    <title>ContadorGanadero | Contabilidad Agrícola y Facturación REA en Costa Rica</title>
+    <!-- SEO base (prerender y SEOHead sincronizan cada ruta) -->
+    <title>ContadorGanadero (contadorganadero.com) | Contador Ganadero y Contabilidad Ganadera en Costa Rica (REA)</title>
     <meta
       name="description"
-      content="ContadorGanadero es la plataforma de contabilidad para productores agropecuarios de Costa Rica: importa facturas electrónicas por correo, categoriza gastos con IA y genera tus declaraciones de IVA y Renta del Régimen Especial Agropecuario (REA)."
+      content="ContadorGanadero (contadorganadero.com): contador ganadero y contabilidad ganadera en Costa Rica. Gestiona ingresos, gastos, facturas XML, inventario e impuestos REA."
+    />
+    <meta
+      name="keywords"
+      content="contadorganadero.com, contador ganadero, contador ganadera, contabilidad ganadera Costa Rica, contabilidad agropecuaria Costa Rica, Régimen Especial Agropecuario REA, facturas XML Hacienda Costa Rica, inventario ganadero, costos de producción ganadera"
     />
     <meta name="robots" content="index, follow" />
 
     <!-- Open Graph -->
     <meta property="og:site_name" content="ContadorGanadero" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="ContadorGanadero | Contabilidad Agrícola y Facturación REA en Costa Rica" />
+    <meta property="og:title" content="ContadorGanadero (contadorganadero.com) | Contador Ganadero y Contabilidad Ganadera en Costa Rica (REA)" />
     <meta
       property="og:description"
-      content="Tu contador personal automatizado para la finca: facturación electrónica, inventario ganadero y declaraciones de Hacienda en un solo lugar."
+      content="ContadorGanadero (contadorganadero.com): contador ganadero y contabilidad ganadera en Costa Rica. Gestiona ingresos, gastos, facturas XML, inventario e impuestos REA."
     />
+    <meta property="og:url" content="https://contadorganadero.com/" />
+    <meta property="og:image" content="https://contadorganadero.com/og-image.png" />
+    <meta property="og:image:alt" content="Logo oficial de ContadorGanadero — Contador ganadero y contabilidad ganadera en Costa Rica" />
     <meta property="og:locale" content="es_CR" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="ContadorGanadero | Contabilidad Agrícola y Facturación REA en Costa Rica" />
+    <meta name="twitter:title" content="ContadorGanadero (contadorganadero.com) | Contador Ganadero y Contabilidad Ganadera en Costa Rica (REA)" />
     <meta
       name="twitter:description"
-      content="Tu contador personal automatizado para la finca: facturación electrónica, inventario ganadero y declaraciones de Hacienda en un solo lugar."
+      content="ContadorGanadero (contadorganadero.com): tu contador ganadero y plataforma de contabilidad ganadera y agropecuaria en Costa Rica."
     />
+    <meta name="twitter:image" content="https://contadorganadero.com/og-image.png" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="canonical" href="https://contadorganadero.com/" />
 
-    <!-- Schema: Organización / Negocio (datos a completar por el dueño) -->
+    <!-- Schema.org: Organization + WebSite + SoftwareApplication -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "ContadorGanadero",
-      "url": "https://contadorganandero.com",
-      "logo": "https://contadorganandero.com/favicon.svg",
-      "description": "Plataforma de contabilidad y facturación electrónica para productores agropecuarios de Costa Rica bajo el Régimen Especial Agropecuario (REA).",
-      "areaServed": "CR",
-      "sameAs": []
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://contadorganadero.com/#organization",
+          "name": "ContadorGanadero",
+          "alternateName": [
+            "Contador Ganadero",
+            "Contador Ganadera",
+            "contadorganadero.com",
+            "Contabilidad Ganadera Costa Rica"
+          ],
+          "url": "https://contadorganadero.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://contadorganadero.com/logo.png",
+            "contentUrl": "https://contadorganadero.com/logo.svg",
+            "width": 512,
+            "height": 512
+          },
+          "description": "Plataforma de contabilidad ganadera, inventario agropecuario, costos de producción y gestión tributaria bajo el Régimen Especial Agropecuario (REA) en Costa Rica.",
+          "areaServed": "CR",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "soporte@contadorganadero.com",
+            "contactType": "customer support",
+            "areaServed": "CR",
+            "availableLanguage": "es"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://contadorganadero.com/#website",
+          "url": "https://contadorganadero.com",
+          "name": "ContadorGanadero",
+          "alternateName": [
+            "Contador Ganadero",
+            "Contador Ganadera",
+            "contadorganadero.com"
+          ],
+          "inLanguage": "es-CR",
+          "publisher": {
+            "@id": "https://contadorganadero.com/#organization"
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "ContadorGanadero",
+          "alternateName": "Contador Ganadero y Contabilidad Ganadera en Costa Rica",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "url": "https://contadorganadero.com",
+          "image": "https://contadorganadero.com/logo.png",
+          "description": "Software de contabilidad ganadera y administración agropecuaria para productores de Costa Rica bajo el Régimen Especial Agropecuario (REA).",
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Plan Gratis",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            {
+              "@type": "Offer",
+              "name": "Plan Pro",
+              "price": "10",
+              "priceCurrency": "USD"
+            }
+          ]
+        }
+      ]
     }
     </script>
     <!-- Verificación de propiedad sin cargar publicidad --><meta name="google-adsense-account" content="ca-pub-1077407420035302" />

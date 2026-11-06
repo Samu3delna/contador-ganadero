@@ -232,10 +232,16 @@ usuarioSchema.pre('validate', function (next) {
   if (typeof this._doc.cedula === 'string' || typeof this.cedula === 'string') {
     const raw = typeof this._doc.cedula === 'string' ? this._doc.cedula : String(this.cedula);
     const numLimpio = raw.replace(/[-\s]/g, '').trim();
-    this.cedula = {
-      tipo: numLimpio.length === 10 ? 'juridica' : 'fisica',
-      numero: numLimpio,
-    };
+    if (!numLimpio) {
+      this.cedula = undefined;
+    } else {
+      this.cedula = {
+        tipo: numLimpio.length === 10 ? 'juridica' : 'fisica',
+        numero: numLimpio,
+      };
+    }
+  } else if (this.cedula && typeof this.cedula === 'object' && !this.cedula.numero) {
+    this.cedula = undefined;
   }
   if (this.esSuperAdmin === true && !this.isSuperAdmin) {
     this.isSuperAdmin = true;

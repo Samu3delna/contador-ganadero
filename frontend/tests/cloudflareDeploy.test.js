@@ -63,7 +63,7 @@ function scriptsExternosDeLaApp() {
   const html = leer(FRONTEND, 'index.html');
   for (const [, src] of html.matchAll(/<script[^>]+src="(https:\/\/[^"]+)"/g)) urls.add(src);
 
-  const patronScript = /https:\/\/[a-z0-9.-]+\/[^\s'"`$]*?(?:\.js|\/gtag\/js)(?=[\s'"`?$]|$)/gi;
+  const patronScript = /https:\/\/[a-z0-9.-]+\/[^\s'"`$]*?(?:\.js|gtag\/js)(?=[\s'"`?$]|$)/gi;
   for (const archivo of listarArchivos(path.join(FRONTEND, 'src'), ['.js', '.jsx'])) {
     for (const [url] of leer(archivo).matchAll(patronScript)) urls.add(url);
   }

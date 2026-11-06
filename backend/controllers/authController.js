@@ -171,12 +171,33 @@ const registro = async (req, res, next) => {
     let telefonoNormalizado = telefono ? String(telefono).trim() : undefined;
     if (telefonoNormalizado) {
       const digits = telefonoNormalizado.replace(/\D/g, '');
-      if (digits.length === 8) {
+      if (!digits) {
+        telefonoNormalizado = undefined;
+      } else if (digits.length === 8) {
         telefonoNormalizado = `+506${digits}`;
       } else if (digits.startsWith('506') && digits.length === 11) {
         telefonoNormalizado = `+${digits}`;
       } else if (!telefonoNormalizado.startsWith('+')) {
         telefonoNormalizado = `+506${digits}`;
+      }
+    }
+
+    let cedulaNormalizada = undefined;
+    if (typeof cedula === 'string') {
+      const numLimpio = cedula.replace(/[-\s]/g, '').trim();
+      if (numLimpio) {
+        cedulaNormalizada = {
+          tipo: numLimpio.length === 10 ? 'juridica' : 'fisica',
+          numero: numLimpio,
+        };
+      }
+    } else if (cedula && typeof cedula === 'object' && cedula.numero) {
+      const numLimpio = String(cedula.numero).replace(/[-\s]/g, '').trim();
+      if (numLimpio) {
+        cedulaNormalizada = {
+          tipo: cedula.tipo || (numLimpio.length === 10 ? 'juridica' : 'fisica'),
+          numero: numLimpio,
+        };
       }
     }
 
@@ -189,9 +210,9 @@ const registro = async (req, res, next) => {
       nombre: String(nombre).trim().slice(0, 100),
       email: emailNormalizado,
       password,
-      cedula,
+      ...(cedulaNormalizada ? { cedula: cedulaNormalizada } : {}),
       nombreFinca: nombreFinca ? String(nombreFinca).trim().slice(0, 120) : 'Mi Finca',
-      telefono: telefonoNormalizado,
+      ...(telefonoNormalizado ? { telefono: telefonoNormalizado } : {}),
       cantidadHijos: Number.isFinite(Number(cantidadHijos)) ? Math.max(0, Math.min(20, Number(cantidadHijos))) : 0,
       tieneConyuge: Boolean(tieneConyuge),
       aceptoTerminosEn: ahora,

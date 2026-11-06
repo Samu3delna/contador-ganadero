@@ -273,4 +273,146 @@ describe('controllers/onvoController - webhookOnvo', () => {
     expect(t.estado).toBe('periodo_gracia');
     expect(t.periodoGraciaFin).toBeTruthy();
   });
+
+  test('(g) subscription.renewal.succeeded sin metadata.planId y currentPeriodEnd Unix segundos activa Pro', async () => {
+    const tenant = await crearTenantPrueba();
+    tenant.onvoCustomerId = 'clcus_live_real_001';
+    await tenant.save();
+
+    const unixFuturoSegundos = Math.floor((Date.now() + 30 * 86400000) / 1000);
+    const event = {
+      type: 'subscription.renewal.succeeded',
+      data: {
+        id: 'clinv_live_sin_meta_1',
+        subscriptionId: 'clsub_live_real_001',
+        customerId: 'clcus_live_real_001',
+        status: 'active',
+        currentPeriodEnd: unixFuturoSegundos,
+        // Sin metadata.planId ni metadata.tenantId (caso real ONVO LIVE)
+      },
+    };
+
+    const { req, res } = buildReqRes(event);
+    await webhookOnvo(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ received: true });
+    const t = await Tenant.findById(tenant._id);
+    expect(t.plan).toBe('pro');
+    expect(t.estado).toBe('activo');
+    expect(t.limites.conteosMes).toBe(300);
+    expect(t.limites.moduloD150).toBe(true);
+    expect(t.limites.anunciosHabilitados).toBe(false);
+    expect(t.onvoSubscriptionId).toBe('clsub_live_real_001');
+    expect(t.periodoRenovacion.getFullYear()).toBeGreaterThanOrEqual(2026);
+  });
+
+  test('(h) payment_intent.succeeded inicial vincula suscripción pendiente allow_incomplete y activa Pro', async () => {
+    const tenant = await crearTenantPrueba();
+    tenant.onvoCustomerId = 'clcus_live_pi_001';
+    tenant.onvoSubscriptionIdPendiente = 'clsub_live_pendiente_001';
+    await tenant.save();
+
+    const event = {
+      type: 'payment_intent.succeeded',
+      data: {
+        id: 'clpi_live_001',
+        customerId: 'clcus_live_pi_001',
+        status: 'succeeded',
+      },
+    };
+
+    const { req, res } = buildReqRes(event);
+    await webhookOnvo(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ received: true });
+    const t = await Tenant.findById(tenant._id);
+    expect(t.plan).toBe('pro');
+    expect(t.estado).toBe('activo');
+    expect(t.onvoSubscriptionId).toBe('clsub_live_pendiente_001');
+    expect(t.onvoSubscriptionIdPendiente).toBeNull();
+  });
+
+  test('(i) flujo completo API LIVE: checkout (con alias ONVO_PRO_PRICE_ID), auto-conciliación en /estado y recuperación de suspendido', async () => {
+    const request = require('supertest');
+    const app = require('../server');
+    const Usuario = require('../models/Usuario');
+
+    const prevPricePro = process.env.ONVO_PRICE_PRO;
+    delete process.env.ONVO_PRICE_PRO;
+    process.env.ONVO_PRO_PRICE_ID = 'price_live_alias_pro';
+
+    try {
+      const u = await Usuario.create({
+        nombre: 'Productor Live',
+        email: `live-${Date.now()}@finca.cr`,
+        password: 'SyntheticPassword123!',
+        rol: 'dueño',
+      });
+      const t = await Tenant.crearParaUsuario({ nombreFinca: 'Finca Live', owner: u._id, plan: 'free' });
+      u.tenantId = t._id;
+      await u.save();
+
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ email: u.email, password: 'SyntheticPassword123!' });
+      const token = login.body.token;
+
+      onvoService.crearCliente.mockResolvedValueOnce({ id: 'cus_live_checkout_1' });
+      onvoService.crearSuscripcion.mockResolvedValueOnce({ id: 'sub_live_checkout_1', status: 'incomplete' });
+
+      // 1. Checkout usa alias ONVO_PRO_PRICE_ID y guarda onvoSubscriptionIdPendiente
+      const checkoutRes = await request(app)
+        .post('/api/onvo/checkout')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ planId: 'pro' });
+
+      expect(checkoutRes.status).toBe(200);
+      expect(checkoutRes.body).toEqual({
+        subscriptionId: 'sub_live_checkout_1',
+        customerId: 'cus_live_checkout_1',
+        publicKey: process.env.ONVO_PUBLISHABLE_KEY,
+      });
+      expect(onvoService.crearSuscripcion).toHaveBeenCalledWith(
+        expect.objectContaining({ priceId: 'price_live_alias_pro', customerId: 'cus_live_checkout_1' })
+      );
+
+      // 2. Auto-conciliación en GET /api/onvo/estado si el SDK ya confirmó y ONVO reporta status='active'
+      onvoService.obtenerSuscripcion.mockResolvedValueOnce({
+        id: 'sub_live_checkout_1',
+        customerId: 'cus_live_checkout_1',
+        status: 'active',
+        currentPeriodEnd: Math.floor((Date.now() + 30 * 86400000) / 1000),
+      });
+
+      const estadoRes = await request(app)
+        .get('/api/onvo/estado')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(estadoRes.status).toBe(200);
+      expect(estadoRes.body.tenant.plan).toBe('pro');
+      expect(estadoRes.body.tenant.estado).toBe('activo');
+
+      // 3. Si la finca cae en 'suspendido', aún puede consultar /estado, hacer /checkout o /cancelar (incluso si ONVO da 404)
+      await Tenant.updateOne({ _id: t._id }, { $set: { estado: 'suspendido' } });
+
+      const estadoSuspendido = await request(app)
+        .get('/api/onvo/estado')
+        .set('Authorization', `Bearer ${token}`);
+      expect(estadoSuspendido.status).toBe(200);
+      expect(estadoSuspendido.body.tenant.estado).toBe('suspendido');
+
+      const errNotFound = new Error('ONVO: Subscription not found');
+      errNotFound.status = 404;
+      onvoService.cancelarSuscripcion.mockRejectedValueOnce(errNotFound);
+
+      const cancelarSuspendido = await request(app)
+        .post('/api/onvo/cancelar')
+        .set('Authorization', `Bearer ${token}`);
+      expect(cancelarSuspendido.status).toBe(200);
+      expect(cancelarSuspendido.body).toEqual({ ok: true, plan: 'free', estado: 'activo' });
+    } finally {
+      process.env.ONVO_PRICE_PRO = prevPricePro;
+      delete process.env.ONVO_PRO_PRICE_ID;
+    }
+  });
 });
