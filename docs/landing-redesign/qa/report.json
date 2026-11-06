@@ -1,5 +1,6 @@
 {
-  "startedAt": "2026-11-06T21:59:23.926Z",
+  "startedAt": "2026-11-06T05:19:24.591Z",
+  "baseUrl": "http://127.0.0.1:4173/",
   "browser": "156.0.4314.58",
   "widths": [
     320,
@@ -46,14 +47,6 @@
       "passed": true
     },
     {
-      "name": "320px /tutoriales",
-      "passed": true
-    },
-    {
-      "name": "320px /academia",
-      "passed": true
-    },
-    {
       "name": "320px /precios",
       "passed": true
     },
@@ -70,71 +63,7 @@
       "passed": true
     },
     {
-      "name": "320px /academia/organizar-ingresos-gastos",
-      "passed": true
-    },
-    {
-      "name": "320px /academia/interpretar-facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "320px /academia/costos-produccion-ganadera",
-      "passed": true
-    },
-    {
-      "name": "320px /academia/rentabilidad-agropecuaria",
-      "passed": true
-    },
-    {
-      "name": "320px /academia/inventario-ganado",
-      "passed": true
-    },
-    {
-      "name": "320px /academia/preparar-informacion-rea",
-      "passed": true
-    },
-    {
-      "name": "320px /academia/registrar-ventas-agropecuarias",
-      "passed": true
-    },
-    {
-      "name": "320px /tutoriales/conoce-contadorganadero",
-      "passed": true
-    },
-    {
-      "name": "320px /tutoriales/dashboard",
-      "passed": true
-    },
-    {
-      "name": "320px /tutoriales/registrar-ingresos",
-      "passed": true
-    },
-    {
-      "name": "320px /tutoriales/facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "320px /tutoriales/inventario",
-      "passed": true
-    },
-    {
-      "name": "320px /tutoriales/costos-produccion",
-      "passed": true
-    },
-    {
-      "name": "320px /privacidad",
-      "passed": true
-    },
-    {
-      "name": "320px /terminos",
-      "passed": true
-    },
-    {
-      "name": "320px /condiciones-servicio",
-      "passed": true
-    },
-    {
-      "name": "320px /eliminacion-datos",
+      "name": "320px navigation and demo",
       "passed": true
     },
     {
@@ -174,14 +103,6 @@
       "passed": true
     },
     {
-      "name": "375px /tutoriales",
-      "passed": true
-    },
-    {
-      "name": "375px /academia",
-      "passed": true
-    },
-    {
       "name": "375px /precios",
       "passed": true
     },
@@ -198,71 +119,7 @@
       "passed": true
     },
     {
-      "name": "375px /academia/organizar-ingresos-gastos",
-      "passed": true
-    },
-    {
-      "name": "375px /academia/interpretar-facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "375px /academia/costos-produccion-ganadera",
-      "passed": true
-    },
-    {
-      "name": "375px /academia/rentabilidad-agropecuaria",
-      "passed": true
-    },
-    {
-      "name": "375px /academia/inventario-ganado",
-      "passed": true
-    },
-    {
-      "name": "375px /academia/preparar-informacion-rea",
-      "passed": true
-    },
-    {
-      "name": "375px /academia/registrar-ventas-agropecuarias",
-      "passed": true
-    },
-    {
-      "name": "375px /tutoriales/conoce-contadorganadero",
-      "passed": true
-    },
-    {
-      "name": "375px /tutoriales/dashboard",
-      "passed": true
-    },
-    {
-      "name": "375px /tutoriales/registrar-ingresos",
-      "passed": true
-    },
-    {
-      "name": "375px /tutoriales/facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "375px /tutoriales/inventario",
-      "passed": true
-    },
-    {
-      "name": "375px /tutoriales/costos-produccion",
-      "passed": true
-    },
-    {
-      "name": "375px /privacidad",
-      "passed": true
-    },
-    {
-      "name": "375px /terminos",
-      "passed": true
-    },
-    {
-      "name": "375px /condiciones-servicio",
-      "passed": true
-    },
-    {
-      "name": "375px /eliminacion-datos",
+      "name": "375px navigation and demo",
       "passed": true
     },
     {
@@ -302,14 +159,6 @@
       "passed": true
     },
     {
-      "name": "768px /tutoriales",
-      "passed": true
-    },
-    {
-      "name": "768px /academia",
-      "passed": true
-    },
-    {
       "name": "768px /precios",
       "passed": true
     },
@@ -326,72 +175,9 @@
       "passed": true
     },
     {
-      "name": "768px /academia/organizar-ingresos-gastos",
-      "passed": true
-    },
-    {
-      "name": "768px /academia/interpretar-facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "768px /academia/costos-produccion-ganadera",
-      "passed": true
-    },
-    {
-      "name": "768px /academia/rentabilidad-agropecuaria",
-      "passed": true
-    },
-    {
-      "name": "768px /academia/inventario-ganado",
-      "passed": true
-    },
-    {
-      "name": "768px /academia/preparar-informacion-rea",
-      "passed": true
-    },
-    {
-      "name": "768px /academia/registrar-ventas-agropecuarias",
-      "passed": true
-    },
-    {
-      "name": "768px /tutoriales/conoce-contadorganadero",
-      "passed": true
-    },
-    {
-      "name": "768px /tutoriales/dashboard",
-      "passed": true
-    },
-    {
-      "name": "768px /tutoriales/registrar-ingresos",
-      "passed": true
-    },
-    {
-      "name": "768px /tutoriales/facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "768px /tutoriales/inventario",
-      "passed": true
-    },
-    {
-      "name": "768px /tutoriales/costos-produccion",
-      "passed": true
-    },
-    {
-      "name": "768px /privacidad",
-      "passed": true
-    },
-    {
-      "name": "768px /terminos",
-      "passed": true
-    },
-    {
-      "name": "768px /condiciones-servicio",
-      "passed": true
-    },
-    {
-      "name": "768px /eliminacion-datos",
-      "passed": true
+      "name": "768px navigation and demo",
+      "passed": false,
+      "error": "Expected values to be strictly equal:\n\n4 !== 1\n"
     },
     {
       "name": "1024px /",
@@ -430,14 +216,6 @@
       "passed": true
     },
     {
-      "name": "1024px /tutoriales",
-      "passed": true
-    },
-    {
-      "name": "1024px /academia",
-      "passed": true
-    },
-    {
       "name": "1024px /precios",
       "passed": true
     },
@@ -454,71 +232,7 @@
       "passed": true
     },
     {
-      "name": "1024px /academia/organizar-ingresos-gastos",
-      "passed": true
-    },
-    {
-      "name": "1024px /academia/interpretar-facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "1024px /academia/costos-produccion-ganadera",
-      "passed": true
-    },
-    {
-      "name": "1024px /academia/rentabilidad-agropecuaria",
-      "passed": true
-    },
-    {
-      "name": "1024px /academia/inventario-ganado",
-      "passed": true
-    },
-    {
-      "name": "1024px /academia/preparar-informacion-rea",
-      "passed": true
-    },
-    {
-      "name": "1024px /academia/registrar-ventas-agropecuarias",
-      "passed": true
-    },
-    {
-      "name": "1024px /tutoriales/conoce-contadorganadero",
-      "passed": true
-    },
-    {
-      "name": "1024px /tutoriales/dashboard",
-      "passed": true
-    },
-    {
-      "name": "1024px /tutoriales/registrar-ingresos",
-      "passed": true
-    },
-    {
-      "name": "1024px /tutoriales/facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "1024px /tutoriales/inventario",
-      "passed": true
-    },
-    {
-      "name": "1024px /tutoriales/costos-produccion",
-      "passed": true
-    },
-    {
-      "name": "1024px /privacidad",
-      "passed": true
-    },
-    {
-      "name": "1024px /terminos",
-      "passed": true
-    },
-    {
-      "name": "1024px /condiciones-servicio",
-      "passed": true
-    },
-    {
-      "name": "1024px /eliminacion-datos",
+      "name": "1024px navigation and demo",
       "passed": true
     },
     {
@@ -558,14 +272,6 @@
       "passed": true
     },
     {
-      "name": "1440px /tutoriales",
-      "passed": true
-    },
-    {
-      "name": "1440px /academia",
-      "passed": true
-    },
-    {
       "name": "1440px /precios",
       "passed": true
     },
@@ -582,158 +288,16 @@
       "passed": true
     },
     {
-      "name": "1440px /academia/organizar-ingresos-gastos",
-      "passed": true
-    },
-    {
-      "name": "1440px /academia/interpretar-facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "1440px /academia/costos-produccion-ganadera",
-      "passed": true
-    },
-    {
-      "name": "1440px /academia/rentabilidad-agropecuaria",
-      "passed": true
-    },
-    {
-      "name": "1440px /academia/inventario-ganado",
-      "passed": true
-    },
-    {
-      "name": "1440px /academia/preparar-informacion-rea",
-      "passed": true
-    },
-    {
-      "name": "1440px /academia/registrar-ventas-agropecuarias",
-      "passed": true
-    },
-    {
-      "name": "1440px /tutoriales/conoce-contadorganadero",
-      "passed": true
-    },
-    {
-      "name": "1440px /tutoriales/dashboard",
-      "passed": true
-    },
-    {
-      "name": "1440px /tutoriales/registrar-ingresos",
-      "passed": true
-    },
-    {
-      "name": "1440px /tutoriales/facturas-xml",
-      "passed": true
-    },
-    {
-      "name": "1440px /tutoriales/inventario",
-      "passed": true
-    },
-    {
-      "name": "1440px /tutoriales/costos-produccion",
-      "passed": true
-    },
-    {
-      "name": "1440px /privacidad",
-      "passed": true
-    },
-    {
-      "name": "1440px /terminos",
-      "passed": true
-    },
-    {
-      "name": "1440px /condiciones-servicio",
-      "passed": true
-    },
-    {
-      "name": "1440px /eliminacion-datos",
-      "passed": true
-    },
-    {
-      "name": "320px navigation and demo",
-      "passed": true
-    },
-    {
-      "name": "320px unknown /pagina-inexistente-qa is noindex",
-      "passed": true
-    },
-    {
-      "name": "320px unknown /producto/toString is noindex",
-      "passed": true
-    },
-    {
-      "name": "320px unknown /producto/__proto__ is noindex",
-      "passed": true
-    },
-    {
-      "name": "375px navigation and demo",
-      "passed": true
-    },
-    {
-      "name": "375px unknown /pagina-inexistente-qa is noindex",
-      "passed": true
-    },
-    {
-      "name": "375px unknown /producto/toString is noindex",
-      "passed": true
-    },
-    {
-      "name": "375px unknown /producto/__proto__ is noindex",
-      "passed": true
-    },
-    {
-      "name": "768px navigation and demo",
-      "passed": true
-    },
-    {
-      "name": "768px unknown /pagina-inexistente-qa is noindex",
-      "passed": true
-    },
-    {
-      "name": "768px unknown /producto/toString is noindex",
-      "passed": true
-    },
-    {
-      "name": "768px unknown /producto/__proto__ is noindex",
-      "passed": true
-    },
-    {
-      "name": "1024px navigation and demo",
-      "passed": true
-    },
-    {
-      "name": "1024px unknown /pagina-inexistente-qa is noindex",
-      "passed": true
-    },
-    {
-      "name": "1024px unknown /producto/toString is noindex",
-      "passed": true
-    },
-    {
-      "name": "1024px unknown /producto/__proto__ is noindex",
-      "passed": true
-    },
-    {
       "name": "1440px navigation and demo",
-      "passed": true
-    },
-    {
-      "name": "1440px unknown /pagina-inexistente-qa is noindex",
-      "passed": true
-    },
-    {
-      "name": "1440px unknown /producto/toString is noindex",
-      "passed": true
-    },
-    {
-      "name": "1440px unknown /producto/__proto__ is noindex",
       "passed": true
     }
   ],
-  "failures": [],
+  "failures": [
+    "768px navigation and demo"
+  ],
   "limitations": [
-    "External network requests blocked; synthetic unauthenticated API. No live account, payment or production writes.",
-    "Not a Lighthouse or complete WCAG audit."
+    "API responses are mocked as unauthenticated; no live login, registration, payment or private data is tested.",
+    "External network requests are blocked. This is not a Lighthouse or full WCAG audit."
   ],
   "routes": [
     "/",
@@ -745,36 +309,10 @@
     "/producto/inventario",
     "/producto/costos",
     "/producto/impuestos",
-    "/tutoriales",
-    "/academia",
     "/precios",
     "/preguntas-frecuentes",
     "/contacto",
-    "/soluciones",
-    "/academia/organizar-ingresos-gastos",
-    "/academia/interpretar-facturas-xml",
-    "/academia/costos-produccion-ganadera",
-    "/academia/rentabilidad-agropecuaria",
-    "/academia/inventario-ganado",
-    "/academia/preparar-informacion-rea",
-    "/academia/registrar-ventas-agropecuarias",
-    "/tutoriales/conoce-contadorganadero",
-    "/tutoriales/dashboard",
-    "/tutoriales/registrar-ingresos",
-    "/tutoriales/facturas-xml",
-    "/tutoriales/inventario",
-    "/tutoriales/costos-produccion",
-    "/privacidad",
-    "/terminos",
-    "/condiciones-servicio",
-    "/eliminacion-datos"
+    "/soluciones"
   ],
-  "finishedAt": "2026-11-06T22:03:02.614Z",
-  "testCorrections": [
-    "404 heading regex accepts No encontramos.",
-    "Wait for destination product H1 before selecting period: SPA navigation initially exposes previous landing demo.",
-    "Wait for React table update after period changes."
-  ],
-  "initialRun": "initial-report.json",
-  "targetedRetry": "retry/report.json"
+  "finishedAt": "2026-11-06T05:20:19.100Z"
 }

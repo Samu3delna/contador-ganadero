@@ -8,8 +8,6 @@ const routes = [
   '/',
   '/producto',
   ...['dashboard', 'facturas', 'ingresos', 'gastos', 'inventario', 'costos', 'impuestos'].map(s => `/producto/${s}`),
-  '/tutoriales',
-  '/academia',
   '/precios',
   '/preguntas-frecuentes',
   '/contacto',
@@ -20,14 +18,6 @@ const legalSitemapRoutes = ['/privacidad', '/terminos', '/condiciones-servicio',
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
 try {
   const { render } = await server.ssrLoadModule('/src/entry-public.jsx');
-  for (const library of ['/academia', '/tutoriales']) {
-    const dom = new JSDOM(await render(library));
-    for (const a of dom.window.document.querySelectorAll('a[href]')) {
-      const href = a.getAttribute('href');
-      if (href.startsWith(`${library}/`) && !routes.includes(href)) routes.push(href);
-    }
-    dom.window.close();
-  }
   const template = await readFile('dist/index.html', 'utf8');
   const publicCss = (await readdir('dist/assets')).filter(name => /^LandingPage-.*\.css$/.test(name));
   for (const route of routes) {

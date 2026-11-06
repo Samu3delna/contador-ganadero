@@ -226,7 +226,7 @@ describe('Webhooks Integration Tests (Cloudflare Email & WhatsApp)', () => {
       const res = await request(app)
         .post('/api/webhooks/email')
         .set('x-email-webhook-secret', 'secreto_incorrecto')
-        .send({ to: 'finca-los-suenos@contadorganadero.com' });
+        .send({ to: 'finca-los-suenos@contadorganandero.com' });
 
       expect(res.status).toBe(401);
       expect(res.body.error).toContain('No autorizado');
@@ -237,7 +237,7 @@ describe('Webhooks Integration Tests (Cloudflare Email & WhatsApp)', () => {
         .post('/api/webhooks/email')
         .set('x-email-webhook-secret', 'test_email_secret_123')
         .send({
-          to: 'finca-los-suenos@contadorganadero.com',
+          to: 'finca-los-suenos@contadorganandero.com',
           from: 'proveedor@veterinaria.cr',
           rawEmail: 'Subject: Recordatorio de pago\n\nEstimado cliente, favor pagar.',
         });
@@ -252,7 +252,7 @@ describe('Webhooks Integration Tests (Cloudflare Email & WhatsApp)', () => {
         .post('/api/webhooks/email')
         .set('x-email-webhook-secret', 'test_email_secret_123')
         .send({
-          to: 'finca-los-suenos@contadorganadero.com',
+          to: 'finca-los-suenos@contadorganandero.com',
           xml: '<NoEsFactura />',
         });
 
@@ -281,7 +281,7 @@ describe('Webhooks Integration Tests (Cloudflare Email & WhatsApp)', () => {
       const enviar = () => request(app)
         .post('/api/webhooks/email')
         .set('x-email-webhook-secret', 'test_email_secret_123')
-        .send({ to: 'finca-ingesta-email@contadorganadero.com', xml: XML_FACTURA_PRUEBA });
+        .send({ to: 'finca-ingesta-email@contadorganandero.com', xml: XML_FACTURA_PRUEBA });
 
       const primera = await enviar();
       expect(primera.status).toBe(200);
@@ -318,7 +318,7 @@ describe('Webhooks Integration Tests (Cloudflare Email & WhatsApp)', () => {
       const enviarEmail = () => request(app)
         .post('/api/webhooks/email')
         .set('x-email-webhook-secret', 'test_email_secret_123')
-        .send({ to: 'finca-ingesta-concurrente@contadorganadero.com', xml: XML_FACTURA_PRUEBA });
+        .send({ to: 'finca-ingesta-concurrente@contadorganandero.com', xml: XML_FACTURA_PRUEBA });
 
       whatsappService.descargarMediaMeta.mockClear();
       whatsappService.enviarMensajeWhatsApp.mockClear();

@@ -225,7 +225,7 @@ function escapeHtml(text) {
 async function enviarEmailCloudflare({ to, subject, text, html, replyTo }) {
   const apiToken = process.env.CLOUDFLARE_EMAIL_API_TOKEN;
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const fromEmail = process.env.CLOUDFLARE_EMAIL_FROM || 'soporte@contadorganadero.com';
+  const fromEmail = process.env.CLOUDFLARE_EMAIL_FROM || 'soporte@contadorganandero.com';
 
   if (!apiToken || !accountId) {
     return {

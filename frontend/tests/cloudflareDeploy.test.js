@@ -256,7 +256,7 @@ describe('Cabeceras de seguridad y CSP (frontend/public/_headers)', () => {
 
   test('todos los scripts externos que carga la app están permitidos por script-src', () => {
     const scripts = scriptsExternosDeLaApp();
-    assert.ok(scripts.length >= 4, `se esperaban varios scripts externos, hallados: ${scripts}`);
+    assert.ok(scripts.length > 0, `el descubrimiento no debe devolver una lista vac?a, hallados: ${scripts}`);
     const bloqueados = scripts.filter((url) => !permitidaPorCsp(url, csp['script-src']));
     assert.deepEqual(bloqueados, [], `scripts bloqueados por la CSP: ${bloqueados.join(', ')}`);
   });

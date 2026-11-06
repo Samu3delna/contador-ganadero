@@ -12,7 +12,7 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
       JWT_SECRET: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4',
       JWT_REFRESH_SECRET: 'z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4j3i2h1g0f9e8d7c6',
       EMAIL_ENC_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-      CORS_ORIGINS: 'https://contadorganadero.com,https://app.contadorganadero.com',
+      CORS_ORIGINS: 'https://contadorganandero.com,https://app.contadorganandero.com',
       ONVO_WEBHOOK_SECRET: 'webhook_secret_zQzfNtqFFnodeTb2x',
       EMAIL_WEBHOOK_SECRET: 'email_webhook_secret_key_with_more_than_32_characters!!',
     };
@@ -26,13 +26,13 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
     it('acepta FRONTEND_URL como origen exacto cuando CORS_ORIGINS no está definido', () => {
       const { CORS_ORIGINS, ...envWithoutCorsOrigins } = baseSecureEnv;
       const result = validarEntorno({
-        env: { ...envWithoutCorsOrigins, FRONTEND_URL: 'https://contadorganadero.com' },
+        env: { ...envWithoutCorsOrigins, FRONTEND_URL: 'https://contadorganandero.com' },
         allowTestDefaults: false,
         exitOnError: false,
       });
 
       expect(result.ok).toBe(true);
-      expect(result.CORS_ORIGINS).toEqual(['https://contadorganadero.com']);
+      expect(result.CORS_ORIGINS).toEqual(['https://contadorganandero.com']);
     });
 
     it('rechaza arrancar si falta JWT_SECRET o tiene menos de 32 caracteres', () => {
@@ -83,7 +83,7 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
           ...baseSecureEnv,
           CLOUDFLARE_EMAIL_API_TOKEN: 'cf_api_token_with_more_than_32_characters_here_12345',
           CLOUDFLARE_ACCOUNT_ID: 'cf_account_id_with_more_than_32_characters_here_12345',
-          CLOUDFLARE_EMAIL_FROM: 'soporte@contadorganadero.com',
+          CLOUDFLARE_EMAIL_FROM: 'soporte@contadorganandero.com',
           CLOUDFLARE_EMAIL_FROM_NAME: 'ContadorGanadero Soporte',
         };
         const result = validarEntorno({ env: envWithEmail, allowTestDefaults: false, exitOnError: false });
@@ -170,17 +170,17 @@ describe('Bloques 1 y 2: Secretos, Variables de Entorno y Red (CORS / Helmet / R
 
     it('responde el preflight de login con el origen de producción y credenciales', async () => {
       const corsAnterior = process.env.CORS_ORIGINS;
-      process.env.CORS_ORIGINS = 'https://contadorganadero.com';
+      process.env.CORS_ORIGINS = 'https://contadorganandero.com';
 
       try {
         const res = await request(app)
           .options('/api/auth/login')
-          .set('Origin', 'https://contadorganadero.com')
+          .set('Origin', 'https://contadorganandero.com')
           .set('Access-Control-Request-Method', 'POST')
           .set('Access-Control-Request-Headers', 'content-type');
 
         expect(res.status).toBe(204);
-        expect(res.headers['access-control-allow-origin']).toBe('https://contadorganadero.com');
+        expect(res.headers['access-control-allow-origin']).toBe('https://contadorganandero.com');
         expect(res.headers['access-control-allow-credentials']).toBe('true');
         expect(res.headers['access-control-allow-methods']).toContain('POST');
       } finally {

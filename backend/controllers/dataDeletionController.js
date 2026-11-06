@@ -66,7 +66,7 @@ function obtenerBaseUrlPublica() {
   const url = (
     process.env.PUBLIC_SITE_URL ||
     process.env.DOMAIN_URL ||
-    'https://contadorganadero.com'
+    'https://contadorganandero.com'
   ).trim();
   return url.replace(/\/+$/, '');
 }
@@ -182,8 +182,8 @@ async function ejecutarEliminacionDatos({
               { 'payload.message.from': { $in: generarVariantesTelefono(usuario.telefono || '') } },
               { 'payload.emailDestino': usuario.email },
               { 'resultado.factura.tenantId': tenant._id },
-              ...(tenant.emailAlias ? [{ 'payload.emailDestino': `${tenant.emailAlias}@contadorganadero.com` },
-                { 'payload.opciones.emailDestino': `${tenant.emailAlias}@contadorganadero.com` }] : [])] });
+              ...(tenant.emailAlias ? [{ 'payload.emailDestino': `${tenant.emailAlias}@contadorganandero.com` },
+                { 'payload.opciones.emailDestino': `${tenant.emailAlias}@contadorganandero.com` }] : [])] });
             await Promise.all([
               Factura.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
               FacturaEmision.deleteMany({ $or: [{ tenantId: tenant._id }, { usuario: usuario._id }] }, { skipTenant: true }),
@@ -196,7 +196,7 @@ async function ejecutarEliminacionDatos({
             await tenant.deleteOne();
 
             datosEliminados.push(
-              'Configuración de la finca y buzón @contadorganadero.com',
+              'Configuración de la finca y buzón @contadorganandero.com',
               'Certificados criptográficos (.p12) y credenciales de Hacienda cifradas',
               'Facturas recibidas, ingresos, inventario multiespecie y costos de producción',
               'Proyecciones y borradores de declaraciones tributarias (IVA / Renta / D-150)'

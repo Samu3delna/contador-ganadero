@@ -4,7 +4,7 @@ function crearMensaje() {
   const raw = new Response('From: proveedor@example.cr\r\n\r\nFactura').body;
   return {
     from: 'proveedor@example.cr',
-    to: 'finca-prueba@contadorganadero.com',
+    to: 'finca-prueba@contadorganandero.com',
     raw,
     rawSize: 64,
     headers: new Headers(),

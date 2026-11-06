@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ReceiptText, Sprout, ChartNoAxesCombined, BookOpen, Play } from 'lucide-react';
+import { ArrowUpRight, ReceiptText, Sprout, ChartNoAxesCombined, Play } from 'lucide-react';
 import BrandLogo from '../components/public/BrandLogo';
 import ProductDemo from '../components/public/ProductDemo';
 import { CTASection, FAQSection, PricingCards } from '../components/public/PublicBlocks';
@@ -157,36 +157,6 @@ export default function LandingPage() {
               <Link to="/soluciones">Explorar casos de uso</Link>
             </article>
           ))}
-        </div>
-      </section>
-
-      <section className="cg-section cg-container cg-split">
-        <div>
-          <BookOpen size={32} aria-hidden="true" />
-          <h2>
-            Aprende con ejemplos{' '}
-            <br />del trabajo en la finca.
-          </h2>
-          <p>
-            Guías paso a paso para conocer ContadorGanadero y artículos de contabilidad ganadera y administración agropecuaria en Costa Rica.
-          </p>
-          <div className="cg-actions">
-            <Link className="cg-button cg-button-secondary" to="/tutoriales">
-              Explorar tutoriales
-            </Link>
-            <Link to="/academia">Visitar la academia</Link>
-          </div>
-        </div>
-        <div className="cg-reading-list">
-          <Link to="/tutoriales">
-            Conoce ContadorGanadero <span>Primeros pasos</span>
-          </Link>
-          <Link to="/producto/dashboard">
-            Cómo interpretar tu dashboard <span>Demostración interactiva</span>
-          </Link>
-          <Link to="/academia">
-            Organiza los números de tu finca <span>Guías prácticas de contabilidad ganadera</span>
-          </Link>
         </div>
       </section>
 

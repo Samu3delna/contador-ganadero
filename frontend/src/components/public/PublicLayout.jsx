@@ -79,8 +79,6 @@ function PublicNavbar() {
           </details>
           {[
             ['/soluciones', 'Soluciones'],
-            ['/tutoriales', 'Tutoriales'],
-            ['/academia', 'Academia'],
             ['/precios', 'Precios'],
           ].map(([to, label]) => (
             <NavLink key={to} to={to}>
@@ -118,8 +116,6 @@ function PublicFooter() {
           <h2>Explorar</h2>
           <Link to="/producto">Producto</Link>
           <Link to="/precios">Precios</Link>
-          <Link to="/tutoriales">Tutoriales</Link>
-          <Link to="/academia">Academia</Link>
         </div>
         <div>
           <h2>Hablemos</h2>

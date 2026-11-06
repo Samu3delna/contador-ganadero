@@ -40,7 +40,7 @@ export default function CondicionesServicioPage() {
           el sector agropecuario costarricense:
         </p>
         <ul>
-          <li><strong>Importación y Lectura de Facturas:</strong> Recepción instantánea y extracción automática de datos de archivos XML y PDF de facturas electrónicas mediante buzón exclusivo Cloudflare (<code>@contadorganadero.com</code>) y bot oficial de WhatsApp.</li>
+          <li><strong>Importación y Lectura de Facturas:</strong> Recepción instantánea y extracción automática de datos de archivos XML y PDF de facturas electrónicas mediante buzón exclusivo Cloudflare (<code>@contadorganandero.com</code>) y bot oficial de WhatsApp.</li>
           <li><strong>Categorización Asistida por IA:</strong> Clasificación inteligente de insumos (alimentos, medicamentos veterinarios, sal, agroquímicos, maquinaria).</li>
           <li><strong>Módulos de Inventario Productivo:</strong> Control de ganado bovino (pesaje, ganancia diaria), aves de postura (lotes, mortalidad), acuicultura (biomasa, FCA) y apicultura (cosechas de miel).</li>
           <li><strong>Costos de Producción y Rentabilidad:</strong> Cálculo del costo real por kilogramo de carne, cartón de huevos o unidad de producto cosechado.</li>
@@ -90,7 +90,7 @@ export default function CondicionesServicioPage() {
           <h2 className="legal-section-title">Recepción de Facturas (Correo Cloudflare y WhatsApp)</h2>
         </div>
         <p>
-          Para facilitar el procesamiento de comprobantes electrónicos, cada finca dispone de una dirección de correo exclusiva (<code>@contadorganadero.com</code>) administrada mediante Cloudflare Email Routing, además de un bot de WhatsApp para el reenvío directo de facturas.
+          Para facilitar el procesamiento de comprobantes electrónicos, cada finca dispone de una dirección de correo exclusiva (<code>@contadorganandero.com</code>) administrada mediante Cloudflare Email Routing, además de un bot de WhatsApp para el reenvío directo de facturas.
         </p>
         <div className="legal-alert legal-alert--info">
           <MailCheck size={22} className="legal-alert-icon" />
@@ -162,7 +162,7 @@ export default function CondicionesServicioPage() {
           </li>
           <li>
             <strong>Errores de cobro:</strong> si detecta un cobro duplicado, un monto incorrecto o un cargo posterior a
-            su cancelación, escríbanos a <code>soporte@contadorganadero.com</code> dentro de los <strong>5 días hábiles</strong>
+            su cancelación, escríbanos a <code>soporte@contadorganandero.com</code> dentro de los <strong>5 días hábiles</strong>
             siguientes al cargo. Verificaremos el caso con ONVO Pay y, de corresponder, emitiremos el reembolso por el
             mismo medio de pago utilizado.
           </li>
@@ -186,7 +186,7 @@ export default function CondicionesServicioPage() {
             <h4>Contacto para Facturación, Cobros y Reembolsos</h4>
             <p>
               Consultas sobre cobros, cancelaciones, reembolsos o facturación de la suscripción:
-              <a href="mailto:soporte@contadorganadero.com" style={{ color: '#4ade80' }}> soporte@contadorganadero.com</a>.
+              <a href="mailto:soporte@contadorganandero.com" style={{ color: '#4ade80' }}> soporte@contadorganandero.com</a>.
               Respondemos en horario de días hábiles.
             </p>
           </div>
