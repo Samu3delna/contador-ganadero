@@ -868,7 +868,7 @@ ${texto}
       subject: `[Soporte] ${ticket.asunto}`,
       text: textoPlano,
       html: html,
-      replyTo: process.env.CLOUDFLARE_EMAIL_FROM || 'soporte@contadorganadero.com',
+      replyTo: process.env.CLOUDFLARE_EMAIL_FROM || 'soporte@contadorganandero.com',
     });
 
     const emailEnviado = Boolean(resultado.success);

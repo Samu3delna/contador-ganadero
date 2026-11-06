@@ -4,4 +4,83 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googletagservices.com https://*.google.com https://*.gstatic.com https://*.adtrafficquality.google https://www.googletagmanager.com https://sdk.onvopay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://contador-ganadero.onrender.com https://*.contadorganadero.com https://cloudflareinsights.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.gstatic.com https://*.adtrafficquality.google https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.onvopay.com; frame-src 'self' https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google https://*.onvopay.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googletagservices.com https://*.google.com https://*.gstatic.com https://*.adtrafficquality.google https://www.googletagmanager.com https://sdk.onvopay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://contador-ganadero.onrender.com https://*.contadorganandero.com https://cloudflareinsights.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.gstatic.com https://*.adtrafficquality.google https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.onvopay.com; frame-src 'self' https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google https://*.onvopay.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';
+
+# Private and retired pages must not be indexed. Authentication remains in the app/API.
+/login
+  X-Robots-Tag: noindex, follow
+
+/registro
+  X-Robots-Tag: noindex, follow
+
+/recuperar-password
+  X-Robots-Tag: noindex, follow
+
+/restablecer-password
+  X-Robots-Tag: noindex, follow
+
+/verificar-email
+  X-Robots-Tag: noindex, follow
+
+/dashboard
+  X-Robots-Tag: noindex, follow
+
+/facturas
+  X-Robots-Tag: noindex, follow
+
+/gastos
+  X-Robots-Tag: noindex, follow
+
+/ingresos
+  X-Robots-Tag: noindex, follow
+
+/impuestos
+  X-Robots-Tag: noindex, follow
+
+/declaraciones
+  X-Robots-Tag: noindex, follow
+
+/inventario
+  X-Robots-Tag: noindex, follow
+
+/costos
+  X-Robots-Tag: noindex, follow
+
+/facturacion
+  X-Robots-Tag: noindex, follow
+
+/hacienda
+  X-Robots-Tag: noindex, follow
+
+/d150
+  X-Robots-Tag: noindex, follow
+
+/calendario
+  X-Robots-Tag: noindex, follow
+
+/planes
+  X-Robots-Tag: noindex, follow
+
+/billing
+  X-Robots-Tag: noindex, follow
+
+/perfil
+  X-Robots-Tag: noindex, follow
+
+/admin
+  X-Robots-Tag: noindex, follow
+
+/admin/*
+  X-Robots-Tag: noindex, follow
+
+/tutoriales
+  X-Robots-Tag: noindex, follow
+
+/tutoriales/*
+  X-Robots-Tag: noindex, follow
+
+/academia
+  X-Robots-Tag: noindex, follow
+
+/academia/*
+  X-Robots-Tag: noindex, follow

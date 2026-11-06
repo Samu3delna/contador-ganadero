@@ -1,42 +1,26 @@
 import { createServer } from 'vite';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
 import path from 'node:path';
 
-const origin = 'https://contadorganadero.com';
-const titles = {
-  '/': 'Administración agropecuaria para Costa Rica',
-  '/producto': 'Conoce el producto', '/producto/dashboard': 'Dashboard financiero',
-  '/producto/facturas': 'Organiza tus facturas XML', '/producto/ingresos': 'Registro de ingresos',
-  '/producto/gastos': 'Organiza los gastos de tu finca', '/producto/inventario': 'Inventario agropecuario',
-  '/producto/costos': 'Costos de producción', '/producto/impuestos': 'Información para tus impuestos',
-  '/tutoriales': 'Tutoriales paso a paso', '/academia': 'Academia agropecuaria',
-  '/precios': 'Planes Gratis y Pro', '/soluciones': 'Soluciones para productores y contadores',
-  '/contacto': 'Contacto', '/preguntas-frecuentes': 'Preguntas frecuentes',
-};
-const routes = ['/', '/producto', ...['dashboard','facturas','ingresos','gastos','inventario','costos','impuestos'].map(s => `/producto/${s}`), '/tutoriales', '/academia', '/precios', '/preguntas-frecuentes', '/contacto', '/soluciones'];
+const origin = 'https://contadorganandero.com';
+const routes = ['/', '/producto', ...['dashboard','facturas','ingresos','gastos','inventario','costos','impuestos'].map(s => `/producto/${s}`), '/precios', '/preguntas-frecuentes', '/contacto', '/soluciones'];
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
 try {
   const { render } = await server.ssrLoadModule('/src/entry-public.jsx');
-  // Discover article URLs from actual library links, keeping one source of truth.
-  for (const library of ['/academia', '/tutoriales']) {
-    const dom = new JSDOM(await render(library));
-    for (const a of dom.window.document.querySelectorAll('a[href]')) {
-      const href = a.getAttribute('href');
-      if (href.startsWith(`${library}/`) && !routes.includes(href)) routes.push(href);
-    }
-    dom.window.close();
-  }
   const template = await readFile('dist/index.html', 'utf8');
+  const publicCss = (await readdir('dist/assets')).filter(name => /^LandingPage-.*\.css$/.test(name));
   for (const route of routes) {
     const markup = await render(route);
     const dom = new JSDOM(template);
     const { document } = dom.window;
     document.getElementById('root').innerHTML = markup;
-    const heading = document.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim();
+    for (const name of publicCss) {
+      const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = `/assets/${name}`; document.head.append(link);
+    }
+    const heading = document.querySelector('h1')?.textContent;
     if (!heading) throw new Error(`No H1: ${route}`);
-    const pageTitle = titles[route] || heading;
-    document.title = `${pageTitle} | ContadorGanadero`;
+    document.title = `${heading} | ContadorGanadero`;
     const description = document.querySelector('main p')?.textContent?.slice(0,170) || heading;
     for (const [attr, key, value] of [['name','description',description],['name','robots','index, follow'],['property','og:title',document.title],['property','og:description',description],['property','og:url',origin+route],['property','og:type',route.startsWith('/academia/')?'article':'website'],['name','twitter:card','summary'],['name','twitter:title',document.title],['name','twitter:description',description]]) {
       let el = document.querySelector(`meta[${attr}="${key}"]`);

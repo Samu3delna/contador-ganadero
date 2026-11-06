@@ -10,7 +10,7 @@ Esta skill documenta el pipeline unificado de recepción de comprobantes y los a
 
 ## Archivos Clave del Módulo
 
-- `cloudflare-email-worker/worker.js`: Cloudflare Email Worker (catch-all `*@contadorganadero.com`) que reenvía el MIME crudo (`message/rfc822`) al backend.
+- `cloudflare-email-worker/worker.js`: Cloudflare Email Worker (catch-all `*@contadorganandero.com`) que reenvía el MIME crudo (`message/rfc822`) al backend.
 - `backend/services/ingestaFacturaService.js`: Servicio centralizado donde convergen los canales de Email y WhatsApp para extraer XML/PDF, resolver el tenant, clasificar con IA y guardar la factura.
 - `backend/services/whatsappService.js`: Integración con Meta WhatsApp Cloud API (`/api/webhooks/whatsapp`) para descarga de adjuntos XML/PDF/imágenes y respuesta automática al productor.
 - `backend/services/emailService.js` & `backend/worker.js`: Lector IMAP IDLE heredado y sincronización por cron (`POST /api/cron/sync-emails`).
@@ -26,7 +26,7 @@ Esta skill documenta el pipeline unificado de recepción de comprobantes y los a
    Cuando ingresa una factura por correo o WhatsApp, el tenant destino se resuelve en este orden de prioridad:
    1. **Cédula del receptor en el XML** (`Receptor.Identificacion.Numero`) comparada contra la cédula del `Tenant` o `Usuario`.
    2. **ID explícito** de tenant/usuario si viene en el contexto.
-   3. **Alias de correo del tenant** (`emailAlias` extraído del destinatario `X-Email-To`, ej. `finca-el-cedro@contadorganadero.com`).
+   3. **Alias de correo del tenant** (`emailAlias` extraído del destinatario `X-Email-To`, ej. `finca-el-cedro@contadorganandero.com`).
    4. **Teléfono del remitente** (para mensajes entrantes de WhatsApp).
 3. **Deduplicación de Comprobantes**:
    - Verificar siempre la `clave` numérica de 50 dígitos antes de insertar una `Factura` para evitar duplicados cuando un proveedor envía el mismo XML por correo y WhatsApp, o cuando llega posteriormente el `MensajeHacienda` de aceptación.

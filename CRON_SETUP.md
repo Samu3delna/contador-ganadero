@@ -130,7 +130,7 @@ El `worker.js` corre 24/7 SIN spin-down en plan FREE de Render.
 - [ ] `IMAP_USER` = `contadoriasam@gmail.com`
 - [ ] `IMAP_PASSWORD` = App Password actual
 - [ ] `OPENROUTER_API_KEY`
-- [ ] `FRONTEND_URL` = `https://contadorganadero.com`
+- [ ] `FRONTEND_URL` = `https://contadorganandero.com`
 - [ ] `EMAIL_ENC_KEY` = (regenerar con `openssl rand -hex 32` — el valor previamente expuesto en versiones históricas de este documento queda comprometido y debe rotarse)
 
 ### Render Background Worker:
