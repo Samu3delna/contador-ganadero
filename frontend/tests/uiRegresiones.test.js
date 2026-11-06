@@ -160,3 +160,70 @@ test('F-25: D150 invalida una respuesta tardia al cambiar el periodo',async()=>{
   assert.equal(view.queryByRole('button',{name:'Exportar PDF'}),null);
   assert.match(view.container.textContent,/Seleccion/);
 });
+
+test('L-01: LoginPage normaliza registro (cedula/telefono), maneja errores y RecuperarCuentaPage procesa enlaces',async()=>{
+  const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+  const auth = await server.ssrLoadModule('/src/context/AuthContext.jsx');
+  const LoginPage = (await server.ssrLoadModule('/src/pages/LoginPage.jsx')).default;
+  const RecuperarCuentaPage = (await server.ssrLoadModule('/src/pages/RecuperarCuentaPage.jsx')).default;
+  let capturedBody = null;
+  api.defaults.adapter = async (config) => {
+    if (config.url === '/auth/refresh') throw new AxiosError('sin sesion', null, config, null, { status: 401, data: {}, headers: {}, config });
+    if (config.url === '/auth/registro') {
+      capturedBody = JSON.parse(config.data);
+      return {
+        data: { _id: 'u1', tenantId: 't1', nombre: capturedBody.nombre, email: capturedBody.email, plan: 'free', token: 'jwt-reg' },
+        status: 201,
+        headers: {},
+        config,
+      };
+    }
+    if (config.url === '/auth/forgot-password') {
+      return { data: { mensaje: 'Si el correo está registrado, recibirás instrucciones.' }, status: 200, headers: {}, config };
+    }
+    return { data: {}, status: 200, headers: {}, config };
+  };
+
+  const view = testing.render(
+    React.createElement(
+      MemoryRouter,
+      { initialEntries: ['/registro'] },
+      React.createElement(
+        auth.AuthProvider,
+        null,
+        React.createElement(
+          Routes,
+          null,
+          React.createElement(Route, { path: '/registro', element: React.createElement(LoginPage) }),
+          React.createElement(Route, { path: '/dashboard', element: React.createElement('div', null, 'Panel Finca') }),
+        ),
+      ),
+    ),
+  );
+
+  await testing.waitFor(() => assert.ok(view.getByLabelText('Nombre completo')));
+  testing.fireEvent.change(view.getByLabelText('Nombre completo'), { target: { name: 'nombre', value: '  Productor REA  ' } });
+  testing.fireEvent.change(view.getByLabelText(/Cédula física o jurídica/), { target: { name: 'cedula', value: '1-0999-0888' } });
+  testing.fireEvent.change(view.getByLabelText(/WhatsApp \/ Celular/), { target: { name: 'telefono', value: '8888-7777' } });
+  testing.fireEvent.change(view.getByLabelText('Correo electrónico'), { target: { name: 'email', value: 'Productor@Finca.CR' } });
+  testing.fireEvent.change(view.getByLabelText('Contraseña'), { target: { name: 'password', value: 'ClaveSegura2026!' } });
+  testing.fireEvent.click(view.getByRole('checkbox'));
+  testing.fireEvent.click(view.getByRole('button', { name: /Crear Cuenta/i }));
+
+  await testing.waitFor(() => assert.ok(capturedBody));
+  assert.equal(capturedBody.nombre, 'Productor REA');
+  assert.equal(capturedBody.email, 'productor@finca.cr');
+  assert.equal(capturedBody.cedula, '109990888');
+  assert.equal(capturedBody.telefono, '+50688887777');
+  assert.equal(capturedBody.aceptaTerminos, true);
+  view.unmount();
+
+  const recView = testing.render(
+    React.createElement(MemoryRouter, { initialEntries: ['/recuperar-password'] }, React.createElement(RecuperarCuentaPage)),
+  );
+  testing.fireEvent.change(recView.getByLabelText('Correo registrado'), { target: { value: 'productor@finca.cr' } });
+  testing.fireEvent.click(recView.getByRole('button', { name: 'Solicitar enlace' }));
+  await testing.waitFor(() => assert.ok(recView.getByRole('status')));
+  assert.match(recView.getByRole('status').textContent, /instrucciones/i);
+  recView.unmount();
+});

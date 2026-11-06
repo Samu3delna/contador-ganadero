@@ -12,6 +12,34 @@ import useSeo from '../hooks/useSeo';
 import fondoLogin from '../Recursos/fondo_login.webm';
 import './LoginPage.css';
 
+const ERRORES_OAUTH = {
+  google_auth_failed: 'No se pudo completar el inicio de sesión con Google. Intenta nuevamente.',
+  invalid_oauth_state: 'La sesión de autenticación expiró por seguridad. Intenta iniciar sesión de nuevo.',
+  google_email_unverified: 'Tu cuenta de Google debe tener un correo electrónico verificado.',
+  account_exists_use_password: 'Ya existe una cuenta con ese correo. Inicia sesión con tu contraseña.',
+  account_suspended: 'Tu cuenta se encuentra suspendida. Contacta a soporte.',
+  tenant_inactive: 'La cuenta de la finca se encuentra inactiva. Contacta a soporte.',
+};
+
+function extraerMensajeError(err) {
+  const data = err?.response?.data;
+  if (data) {
+    if (typeof data.mensaje === 'string' && data.mensaje.trim() && (!data.error || /^[A-Z0-9_]+$/.test(String(data.error)))) {
+      return data.mensaje;
+    }
+    if (typeof data.error === 'string' && data.error.trim()) {
+      return data.error;
+    }
+    if (typeof data.mensaje === 'string' && data.mensaje.trim()) {
+      return data.mensaje;
+    }
+    if (typeof data.message === 'string' && data.message.trim()) {
+      return data.message;
+    }
+  }
+  return 'Error de conexión con el servidor. Verifica tu conexión e intenta nuevamente.';
+}
+
 export default function LoginPage() {
   const { login, registro, completarMfa, usuario, cargando: authCargando } = useAuth();
   const navigate = useNavigate();
@@ -19,11 +47,36 @@ export default function LoginPage() {
 
   // Permite abrir directamente en modo registro si viene de enlaces como "Comenzar Gratis" o ruta /registro
   const searchParams = new URLSearchParams(location.search);
-  const esModoRegistroInicial =
+  const esModoRegistroPorRuta = Boolean(
     location.state?.registro ||
     searchParams.get('registro') === 'true' ||
     searchParams.get('modo') === 'registro' ||
-    location.pathname === '/registro';
+    location.pathname === '/registro'
+  );
+  const rutaKey = `${location.pathname}${location.search}`;
+
+  const [modoManual, setModoManual] = useState(null);
+  const esRegistro = modoManual?.rutaKey === rutaKey ? modoManual.valor : esModoRegistroPorRuta;
+
+  const [animandoCambio, setAnimandoCambio] = useState(false);
+  const [saliendoInicio, setSaliendoInicio] = useState(false);
+  const [error, setError] = useState(() => {
+    const oauthErr = new URLSearchParams(location.search).get('error');
+    return oauthErr ? (ERRORES_OAUTH[oauthErr] || 'No se pudo completar la autenticación.') : '';
+  });
+  const [mfa, setMfa] = useState(() => new URLSearchParams(location.search).get('mfa') === '1' ? {} : null);
+  const [codigoMfa, setCodigoMfa] = useState('');
+  const [usarRecuperacion, setUsarRecuperacion] = useState(false);
+  const [cargando, setCargando] = useState(false);
+  const [form, setForm] = useState({
+    nombre: '',
+    email: '',
+    password: '',
+    nombreFinca: '',
+    telefono: '',
+    cedula: '',
+    aceptaTerminos: false,
+  });
 
   // Si ya hay una sesión activa, redirigir al panel correspondiente
   useEffect(() => {
@@ -33,28 +86,14 @@ export default function LoginPage() {
     }
   }, [usuario, authCargando, navigate]);
 
-  // La página de login no aporta valor en buscadores: se no-indexa.
+  // La página de login/registro no aporta valor en buscadores: se no-indexa.
   useSeo({
-    title: 'Iniciar sesión | ContadorGanadero',
-    description: 'Accede a tu cuenta de ContadorGanadero para gestionar la contabilidad de tu finca.',
-    path: '/login',
+    title: esRegistro ? 'Crear cuenta gratis | ContadorGanadero' : 'Iniciar sesión | ContadorGanadero',
+    description: esRegistro
+      ? 'Crea tu cuenta gratuita en ContadorGanadero para gestionar el IVA REA, Renta, inventario y facturación de tu finca en Costa Rica.'
+      : 'Accede a tu cuenta de ContadorGanadero para gestionar la contabilidad de tu finca.',
+    path: location.pathname === '/registro' ? '/registro' : '/login',
     robots: 'noindex, follow',
-  });
-
-  const [esRegistro, setEsRegistro] = useState(Boolean(esModoRegistroInicial));
-  const [animandoCambio, setAnimandoCambio] = useState(false);
-  const [saliendoInicio, setSaliendoInicio] = useState(false);
-  const [error, setError] = useState('');
-  const [mfa, setMfa] = useState(() => new URLSearchParams(window.location.search).get('mfa') === '1' ? {} : null);
-  const [codigoMfa, setCodigoMfa] = useState('');
-  const [usarRecuperacion, setUsarRecuperacion] = useState(false);
-  const [cargando, setCargando] = useState(false);
-  const [form, setForm] = useState({
-    nombre: '',
-    email: '',
-    password: '',
-    nombreFinca: '',
-    aceptaTerminos: false,
   });
 
   // Cambio animado entre Iniciar Sesión y Registrar Gratis
@@ -62,7 +101,7 @@ export default function LoginPage() {
     if (cargando || Boolean(nuevoModoRegistro) === esRegistro) return;
     setAnimandoCambio(true);
     setError('');
-    setEsRegistro(Boolean(nuevoModoRegistro));
+    setModoManual({ rutaKey, valor: Boolean(nuevoModoRegistro) });
     window.setTimeout(() => {
       setAnimandoCambio(false);
     }, 380);
@@ -91,30 +130,58 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     // El registro requiere aceptar explícitamente los Términos y Condiciones.
-    if (esRegistro && !form.aceptaTerminos) {
-      setError('Debes aceptar los Términos y Condiciones para crear tu cuenta.');
-      return;
+    if (esRegistro && !mfa) {
+      if (!form.aceptaTerminos) {
+        setError('Debes aceptar los Términos y Condiciones para crear tu cuenta.');
+        return;
+      }
+      const pass = String(form.password || '');
+      if (pass.length < 12) {
+        setError('La contraseña debe tener al menos 12 caracteres.');
+        return;
+      }
+      if (!/[a-z]/.test(pass) || !/[A-Z]/.test(pass) || !/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pass)) {
+        setError('La contraseña debe incluir mayúsculas, minúsculas y al menos un número o carácter especial.');
+        return;
+      }
     }
     setCargando(true);
     try {
       let datosSesion;
       if (mfa) {
-        datosSesion = await completarMfa({ ...(mfa.mfaToken ? { mfaToken: mfa.mfaToken } : {}), [usarRecuperacion ? 'backupCode' : 'totpCode']: codigoMfa });
+        datosSesion = await completarMfa({ ...(mfa.mfaToken ? { mfaToken: mfa.mfaToken } : {}), [usarRecuperacion ? 'backupCode' : 'totpCode']: codigoMfa.trim() });
       } else if (esRegistro) {
-        let datosRegistro = { ...form }; // incluye aceptaTerminos, que el backend valida obligatoriamente
-        if (datosRegistro.telefono) {
-          const digits = datosRegistro.telefono.replace(/\D/g, '');
-          if (digits.length === 8) {
-            datosRegistro.telefono = `+506${digits}`;
-          } else if (digits.startsWith('506') && digits.length === 11) {
-            datosRegistro.telefono = `+${digits}`;
-          } else if (!datosRegistro.telefono.startsWith('+')) {
-            datosRegistro.telefono = `+506${digits}`;
+        const datosRegistro = {
+          nombre: String(form.nombre || '').trim(),
+          email: String(form.email || '').trim().toLowerCase(),
+          password: form.password,
+          aceptaTerminos: Boolean(form.aceptaTerminos),
+        };
+        const fincaLimpia = String(form.nombreFinca || '').trim();
+        if (fincaLimpia) {
+          datosRegistro.nombreFinca = fincaLimpia;
+        }
+        if (form.telefono) {
+          const digits = String(form.telefono).replace(/\D/g, '');
+          if (digits) {
+            if (digits.length === 8) {
+              datosRegistro.telefono = `+506${digits}`;
+            } else if (digits.startsWith('506') && digits.length === 11) {
+              datosRegistro.telefono = `+${digits}`;
+            } else if (!String(form.telefono).trim().startsWith('+')) {
+              datosRegistro.telefono = `+506${digits}`;
+            } else {
+              datosRegistro.telefono = String(form.telefono).trim();
+            }
           }
+        }
+        const cedulaLimpia = String(form.cedula || '').replace(/[-\s]/g, '').trim();
+        if (cedulaLimpia) {
+          datosRegistro.cedula = cedulaLimpia;
         }
         datosSesion = await registro(datosRegistro);
       } else {
-        datosSesion = await login(form.email, form.password);
+        datosSesion = await login(String(form.email || '').trim(), form.password);
       }
 
       if (datosSesion?.mfaRequired) { setMfa(datosSesion); return; }
@@ -130,7 +197,7 @@ export default function LoginPage() {
         navigate('/dashboard', { replace: true });
       }
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.message || 'Error de conexión');
+      setError(extraerMensajeError(err));
     } finally {
       setCargando(false);
     }
@@ -165,89 +232,131 @@ export default function LoginPage() {
         <LoginHeader esRegistro={esRegistro} />
 
         {/* Selector segmentado animado: Iniciar Sesión ↔ Registrar Gratis */}
-        <div
-          className="login-mode-tabs mb-5"
-          role="tablist"
-          aria-label="Seleccionar entre iniciar sesión o registrarse"
-        >
-          <span
-            className="login-mode-pill"
-            style={{
-              transform: esRegistro ? 'translateX(100%)' : 'translateX(0%)',
-            }}
-            aria-hidden="true"
-          />
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!esRegistro}
-            onClick={() => cambiarModo(false)}
-            disabled={cargando}
-            className={`login-mode-tab ${!esRegistro ? 'login-mode-tab--active' : ''}`}
+        {!mfa && (
+          <div
+            className="login-mode-tabs mb-5"
+            role="tablist"
+            aria-label="Seleccionar entre iniciar sesión o registrarse"
           >
-            <LogIn size={14} />
-            <span>Iniciar sesión</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={esRegistro}
-            onClick={() => cambiarModo(true)}
-            disabled={cargando}
-            className={`login-mode-tab ${esRegistro ? 'login-mode-tab--active' : ''}`}
-          >
-            <UserPlus size={14} />
-            <span>Registrar gratis</span>
-          </button>
-        </div>
+            <span
+              className="login-mode-pill"
+              style={{
+                transform: esRegistro ? 'translateX(100%)' : 'translateX(0%)',
+              }}
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!esRegistro}
+              onClick={() => cambiarModo(false)}
+              disabled={cargando}
+              className={`login-mode-tab ${!esRegistro ? 'login-mode-tab--active' : ''}`}
+            >
+              <LogIn size={14} />
+              <span>Iniciar sesión</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={esRegistro}
+              onClick={() => cambiarModo(true)}
+              disabled={cargando}
+              className={`login-mode-tab ${esRegistro ? 'login-mode-tab--active' : ''}`}
+            >
+              <UserPlus size={14} />
+              <span>Registrar gratis</span>
+            </button>
+          </div>
+        )}
 
-        {mfa ? <form onSubmit={handleSubmit} className="space-y-4">
-          <label htmlFor="codigo-mfa">{usarRecuperacion ? 'Código de recuperación' : 'Código de autenticación'}</label>
-          <input id="codigo-mfa" autoComplete="one-time-code" value={codigoMfa} onChange={e => setCodigoMfa(e.target.value)} required className="w-full rounded border p-3 bg-slate-900" />
-          {error && <p role="alert">{error}</p>}
-          <Button type="submit" disabled={cargando}>{cargando ? 'Verificando…' : 'Verificar e ingresar'}</Button>
-          <button type="button" onClick={() => { setUsarRecuperacion(v => !v); setCodigoMfa(''); }}>Usar {usarRecuperacion ? 'autenticador' : 'código de recuperación'}</button>
-          <button type="button" onClick={() => { setMfa(null); setCodigoMfa(''); }}>Volver al inicio de sesión</button>
-        </form> : <LoginForm
-          form={form}
-          setForm={setForm}
-          handleSubmit={handleSubmit}
-          error={error}
-          cargando={cargando}
-          esRegistro={esRegistro}
-        />}
-
-        {!mfa && !esRegistro && <Link to="/recuperar-password">Olvidé mi contraseña</Link>}
-        <div className="login-divider my-5">
-          <span>{esRegistro ? '¿Ya tienes una cuenta?' : '¿Nuevo productor en la plataforma?'}</span>
-        </div>
-
-        {esRegistro ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="btn-registro-accion w-full gap-2.5 bg-slate-800/60 hover:bg-slate-800 border-slate-700 text-slate-200"
-            onClick={() => cambiarModo(false)}
-            disabled={cargando}
-            aria-label="Iniciar sesión con cuenta existente"
-          >
-            <LogIn size={18} className="text-emerald-400 shrink-0" />
-            <span>Iniciar sesión</span>
-          </Button>
+        {mfa ? (
+          <form onSubmit={handleSubmit} className="space-y-4 text-left login-mode-fade">
+            <div className="space-y-1.5">
+              <label htmlFor="codigo-mfa" className="text-xs font-medium text-slate-300 block">
+                {usarRecuperacion ? 'Código de recuperación' : 'Código de autenticación'}
+              </label>
+              <input
+                id="codigo-mfa"
+                autoComplete="one-time-code"
+                inputMode={usarRecuperacion ? 'text' : 'numeric'}
+                placeholder={usarRecuperacion ? 'XXXX-XXXX' : '000000'}
+                value={codigoMfa}
+                onChange={(e) => setCodigoMfa(e.target.value)}
+                required
+                className="w-full rounded-lg border border-slate-700 bg-slate-900/90 p-3 text-white text-center tracking-widest font-mono focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
+            {error && (
+              <p role="alert" className="p-3 rounded-lg bg-red-950/40 border border-red-500/40 text-red-300 text-xs">
+                {error}
+              </p>
+            )}
+            <Button variant="gradient" size="lg" className="w-full font-semibold" type="submit" disabled={cargando}>
+              {cargando ? 'Verificando…' : 'Verificar e ingresar'}
+            </Button>
+            <div className="flex flex-col gap-2 pt-1 text-center">
+              <button
+                type="button"
+                className="text-xs text-emerald-400 hover:text-emerald-300 underline transition-colors"
+                onClick={() => { setUsarRecuperacion((v) => !v); setCodigoMfa(''); setError(''); }}
+              >
+                Usar {usarRecuperacion ? 'autenticador' : 'código de recuperación'}
+              </button>
+              <button
+                type="button"
+                className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                onClick={() => { setMfa(null); setCodigoMfa(''); setError(''); }}
+              >
+                Volver al inicio de sesión
+              </button>
+            </div>
+          </form>
         ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="btn-registro-accion w-full gap-2.5 bg-emerald-950/40 hover:bg-emerald-900/60 border-emerald-600/50 text-emerald-300 hover:text-emerald-200"
-            onClick={() => cambiarModo(true)}
-            disabled={cargando}
-            aria-label="Registrar gratis"
-          >
-            <UserPlus size={18} className="text-emerald-400 shrink-0" />
-            <span>Registrar gratis</span>
-          </Button>
+          <LoginForm
+            form={form}
+            setForm={setForm}
+            handleSubmit={handleSubmit}
+            error={error}
+            cargando={cargando}
+            esRegistro={esRegistro}
+          />
+        )}
+
+        {!mfa && (
+          <>
+            <div className="login-divider my-5">
+              <span>{esRegistro ? '¿Ya tienes una cuenta?' : '¿Nuevo productor en la plataforma?'}</span>
+            </div>
+
+            {esRegistro ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="btn-registro-accion w-full gap-2.5 bg-slate-800/60 hover:bg-slate-800 border-slate-700 text-slate-200"
+                onClick={() => cambiarModo(false)}
+                disabled={cargando}
+                aria-label="Iniciar sesión con cuenta existente"
+              >
+                <LogIn size={18} className="text-emerald-400 shrink-0" />
+                <span>Iniciar sesión</span>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="btn-registro-accion w-full gap-2.5 bg-emerald-950/40 hover:bg-emerald-900/60 border-emerald-600/50 text-emerald-300 hover:text-emerald-200"
+                onClick={() => cambiarModo(true)}
+                disabled={cargando}
+                aria-label="Registrar gratis"
+              >
+                <UserPlus size={18} className="text-emerald-400 shrink-0" />
+                <span>Registrar gratis</span>
+              </Button>
+            )}
+          </>
         )}
 
         <div className="login-footer mt-3 text-center text-xs text-slate-400">

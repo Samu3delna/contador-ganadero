@@ -3,7 +3,7 @@ import { Sparkles } from 'lucide-react';
 export default function LoginHeader({ esRegistro = false }) {
   return (
     <div className="login-header">
-      <span className={`login-logo ${esRegistro ? 'login-logo--registro' : ''}`} style={{ background: '#f5f8f5' }}>
+      <span className={`login-logo ${esRegistro ? 'login-logo--registro' : ''}`}>
         <img
           src="/logo.svg"
           width={48}

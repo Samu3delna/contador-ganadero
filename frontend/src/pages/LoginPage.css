@@ -213,9 +213,9 @@
   width: clamp(56px, 16vw, 68px);
   height: clamp(56px, 16vw, 68px);
   border-radius: var(--radio-lg);
-  background: linear-gradient(135deg, rgba(27, 94, 32, 0.6), rgba(76, 175, 80, 0.25));
-  border: 1px solid rgba(76, 175, 80, 0.4);
-  box-shadow: var(--sombra-glow);
+  background: #f5f8f5;
+  border: 1.5px solid rgba(16, 185, 129, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), var(--sombra-glow);
   margin-bottom: var(--espacio-sm);
   transition:
     transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
