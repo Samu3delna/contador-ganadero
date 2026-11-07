@@ -242,10 +242,69 @@ const secretoWebhookValido = (req) => {
 };
 
 /**
+ * Valida el formato firmado actual de ONVO.
+ * X-Onvo-Signature: t=<unix>,v1=<hmac-sha256>
+ */
+const firmaWebhookValida = (rawBody, signatureHeader) => {
+  const secreto = process.env.ONVO_WEBHOOK_SECRET;
+  if (!secreto || !Buffer.isBuffer(rawBody) || !signatureHeader) return false;
+
+  let timestamp = null;
+  const firmas = [];
+  for (const parte of String(signatureHeader).split(',')) {
+    const [clave, valor] = parte.trim().split('=', 2);
+    if (clave === 't' && /^\d+$/.test(valor || '')) timestamp = Number(valor);
+    if (clave === 'v1' && /^[0-9a-f]{64}$/i.test(valor || '')) firmas.push(valor.toLowerCase());
+  }
+  if (!timestamp || Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300) return false;
+
+  const esperada = crypto
+    .createHmac('sha256', secreto)
+    .update(`${timestamp}.`)
+    .update(rawBody)
+    .digest();
+
+  return firmas.some((firma) => {
+    const recibida = Buffer.from(firma, 'hex');
+    return recibida.length === esperada.length && crypto.timingSafeEqual(recibida, esperada);
+  });
+};
+
+const leerPayloadWebhook = (req) => {
+  const rawBody = Buffer.isBuffer(req.body) ? req.body : null;
+  const firma = req.headers['x-onvo-signature'];
+  const esFirmado = Boolean(firma);
+  const autenticado = esFirmado
+    ? firmaWebhookValida(rawBody, firma)
+    : secretoWebhookValido(req);
+
+  if (!autenticado) return { autenticado: false };
+
+  let payload = req.body;
+  if (rawBody) {
+    try {
+      payload = JSON.parse(rawBody.toString('utf8'));
+    } catch {
+      return { autenticado: true, payloadInvalido: true };
+    }
+  }
+
+  const data = esFirmado ? payload?.data?.object : payload?.data;
+  return {
+    autenticado: true,
+    payloadInvalido: !payload?.type || !data,
+    type: payload?.type,
+    data,
+    eventoIdOnvo: esFirmado ? payload?.id : null,
+  };
+};
+
+/**
  * Construye una llave de idempotencia para un evento ONVO.
  * ONVO no envía un ID de evento global; usamos type + id del objeto.
  */
-const construirEventoId = (type, data) => {
+const construirEventoId = (type, data, eventoIdOnvo) => {
+  if (eventoIdOnvo) return eventoIdOnvo;
   const finPeriodo = data?.periodEnd || data?.currentPeriodEnd;
   const objetoId = data?.id || data?.paymentIntentId || (data?.subscriptionId && finPeriodo ? `${data.subscriptionId}:${finPeriodo}` : null);
   if (objetoId) return `${type}:${objetoId}`;
@@ -258,7 +317,8 @@ const construirEventoId = (type, data) => {
  * metadata.tenantId -> subscriptionId (activa o pendiente) -> customerId.
  */
 const buscarTenantParaEvento = async (datos) => {
-  const tenantId = datos?.metadata?.tenantId;
+  const metadata = datos?.metadata || datos?.subscriptionMetadata || datos?.invoiceMetadata;
+  const tenantId = metadata?.tenantId;
   if (tenantId) {
     const porId = await Tenant.findById(tenantId).catch(() => null);
     if (porId) return porId;
@@ -280,24 +340,25 @@ const buscarTenantParaEvento = async (datos) => {
 };
 
 /**
- * @desc    Procesar webhook ONVO (JSON normal; valida X-Webhook-Secret)
+ * @desc    Procesar webhook ONVO firmado o legacy.
  * @route   POST /api/onvo/webhook
  * @access  Público (valida secreto ONVO)
  */
 const webhookOnvo = async (req, res) => {
-  if (!secretoWebhookValido(req)) {
-    console.warn('Webhook ONVO rechazado: X-Webhook-Secret inválido o no configurado');
+  const recibido = leerPayloadWebhook(req);
+  if (!recibido.autenticado) {
+    console.warn('Webhook ONVO rechazado: firma o secreto inválido/no configurado');
     return res.status(401).json({ error: 'WEBHOOK_NO_AUTORIZADO' });
   }
 
-  const { type, data } = req.body || {};
-  if (!type || !data) {
+  if (recibido.payloadInvalido) {
     return res.status(400).json({ error: 'PAYLOAD_INVALIDO' });
   }
+  const { type, data, eventoIdOnvo } = recibido;
 
   try {
     const { event: eventoGuardado } = await SubscriptionEvent.registrarSiNoExiste({
-      eventoId: construirEventoId(type, data),
+      eventoId: construirEventoId(type, data, eventoIdOnvo),
       type,
       data,
       customerId: data.customerId || data.customer?.id,
@@ -329,11 +390,11 @@ const webhookOnvo = async (req, res) => {
  */
 const procesarEventoOnvo = async (type, datos, subscriptionEvent) => {
   const tenant = await buscarTenantParaEvento(datos);
-  const esRenovacionExito = type === 'subscription.renewal.succeeded';
-  const esRenovacionFallo = type === 'subscription.renewal.failed';
+  const esRenovacionExito = ['subscription.renewal.succeeded', 'subscription_renewal.succeeded'].includes(type);
+  const esRenovacionFallo = ['subscription.renewal.failed', 'subscription_renewal.failed'].includes(type);
   const esPagoInicialSuscripcion =
     ['payment_intent.succeeded', 'payment-intent.succeeded'].includes(type) &&
-    Boolean(datos?.subscriptionId || datos?.metadata?.planId || tenant?.onvoSubscriptionIdPendiente);
+    Boolean(datos?.subscriptionId || datos?.metadata?.planId || datos?.subscriptionMetadata?.planId || tenant?.onvoSubscriptionIdPendiente);
 
   if ((esRenovacionExito || esRenovacionFallo) && !tenant) {
     throw new Error('Tenant del evento no encontrado');
@@ -343,7 +404,7 @@ const procesarEventoOnvo = async (type, datos, subscriptionEvent) => {
   if (esRenovacionExito || esRenovacionFallo || (esPagoInicialSuscripcion && tenant)) {
     const cambios = {};
     if (esRenovacionExito || esPagoInicialSuscripcion) {
-      const planId = datos.metadata?.planId || 'pro';
+      const planId = datos.metadata?.planId || datos.subscriptionMetadata?.planId || 'pro';
       if (!PLANES_VALIDOS.includes(planId)) throw new Error('Plan inválido');
       const subIdEfectivo = datos.subscriptionId || tenant.onvoSubscriptionIdPendiente || tenant.onvoSubscriptionId;
       cambios.plan = planId;
