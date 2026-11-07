@@ -1,4 +1,4 @@
-﻿.ds-panel { padding:24px; border:1px solid var(--color-borde); border-radius:16px; background:var(--color-superficie); min-width:0; }
+.ds-panel { padding:24px; border:1px solid var(--color-borde); border-radius:16px; background:var(--color-superficie); min-width:0; }
 .ds-header { display:flex; justify-content:space-between; gap:20px; align-items:center; min-height:95px; }
 .ds-header>div { flex:1; }
 .ds-header .ds-title { width:min(280px,90%); height:34px; margin-bottom:12px; }
@@ -14,4 +14,3 @@
 .ds-panel [class*="animate-pulse"], .ds-header [class*="animate-pulse"], .ds-action { background:color-mix(in srgb,var(--color-texto-sec) 13%,var(--color-superficie)); }
 @media(max-width:480px) { .ds-header { flex-wrap:wrap; } .ds-header>div { flex-basis:100%; } }
 @media(prefers-reduced-motion:reduce) { .ds-panel *, .ds-header *, .ds-action { animation:none!important; } }
-

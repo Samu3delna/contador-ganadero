@@ -1,4 +1,4 @@
-﻿import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '../ui/skeleton';
 import './DashboardSkeletons.css';
 
 export function DashboardHeaderSkeleton() {
@@ -19,4 +19,3 @@ export function ActionSkeleton() {
 export function ProducerDashboardSkeleton() {
   return <div className="page-content producer-dashboard" aria-busy="true"><p className="sr-only" role="status">Cargando métricas de la finca…</p><DashboardHeaderSkeleton /><div className="producer-metrics">{[0,1,2,3].map(i => <MetricCardSkeleton key={i} />)}</div><ChartSkeleton /><div className="producer-bottom"><ListSkeleton /><ListSkeleton /></div><div className="producer-actions"><ActionSkeleton /><ActionSkeleton /><ActionSkeleton /></div></div>;
 }
-

@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 // Existing Playwright installation can be reused; no project dependency is required.
@@ -99,7 +99,3 @@ try {
  await writeFile(new URL('qa-results.json',out),JSON.stringify({note:'Network fixtures only. No production requests or data mutations.',results},null,2));
  console.log(JSON.stringify(results));
 } finally { await browser.close(); }
-
-
-
-

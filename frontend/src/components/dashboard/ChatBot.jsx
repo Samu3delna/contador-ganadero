@@ -243,7 +243,7 @@ function ChatBotSesion() {
         id="chat-toggle-btn"
       >
         <Sparkles size={20} className="text-amber-300 animate-pulse" />
-        {!abierto ? <span>Asistente IA</span> : <X size={20} />}
+        {!abierto ? <span className="chat-label">Asistente IA</span> : <X size={20} />}
       </Button>
 
       {abierto && (
