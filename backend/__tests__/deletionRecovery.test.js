@@ -16,11 +16,9 @@ test('F-01: borrado parcial no informa completado y puede reanudarse idempotente
   expect(done.solicitud.estado).toBe('completada'); expect(await Usuario.findById(u._id)).toBeNull();
   expect((await reanudarEliminacion(registro.codigoConfirmacion)).solicitud.estado).toBe('completada');
 });
-test('F-01: codigo inventado devuelve 404 y fallo de consulta devuelve 503', async () => {
+test('portal público de consulta retirado devuelve 404', async () => {
   const url='/api/webhooks/whatsapp/data-deletion/status/CODIGOINEXISTENTE';
   expect((await request(app).get(url)).status).toBe(404);
-  const spy=jest.spyOn(Solicitud,'findOne').mockImplementationOnce(() => ({ lean: async () => { throw new Error('fallo sintetico'); } }));
-  expect((await request(app).get(url)).status).toBe(503); spy.mockRestore();
 });
 test('solicitud publica sin titularidad no se puede reanudar como borrado', async () => {
   const s=await Solicitud.create({codigoConfirmacion:'PUBLICO-TEST',origen:'web_formulario',explicacionEstado:'Pendiente de titularidad'});

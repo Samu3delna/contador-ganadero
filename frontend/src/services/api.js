@@ -268,10 +268,9 @@ export const obtenerResumenCostosAPI = (params) => api.get('/costos/resumen', { 
 
 // === Facturación Electrónica REA ===
 export const obtenerFacturasEmisionAPI = (params) => api.get('/facturacion', { params });
-export const crearFacturaEmisionAPI = (datos) => api.post('/facturacion', datos);
 export const obtenerResumenEmisionAPI = (params) => api.get('/facturacion/resumen', { params });
 
-// === Hacienda v4.4 ===
+// === Emisión electrónica (rutas SDK de Hacienda) ===
 export const guardarConfigHaciendaAPI = (datos) => api.post('/hacienda/config', datos);
 export const probarConfigHaciendaAPI = () => api.post('/hacienda/config/test');
 export const infoAmbienteHaciendaAPI = () => api.get('/hacienda/ambiente');
@@ -281,19 +280,6 @@ export const enviarAHaciendaAPI = (id) => api.post(`/hacienda/emision/${id}/envi
 export const consultarEstadoHaciendaAPI = (id) => api.get(`/hacienda/emision/${id}/estado`);
 export const cancelarDocumentoHaciendaAPI = (id) => api.post(`/hacienda/emision/${id}/cancelar`);
 export const descargarXmlHaciendaAPI = (id) => descargarArchivoBlob(`/hacienda/emision/${id}/xml`);
-
-// REP (Recibo Electronico de Pago)
-export const crearRepAPI = (datos) => api.post('/hacienda/rep', datos);
-export const listarRepAPI = (params) => api.get('/hacienda/rep', { params });
-
-// FEC (Factura Electronica de Compra)
-export const crearFecAPI = (datos) => api.post('/hacienda/fec', datos);
-export const listarFecAPI = (params) => api.get('/hacienda/fec', { params });
-
-// D-150 Conciliacion tributaria
-export const conciliacionD150GETAPI = (params) => api.get('/hacienda/d150/conciliacion', { params });
-export const reporteD150PDFAPI = (params) => descargarArchivoBlob('/hacienda/d150/reporte/pdf', { params });
-export const reporteD150ExcelAPI = (params) => descargarArchivoBlob('/hacienda/d150/reporte/excel', { params });
 
 async function descargarArchivoBlob(url, config) {
   try {
@@ -308,11 +294,7 @@ async function descargarArchivoBlob(url, config) {
   }
 }
 
-// === Eliminación de Datos de Usuario (Meta / Ley 8968 CR) ===
-export const consultarEstadoEliminacionAPI = (codigo) =>
-  api.get(`/webhooks/whatsapp/data-deletion/status/${encodeURIComponent(codigo)}`);
-export const solicitarEliminacionDatosPublicaAPI = (datos) =>
-  api.post('/webhooks/whatsapp/data-deletion/solicitud', datos);
+// === Eliminación de cuenta ===
 export const eliminarMiCuentaAPI = () => api.delete('/auth/eliminar-cuenta');
 
 export default api;

@@ -20,7 +20,6 @@ const LIMITES_POR_PLAN = {
     vlmHabilitado: false,
     tokensChatMes: 100000,
     moduloContable: true,
-    moduloD150: false,
     anunciosHabilitados: true,
     soporte: 'Comunidad',
   },
@@ -31,7 +30,6 @@ const LIMITES_POR_PLAN = {
     vlmHabilitado: true,
     tokensChatMes: 1000000,
     moduloContable: true,
-    moduloD150: true,
     anunciosHabilitados: false,
     soporte: 'Email',
   },
@@ -56,8 +54,8 @@ function construirFeatures(id) {
 
   return [
     { texto: 'Buzón Cloudflare Email exclusivo (@contadorganandero.com)', incluido: true },
-    { texto: 'Recepción y reenvío de facturas por Bot de WhatsApp', incluido: true },
-    { texto: 'Lectura oficial Hacienda v4.4 y auditoría de IVA al 1%', incluido: true },
+    { texto: 'Recepción de facturas XML por correo y carga manual', incluido: true },
+    { texto: 'Facturación electrónica y consulta de estado', incluido: true },
     { texto: 'Módulo contable: IVA Cuatrimestral y Renta Anual (D-101)', incluido: l.moduloContable },
     { texto: 'Control de inventario multiespecie (bovinos, aves, peces, abejas)', incluido: true },
     { texto: 'Costos de producción por kilo y facturación electrónica REA', incluido: true },
@@ -67,7 +65,6 @@ function construirFeatures(id) {
     { texto: `${l.usuariosTenant} ${l.usuariosTenant === 1 ? 'usuario (productor)' : 'usuarios con roles (dueño, contador, peón)'}`, incluido: true },
     { texto: `${formatearAlmacenamiento(l.almacenamientoMB)} de almacenamiento para XMLs y documentos`, incluido: true },
     { texto: 'Visión artificial avanzada VLM (NVIDIA NIM)', incluido: l.vlmHabilitado },
-    { texto: 'Módulo D-150 / Conciliación anual TRIBU-CR', incluido: l.moduloD150 },
     { texto: '100% libre de anuncios y publicidad', incluido: esPro },
     { texto: 'Soporte prioritario por email', incluido: esPro },
   ];
@@ -97,7 +94,7 @@ const CATALOGO_PLANES = [
     precio: 10,
     moneda: 'USD',
     periodicidad: 'mes',
-    descripcion: 'Sin anuncios, con módulo D-150, visión VLM, 300 conteos IA, 25 GB y acceso para tu contador.',
+    descripcion: 'Sin anuncios, con visión VLM, 300 conteos IA, 25 GB y acceso para tu contador.',
     destacado: true,
     anuncios: false,
     limiteConteos: LIMITES_POR_PLAN.pro.conteosMes,

@@ -44,7 +44,7 @@ async function main() {
           console.warn('⚠️ No se pudo conectar a IMAP:', err.message);
         }
     } else {
-      console.log('ℹ️ IMAP no configurado. La ingesta principal opera en tiempo real vía Cloudflare Email Worker y WhatsApp.');
+      console.log('ℹ️ IMAP no configurado. La ingesta principal opera en tiempo real vía Cloudflare Email Worker.');
     }
 
     // Iniciar worker asíncrono de envío a Hacienda (facturación v4.4)

@@ -17,8 +17,7 @@ const TIPOS_DOC = {
   FE: { label: 'Factura Electrónica (FE)', requiereReceptor: true },
   TE: { label: 'Tiquete Electrónico (TE)', requiereReceptor: false },
   NC: { label: 'Nota de Crédito (NC)', requiereReceptor: true, requiereReferencia: true },
-  FEC: { label: 'Factura Electrónica de Compra (FEC)', requiereReceptor: true },
-  REP: { label: 'Recibo Electrónico de Pago (REP)', requiereFacturaOriginal: true },
+  ND: { label: 'Nota de Débito (ND)', requiereReceptor: true, requiereReferencia: true },
 };
 
 const TIPOS_PRODUCTO = [
@@ -61,8 +60,6 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
   const [tipoProducto, setTipoProducto] = useState('carne_bovino');
   const [condicionVenta, setCondicionVenta] = useState('01');
   const [medioPago, setMedioPago] = useState('04');
-  const [facturaIdOriginal, setFacturaIdOriginal] = useState('');
-  const [montoAbono, setMontoAbono] = useState(0);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -80,8 +77,6 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
     // Reset
     setReceptor({ nombre: '', cedula: { tipo: '02', numero: '' }, correo: '', telefono: '' });
     setLineas([{ codigo: '', descripcion: '', cantidad: 1, unidadMedida: 'Kg', precioUnitario: 0, tarifaIdx: 3 }]);
-    setFacturaIdOriginal('');
-    setMontoAbono(0);
   }, [isOpen, usuario]);
 
   const addLinea = () => setLineas([...lineas, { codigo: '', descripcion: '', cantidad: 1, unidadMedida: 'Kg', precioUnitario: 0, tarifaIdx: 3 }]);
@@ -98,15 +93,7 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
   const handleSubmit = (e) => {
     e.preventDefault();
     // Validaciones
-    if (config.requiereFacturaOriginal && !facturaIdOriginal) {
-      toast.error('Para REP debés indicar el ID de la factura original aceptada');
-      return;
-    }
-    if (config.requiereFacturaOriginal && (!montoAbono || montoAbono <= 0)) {
-      toast.error('Indicá el monto del abono');
-      return;
-    }
-    if (tipoDoc !== 'REP' && (!emisor.nombre || !emisor.cedula?.numero)) {
+    if (!emisor.nombre || !emisor.cedula?.numero) {
       toast.error('Datos del emisor incompletos');
       return;
     }
@@ -114,7 +101,6 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
       toast.error('Datos del receptor incompletos');
       return;
     }
-    if (tipoDoc !== 'REP') {
       for (const l of lineas) {
         if (!l.codigo || String(l.codigo).length !== 13) {
           toast.error(`La línea "${l.descripcion || '?'}" necesita CABYS de 13 dígitos`);
@@ -125,18 +111,8 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
           return;
         }
       }
-    }
 
     // Mapear
-    if (tipoDoc === 'REP') {
-      onSave({
-        facturaIdOriginal,
-        montoAbono: Number(montoAbono),
-        medioPago,
-      }, 'REP');
-      return;
-    }
-
     const lineaDetalle = lineas.map((l, idx) => {
       const tarifa = TARIFAS_IVA[l.tarifaIdx];
       const subtotal = l.cantidad * l.precioUnitario;
@@ -170,36 +146,16 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
       condicionVenta,
       medioPago: [medioPago],
       plazoCredito: condicionVenta === '02' || condicionVenta === '10' ? plazoCredito : undefined,
-      documentoReferencia: tipoDoc === 'FEC' || config.requiereReferencia ? { ...documentoReferencia, fechaEmisionReferencia: new Date(documentoReferencia.fechaEmisionReferencia).toISOString() } : undefined,
+      documentoReferencia: config.requiereReferencia ? { ...documentoReferencia, fechaEmisionReferencia: new Date(documentoReferencia.fechaEmisionReferencia).toISOString() } : undefined,
     }, tipoDoc);
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Emitir ${config.label}`} size="lg">
       <form onSubmit={handleSubmit} className="form-grid">
-        {tipoDoc !== 'REP' && <DatosPersona titulo={tipoDoc === 'FEC' ? 'Comprador (su finca)' : 'Emisor'} valor={emisor} onChange={setEmisor} ubicacion />}
-        {(tipoDoc === 'FEC' || config.requiereReferencia) && <fieldset className="form-grid form-grid-full"><legend>Documento de referencia</legend>{[['tipoDocReferencia','Tipo de documento (código)'],['numeroReferencia','Número de documento'],['fechaEmisionReferencia','Fecha del documento'],['codigoReferencia','Código de referencia'],['razonReferencia','Razón']].map(([campo,label]) => <label className="form-group" key={campo}>{label}<input className="input" type={campo === 'fechaEmisionReferencia' ? 'datetime-local' : 'text'} value={documentoReferencia[campo]} onChange={e => setDocumentoReferencia({ ...documentoReferencia, [campo]: e.target.value })} required /></label>)}</fieldset>}
-        {config.requiereFacturaOriginal && (
-          <>
-            <h4 className="form-seccion-titulo">
-              Recibo Electrónico de Pago
-            </h4>
-            <div className="form-group">
-              <label>ID de la Factura original (aceptada) *</label>
-              <input className="input" type="text" value={facturaIdOriginal}
-                onChange={(e) => setFacturaIdOriginal(e.target.value)}
-                placeholder="_id de la FE a acreditar (la buscas en Emisión FE/TE)" required />
-            </div>
-            <div className="form-group">
-              <label>Monto del abono (₡) *</label>
-              <input className="input" type="number" min="0.01" step="any" value={montoAbono}
-                onChange={(e) => setMontoAbono(Number(e.target.value))} required />
-            </div>
-          </>
-        )}
-
-        {tipoDoc !== 'REP' && (
-          <>
+        <DatosPersona titulo="Emisor" valor={emisor} onChange={setEmisor} ubicacion />
+        {config.requiereReferencia && <fieldset className="form-grid form-grid-full"><legend>Documento de referencia</legend>{[['tipoDocReferencia','Tipo de documento (código)'],['numeroReferencia','Número de documento'],['fechaEmisionReferencia','Fecha del documento'],['codigoReferencia','Código de referencia'],['razonReferencia','Razón']].map(([campo,label]) => <label className="form-group" key={campo}>{label}<input className="input" type={campo === 'fechaEmisionReferencia' ? 'datetime-local' : 'text'} value={documentoReferencia[campo]} onChange={e => setDocumentoReferencia({ ...documentoReferencia, [campo]: e.target.value })} required /></label>)}</fieldset>}
+        <>
             <h4 className="form-seccion-titulo">Datos del Comprobante</h4>
             <div className="form-group">
               <label>Tipo de Producto *</label>
@@ -222,13 +178,11 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
                 {MEDIOS_PAGO.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </div>
-          </>
-        )}
+        </>
 
-        {config.requiereReceptor && <DatosPersona titulo={tipoDoc === 'FEC' ? 'Proveedor (vendedor)' : 'Receptor (comprador)'} valor={receptor} onChange={setReceptor} ubicacion={tipoDoc === 'FEC'} />}
+        {config.requiereReceptor && <DatosPersona titulo="Receptor (comprador)" valor={receptor} onChange={setReceptor} />}
 
-        {tipoDoc !== 'REP' && (
-          <>
+        <>
             <h4 className="form-seccion-titulo">Líneas (CABYS obligatorio)</h4>
             <div className="form-grid-full">
               {lineas.map((l, idx) => (
@@ -267,8 +221,7 @@ export default function EmitirComprobanteModal({ isOpen, onClose, onSave, guarda
                 <span className="text-mono">₡{Math.round(totales.total).toLocaleString('es-CR')}</span>
               </div>
             </div>
-          </>
-        )}
+        </>
 
         <div className="form-actions form-grid-full" style={{ marginTop: '16px' }}>
           <button className="btn btn-secondary" type="button" onClick={onClose}>Cancelar</button>

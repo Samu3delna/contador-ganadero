@@ -56,8 +56,6 @@ const chatRoutes = require('./routes/chatRoutes');
 const onvoWebhookRoutes = require('./routes/onvoWebhookRoutes');
 const onvoRoutes = require('./routes/onvoRoutes');
 const emailWebhookRoutes = require('./routes/emailWebhookRoutes');
-const whatsappWebhookRoutes = require('./routes/whatsappWebhookRoutes');
-const metaDataDeletionRoutes = require('./routes/metaDataDeletionRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 
@@ -136,11 +134,6 @@ app.use('/api/onvo/webhook', onvoWebhookRoutes);
 // Límite de 100kb por defecto en JSON y urlencoded para mitigar DoS de memoria
 app.use(express.json({
   limit: '100kb',
-  verify: (req, res, buffer) => {
-    if (req.originalUrl.startsWith('/api/webhooks/whatsapp')) {
-      req.rawBody = Buffer.from(buffer);
-    }
-  },
 }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 app.use(cookieParser());
@@ -227,8 +220,6 @@ app.use('/api/hacienda', haciendaConfigRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/onvo', onvoRoutes);
 app.use('/api/webhooks/email', emailWebhookRoutes);
-app.use('/api/webhooks/whatsapp', whatsappWebhookRoutes);
-app.use('/api/webhooks/meta-data-deletion', metaDataDeletionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
 

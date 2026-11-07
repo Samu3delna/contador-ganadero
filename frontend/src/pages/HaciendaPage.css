@@ -1,4 +1,7 @@
 /* HaciendaPage.css */
+.hacienda-flow-banner { display:grid; gap:6px; margin:20px 0 24px; padding:16px 20px; border:1px solid var(--color-borde-hover); border-radius:12px; background:var(--color-superficie); }
+.hacienda-flow-banner p { color:var(--color-texto-sec); font-size:.9rem; }
+.hacienda-flow-banner strong { color:var(--color-texto); }
 
 .hacienda-tabs {
   display: flex;

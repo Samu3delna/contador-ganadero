@@ -14,16 +14,15 @@ const {
   consultaMockLocal,
 } = require('../controllers/haciendaController');
 const { obtenerFacturasEmision } = require('../controllers/facturaEmisionController');
-const repController = require('../controllers/repController');
-const fecController = require('../controllers/fecController');
-const d150Controller = require('../controllers/d150Controller');
 
 // Endpoint interno de consulta para ambiente local (lo usa el mock de recepcion.js)
 router.get('/interno/consulta/:clave', consultaMockLocal);
 
+router.use(['/fec', '/rep', '/d150'], (_req, res) => res.status(404).json({ error: 'API no encontrada' }));
+
 router.use(protegerRuta);
 router.use(extraerTenant);
-router.use(['/emision', '/rep', '/fec', '/d150', '/ambiente'], require('../middleware/rbacMiddleware').permitir('facturas:leer'));
+router.use(['/emision', '/ambiente'], require('../middleware/rbacMiddleware').permitir('facturas:leer'));
 
 // Signing or changing fiscal documents requires a financial role in this finca.
 router.use((req, res, next) => {
@@ -52,23 +51,5 @@ router.get('/emision/:id/xml', obtenerXml);
 
 // Consultar estado sincronico contra Hacienda (o mock local)
 router.get('/emision/:id/estado', consultarEstado);
-
-// ============ REP (Recibo Electronico de Pago) ============
-router.post('/rep', repController.crearRep);
-router.get('/rep', repController.listarRep);
-router.get('/rep/por-factura/:facturaIdOriginal', repController.resumenAbonosPorFactura);
-
-// ============ FEC (Factura Electronica de Compra) ============
-router.post('/fec', fecController.crearFec);
-router.get('/fec', fecController.listarFec);
-router.get('/fec/resumen', fecController.resumenCompras);
-
-router.use('/d150', require('../middleware/rbacMiddleware').permitir('declaraciones:generar_y_exportar'), (req, res, next) => req.tenant?.limites?.moduloD150 === true ? next() : res.status(403).json({ error: 'PLAN_SIN_D150' }));
-
-// ============ D-150 Conciliacion Tributaria ============
-router.get('/d150/conciliacion', d150Controller.conciliacion);
-router.post('/d150/conciliacion', d150Controller.conciliacion);
-router.get('/d150/reporte/pdf', d150Controller.reportePDF);
-router.get('/d150/reporte/excel', d150Controller.reporteExcel);
 
 module.exports = router;

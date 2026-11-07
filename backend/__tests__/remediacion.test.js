@@ -34,11 +34,11 @@ describe('Regresiones remediacion', () => {
     const login=await request(app).post('/api/auth/login').send({email:u.email,password:'PasswordPrueba123!'});
     return {u,t,token:login.body.token};
   }
-  test('S-02: free no puede consultar ni exportar D150',async()=>{
+  test('S-02: endpoints D150 retirados responden API no encontrada',async()=>{
     const {token}=await sesion();
     for(const url of ['/api/hacienda/d150/conciliacion','/api/hacienda/d150/reporte/pdf','/api/hacienda/d150/reporte/excel']) {
       const r=await request(app).get(url).set('Authorization',`Bearer ${token}`);
-      expect(r.status).toBe(403); expect(r.body.error).toBe('PLAN_SIN_D150');
+      expect(r.status).toBe(404); expect(r.body.error).toBe('API no encontrada');
     }
   });
   test('F-20: peon no puede leer contabilidad ni borrar facturas',async()=>{
@@ -55,8 +55,25 @@ describe('Regresiones remediacion', () => {
     const doc=await require('../models/FacturaEmision').collection.insertOne({tenantId:t._id,usuario:u._id,estado:'borrador'});
     const r=await request(app).put(`/api/facturacion/${doc.insertedId}/estado`).set('Authorization',`Bearer ${token}`).send({estado:'aceptada'});
     // Mount is read from the application, not a second test-only router.
-    expect(r.status).toBe(422);
+    expect(r.status).toBe(404);
     expect((await require('../models/FacturaEmision').collection.findOne({_id:doc.insertedId})).estado).toBe('borrador');
+  });
+  test('FEC y REP históricos siguen visibles y no admiten firma, envío ni cancelación', async () => {
+    const { u, t, token } = await sesion();
+    const Emision = require('../models/FacturaEmision');
+    for (const tipoDocumento of ['FEC', 'REP']) {
+      const doc = await Emision.collection.insertOne({
+        tenantId: t._id, usuario: u._id, tipoDocumento, estado: 'borrador',
+        fechaEmision: new Date(), consecutivo: '00100001080000000001',
+      });
+      const path = `/api/hacienda/emision/${doc.insertedId}`;
+      for (const action of ['firmar', 'enviar', 'cancelar']) {
+        expect((await request(app).post(path + '/' + action).set('Authorization', `Bearer ${token}`).send({})).status).toBe(410);
+      }
+      expect((await request(app).get(path + '/estado').set('Authorization', `Bearer ${token}`)).status).toBe(410);
+      const history = await request(app).get('/api/facturacion').set('Authorization', `Bearer ${token}`);
+      expect(history.body.facturas.some(f => f._id === String(doc.insertedId))).toBe(true);
+    }
   });
   test('F-15: formulas con delimitadores y saltos siguen neutralizadas',()=>{
     for(const texto of ['=SUM(1,2)','+SUM("a","b")','@x\ny']) {

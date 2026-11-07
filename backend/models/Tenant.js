@@ -133,7 +133,6 @@ const limitesSchema = new mongoose.Schema({
   vlmHabilitado: { type: Boolean, default: false },
   tokensChatMes: { type: Number, default: 100000 },
   moduloContable: { type: Boolean, default: true },
-  moduloD150: { type: Boolean, default: false },
   anunciosHabilitados: { type: Boolean, default: true },
   soporte: { type: String, default: 'Comunidad' },
 }, { _id: false });

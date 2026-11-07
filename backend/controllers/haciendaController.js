@@ -69,7 +69,7 @@ const crearBorrador = async (req, res, next) => {
       throw new Error('Faltan campos: emisor, lineaDetalle, tipoProducto');
     }
     if (!['FE', 'TE', 'NC', 'ND'].includes(tipoDocumento)) {
-      res.status(400); throw new Error('Use la ruta específica para FEC o REP');
+      res.status(400); throw new Error('Tipo de documento no disponible para nueva emisión');
     }
     // CABYS obligatorio en v4.4
     for (const l of lineaDetalle) {
@@ -122,6 +122,9 @@ const firmarDocumento = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
+    if (['FEC', 'REP'].includes(factura.tipoDocumento)) {
+      res.status(410); throw new Error('Este tipo de comprobante histórico es de solo lectura');
+    }
     if (factura.estado !== 'borrador') {
       res.status(400); throw new Error(`La factura ya esta en estado ${factura.estado}`);
     }
@@ -150,6 +153,9 @@ const enviarAHacienda = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
+    if (['FEC', 'REP'].includes(factura.tipoDocumento)) {
+      res.status(410); throw new Error('Este tipo de comprobante histórico es de solo lectura');
+    }
     if (factura.estado !== 'firmada') {
       res.status(400); throw new Error(`La factura debe estar firmada, estado actual: ${factura.estado}`);
     }
@@ -186,6 +192,10 @@ const consultarEstado = async (req, res, next) => {
     });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
 
+    if (['FEC', 'REP'].includes(factura.tipoDocumento) &&
+        !['enviada_hacienda', 'procesando', 'aceptada', 'rechazada'].includes(factura.estado)) {
+      res.status(410); throw new Error('El comprobante histórico no tiene un envío registrado');
+    }
     const consultaLegada = factura.estado === 'firmada' && factura.motorHacienda !== haciendaWorker.MOTOR_HACIENDA && factura.claveNumerica;
     if (!consultaLegada && !['enviada_hacienda', 'procesando', 'aceptada', 'rechazada'].includes(factura.estado)) {
       res.status(400); throw new Error('El comprobante aún no tiene un envío registrado');
@@ -231,6 +241,9 @@ const cancelarDocumento = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
+    if (['FEC', 'REP'].includes(factura.tipoDocumento)) {
+      res.status(410); throw new Error('Comprobante histórico de solo lectura');
+    }
     if (['borrador', 'generada', 'anulada'].includes(factura.estado) && !factura.envioIntentadoEn && !factura.xmlFirmado) {
       return require('./facturaEmisionController').anularFactura(req, res, next);
     }

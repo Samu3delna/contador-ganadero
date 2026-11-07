@@ -9,10 +9,10 @@
 La web tendrá anuncios para financiar la cuenta gratuita. El plan de pago elimina
 los anuncios y aumenta límites/features:
 
-| Plan | Precio | Anuncios | Conteos IA/mes | Usuarios | Almacenamiento | VLM | D-150 | Soporte |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Gratis** (`free`) | $0 | Sí | 10 | 1 | 2 GB | No | No | Comunidad |
-| **Pro** (`pro`) | $10/mes | No | 300 | 3 | 25 GB | Sí | Sí | Email |
+| Plan | Precio | Anuncios | Conteos IA/mes | Usuarios | Almacenamiento | VLM | Soporte |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **Gratis** (`free`) | $0 | Sí | 10 | 1 | 2 GB | No | Comunidad |
+| **Pro** (`pro`) | $10/mes | No | 300 | 3 | 25 GB | Sí | Email |
 
 ## Dónde está definido
 
@@ -86,8 +86,7 @@ Mapeo: `bronce|oro|corporativo|agro -> pro`.
 ### 4. Endurecimiento (recomendado, no bloqueante)
 - **Cron mensual** que resetee `consumoActual` (ya está planificado, falta conectar).
 - **Registro de facturas/invoices** (guardar `id`, monto, status) para contabilidad interna.
-- **Enforcement `anuncios`**: el componente ya oculta los anuncios cuando el plan no es `free`;
-  conviene además bloquear el módulo D-150 en `free` (existe `moduloD150` en límites).
+- **Enforcement `anuncios`**: el componente ya oculta los anuncios cuando el plan no es `free`.
 - **Overrides por entorno**: poner precio/periodicidad en variables, no hardcodeados,
   si se desea facturar en colonas o con impuestos locales.
 - **Pruebas de regresión** de `onvoController`, `tenantGuard` y `quotaGuard`

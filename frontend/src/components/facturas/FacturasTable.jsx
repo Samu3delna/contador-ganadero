@@ -44,7 +44,7 @@ export default function FacturasTable({
         <div className="flex flex-col items-center justify-center gap-3">
           <FileText size={44} className="text-slate-600" />
           <p className="text-sm text-slate-400 max-w-sm mx-auto">
-            {filtroAlertas ? 'No hay facturas con alertas de tarifa incorrecta.' : 'No hay facturas aún. Envía tus facturas XML a tu buzón de Cloudflare, por WhatsApp, o súbelas con el botón "Subir XML".'}
+            {filtroAlertas ? 'No hay facturas con alertas de tarifa incorrecta.' : 'No hay facturas aún. Envía tus facturas XML al buzón de proveedores o súbelas con el botón "Subir XML".'}
           </p>
         </div>
       </Card>
@@ -92,14 +92,12 @@ export default function FacturasTable({
                         className={`text-[10px] px-1.5 py-0 border ${
                           f.carpetaOrigen === 'cloudflare-email' 
                             ? 'bg-blue-950/40 border-blue-800 text-blue-300'
-                            : f.carpetaOrigen === 'whatsapp'
-                            ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300'
                             : f.carpetaOrigen.includes('manual')
                             ? 'bg-purple-950/40 border-purple-800 text-purple-300'
                             : 'bg-slate-800 border-slate-700 text-slate-400'
                         }`}
                       >
-                        {f.carpetaOrigen === 'cloudflare-email' ? 'Cloudflare' : f.carpetaOrigen === 'whatsapp' ? 'WhatsApp' : f.carpetaOrigen.includes('manual') ? 'Manual' : f.carpetaOrigen.replace('[Gmail]/', '')}
+                        {f.carpetaOrigen === 'cloudflare-email' ? 'Cloudflare' : f.carpetaOrigen === 'whatsapp' ? 'Canal anterior' : f.carpetaOrigen.includes('manual') ? 'Manual' : f.carpetaOrigen.replace('[Gmail]/', '')}
                       </Badge>
                     )}
                   </div>

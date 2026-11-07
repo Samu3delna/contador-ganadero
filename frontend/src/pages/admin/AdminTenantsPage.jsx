@@ -240,7 +240,7 @@ export default function AdminTenantsPage() {
                 <div style={{ marginTop: 4, color: '#94a3b8' }}>
                   Conteos IA: {tenantSel.tenant.limites?.conteosMes}/mes · Usuarios: {tenantSel.tenant.limites?.usuariosTenant} · Almacenamiento: {MB_A_TEXTO(tenantSel.tenant.limites?.almacenamientoMB || 0)}
                   <br />
-                  Tokens chat: {(tenantSel.tenant.limites?.tokensChatMes || 0).toLocaleString('es-CR')}/mes · VLM: {tenantSel.tenant.limites?.vlmHabilitado ? 'Sí' : 'No'} · D-150: {tenantSel.tenant.limites?.moduloD150 ? 'Sí' : 'No'} · Anuncios: {tenantSel.tenant.limites?.anunciosHabilitados ? 'Sí' : 'No'}
+                  Tokens chat: {(tenantSel.tenant.limites?.tokensChatMes || 0).toLocaleString('es-CR')}/mes · VLM: {tenantSel.tenant.limites?.vlmHabilitado ? 'Sí' : 'No'} · Anuncios: {tenantSel.tenant.limites?.anunciosHabilitados ? 'Sí' : 'No'}
                 </div>
               </div>
 

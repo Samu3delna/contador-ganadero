@@ -27,8 +27,6 @@ const DeclaracionesPage = lazy(() => import('./pages/DeclaracionesPage'));
 const InventarioPage = lazy(() => import('./pages/InventarioPage'));
 const CostosPage = lazy(() => import('./pages/CostosPage'));
 const FacturacionPage = lazy(() => import('./pages/FacturacionPage'));
-const HaciendaPage = lazy(() => import('./pages/HaciendaPage'));
-const D150Page = lazy(() => import('./pages/D150Page'));
 const PlanesPage = lazy(() => import('./pages/PlanesPage'));
 const BillingPage = lazy(() => import('./pages/BillingPage'));
 const PerfilPage = lazy(() => import('./pages/PerfilPage'));
@@ -115,8 +113,8 @@ function App() {
             <Route path="/inventario" element={<RutaUsuario><InventarioPage /></RutaUsuario>} />
             <Route path="/costos" element={<RutaUsuario><CostosPage /></RutaUsuario>} />
             <Route path="/facturacion" element={<RutaUsuario><FacturacionPage /></RutaUsuario>} />
-            <Route path="/hacienda" element={<RutaUsuario><HaciendaPage /></RutaUsuario>} />
-            <Route path="/d150" element={<RutaUsuario><D150Page /></RutaUsuario>} />
+            <Route path="/hacienda" element={<Navigate to="/facturacion" replace />} />
+            <Route path="/d150" element={<Navigate to="/declaraciones" replace />} />
             <Route path="/calendario" element={<RutaUsuario><CalendarioPage /></RutaUsuario>} />
             <Route path="/planes" element={<RutaUsuario><PlanesPage /></RutaUsuario>} />
             <Route path="/billing" element={<RutaUsuario><BillingPage /></RutaUsuario>} />

@@ -25,13 +25,13 @@
 | 📥 **Facturas Recibidas (Gastos)** | Conexión IMAP para descarga automática de XML/PDF desde correos de proveedores. Parseo de XML costarricense v4.3/v4.4 y extracción de líneas. | ✅ 100% |
 | 🤖 **Categorización por IA** | Clasificación automática de gastos según la lista oficial de insumos agropecuarios (canasta básica y tarifa reducida 1%). | ✅ 100% |
 | 💰 **Módulo de Ingresos** | Registro manual de ventas (ganado en pie, canal, leche, huevos, miel, tilapia, café). Métodos de pago y comprobantes. | ✅ 100% |
-| 🏛️ **Impuestos REA 2026** | • **D-135-1:** IVA Cuatrimestral.<br>• **D-101:** Renta Anual con tramos progresivos.<br>• **D-150:** Conciliación y Liquidación Anual REA. | ✅ 100% |
-| 📅 **Calendario Fiscal** | Alertas y cronograma de vencimientos ante el Ministerio de Hacienda (IVA, Renta, D-151, D-150). | ✅ 100% |
+| 🏛️ **Impuestos REA 2026** | • **D-135-1:** IVA Cuatrimestral.<br>• **D-101:** Renta Anual con tramos progresivos. | ✅ 100% |
+| 📅 **Calendario Fiscal** | Alertas y cronograma de vencimientos ante el Ministerio de Hacienda (IVA, Renta, D-151). | ✅ 100% |
 | 📦 **Inventario Multiespecie** | • **Bovinos:** Pesajes, reproducción, producción de leche y sanidad.<br>• **Aves:** Postura, mortalidad y postura diaria.<br>• **Peces:** Biomasa, calidad de agua y fecha de cosecha.<br>• **Apicultura:** Colmenas, cuadros y extracciones de miel. | ✅ 100% |
 | 📈 **Costos y Rentabilidad** | Centros de costo por lote/estanque/colmena. Cálculo de **FCA**, costo por kg/litro/cartón y margen operativo real. | ✅ 100% |
 | 💳 **Suscripciones y Billing** | Integración con ONVO Pay: planes Gratis y Pro ($10/mes). Cargos recurrentes con SDK web, cuotas de tokens y conteos. | ✅ 100% |
 | 💬 **Asistente Virtual IA** | Chatbot agropecuario con contexto financiero e inventario en tiempo real, sanitización PII y modo offline heurístico. | ✅ 100% |
-| 🧾 **Hacienda CR v4.4 (Emisión)** | Generación de clave 50 dígitos, XML v4.4, firma digital XAdES-EPES (.p12), autenticación OAuth2 y polling de estado. | 🟡 75% *(FE lista; faltan NC/TE/FEC)* |
+| 🧾 **Facturación electrónica** | FE, TE, NC y ND con borrador, firma digital, envío y consulta de estado. | 🟡 Validación en sandbox pendiente |
 
 ---
 
@@ -144,8 +144,7 @@ VITE_API_URL=http://localhost:5000/api
 1. **Completar XML Builders restantes en `backend/services/hacienda/xmlBuilder.js`:**
    - **Nota de Crédito (NC - 03):** Requiere nodo `<InformacionReferencia>` para anular o corregir facturas aceptadas.
    - **Tiquete Electrónico (TE - 02):** Facturación simplificada sin receptor obligatorio.
-   - **Factura Electrónica de Compra (FEC - 05):** Para compras a pequeños productores del campo no inscritos.
-   - **Mensaje Receptor / REP (06):** Para el registro de pagos diferidos a crédito.
+   - FE, TE, NC y ND se crean desde Facturación electrónica.
 2. **Flujo de Anulación en Frontend (`HaciendaPage.jsx`):**
    - Botón de acción rápida "Anular" en facturas con estado `aceptada` que abra un modal pidiendo el motivo de anulación y dispare la creación automática de la Nota de Crédito.
 3. **Perfil Fiscal Persistente y Consecutivos Atómicos:**
@@ -158,7 +157,7 @@ VITE_API_URL=http://localhost:5000/api
 
 ### 🟡 Fase 2: Reportes y Exportación
 1. **Exportación Formal de Declaraciones:**
-   - Generación de reportes descargables en **PDF** y **Excel** para los formularios **D-135-1 (IVA)**, **D-101 (Renta)** y **D-150 (Liquidación REA)**.
+   - Generación de reportes descargables en **PDF** y **Excel** para los formularios **D-135-1 (IVA)** y **D-101 (Renta)**.
 2. **Exportación de Inventario:**
    - Botón en `InventarioPage.jsx` para descargar en formato `.xlsx` la sábana de bovinos, pesajes, lotes de aves, estanques de tilapia y cosechas de miel.
 
@@ -207,4 +206,3 @@ npm run build
 La lógica fiscal de esta aplicación cumple con la normativa costarricense vigente para el **Régimen Especial Agropecuario (Ley 9635 y reformas 2026)**:
 - Tarifa reducida de IVA del **1%** en insumos y productos agropecuarios primarios.
 - Declaración cuatrimestral de IVA en los meses de **Mayo**, **Septiembre** y **Enero**.
-- Conciliación anual de compras y ventas mediante **D-150**.

@@ -1,307 +1,124 @@
-import Paginacion from '../components/common/Paginacion';
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, PenTool, Send, Search, FilePlus, Receipt, XCircle } from 'lucide-react';
+import { PenTool, Send, Search, XCircle, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import {
-  infoAmbienteHaciendaAPI,
-  obtenerFacturasEmisionAPI,
-  crearBorradorHaciendaAPI,
-  firmarDocumentoHaciendaAPI,
-  enviarAHaciendaAPI,
-  consultarEstadoHaciendaAPI,
-  cancelarDocumentoHaciendaAPI,
-  descargarXmlHaciendaAPI,
-  crearRepAPI,
-  listarRepAPI,
-  crearFecAPI,
-  listarFecAPI,
-} from '../services/api';
-import EmitirFacturaModalv44 from '../components/hacienda/EmitirComprobanteModal';
-import './HaciendaPage.css';
+import Paginacion from '../components/common/Paginacion';
 import ConfigHaciendaModal from '../components/hacienda/ConfigHaciendaModal';
+import EmitirComprobanteModal from '../components/hacienda/EmitirComprobanteModal';
+import Modal from '../components/common/Modal';
+import {
+  infoAmbienteHaciendaAPI, obtenerFacturasEmisionAPI, crearBorradorHaciendaAPI,
+  firmarDocumentoHaciendaAPI, enviarAHaciendaAPI, consultarEstadoHaciendaAPI,
+  cancelarDocumentoHaciendaAPI, descargarXmlHaciendaAPI,
+} from '../services/api';
+import './HaciendaPage.css';
 
-const ESTADO_BADGE = {
-  borrador: 'badge-advertencia',
-  firmada: 'badge-primario',
-  procesando: 'badge-info',
-  enviada_hacienda: 'badge-advertencia',
-  aceptada: 'badge-exito',
-  rechazada: 'badge-error',
-  anulada: 'badge-secundario',
-};
-
-const TABS = [
-  { id: 'emision', label: 'Emisión FE/TE', icon: FileText },
-  { id: 'rep', label: 'Recibos de Pago (REP)', icon: Receipt },
-  { id: 'fec', label: 'Facturas de Compra (FEC)', icon: FilePlus },
-];
+const NOMBRES = { FE: 'Factura electrónica', TE: 'Tiquete electrónico', NC: 'Nota de crédito', ND: 'Nota de débito', FEC: 'Factura de compra', REP: 'Recibo de pago' };
+const HISTORICOS = ['FEC', 'REP'];
+const ESTADOS = { borrador: 'Borrador', firmada: 'Firmada', enviada_hacienda: 'Envío por confirmar', procesando: 'En proceso', aceptada: 'Aceptada', rechazada: 'Rechazada', anulada: 'Anulada' };
 
 export default function HaciendaPage() {
-  const [configAbierta, setConfigAbierta] = useState(false);
-  const [tab, setTab] = useState('emision');
-  const [pagina, setPagina] = useState(1);
-  const [meta, setMeta] = useState({});
-  const [ambiente, setAmbiente] = useState(null);
   const [facturas, setFacturas] = useState([]);
-  const [reps, setReps] = useState([]);
-  const [fecs, setFecs] = useState([]);
+  const [meta, setMeta] = useState({});
+  const [pagina, setPagina] = useState(1);
+  const [ambiente, setAmbiente] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [modalAbierto, setModalAbierto] = useState(false);
+  const [error, setError] = useState('');
+  const [configAbierta, setConfigAbierta] = useState(false);
+  const [modalTipo, setModalTipo] = useState(null);
   const [guardando, setGuardando] = useState(false);
-  const [modalTipo, setModalTipo] = useState('FE');
+  const [revisando, setRevisando] = useState(null);
 
   const cargar = useCallback(async () => {
+    setCargando(true); setError('');
     try {
-      setCargando(true);
-      const [ambRes, fac, rep, fec] = await Promise.all([
-        infoAmbienteHaciendaAPI().catch(() => ({ data: null })),
-        obtenerFacturasEmisionAPI({page:pagina,limit:50}).catch(() => ({ data: { facturas: [] } })),
-        listarRepAPI({page:pagina,limit:50}).catch(() => ({ data: { docs: [] } })),
-        listarFecAPI({page:pagina,limit:50}).catch(() => ({ data: { docs: [] } })),
+      const [config, docs] = await Promise.all([
+        infoAmbienteHaciendaAPI(),
+        obtenerFacturasEmisionAPI({ page: pagina, limit: 50 }),
       ]);
-      setAmbiente(ambRes.data); setMeta({emision:fac.data,rep:rep.data,fec:fec.data});
-      setFacturas(fac.data?.facturas || []);
-      setReps(rep.data?.docs || []);
-      setFecs(fec.data?.docs || []);
-    } catch (e) {
-      console.error(e);
-      toast.error('Error cargando Hacienda');
-    } finally {
-      setCargando(false);
-    }
+      setAmbiente(config.data);
+      setFacturas(docs.data.facturas || []);
+      setMeta(docs.data);
+    } catch {
+      setError('No pudimos cargar los comprobantes. Intenta nuevamente.');
+    } finally { setCargando(false); }
   }, [pagina]);
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    cargar();
+    const timer = setTimeout(cargar, 0);
+    return () => clearTimeout(timer);
   }, [cargar]);
 
-  const handleEmitir = async (datos, tipoDoc) => {
+  async function crear(datos, tipo) {
     setGuardando(true);
     try {
-      let r;
-      if (tipoDoc === 'REP') {
-        r = await crearRepAPI(datos);
-      } else if (tipoDoc === 'FEC') {
-        r = await crearFecAPI(datos);
-      } else {
-        r = await crearBorradorHaciendaAPI({ ...datos, tipoDocumento: tipoDoc });
-      }
-      toast.success(`${tipoDoc} creada en borrador`);
-      setModalAbierto(false);
+      await crearBorradorHaciendaAPI({ ...datos, tipoDocumento: tipo });
+      setModalTipo(null);
+      toast.success('Borrador guardado. Revísalo antes de firmar.');
       await cargar();
-      //Auto-firmar y encolar para FE/TE/NC/ND/FEC/REP (no en REP todavía, ambos funcionan)
-      const id = r.data?._id || r._id;
-      if (id) {
-        try {
-          await firmarDocumentoHaciendaAPI(id);
-          toast.success('Firmado ✓');
-          await enviarAHaciendaAPI(id);
-          toast.success('Encolado para envío; consultá el estado para confirmar la recepción');
-          await cargar();
-        } catch (e) {
-          toast.error(`No se pudo firmar/enviar: ${e.response?.data?.error || e.message}`);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error(e.response?.data?.error || e.message);
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  const handleFirmar = async (id) => {
-    try {
-      await firmarDocumentoHaciendaAPI(id);
-      toast.success('Firmado ✓');
-      await cargar();
-    } catch (e) {
-      toast.error(e.response?.data?.error || e.message);
-    }
-  };
-
-  const handleEnviar = async (id) => {
-    try {
-      await enviarAHaciendaAPI(id);
-      toast.success('Encolado para envío');
-      await cargar();
-    } catch (e) {
-      toast.error(e.response?.data?.error || e.message);
-    }
-  };
-
-  const handleEstado = async (id) => {
-    try {
-      const r = await consultarEstadoHaciendaAPI(id);
-      toast.success(`Estado: ${r.data.estado}`);
-      await cargar();
-    } catch (e) {
-      toast.error(e.response?.data?.error || e.message);
-    }
-  };
-
-  const handleDescargarXml = async (id, clave) => {
-    try {
-      const r = await descargarXmlHaciendaAPI(id);
-      const url = window.URL.createObjectURL(new Blob([r.data], { type: 'application/xml' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${clave || id}.xml`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (e) {
-      toast.error(e.response?.data?.error || e.message);
-    }
-  };
-
-  const handleCancelar = async (id) => {
-    if (!window.confirm('¿Deseas anular esta factura emitida mediante Nota de Crédito (NC)?')) return;
-    try {
-      const res = await cancelarDocumentoHaciendaAPI(id);
-      toast.success(res.data?.mensaje || 'Nota de Crédito generada en borrador');
-      await cargar();
-    } catch (e) {
-      toast.error(e.response?.data?.error || e.message);
-    }
-  };
-
-  const abrirModal = (tipo) => {
-    setModalTipo(tipo);
-    setModalAbierto(true);
-  };
-
-  const listaActual = tab === 'emision' ? facturas : tab === 'rep' ? reps : fecs;
-
-  if (cargando) return <div className="loader-center"><div className="loader" /></div>;
-
-  return (
-    <div className="page-content">
-      <Paginacion pagina={pagina} {...meta[tab]} onChange={setPagina} cargando={cargando} />
-      {configAbierta && <ConfigHaciendaModal isOpen onClose={() => setConfigAbierta(false)} actual={ambiente} onSaved={cargar} />}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Hacienda v4.4 — Facturación Nativa</h1>
-          <p className="page-subtitle">
-            Ambiente: <strong className={ambiente?.ambiente === 'local' ? 'text-amarillo' : 'text-verde'}>
-              {ambiente?.ambiente || 'local'}
-            </strong>
-            {!ambiente?.p12Configurado && ambiente?.ambiente !== 'local' && ' · ⚠️ .p12 no configurado'}
-            {ambiente?.ambiente === 'local' && ' · modo prueba (no envía a Hacienda)'}
-          </p>
-        </div>
-        <div className="btn-group">
-          <button className="btn btn-secondary" onClick={() => setConfigAbierta(true)}>Configurar Hacienda</button>
-          <button className="btn btn-primary" onClick={() => abrirModal('FE')}>
-            <FileText size={18} /> Emitir Factura
-          </button>
-          <button className="btn btn-secondary" onClick={() => abrirModal('TE')}>
-            <FileText size={18} /> Tiquete (TE)
-          </button>
-          <button className="btn btn-secondary" onClick={() => abrirModal('FEC')}>
-            <FilePlus size={18} /> Compra (FEC)
-          </button>
-          <button className="btn btn-secondary" onClick={() => abrirModal('REP')} disabled={ambiente?.ambiente !== 'local'} title={ambiente?.ambiente !== 'local' ? 'REP pendiente de validación fiscal de pagos; disponible en simulación' : undefined}>
-            <Receipt size={18} /> Abono (REP)
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="hacienda-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            className={`hacienda-tab ${tab === t.id ? 'hacienda-tab--activo' : ''}`}
-            onClick={() => { setTab(t.id); setPagina(1); }}
-          >
-            <t.icon size={16} /> {t.label}
-          </button>
-        ))}
-      </div>
-
-      <TablaDocumentos
-        docs={listaActual}
-        tipo={tab}
-        onFirmar={handleFirmar}
-        onEnviar={handleEnviar}
-        onEstado={handleEstado}
-        onXml={handleDescargarXml}
-        onCancelar={handleCancelar}
-      />
-
-      <EmitirFacturaModalv44
-        isOpen={modalAbierto}
-        onClose={() => setModalAbierto(false)}
-        onSave={handleEmitir}
-        guardando={guardando}
-        tipoDoc={modalTipo}
-      />
-    </div>
-  );
-}
-
-function TablaDocumentos({ docs, tipo, onFirmar, onEnviar, onEstado, onXml, onCancelar }) {
-  if (!docs || docs.length === 0) {
-    return <p className="text-muted">No hay documentos en esta lista. {tipo === 'rep' ? 'Para registrar un abono, debés tener una factura a crédito ya aceptada.' : ''}</p>;
+    } catch (e) { toast.error(e.response?.data?.error || 'No se pudo crear el borrador'); }
+    finally { setGuardando(false); }
   }
-  return (
-    <div className="table-responsive">
-      <table className="data-table tabla--stack">
-        <thead>
-          <tr>
-            <th>Clave / Consecutivo</th>
-            <th>Receptor</th>
-            <th>Fecha</th>
-            <th>Total</th>
-            <th>IVA</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {docs.map((d) => (
-            <tr key={d._id}>
-              <td className="text-mono text-sm" data-label="Clave / Consecutivo">
-                {d.tipoDocumento && d.tipoDocumento !== 'FE' && (
-                  <span className="badge badge-info" style={{ marginRight: '6px', fontSize: '10px' }}>{d.tipoDocumento}</span>
-                )}
-                {d.claveNumerica || '—'}<br /><small>{d.consecutivo}</small>
-              </td>
-              <td data-label="Receptor">{d.receptor?.nombre || '—'}</td>
-              <td data-label="Fecha">{new Date(d.fechaEmision).toLocaleDateString('es-CR')}</td>
-              <td className="text-mono" data-label="Total">{new Intl.NumberFormat('es-CR', { style: 'currency', currency: d.moneda || 'CRC' }).format(d.resumenFactura?.totalComprobante || 0)}</td>
-              <td className="text-mono" data-label="IVA">{new Intl.NumberFormat('es-CR', { style: 'currency', currency: d.moneda || 'CRC' }).format(d.resumenFactura?.totalImpuesto || 0)}</td>
-              <td data-label="Estado">
-                <span className={`badge ${ESTADO_BADGE[d.estado] || ''}`}>{d.estado === 'enviada_hacienda' ? 'Envío por confirmar' : d.estado}</span>
-                {d.erroresValidacion?.length > 0 && <p className="text-sm" role="status">{d.erroresValidacion.join(' ')}</p>}
-              </td>
-              <td data-label="Acciones">
-                <div className="acciones-cell">
-                  {d.estado === 'borrador' && (
-                    <button className="btn-icon" title="Firmar" onClick={() => onFirmar(d._id)}><PenTool size={14} /></button>
-                  )}
-                  {d.estado === 'firmada' && (
-                    <button className="btn-icon" title="Enviar a Hacienda" onClick={() => onEnviar(d._id)}><Send size={14} /></button>
-                  )}
-                  {(d.estado === 'procesando' || d.estado === 'enviada_hacienda') && (
-                    <button className="btn-icon" title="Consultar estado" onClick={() => onEstado(d._id)}><Search size={14} /></button>
-                  )}
-                  {d.estado === 'aceptada' && (
-                    <>
-                      <button className="btn-icon" title="Ver estado" onClick={() => onEstado(d._id)}><Search size={14} /></button>
-                      {['FE', 'TE'].includes(d.tipoDocumento) && <button className="btn-icon" style={{ color: '#ef4444' }} title="Anular con Nota de Crédito (NC)" onClick={() => onCancelar(d._id)}><XCircle size={14} /></button>}
-                    </>
-                  )}
-                  {(d.hashFirma || d.xmlFirmado) && (
-                    <button className="btn-icon" title="Descargar XML" onClick={() => onXml(d._id, d.claveNumerica)}><FileText size={14} /></button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  async function accion(id, solicitud, mensaje) {
+    try { await solicitud(id); toast.success(mensaje); await cargar(); }
+    catch (e) { toast.error(e.response?.data?.error || 'No se pudo completar la acción'); }
+  }
+  async function descargar(id, clave) {
+    try {
+      const response = await descargarXmlHaciendaAPI(id);
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'application/xml' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = (clave || id) + '.xml'; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) { toast.error(e.response?.data?.error || 'No se pudo descargar el XML'); }
+  }
+  function cancelar(id) {
+    if (!window.confirm('¿Crear una nota de crédito para este comprobante aceptado?')) return;
+    accion(id, cancelarDocumentoHaciendaAPI, 'Nota de crédito creada en borrador');
+  }
+  const moneda = (valor, codigo) => new Intl.NumberFormat('es-CR', { style: 'currency', currency: codigo || 'CRC' }).format(valor || 0);
+
+  return <div className="page-content">
+    <div className="page-header">
+      <div><h1 className="page-title">Facturación electrónica</h1><p className="page-subtitle">Crea, firma y consulta tus comprobantes.</p></div>
+      <div className="btn-group">
+        <button className="btn btn-secondary" onClick={() => setConfigAbierta(true)}>Configurar emisión</button>
+        <button className="btn btn-primary" onClick={() => setModalTipo('FE')}>Crear factura</button>
+        <button className="btn btn-secondary" onClick={() => setModalTipo('TE')}>Crear tiquete</button>
+        <button className="btn btn-secondary" onClick={() => setModalTipo('NC')}>Nota de crédito</button>
+        <button className="btn btn-secondary" onClick={() => setModalTipo('ND')}>Nota de débito</button>
+      </div>
     </div>
-  );
+    <div className="hacienda-flow-banner">
+      <p><strong>{ambiente?.ambiente === 'local' ? 'Ambiente de prueba' : ambiente?.ambiente === 'sandbox' ? 'Sandbox' : 'Producción'}</strong>{ambiente?.ambiente === 'local' ? ' · Los comprobantes no se envían a Hacienda.' : !ambiente?.p12Configurado ? ' · Falta configurar el certificado.' : ''}</p>
+      <p>Borrador → Revisar y firmar → Enviar → Consultar respuesta. Un envío pendiente no equivale a aceptación.</p>
+    </div>
+    {error && <p role="alert" className="error-message">{error} <button className="btn btn-secondary" onClick={cargar}>Reintentar</button></p>}
+    {cargando && !facturas.length ? <div className="loader-center"><div className="loader" /></div> : <>
+      <Paginacion pagina={pagina} {...meta} onChange={setPagina} cargando={cargando} />
+      <h2 className="chart-title">Comprobantes e historial</h2>
+      {!facturas.length ? <p className="text-muted">No hay comprobantes todavía. Crea un borrador para comenzar.</p> : <div className="table-responsive"><table className="data-table tabla--stack"><thead><tr><th>Comprobante</th><th>Receptor</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{facturas.map(d => {
+        const historico = HISTORICOS.includes(d.tipoDocumento);
+        return <tr key={d._id}><td data-label="Comprobante"><strong>{NOMBRES[d.tipoDocumento] || d.tipoDocumento}</strong><br /><small>{d.consecutivo || 'Sin consecutivo'}{historico ? ' · Histórico de solo lectura' : ''}</small></td><td data-label="Receptor">{d.receptor?.nombre || '—'}</td><td data-label="Fecha">{new Date(d.fechaEmision).toLocaleDateString('es-CR')}</td><td data-label="Total">{moneda(d.resumenFactura?.totalComprobante, d.moneda)}</td><td data-label="Estado"><span className="factura-status-chip">{ESTADOS[d.estado] || d.estado}</span>{d.erroresValidacion?.length > 0 && <p role="status" className="text-sm">{d.erroresValidacion.join(' ')}</p>}</td><td data-label="Acciones"><div className="acciones-cell">
+          {!historico && d.estado === 'borrador' && <button className="btn btn-secondary btn-sm" title="Revisar y firmar" onClick={() => setRevisando(d)}><PenTool size={16} /> Revisar y firmar</button>}
+          {!historico && d.estado === 'firmada' && <button className="btn btn-primary btn-sm" onClick={() => accion(d._id, enviarAHaciendaAPI, 'Encolado para envío. Consulta el estado para confirmar la respuesta.')}><Send size={16} /> Enviar</button>}
+          {['enviada_hacienda', 'procesando', 'aceptada', 'rechazada'].includes(d.estado) && <button className="btn btn-secondary btn-sm" onClick={() => accion(d._id, consultarEstadoHaciendaAPI, 'Estado consultado')}><Search size={16} /> Consultar</button>}
+          {!historico && d.estado === 'aceptada' && ['FE', 'TE'].includes(d.tipoDocumento) && <button className="btn btn-secondary btn-sm" onClick={() => cancelar(d._id)}><XCircle size={16} /> Crear NC</button>}
+          {(d.hashFirma || d.xmlFirmado) && <button className="btn btn-secondary btn-sm" onClick={() => descargar(d._id, d.claveNumerica)}><Download size={16} /> XML</button>}
+          {historico && !['enviada_hacienda', 'procesando', 'aceptada', 'rechazada'].includes(d.estado) && <span>Solo lectura</span>}
+        </div></td></tr>;
+      })}</tbody></table></div>}
+    </>}
+    {configAbierta && <ConfigHaciendaModal isOpen onClose={() => setConfigAbierta(false)} actual={ambiente} onSaved={cargar} />}
+    {modalTipo && <EmitirComprobanteModal isOpen onClose={() => setModalTipo(null)} onSave={crear} guardando={guardando} tipoDoc={modalTipo} />}
+    <Modal isOpen={Boolean(revisando)} onClose={() => setRevisando(null)} title="Revisar borrador antes de firmar" size="lg">
+      {revisando && <>
+        <p><strong>{NOMBRES[revisando.tipoDocumento]}</strong> · {revisando.consecutivo}</p>
+        <p>Emisor: {revisando.emisor?.nombre} · Receptor: {revisando.receptor?.nombre || 'Consumidor final'}</p>
+        <ul>{revisando.lineaDetalle?.map((linea, index) => <li key={index}>{linea.descripcion} · CABYS {linea.codigo} · {linea.cantidad} × {moneda(linea.precioUnitario, revisando.moneda)}</li>)}</ul>
+        {revisando.documentoReferencia && <p>Referencia: {revisando.documentoReferencia.numeroReferencia}</p>}
+        <p><strong>Total: {moneda(revisando.resumenFactura?.totalComprobante, revisando.moneda)}</strong></p>
+        <p>La firma confirma estos datos. El envío a Hacienda se realiza en el siguiente paso.</p>
+        <div className="form-actions"><button className="btn btn-secondary" onClick={() => setRevisando(null)}>Volver</button><button className="btn btn-primary" onClick={async () => { await accion(revisando._id, firmarDocumentoHaciendaAPI, 'Comprobante firmado. Ya puedes enviarlo.'); setRevisando(null); }}>Firmar comprobante</button></div>
+      </>}
+    </Modal>
+  </div>;
 }

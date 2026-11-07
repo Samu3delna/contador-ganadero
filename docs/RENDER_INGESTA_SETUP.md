@@ -17,7 +17,6 @@ En Render, abre `contador-ganadero-api` → **Environment** y configura las vari
 
 Aunque el backend acepta `FRONTEND_URL` como alternativa, deja `CORS_ORIGINS` explícita en producción. Usa orígenes exactos, sin comodines ni rutas, por ejemplo: `https://contadorganandero.com,https://app.contadorganandero.com`.
 
-Para activar WhatsApp también deben estar definidos `META_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN` y `WHATSAPP_PHONE_NUMBER_ID`. `META_APP_SECRET` debe coincidir con la aplicación de Meta; el token de verificación debe coincidir con el usado en el handshake. El backend no imprime estos valores.
 
 Después de guardar las variables, selecciona **Save, rebuild, and deploy** o **Save and deploy** para que el proceso arranque con ellas. Render solo las aplica al servicio cuando inicia un nuevo deploy. Consulta la [guía de variables y secretos de Render](https://render.com/docs/configure-environment-variables).
 
@@ -31,7 +30,7 @@ La API ya escribe los adjuntos bajo `UPLOAD_ROOT`. Para conservarlos después de
 
 Render usa un sistema de archivos efímero por defecto. Un disco conserva únicamente los archivos escritos bajo su punto de montaje; solo puede conectarse a un servicio a la vez y deshabilita los despliegues sin interrupción. Revisa las [limitaciones de los discos persistentes de Render](https://render.com/docs/disks) antes de adjuntarlo.
 
-Los flujos de Cloudflare Email y WhatsApp escriben desde la API, por lo que el disco debe estar conectado al Web Service. El Background Worker de IMAP es otro servicio y no comparte ese disco. Si se necesita que archivos escritos por ese proceso estén disponibles en la API, se requiere almacenamiento compartido como R2/S3 o una migración del proceso para que pase los adjuntos por la API.
+El flujo de Cloudflare Email escribe desde la API, por lo que el disco debe estar conectado al Web Service. El Background Worker de IMAP es otro servicio y no comparte ese disco. Si se necesita que archivos escritos por ese proceso estén disponibles en la API, se requiere almacenamiento compartido como R2/S3 o una migración del proceso para que pase los adjuntos por la API.
 
 El Background Worker que ejecuta Hacienda también debe recibir el mismo `MONGODB_URI` y `EMAIL_ENC_KEY` si descifra credenciales de fincas.
 

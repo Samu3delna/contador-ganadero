@@ -24,7 +24,8 @@ async function procesar(id) {
         : payload.pdfBuffer._bsontype === 'Binary' ? Buffer.from(payload.pdfBuffer.value(true)) : Buffer.from(payload.pdfBuffer.data || payload.pdfBuffer);
       resultado = await require('./ingestaFacturaService').procesarFacturaXMLString(payload.xml, { ...payload.opciones, pdfBuffer });
     } else if (event.canal === 'whatsapp') {
-      resultado = await require('../routes/whatsappWebhookRoutes').procesarMensaje(event.payload.message);
+      // Los eventos históricos del canal retirado no deben quedar en reintento infinito.
+      resultado = { exito: false, mensaje: 'Canal de recepción retirado' };
     } else return event;
     const estado = resultado?.noAsignada ? 'sin_asignar' : resultado?.exito === false ? 'rechazado' : 'completado';
     const resumido = resultado ? { exito: resultado.exito, duplicada: resultado.duplicada, actualizada: resultado.actualizada,

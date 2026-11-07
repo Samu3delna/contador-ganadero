@@ -14,47 +14,7 @@ const { escapeRegex } = require('../utils/escapeRegex');
 const { audit } = require('../utils/audit');
 
 const JUSTIFICACION_LEGAL_CR =
-  'De conformidad con la Ley N° 8968 (Ley de Protección de la Persona frente al Tratamiento de sus Datos Personales de la República de Costa Rica) y las Condiciones de la Plataforma de Meta, todos los datos personales, credenciales de acceso, vínculo con el bot de WhatsApp, historial de asistente IA, registros de inventario y configuraciones de su finca han sido eliminados de nuestros servidores activos. Justificación legal sobre registros tributarios: en caso de que el usuario haya emitido o recibido comprobantes electrónicos oficiales ante la Dirección General de Tributación (Ministerio de Hacienda de Costa Rica), el obligado tributario debe conservar sus respaldos XML por el plazo de ley (5 años según el Art. 109 del Código de Normas y Procedimientos Tributarios, Ley N° 4755), sin que ContadorGanadero mantenga copia activa ni tratamiento comercial sobre dichos documentos tras la eliminación de la cuenta.';
-
-function base64UrlDecode(input) {
-  const str = String(input || '').replace(/-/g, '+').replace(/_/g, '/');
-  const pad = str.length % 4;
-  const padded = pad ? str + '='.repeat(4 - pad) : str;
-  return Buffer.from(padded, 'base64');
-}
-
-function parseSignedRequest(signedRequest, appSecret) {
-  if (!signedRequest || typeof signedRequest !== 'string' || !signedRequest.includes('.')) {
-    return null;
-  }
-
-  const parts = signedRequest.split('.', 2);
-  const [encodedSig, payload] = parts;
-  if (!encodedSig || !payload) {
-    return null;
-  }
-
-  try {
-    const sig = base64UrlDecode(encodedSig);
-    const decodedPayloadStr = base64UrlDecode(payload).toString('utf8');
-    const data = JSON.parse(decodedPayloadStr);
-
-    if (!data || typeof data !== 'object') {
-      return null;
-    }
-
-    if (appSecret) {
-      const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest();
-      if (sig.length !== expectedSig.length || !crypto.timingSafeEqual(sig, expectedSig)) {
-        return null;
-      }
-    }
-
-    return data;
-  } catch {
-    return null;
-  }
-}
+  'De conformidad con la Ley N° 8968 de Costa Rica, los datos personales y credenciales de acceso de la cuenta han sido eliminados de nuestros servidores activos. Los comprobantes electrónicos transmitidos a Hacienda quedan sujetos al deber legal de conservación del contribuyente.';
 
 function generarCodigoConfirmacion() {
   const randomPart = crypto.randomBytes(5).toString('hex').toUpperCase();
@@ -157,7 +117,7 @@ async function ejecutarEliminacionDatos({
 
       datosEliminados.push(
         'Perfil de usuario y credenciales de acceso',
-        'Número de teléfono vinculado al bot de WhatsApp',
+        'Datos de contacto asociados al perfil',
         'Historial de consultas al asistente de IA'
       );
 
@@ -199,7 +159,7 @@ async function ejecutarEliminacionDatos({
               'Configuración de la finca y buzón @contadorganandero.com',
               'Certificados criptográficos (.p12) y credenciales de Hacienda cifradas',
               'Facturas recibidas, ingresos, inventario multiespecie y costos de producción',
-              'Proyecciones y borradores de declaraciones tributarias (IVA / Renta / D-150)'
+              'Proyecciones y borradores de declaraciones tributarias'
             );
           } else {
             tenant.usuarios = otrosMiembros;
@@ -232,7 +192,7 @@ async function ejecutarEliminacionDatos({
     }
 
     const explicacionEstado = usuarioEncontrado
-      ? `Su solicitud de eliminación de datos (código ${codigoConfirmacion}) ha sido procesada y completada exitosamente. Se eliminaron de forma permanente su perfil de usuario, su vinculación con el bot de WhatsApp y los registros asociados en ContadorGanadero.`
+      ? `Su solicitud de eliminación de datos (código ${codigoConfirmacion}) ha sido procesada y completada exitosamente. Se eliminaron de forma permanente su perfil de usuario y los registros asociados en ContadorGanadero.`
       : `Su solicitud de eliminación de datos (código ${codigoConfirmacion}) ha sido registrada y completada. Confirmamos que no existen registros personales activos asociados a su identificador en nuestras bases de datos operativas.`;
 
     solicitud = await SolicitudEliminacion.findOneAndUpdate({ _id: solicitud._id }, { $set: {
@@ -272,176 +232,6 @@ async function reanudarEliminacion(codigo) {
   return ejecutarEliminacionDatos({ codigoConfirmacion: codigo, usuarioId: solicitud.usuarioId,
     metaUserId: solicitud.metaUserId, origen: solicitud.origen });
 }
-
-/**
- * POST /api/webhooks/whatsapp/data-deletion
- * POST /api/webhooks/meta-data-deletion
- */
-const handleMetaDataDeletionCallback = async (req, res) => {
-  try {
-    const signedRequest = req.body?.signed_request || req.query?.signed_request;
-
-    if (!signedRequest) {
-      return res.status(400).json({
-        error: 'El parámetro signed_request es requerido para procesar la devolución de llamada de Meta.',
-      });
-    }
-
-    const appSecret = (
-      process.env.META_APP_SECRET ||
-      process.env.FACEBOOK_APP_SECRET ||
-      process.env.WHATSAPP_APP_SECRET ||
-      ''
-    ).trim();
-
-    const secretToVerify =
-      appSecret && !appSecret.includes('tu_') && !appSecret.includes('ejemplo')
-        ? appSecret
-        : null;
-
-    if (!secretToVerify && process.env.NODE_ENV === 'production') {
-      return res.status(500).json({
-        error: 'Configuración de verificación de firma de Meta no disponible.',
-      });
-    }
-
-    const data = parseSignedRequest(signedRequest, secretToVerify);
-    if (!data || !data.user_id) {
-      return res.status(400).json({
-        error: 'Solicitud firmada (signed_request) inválida o firma HMAC-SHA256 no coincide.',
-      });
-    }
-
-    const userId = String(data.user_id);
-
-    const resultado = await ejecutarEliminacionDatos({
-      metaUserId: userId,
-      origen: 'meta_callback',
-      ip: req.ip || '',
-    });
-
-    return res.status(200).json({
-      url: resultado.url,
-      confirmation_code: resultado.confirmation_code,
-    });
-  } catch {
-    return res.status(500).json({
-      error: 'Error interno al procesar la solicitud de eliminación de datos.',
-    });
-  }
-};
-
-const infoMetaDataDeletionWebhook = (req, res) => {
-  const baseUrl = obtenerBaseUrlPublica();
-  res.status(200).json({
-    servicio: 'ContadorGanadero - Meta Data Deletion Callback Endpoint',
-    estado: 'activo',
-    metodoEsperado: 'POST (application/x-www-form-urlencoded o application/json con signed_request)',
-    instruccionesUrl: `${baseUrl}/eliminacion-datos`,
-    formatoRespuesta: {
-      url: `${baseUrl}/eliminacion-datos?id=<confirmation_code>`,
-      confirmation_code: '<confirmation_code>',
-    },
-  });
-};
-
-const obtenerEstadoEliminacion = async (req, res) => {
-  const rawCode = String(req.params.code || '').trim();
-  if (!rawCode) {
-    return res.status(400).json({ error: 'Código de confirmación requerido.' });
-  }
-
-  try {
-    const solicitud = await SolicitudEliminacion.findOne({
-      codigoConfirmacion: new RegExp(`^${escapeRegex(rawCode, 40)}$`, 'i'),
-    }).lean();
-
-    if (solicitud) {
-      return res.status(200).json({
-        encontrada: true,
-        confirmation_code: solicitud.codigoConfirmacion,
-        estado: solicitud.estado,
-        origen: solicitud.origen,
-        fechaSolicitud: solicitud.createdAt,
-        completadaEn: solicitud.completadaEn,
-        identificadorEnmascarado: solicitud.email || solicitud.telefono || (solicitud.metaUserId ? `Meta ID ***${String(solicitud.metaUserId).slice(-4)}` : null),
-        datosEliminados: solicitud.datosEliminados,
-        explicacion: solicitud.explicacionEstado,
-        justificacionLegal: solicitud.justificacionLegal || JUSTIFICACION_LEGAL_CR,
-      });
-    }
-  } catch {
-    return res.status(503).json({ error: 'No se pudo consultar el estado de la solicitud' });
-  }
-
-  return res.status(404).json({
-    encontrada: false,
-    error: 'No se encontró ninguna solicitud de eliminación con ese código de confirmación.',
-  });
-};
-
-/**
- * POST /api/webhooks/whatsapp/data-deletion/solicitud
- * SEGURIDAD CRÍTICA: Una solicitud pública sin autenticar NUNCA debe ejecutar el borrado inmediato
- * de otra cuenta por solo conocer su email o teléfono (vulnerabilidad crítica de DoS).
- * En su lugar, registra la solicitud para verificación de identidad o indica al titular autenticado
- * que ejecute el borrado directo desde Mi Perfil -> Eliminar Cuenta.
- */
-const crearSolicitudEliminacionPublica = async (req, res) => {
-  try {
-    const { email, telefono, confirmacion } = req.body || {};
-
-    if (!email && !telefono) {
-      return res.status(400).json({
-        error: 'Debes proporcionar el correo electrónico o el número de WhatsApp asociado a tus datos.',
-      });
-    }
-
-    if (confirmacion !== true) {
-      return res.status(400).json({
-        error: 'Debes confirmar que deseas eliminar permanentemente tus datos.',
-      });
-    }
-
-    const codigoConfirmacion = generarCodigoConfirmacion();
-    const baseUrl = obtenerBaseUrlPublica();
-    const statusUrl = `${baseUrl}/eliminacion-datos?id=${codigoConfirmacion}`;
-
-    const explicacionEstado =
-      `Su solicitud pública de eliminación de datos (código ${codigoConfirmacion}) ha sido registrada. ` +
-      'Por seguridad y para proteger a los productores contra borrados no autorizados por terceros, ' +
-      'la eliminación inmediata requiere iniciar sesión en su cuenta (Mi Perfil -> Eliminar Cuenta) o verificar la titularidad del correo/WhatsApp.';
-
-    const solicitud = await SolicitudEliminacion.create({
-      codigoConfirmacion,
-      origen: 'web_formulario',
-      email: enmascararIdentificador(email),
-      telefono: enmascararIdentificador(telefono),
-      estado: 'en_proceso',
-      usuarioEncontrado: false,
-      datosEliminados: [
-        'Solicitud registrada pendiente de verificación de titularidad para proteger la integridad de la cuenta.',
-      ],
-      explicacionEstado,
-      justificacionLegal: JUSTIFICACION_LEGAL_CR,
-      ipSolicitante: req.ip || '',
-    });
-
-    return res.status(200).json({
-      mensaje: 'Solicitud de eliminación registrada correctamente.',
-      url: statusUrl,
-      confirmation_code: codigoConfirmacion,
-      estado: solicitud.estado,
-      explicacion: solicitud.explicacionEstado,
-      datosEliminados: solicitud.datosEliminados,
-      justificacionLegal: solicitud.justificacionLegal,
-    });
-  } catch {
-    return res.status(500).json({
-      error: 'No se pudo procesar la solicitud de eliminación en este momento.',
-    });
-  }
-};
 
 /**
  * DELETE /api/auth/eliminar-cuenta
@@ -491,14 +281,8 @@ const eliminarMiCuentaAutenticada = async (req, res, next) => {
 };
 
 module.exports = {
-  base64UrlDecode,
-  parseSignedRequest,
   generarCodigoConfirmacion,
   ejecutarEliminacionDatos,
   reanudarEliminacion,
-  handleMetaDataDeletionCallback,
-  infoMetaDataDeletionWebhook,
-  obtenerEstadoEliminacion,
-  crearSolicitudEliminacionPublica,
   eliminarMiCuentaAutenticada,
 };

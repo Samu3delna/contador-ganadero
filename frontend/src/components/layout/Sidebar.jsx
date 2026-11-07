@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, PanelLeftClose, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User, Shield, Users, Building, Activity, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, PanelLeftClose, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Crown, AlertTriangle, ChevronRight, User, Shield, Users, Building, Activity, LifeBuoy } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { esAdministrador } from '../../utils/adminHelper';
@@ -13,7 +13,7 @@ const menuSections = [
     titulo: 'PRINCIPAL',
     items: [
       { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { path: '/facturas', label: 'Facturas XML', icon: FileText },
+      { path: '/facturas', label: 'Facturas recibidas', icon: FileText },
       { path: '/gastos', label: 'Gastos por Categoría', icon: CreditCard },
       { path: '/ingresos', label: 'Ingresos', icon: DollarSign },
     ]
@@ -23,14 +23,12 @@ const menuSections = [
     items: [
       { path: '/inventario', label: 'Inventario', icon: Warehouse },
       { path: '/costos', label: 'Costos de Producción', icon: TrendingUp },
-      { path: '/facturacion', label: 'Facturación REA', icon: Receipt },
+      { path: '/facturacion', label: 'Facturación electrónica', icon: Receipt },
     ]
   },
   {
     titulo: 'HACIENDA & FISCAL',
     items: [
-      { path: '/hacienda', label: 'Hacienda v4.4', icon: Building2 },
-      { path: '/d150', label: 'Conciliación D-150', icon: FileBarChart2 },
       { path: '/declaraciones', label: 'Declaraciones', icon: Landmark },
       { path: '/impuestos', label: 'Cálculo Impuestos', icon: Calculator },
       { path: '/calendario', label: 'Calendario Fiscal', icon: Calendar },

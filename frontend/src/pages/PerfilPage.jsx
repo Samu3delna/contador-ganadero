@@ -242,7 +242,7 @@ export default function PerfilPage() {
               {usuario.googleId ? 'Vinculada' : 'No vinculada'}
             </Dato>
             <Dato icon={Inbox} label="Canales de recepción de facturas">
-              Cloudflare Email + WhatsApp (Tiempo real)
+              Cloudflare Email (Tiempo real)
             </Dato>
             <Dato icon={Users} label="Rol en la finca">{ROL_NOMBRES[usuario.rol] || usuario.rol}</Dato>
           </div>
@@ -282,7 +282,7 @@ export default function PerfilPage() {
               <span>¿Eliminar permanentemente tu cuenta y datos?</span>
             </DialogTitle>
             <DialogDescription className="text-slate-300 text-xs leading-relaxed pt-2">
-              Esta acción eliminará de forma definitiva tu perfil, el vínculo con el bot de WhatsApp,
+              Esta acción eliminará de forma definitiva tu perfil,
               credenciales cifradas, inventario e historial contable en ContadorGanadero. Recibirás un
               código de confirmación alfanumérico conforme a la Ley N° 8968 y las Condiciones de Meta.
             </DialogDescription>
@@ -391,7 +391,7 @@ export default function PerfilPage() {
             </div>
 
             <div>
-              <Label className="text-xs text-slate-300">Teléfono móvil (WhatsApp)</Label>
+              <Label className="text-xs text-slate-300">Teléfono móvil</Label>
               <div className="flex items-center gap-2 mt-1">
                 <span className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-md text-slate-300 text-xs font-mono select-none">
                   🇨🇷 +506

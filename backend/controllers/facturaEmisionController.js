@@ -28,31 +28,15 @@ const obtenerFacturaEmision = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// Ambas pantallas usan la misma reserva de consecutivos y contrato fiscal.
-const crearFacturaEmision = (req, res, next) => require('./haciendaController').crearBorrador(req, res, next);
-
-const actualizarEstadoFactura = async (req, res, next) => {
-  try {
-    const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
-    if (!factura) return res.status(404).json({ error: 'Factura no encontrada' });
-    return res.status(422).json({ error: 'El estado fiscal solo cambia mediante firma, envio y consulta de Hacienda. Use el flujo de emision.' });
-  } catch (error) { next(error); }
-};
-
 const anularFactura = async (req, res, next) => {
   try {
     const factura = await FacturaEmision.findOne({ _id: req.params.id, ...req.filtrarPorTenant() });
     if (!factura) { res.status(404); throw new Error('Factura no encontrada'); }
-    if (factura.tipoDocumento === 'REP' && factura.estado === 'anulada' && !factura.envioIntentadoEn && !factura.xmlFirmado) {
-      await require('../services/repReservations').liberar(factura);
-      return res.json({ mensaje: 'Borrador REP anulado', factura });
-    }
     if (!['borrador', 'generada'].includes(factura.estado) || factura.envioIntentadoEn || factura.xmlFirmado) {
       res.status(400); throw new Error('Solo se puede descartar un borrador sin firma ni intento de envío; para facturas aceptadas genere una nota de crédito');
     }
     factura.estado = 'anulada';
     await factura.save();
-    if (factura.tipoDocumento === 'REP') await require('../services/repReservations').liberar(factura);
     res.json({ mensaje: 'Factura anulada', factura });
   } catch (error) { next(error); }
 };
@@ -88,8 +72,6 @@ const obtenerResumenEmision = async (req, res, next) => {
 module.exports = {
   obtenerFacturasEmision,
   obtenerFacturaEmision,
-  crearFacturaEmision,
-  actualizarEstadoFactura,
   anularFactura,
   obtenerResumenEmision,
 };
