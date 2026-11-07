@@ -27,11 +27,11 @@ test('elimina barras finales y espacios de VITE_API_URL', () => {
   );
 });
 
-test('en producción sin VITE_API_URL usa la API de Render (no el SPA de Cloudflare)', () => {
+test('en producción sin VITE_API_URL usa la API pública (no el SPA de Cloudflare)', () => {
   assert.equal(resolverApiUrl({ PROD: true }), API_URL_PRODUCCION);
   assert.equal(resolverApiUrl({ PROD: true, VITE_API_URL: '' }), API_URL_PRODUCCION);
   assert.equal(resolverApiUrl({ PROD: true, VITE_API_URL: '   ' }), API_URL_PRODUCCION);
-  assert.equal(API_URL_PRODUCCION, 'https://contador-ganadero.onrender.com/api');
+  assert.equal(API_URL_PRODUCCION, 'https://api.contadorganadero.com/api');
 });
 
 test('en desarrollo sin VITE_API_URL usa el proxy relativo /api de Vite', () => {
