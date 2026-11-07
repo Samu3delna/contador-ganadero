@@ -1,36 +1,6 @@
-import { AlertTriangle, ArrowUpRight } from 'lucide-react';
-
-const formatCRC = (n) => `₡${(n || 0).toLocaleString('es-CR')}`;
-
+import { Link } from 'react-router-dom';
+const crc = new Intl.NumberFormat('es-CR', { style:'currency', currency:'CRC', maximumFractionDigits:0 });
 export default function ProyeccionFiscal({ resumen }) {
-  const r = resumen?.resumen || {};
-
-  return (
-    <div className="glass-card animate-slide-up" style={{ '--delay': '0.6s' }}>
-      <h3 className="chart-title">Proyección Fiscal</h3>
-      <div className="proyeccion-items">
-        <div className="proyeccion-item">
-          <div className="proyeccion-label">
-            <AlertTriangle size={16} className="proyeccion-icon" />
-            <span>Renta Anual Estimada</span>
-          </div>
-          <span className="proyeccion-valor text-mono">
-            {formatCRC(resumen?.rentaProyectada?.impuestoFinal || 0)}
-          </span>
-          {(resumen?.rentaProyectada?.impuestoFinal || 0) === 0 && (
-            <span className="badge badge-exito">Exento</span>
-          )}
-        </div>
-        <div className="proyeccion-item">
-          <div className="proyeccion-label">
-            <ArrowUpRight size={16} className="proyeccion-icon" />
-            <span>IVA Cuatrimestre Actual</span>
-          </div>
-          <span className="proyeccion-valor text-mono">
-            {(r.ivaAPagar || 0) > 0 ? formatCRC(r.ivaAPagar) : `Crédito ${formatCRC(r.ivaCredito || 0)}`}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+  const r = resumen.resumen;
+  return <section className="producer-panel producer-fiscal"><h2>Tu previsión fiscal</h2><p className="producer-muted">Estimaciones con los registros del período {resumen.periodoFiscal}.</p><dl><div><dt>Renta anual estimada</dt><dd>{crc.format(resumen.rentaProyectada?.impuestoFinal ?? r.rentaAPagar)}</dd></div><div><dt>IVA · Cuatrimestre {resumen.cuatrimestreActual}</dt><dd>{r.ivaCredito > 0 ? `Crédito ${crc.format(r.ivaCredito)}` : crc.format(r.ivaAPagar)}</dd></div></dl><p className="producer-muted">Revisa el detalle antes de preparar tu declaración.</p><Link to="/impuestos" className="producer-action">Consultar impuestos</Link></section>;
 }

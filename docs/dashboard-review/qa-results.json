@@ -1,0 +1,35 @@
+{
+  "note": "Network fixtures only. No production requests or data mutations.",
+  "results": [
+    {
+      "role": "admin",
+      "passed": [
+        "loading skeleton",
+        "5 widths x 2 themes",
+        "theme persistence",
+        "refresh error retains data",
+        "retry",
+        "role redirect",
+        "mobile Escape and focus restore",
+        "system theme and live changes",
+        "official mobile logo"
+      ],
+      "pageErrors": []
+    },
+    {
+      "role": "producer",
+      "passed": [
+        "loading skeleton",
+        "5 widths x 2 themes",
+        "theme persistence",
+        "refresh error retains data",
+        "retry",
+        "role redirect",
+        "mobile Escape and focus restore",
+        "system theme and live changes",
+        "official mobile logo"
+      ],
+      "pageErrors": []
+    }
+  ]
+}

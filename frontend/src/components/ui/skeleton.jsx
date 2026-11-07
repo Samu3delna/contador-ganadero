@@ -2,8 +2,8 @@ import { cn } from '@/lib/utils'
 
 function Skeleton({ className, ...props }) {
   return (
-    <div
-      className={cn('animate-pulse rounded-md bg-slate-800/80', className)}
+    <div aria-hidden="true"
+      className={cn('dashboard-skeleton rounded-md', className)}
       {...props}
     />
   )

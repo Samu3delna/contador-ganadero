@@ -1,23 +1,9 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-
+const crc = new Intl.NumberFormat('es-CR', { style:'currency', currency:'CRC', maximumFractionDigits:0 });
 export default function TendenciaChart({ tendencia }) {
-  return (
-    <div className="glass-card dashboard-chart animate-slide-up" style={{ '--delay': '0.4s' }}>
-      <h3 className="chart-title">Ingresos vs Gastos Mensuales</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={tendencia} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-          <XAxis dataKey="mes" stroke="var(--color-texto-sec)" fontSize={12} />
-          <YAxis stroke="var(--color-texto-sec)" fontSize={12} tickFormatter={v => `₡${(v/1000).toFixed(0)}k`} />
-          <Tooltip
-            contentStyle={{ background: 'var(--color-superficie)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'var(--color-texto)' }}
-            formatter={(v) => [`₡${v.toLocaleString('es-CR')}`, '']}
-          />
-          <Legend />
-          <Bar dataKey="ingresos" name="Ingresos" fill="var(--color-primario-claro)" radius={[4,4,0,0]} />
-          <Bar dataKey="gastos" name="Gastos" fill="var(--color-error)" radius={[4,4,0,0]} opacity={0.7} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
+  const empty = !tendencia.some(row => row.ingresos || row.gastos);
+  return <section id="movimiento-finca" className="producer-panel producer-chart" aria-label="Comparación de ingresos y gastos mensuales">
+    <h2>El movimiento de tu finca</h2><p className="producer-muted">Ingresos y gastos mensuales, en colones costarricenses.</p>
+    {empty ? <div className="producer-empty"><strong>Aquí verás cómo evoluciona tu finca</strong><p>Registra ingresos o incorpora facturas para comparar tus resultados mes a mes.</p></div> : <><ResponsiveContainer width="100%" height={290}><BarChart data={tendencia} accessibilityLayer margin={{ top:24,right:8,left:0,bottom:0 }}><CartesianGrid vertical={false} stroke="var(--color-borde)" /><XAxis dataKey="mes" stroke="var(--color-texto-sec)" fontSize={12} tickLine={false} axisLine={false} /><YAxis width={65} stroke="var(--color-texto-sec)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => new Intl.NumberFormat('es-CR', { notation:'compact' }).format(v)} /><Tooltip contentStyle={{ background:'var(--color-superficie)', border:'1px solid var(--color-borde)', borderRadius:12, color:'var(--color-texto)' }} formatter={(value,name) => [crc.format(value),name]} cursor={{ fill:'var(--color-superficie-2)' }} /><Legend /><Bar dataKey="ingresos" name="Ingresos" fill="var(--color-primario-claro)" radius={[4,4,0,0]} isAnimationActive={false} /><Bar dataKey="gastos" name="Gastos" fill="var(--color-secundario)" radius={[4,4,0,0]} isAnimationActive={false} /></BarChart></ResponsiveContainer><details className="producer-data"><summary>Ver datos del gráfico</summary><div className="producer-table"><table><caption>Importes mensuales en CRC</caption><thead><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th></tr></thead><tbody>{tendencia.map(row => <tr key={row.mes}><th scope="row">{row.mes}</th><td>{crc.format(row.ingresos)}</td><td>{crc.format(row.gastos)}</td></tr>)}</tbody></table></div></details></>}
+  </section>;
 }

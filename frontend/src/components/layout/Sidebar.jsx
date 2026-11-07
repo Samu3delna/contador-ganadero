@@ -1,10 +1,11 @@
-import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, Tractor, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User, Shield, Users, Building, Activity, LifeBuoy } from 'lucide-react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, FileText, DollarSign, Calculator, LogOut, Menu, X, PanelLeftClose, Calendar, CreditCard, Landmark, Warehouse, TrendingUp, Receipt, Building2, FileBarChart2, Crown, AlertTriangle, ChevronRight, User, Shield, Users, Building, Activity, LifeBuoy } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { esAdministrador } from '../../utils/adminHelper';
 import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Badge } from '../ui/badge';
+import PrivateBrand from './PrivateBrand';
+import ThemeToggle from './ThemeToggle';
 import './Sidebar.css';
 
 const menuSections = [
@@ -63,36 +64,42 @@ const SECCION_ADMIN = {
 };
 
 // Título legible de la ruta actual, para mostrarlo en la barra superior móvil.
-const TITULOS_RUTA = [...menuSections, SECCION_ADMIN]
-  .flatMap((s) => s.items)
-  .reduce((acc, item) => ({ ...acc, [item.path]: item.label }), {});
-
 export default function Sidebar() {
   const { usuario, logout } = useAuth();
   const [abierto, setAbierto] = useState(false);
+  const [compact, setCompact] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
+
   const asideRef = useRef(null);
   const toggleRef = useRef(null);
 
   const planUsuario = usuario?.plan || usuario?.tenant?.plan;
   const estadoTenant = usuario?.estadoTenant || usuario?.tenant?.estado;
   const planNombre = PLAN_NOMBRES[planUsuario] || (planUsuario ? planUsuario : null);
-  const tituloActual = TITULOS_RUTA[location.pathname] || 'ContadorGanadero';
 
-  const cerrar = () => setAbierto(false);
+  const cerrar = () => { setAbierto(false); if (abierto) toggleRef.current?.focus(); };
 
   // Bloquea el scroll del fondo mientras el panel está abierto en móvil.
   useEffect(() => {
     if (!abierto) return undefined;
     document.body.classList.add('no-scroll');
-    return () => document.body.classList.remove('no-scroll');
+    const main = document.getElementById('main-content');
+    if (main) main.inert = true;
+    // Transfer focus after the click and opening styles have been committed.
+    const focusTimer = window.setTimeout(() => asideRef.current?.querySelector('a, button')?.focus(), 50);
+    return () => { window.clearTimeout(focusTimer); document.body.classList.remove('no-scroll'); if (main) main.inert = false; };
   }, [abierto]);
 
   // Cierra con Escape y devuelve el foco al botón que lo abrió.
   useEffect(() => {
     if (!abierto) return undefined;
     function onKeyDown(e) {
+      if (e.key === 'Tab') {
+        const items = [...asideRef.current.querySelectorAll('a, button')].filter(el => el.getClientRects().length);
+        const first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
       if (e.key === 'Escape') {
         setAbierto(false);
         toggleRef.current?.focus();
@@ -134,32 +141,18 @@ export default function Sidebar() {
           {abierto ? <X size={22} /> : <Menu size={22} />}
         </button>
 
-        <div className="topbar-brand">
-          <Tractor size={20} className="topbar-brand-icon" />
-          <span className="topbar-title">{tituloActual}</span>
-        </div>
-
-        <button className="topbar-logout" onClick={logout} aria-label="Cerrar sesión" title="Cerrar sesión">
-          <LogOut size={19} />
-        </button>
+        <div className="topbar-brand"><PrivateBrand admin={esAdmin} /></div>
+        <ThemeToggle />
       </header>
 
       <aside
         id="sidebar-nav"
         ref={asideRef}
-        className={`sidebar ${abierto ? 'sidebar--abierto' : ''}`}
+        className={`sidebar ${abierto ? 'sidebar--abierto' : ''} ${compact ? 'sidebar--compact' : ''}`}
         aria-hidden={undefined}
       >
         <div className="sidebar-header">
-          <div className="sidebar-logo-container">
-            <Tractor size={26} className="sidebar-logo-icon" />
-          </div>
-          <div className="sidebar-brand-info">
-            <h2 className="sidebar-title">ContadorGanadero</h2>
-            <Badge variant="default" className={`text-[10px] px-2 py-0 h-4 font-bold tracking-wider uppercase ${esAdmin ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
-              {esAdmin ? 'ADMINISTRACIÓN' : 'RÉGIMEN REA'}
-            </Badge>
-          </div>
+          <PrivateBrand admin={esAdmin} />
           <button
             className="sidebar-cerrar"
             onClick={cerrar}
@@ -169,6 +162,7 @@ export default function Sidebar() {
           </button>
         </div>
 
+        <button className="sidebar-collapse" onClick={() => setCompact(v => !v)} aria-label={compact ? "Expandir menu" : "Contraer menu"} aria-expanded={!compact}><PanelLeftClose size={18} /><span>Contraer menu</span></button>
         <nav className="sidebar-nav" aria-label="Navegación principal">
           {seccionesVisibles.map((seccion) => (
             <div key={seccion.titulo} className="sidebar-section">
@@ -178,6 +172,8 @@ export default function Sidebar() {
                   <NavLink
                     key={item.path}
                     to={item.path}
+                    end
+                    title={item.label}
                     className={({ isActive }) => `sidebar-link ${isActive ? 'sidebar-link--activo' : ''}`}
                     onClick={cerrar}
                   >
@@ -193,15 +189,14 @@ export default function Sidebar() {
 
         <div className="sidebar-footer">
           <div className="sidebar-user">
-            <Avatar
+            <button className="sidebar-logout" aria-label="Ver mi perfil" onClick={() => { cerrar(); navigate('/perfil'); }}><Avatar
               className="h-9 w-9 border-emerald-500/40 cursor-pointer"
-              onClick={() => { cerrar(); navigate('/perfil'); }}
               title="Ver mi perfil"
             >
               <AvatarFallback className="bg-emerald-950 text-emerald-300 font-bold">
                 {inicialUsuario}
               </AvatarFallback>
-            </Avatar>
+            </Avatar></button>
             <div className="sidebar-user-info">
               <span className="sidebar-user-name" title={usuario?.nombre || (esAdmin ? 'Super Admin' : 'Usuario')}>
                 {usuario?.nombre || (esAdmin ? 'Super Admin' : 'Usuario')}
