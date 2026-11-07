@@ -3,6 +3,7 @@
  */
 
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 // === Config env antes de importar el controller ===
 process.env.ONVO_SECRET_KEY = 'onvo_test_secret_key_123';
@@ -45,6 +46,16 @@ const buildEventoRenovacion = (overrides = {}) => ({
 
 const buildReqRes = (body, secret = SECRET) => {
   const req = { body, headers: { 'x-webhook-secret': secret } };
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn().mockReturnValue(res);
+  return { req, res };
+};
+
+const buildReqResFirmado = (payload, secret = SECRET, timestamp = Math.floor(Date.now() / 1000)) => {
+  const raw = Buffer.from(JSON.stringify(payload));
+  const firma = crypto.createHmac('sha256', secret).update(`${timestamp}.`).update(raw).digest('hex');
+  const req = { body: raw, headers: { 'x-onvo-signature': `t=${timestamp},v1=${firma}` } };
   const res = {};
   res.status = jest.fn().mockReturnValue(res);
   res.json = jest.fn().mockReturnValue(res);
@@ -146,6 +157,40 @@ describe('controllers/onvoController - webhookOnvo', () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ error: 'WEBHOOK_NO_AUTORIZADO' })
     );
+  });
+
+  test('webhook firmado actual valida el body crudo, usa event.id y activa Pro', async () => {
+    const tenant = await crearTenantPrueba();
+    const payload = {
+      id: `evt_${Math.random().toString(36).slice(2)}`,
+      type: 'subscription_renewal.succeeded',
+      data: {
+        object: {
+          subscriptionId: 'clsub_signed_123',
+          customerId: 'clcus_signed_123',
+          periodEnd: new Date(Date.now() + 30 * 86400000).toISOString(),
+          subscriptionMetadata: { tenantId: String(tenant._id), planId: 'pro' },
+        },
+      },
+    };
+
+    const { req, res } = buildReqResFirmado(payload);
+    await webhookOnvo(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({ received: true });
+    expect((await Tenant.findById(tenant._id)).plan).toBe('pro');
+    expect(await SubscriptionEvent.countDocuments({ eventoId: payload.id })).toBe(1);
+  });
+
+  test('webhook firmado rechaza firma inválida y timestamp vencido', async () => {
+    const payload = { id: 'evt_invalid', type: 'webhook_endpoint.test', data: { object: { id: 'test' } } };
+    const firmaInvalida = buildReqResFirmado(payload, 'otro_secreto_seguro_123456789');
+    await webhookOnvo(firmaInvalida.req, firmaInvalida.res);
+    expect(firmaInvalida.res.status).toHaveBeenCalledWith(401);
+
+    const vencido = buildReqResFirmado(payload, SECRET, Math.floor(Date.now() / 1000) - 301);
+    await webhookOnvo(vencido.req, vencido.res);
+    expect(vencido.res.status).toHaveBeenCalledWith(401);
   });
 
   test('(b) evento ya procesado -> {received:true, duplicate:true}', async () => {
