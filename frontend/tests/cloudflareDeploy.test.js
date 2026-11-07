@@ -248,8 +248,9 @@ describe('Cabeceras de seguridad y CSP (frontend/public/_headers)', () => {
     assert.ok(permitidaPorCsp('https://checkout.onvopay.com/', csp['frame-src']));
   });
 
-  test('permite las llamadas a la API de Render (login) y fuentes de Google', () => {
+  test('permite las llamadas a las APIs de producción (login) y fuentes de Google', () => {
     assert.ok(permitidaPorCsp('https://contador-ganadero.onrender.com/api/auth/login', csp['connect-src']));
+    assert.ok(permitidaPorCsp('https://api.contadorganadero.com/api/auth/login', csp['connect-src']));
     assert.ok(permitidaPorCsp('https://fonts.googleapis.com/css2?family=Outfit', csp['style-src']));
     assert.ok(permitidaPorCsp('https://fonts.gstatic.com/s/outfit/v1/a.woff2', csp['font-src']));
   });
