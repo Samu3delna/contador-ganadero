@@ -199,8 +199,8 @@ describe('Cabeceras de seguridad y CSP (frontend/public/_headers)', () => {
     assert.equal(lineas[0].trim(), '/*');
   });
 
-  test('ninguna línea supera el límite de 2000 caracteres de Cloudflare', () => {
-    for (const linea of lineas) assert.ok(linea.length <= 2000, `línea de ${linea.length} caracteres`);
+  test('ninguna línea supera 1000 caracteres para el parser de despliegue', () => {
+    for (const linea of lineas) assert.ok(linea.length <= 1000, `línea de ${linea.length} caracteres`);
   });
 
   test('mantiene las cabeceras de endurecimiento', () => {
