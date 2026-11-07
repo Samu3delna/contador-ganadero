@@ -414,7 +414,7 @@
     z-index: 130;
     padding-top: var(--safe-top);
     visibility: hidden;
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
+    transition: transform 0.2s ease;
   }
 
   .sidebar--abierto {
@@ -471,3 +471,22 @@
     transition: none;
   }
 }
+.private-brand { display:flex; align-items:center; gap:10px; min-width:0; color:var(--color-texto); text-decoration:none; }
+.private-brand .cg-logo-badge { display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#fff; border:1px solid #cfded3; border-radius:10px; }
+.private-brand img { object-fit:contain; }
+.private-brand-text { display:flex; flex-direction:column; min-width:0; }
+.private-brand-text strong { font-size: .94rem; letter-spacing:-.035em; }
+.private-brand-text small { color:var(--color-primario-claro); font-size:.72rem; }
+.sidebar { box-shadow:none; }
+.sidebar-header,.sidebar-footer,.topbar { background:var(--color-superficie); }
+.sidebar-header { padding:18px 12px; }
+.sidebar-link--activo { background:var(--color-exito-bg); box-shadow:none; }
+.sidebar-collapse { margin:8px 12px; display:flex; align-items:center; justify-content:center; gap:8px; min-height:36px; border:1px solid var(--color-borde); border-radius:8px; color:var(--color-texto-sec); background:var(--color-superficie); cursor:pointer; }
+@media(min-width:1024px) {
+.sidebar--compact { width:80px; }
+.sidebar--compact .private-brand-text,.sidebar--compact .sidebar-section-title,.sidebar--compact .sidebar-link span,.sidebar--compact .sidebar-link-arrow,.sidebar--compact .sidebar-user-info,.sidebar--compact .sidebar-collapse span { display:none; }
+.sidebar--compact .sidebar-header,.sidebar--compact .sidebar-link { justify-content:center; }
+.sidebar--compact .sidebar-footer { flex-direction:column; padding:12px 4px; }
+}
+@media(max-width:1023px) { .sidebar-collapse { display:none; } .topbar-brand { justify-content:flex-start; } .topbar .private-brand-text strong { font-size:.8rem; } .topbar .theme-toggle { padding:8px; } .topbar .theme-toggle span { display:none; } }
+@media(max-width:1023px) { .sidebar-footer .sidebar-logout { display:flex; } }

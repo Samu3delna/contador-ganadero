@@ -1,3 +1,5 @@
+import ThemeProvider from './context/ThemeProvider';
+import ThemeToggle from './components/layout/ThemeToggle';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -41,7 +43,7 @@ const AdminSoportePage = lazy(() => import('./pages/admin/AdminSoportePage'));
 const RecuperarCuentaPage = lazy(() => import('./pages/RecuperarCuentaPage'));
 
 function PageLoader() {
-  return <div className="loader-center"><div className="loader" /></div>;
+  return <div className="shell-loading" role="status" aria-busy="true"><span className="sr-only">Cargando la plataforma...</span><div aria-hidden="true"><div className="dashboard-skeleton" style={{ height: 48, width: '60%', marginBottom: 24 }} /><div className="shell-loading-cards">{[0,1,2,3].map(i => <div key={i} className="dashboard-skeleton" style={{ height: 130 }} />)}</div><div className="dashboard-skeleton" style={{ height: 300, marginTop: 24 }} /></div></div>;
 }
 
 function RutaProtegida({ children }) {
@@ -68,13 +70,13 @@ function AppLayout() {
 
   return (
     <div className="app-container">
-      <Sidebar />
-      <div className="main-content">
+      <a className="skip-link" href="#main-content">Saltar al contenido</a><Sidebar />
+      <main id="main-content" className="main-content" tabIndex={-1}><header className="desktop-topbar"><span>{esAdmin ? 'Administración' : 'Mi finca'}</span><ThemeToggle /></header>
         
         <Suspense fallback={<PageLoader />}>
           <Outlet />
         </Suspense>
-      </div>
+      </main>
       {!esAdmin && <Suspense fallback={null}><ChatBot /></Suspense>}
     </div>
   );
@@ -82,7 +84,7 @@ function AppLayout() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <ThemeProvider><BrowserRouter>
       <AuthProvider>
         <SEOHead /><Suspense fallback={<PageLoader />}><Routes>
           {publicRoutes()}
@@ -127,7 +129,7 @@ function App() {
           </Route>
         </Routes></Suspense>
       </AuthProvider>
-    </BrowserRouter>
+    </BrowserRouter></ThemeProvider>
   );
 }
 
