@@ -1,3 +1,4 @@
+import BenefitsMarquee from '../components/public/BenefitsMarquee';
 import ScrollLandscape from '../components/public/ScrollLandscape';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, ReceiptText, Sprout, ChartNoAxesCombined, Play } from 'lucide-react';
@@ -10,7 +11,9 @@ export default function LandingPage() {
   return (
     <>
       <ScrollLandscape />
-      <section className="cg-hero cg-container">
+      <BenefitsMarquee />
+      <div className="cg-landing-journey">
+      <section className="cg-hero cg-container cg-hero-motion">
         <div className="cg-hero-brand">
           <BrandLogo size={58} title="Logo oficial de ContadorGanadero" />
           <div>
@@ -177,6 +180,7 @@ export default function LandingPage() {
       </section>
       <FAQSection />
       <CTASection />
+      </div>
     </>
   );
 }
