@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { ReceiptText, Sprout, ChartNoAxesCombined, Smartphone, CircleCheck, Pause, Play } from 'lucide-react';
+import { ReceiptText, Sprout, ChartNoAxesCombined, Smartphone, CircleCheck } from 'lucide-react';
 import './BenefitsMarquee.css';
 
 const benefits = [
@@ -14,9 +13,8 @@ const benefits = [
 ];
 
 export default function BenefitsMarquee() {
-  const [paused, setPaused] = useState(false);
   return (
-    <section className="cg-marquee-band" aria-label="Lo que te ofrece ContadorGanadero" data-paused={paused}>
+    <section className="cg-marquee-band" aria-label="Lo que te ofrece ContadorGanadero">
       <div className="cg-marquee-viewport">
         <div className="cg-marquee-track">
           {[0, 1].map(copy => (
@@ -26,9 +24,6 @@ export default function BenefitsMarquee() {
           ))}
         </div>
       </div>
-      <button type="button" className="cg-marquee-toggle" onClick={() => setPaused(value => !value)} aria-label={paused ? 'Reanudar cinta de funciones' : 'Pausar cinta de funciones'} aria-pressed={paused}>
-        {paused ? <Play size={17} aria-hidden="true" /> : <Pause size={17} aria-hidden="true" />}
-      </button>
     </section>
   );
 }

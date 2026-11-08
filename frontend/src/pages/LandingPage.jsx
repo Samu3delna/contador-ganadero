@@ -12,6 +12,7 @@ export default function LandingPage() {
     <>
       <ScrollLandscape />
       <BenefitsMarquee />
+      <div className="cg-landing-journey">
       <section className="cg-hero cg-container cg-hero-motion">
         <div className="cg-hero-brand">
           <BrandLogo size={58} title="Logo oficial de ContadorGanadero" />
@@ -179,6 +180,7 @@ export default function LandingPage() {
       </section>
       <FAQSection />
       <CTASection />
+      </div>
     </>
   );
 }
