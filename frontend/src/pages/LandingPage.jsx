@@ -1,3 +1,4 @@
+import ScrollLandscape from '../components/public/ScrollLandscape';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, ReceiptText, Sprout, ChartNoAxesCombined, Play } from 'lucide-react';
 import BrandLogo from '../components/public/BrandLogo';
@@ -8,6 +9,7 @@ import './LandingPage.css';
 export default function LandingPage() {
   return (
     <>
+      <ScrollLandscape />
       <section className="cg-hero cg-container">
         <div className="cg-hero-brand">
           <BrandLogo size={58} title="Logo oficial de ContadorGanadero" />
