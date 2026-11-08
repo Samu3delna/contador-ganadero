@@ -1,12 +1,15 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { ReceiptText, Sprout, ChartNoAxesCombined, Smartphone, CircleCheck, Pause, Play } from 'lucide-react';
 import './BenefitsMarquee.css';
 
 const benefits = [
   [ReceiptText, 'Tus facturas XML, organizadas'],
   [Sprout, 'Bovinos, aves, peces y colmenas'],
+  [CircleCheck, 'Menos información dispersa, más orden'],
   [ChartNoAxesCombined, 'Conocé tus costos de producción'],
   [Smartphone, 'Tu finca desde el celular'],
+  [Sprout, 'Más tiempo para tu finca'],
+  [ChartNoAxesCombined, 'Tus números, mejores decisiones'],
   [CircleCheck, 'Un plan Gratis para comenzar'],
 ];
 
