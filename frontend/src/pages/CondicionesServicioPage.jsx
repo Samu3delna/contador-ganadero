@@ -6,7 +6,7 @@ const TOC_ITEMS = [
   { id: 'seccion-1', label: '1. Alcance de los Servicios' },
   { id: 'seccion-2', label: '2. Planes y Suscripciones' },
   { id: 'seccion-3', label: '3. Facturación y Pasarelas de Pago' },
-  { id: 'seccion-4', label: '4. Recepción de Facturas (Cloudflare y WhatsApp)' },
+  { id: 'seccion-4', label: '4. Recepción de facturas por correo' },
   { id: 'seccion-5', label: '5. Facturación Electrónica REA' },
   { id: 'seccion-6', label: '6. Límites Operativos y SLA' },
   { id: 'seccion-7', label: '7. Cancelación y Reembolsos' },
@@ -24,7 +24,7 @@ export default function CondicionesServicioPage() {
   return (
     <LegalLayout
       title="Condiciones del Servicio (SLA y Planes)"
-      subtitle="Detalles operativos sobre planes de suscripción, recepción de facturas por correo Cloudflare y WhatsApp, facturación electrónica REA y procesamiento de datos."
+      subtitle="Detalles operativos sobre planes de suscripción, recepción de facturas por correo Cloudflare, facturación electrónica REA y procesamiento de datos."
       badgeText="Condiciones Operativas"
       badgeType="amber"
       tocItems={TOC_ITEMS}
@@ -40,11 +40,11 @@ export default function CondicionesServicioPage() {
           el sector agropecuario costarricense:
         </p>
         <ul>
-          <li><strong>Importación y Lectura de Facturas:</strong> Recepción instantánea y extracción automática de datos de archivos XML y PDF de facturas electrónicas mediante buzón exclusivo Cloudflare (<code>@contadorganandero.com</code>) y bot oficial de WhatsApp.</li>
+          <li><strong>Importación y Lectura de Facturas:</strong> Recepción y extracción de datos de comprobantes mediante buzón exclusivo Cloudflare (<code>@contadorganandero.com</code>) y carga manual XML.</li>
           <li><strong>Categorización Asistida por IA:</strong> Clasificación inteligente de insumos (alimentos, medicamentos veterinarios, sal, agroquímicos, maquinaria).</li>
           <li><strong>Módulos de Inventario Productivo:</strong> Control de ganado bovino (pesaje, ganancia diaria), aves de postura (lotes, mortalidad), acuicultura (biomasa, FCA) y apicultura (cosechas de miel).</li>
           <li><strong>Costos de Producción y Rentabilidad:</strong> Cálculo del costo real por kilogramo de carne, cartón de huevos o unidad de producto cosechado.</li>
-          <li><strong>Proyecciones Tributarias REA:</strong> Estimación del IVA Cuatrimestral (D-135-1), Renta Anual (D-101) y resumen informativo D-150.</li>
+          <li><strong>Proyecciones Tributarias REA:</strong> Estimación del IVA Cuatrimestral (D-135-1) y Renta Anual (D-101).</li>
         </ul>
       </section>
 
@@ -59,10 +59,10 @@ export default function CondicionesServicioPage() {
         </p>
         <ul>
           <li>
-            <strong>Plan Gratis (Con Anuncios):</strong> Acceso a módulos fundamentales para pequeños productores, sostenido mediante publicidad de Google AdSense. Incluye recepción de facturas por correo y WhatsApp, y cuota básica de procesamiento mensual con IA.
+            <strong>Plan Gratis (Con Anuncios):</strong> Acceso a módulos fundamentales para pequeños productores, sostenido mediante publicidad de Google AdSense. Incluye recepción de facturas por correo y carga XML, y cuota básica de procesamiento mensual con IA.
           </li>
           <li>
-            <strong>Plan Pro ($10/mes, Sin Anuncios):</strong> Eliminación total de publicidad de Google AdSense, mayor cuota de procesamiento de facturas, conteos por visión computacional (VLM), módulo D-150 / conciliación anual REA, más almacenamiento y soporte por email.
+            <strong>Plan Pro ($10/mes, Sin Anuncios):</strong> Eliminación total de publicidad de Google AdSense, mayor cuota de procesamiento de facturas, conteos por visión computacional (VLM), más almacenamiento y soporte por email.
           </li>
         </ul>
       </section>
@@ -87,17 +87,17 @@ export default function CondicionesServicioPage() {
       <section id="seccion-4" className="legal-section">
         <div className="legal-section-heading">
           <span className="legal-section-number">04.</span>
-          <h2 className="legal-section-title">Recepción de Facturas (Correo Cloudflare y WhatsApp)</h2>
+          <h2 className="legal-section-title">Recepción de facturas por correo Cloudflare</h2>
         </div>
         <p>
-          Para facilitar el procesamiento de comprobantes electrónicos, cada finca dispone de una dirección de correo exclusiva (<code>@contadorganandero.com</code>) administrada mediante Cloudflare Email Routing, además de un bot de WhatsApp para el reenvío directo de facturas.
+          Para facilitar el procesamiento de comprobantes electrónicos, cada finca dispone de una dirección de correo exclusiva (<code>@contadorganandero.com</code>) administrada mediante Cloudflare Email Routing. También puede cargar archivos XML manualmente.
         </p>
         <div className="legal-alert legal-alert--info">
           <MailCheck size={22} className="legal-alert-icon" />
           <div className="legal-alert-content">
-            <h4>Privacidad del Correo y Mensajería</h4>
+            <h4>Privacidad del correo</h4>
             <p>
-              Nuestro motor de ingesta analiza exclusivamente correos y mensajes que contengan comprobantes electrónicos con extensión <code>.xml</code> o <code>.pdf</code>
+              Nuestro motor de ingesta analiza exclusivamente correos que contengan comprobantes electrónicos con extensión <code>.xml</code> o <code>.pdf</code>
               correspondientes a facturas y acuses (MensajeHacienda). <strong>No leemos, almacenamos ni compartimos correspondencia personal o comercial ajena a la facturación tributaria.</strong>
             </p>
           </div>

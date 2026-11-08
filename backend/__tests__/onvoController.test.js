@@ -345,7 +345,7 @@ describe('controllers/onvoController - webhookOnvo', () => {
     expect(t.plan).toBe('pro');
     expect(t.estado).toBe('activo');
     expect(t.limites.conteosMes).toBe(300);
-    expect(t.limites.moduloD150).toBe(true);
+    expect(t.limites.moduloD150).toBeUndefined();
     expect(t.limites.anunciosHabilitados).toBe(false);
     expect(t.onvoSubscriptionId).toBe('clsub_live_real_001');
     expect(t.periodoRenovacion.getFullYear()).toBeGreaterThanOrEqual(2026);

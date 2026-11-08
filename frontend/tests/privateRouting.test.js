@@ -69,3 +69,8 @@ test('ordinary producer cannot render admin page', async () => {
 test('super admin can render nested admin route', async () => {
   await visit('/admin/usuarios', { ...producer, esSuperAdmin: true }, 'AdminUsuariosPage', '/admin/usuarios');
 });
+test('rutas anteriores redirigen a las pantallas vigentes', async () => {
+  await visit('/hacienda', producer, 'FacturacionPage', '/facturacion');
+  testing.cleanup();
+  await visit('/d150', producer, 'DeclaracionesPage', '/declaraciones');
+});

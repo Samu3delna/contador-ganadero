@@ -94,7 +94,7 @@ test('otra finca no puede firmar el documento fuera de su contexto',async()=>{
 });
 test('REP real se bloquea aunque un cliente intente saltarse la ruta dedicada',async()=>{
  const t=await tenantPrueba('sandbox');const f=await facturaPrueba('REP',{tenantId:t._id,ambiente:'sandbox'});await f.save();
- await assert.rejects(worker.prepararYFirmar(f._id),/REP pendiente/);
+ await assert.rejects(worker.prepararYFirmar(f._id),/Comprobante histórico de solo lectura/);
 });
 test('eliminar credenciales preserva contador y no permite borrar con envío pendiente',async()=>{
  const controller=require('../controllers/haciendaConfigController');const t=await tenantPrueba();await t.siguienteConsecutivo('FE');

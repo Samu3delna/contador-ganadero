@@ -59,7 +59,7 @@ export default function PoliticaPrivacidadPage() {
           <li><strong>Datos de Identificación del Titular:</strong> Nombre completo, correo electrónico, número de identificación (cédula física, jurídica, DIMEX o NITE) y teléfono.</li>
           <li><strong>Datos de la Finca / Explotación:</strong> Nombre de la finca, ubicación geográfica general, tipo de actividad pecuaria o agrícola (bovinos de cría/engorde/leche, aves, acuicultura, apicultura, agricultura).</li>
           <li><strong>Datos Fiscales y Comprobantes Electrónicos:</strong> Archivos XML y PDF de facturas electrónicas de compra y venta, montos, tarifas de IVA (1%, 13%, exento), líneas de detalle de insumos y claves numéricas de Hacienda.</li>
-          <li><strong>Credenciales Técnicas y Canales de Recepción:</strong> Dirección de correo electrónico asignada a la finca (<code>@contadorganandero.com</code>) para recepción de facturas, número de teléfono vinculado al bot de WhatsApp para reenvío de comprobantes, y llaves criptográficas <code>.p12</code> y PIN de Hacienda para la emisión autorizada de comprobantes. <em>(ContadorGanadero no solicita ni almacena contraseñas de cuentas de correo externas ni accesos IMAP).</em></li>
+          <li><strong>Credenciales Técnicas y Canales de Recepción:</strong> Dirección de correo electrónico asignada a la finca (<code>@contadorganandero.com</code>) para recepción de facturas, y llaves criptográficas <code>.p12</code> y PIN de Hacienda para la emisión autorizada de comprobantes. <em>(ContadorGanadero no solicita ni almacena contraseñas de cuentas de correo externas ni accesos IMAP).</em></li>
           <li><strong>Datos de Inventario y Producción:</strong> Pesos de animales, registros de lotes, consumos de insumos, parámetros de producción y costos asociados.</li>
         </ul>
       </section>
@@ -74,7 +74,7 @@ export default function PoliticaPrivacidadPage() {
         <ul>
           <li>Crear y administrar su cuenta de usuario y autenticación segura.</li>
           <li>Procesar, clasificar y conciliar automáticamente los gastos e ingresos de su finca.</li>
-          <li>Calcular proyecciones tributarias del Régimen Especial Agropecuario (IVA D-135-1, Renta D-101 y D-150).</li>
+          <li>Calcular proyecciones tributarias del Régimen Especial Agropecuario (IVA D-135-1 y Renta D-101).</li>
           <li>Calcular costos reales de producción (costo por kilo de carne, cartón de huevos, kilo de pescado, etc.).</li>
           <li>Generar y firmar comprobantes electrónicos ante la Dirección General de Tributación a solicitud expresa del usuario.</li>
           <li>Brindar soporte técnico y resolver incidencias operativas.</li>
@@ -127,7 +127,6 @@ export default function PoliticaPrivacidadPage() {
         <ul>
           <li><strong>ONVO Pay:</strong> Procesamiento seguro de pagos con tarjetas de crédito/débito bajo certificación PCI-DSS.</li>
           <li><strong>Cloudflare:</strong> Enrutamiento seguro y entrega instantánea de correos electrónicos entrantes con comprobantes hacia la dirección de la finca.</li>
-          <li><strong>Meta (WhatsApp Cloud API):</strong> Infraestructura de mensajería para la recepción de comprobantes y fotos de tiquetes reenviados voluntariamente por el usuario.</li>
           <li><strong>Google AdSense:</strong> Red de anuncios publicitarios para usuarios suscritos al plan gratuito (sin compartir datos fiscales privados ni comprobantes tributarios).</li>
           <li><strong>Proveedores de Infraestructura en la Nube:</strong> Servidores de base de datos y cómputo que cumplen con estándares internacionales de seguridad (SOC 2, ISO 27001).</li>
           <li><strong>Ministerio de Hacienda de Costa Rica:</strong> Envío de comprobantes XML a solicitud expresa del usuario cuando utiliza el módulo de emisión de facturación electrónica.</li>
@@ -155,7 +154,7 @@ export default function PoliticaPrivacidadPage() {
       <section id="seccion-8" className="legal-section">
         <div className="legal-section-heading">
           <span className="legal-section-number">08.</span>
-          <h2 className="legal-section-title">Retención y Eliminación de Datos de Usuario (Meta / WhatsApp)</h2>
+          <h2 className="legal-section-title">Retención y eliminación de datos de usuario</h2>
         </div>
         <p>
           Conservaremos sus datos mientras mantenga activa su cuenta en ContadorGanadero.
@@ -163,22 +162,17 @@ export default function PoliticaPrivacidadPage() {
           Tras la solicitud de baja, los datos personales y operativos se eliminan de inmediato de nuestras bases de datos activas.
         </p>
         <p>
-          De acuerdo con las Condiciones de la Plataforma de Meta, usted puede solicitar la eliminación definitiva de sus datos y desvincular su número de WhatsApp o cuenta de Facebook en cualquier momento a través de cualquiera de estos medios:
+          Puede solicitar la eliminación de su cuenta y sus datos desde Mi perfil:
         </p>
         <ul>
           <li>
-            <strong>Portal de Eliminación y Seguimiento de Código:</strong> Ingresando directamente a{' '}
+            <strong>Información sobre eliminación:</strong> Ingresando a{' '}
             <Link to="/eliminacion-datos" style={{ color: '#4ade80', fontWeight: 600 }}>
               https://contadorganandero.com/eliminacion-datos
             </Link>
-            , donde podrá ejecutar la baja inmediata o consultar el estado de su solicitud mediante su código de confirmación (<code>confirmation_code</code>).
+            , donde encontrará las instrucciones para iniciar sesión y eliminar su cuenta.
           </li>
-          <li>
-            <strong>Desde Facebook / Meta (Devolución de llamada automática):</strong> En su perfil de Facebook, dirigiéndose a <em>Configuración y privacidad &gt; Configuración &gt; Aplicaciones y sitios web</em>, eliminando la aplicación y pulsando <em>Enviar solicitud</em>. Nuestro servidor procesará automáticamente la solicitud firmada (<code>signed_request</code>) en el endpoint <code>/api/webhooks/whatsapp/data-deletion</code>.
-          </li>
-          <li>
-            <strong>Desde el Bot de WhatsApp o Mi Perfil:</strong> Enviando el mensaje <code>ELIMINAR MIS DATOS</code> a nuestro bot de WhatsApp, o desde el botón <em>Eliminar mi cuenta y datos</em> dentro de la sección <strong>Mi Perfil</strong> de la aplicación.
-          </li>
+          <li><strong>Desde Mi perfil:</strong> Seleccione <em>Eliminar mi cuenta y datos</em> y confirme la acción.</li>
         </ul>
       </section>
 

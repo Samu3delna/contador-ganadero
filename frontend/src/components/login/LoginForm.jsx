@@ -54,7 +54,7 @@ export default function LoginForm({ form, setForm, handleSubmit, error, cargando
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5 text-left">
-              <Label htmlFor="telefono" className="text-xs text-slate-300">WhatsApp / Celular (opcional)</Label>
+              <Label htmlFor="telefono" className="text-xs text-slate-300">Celular (opcional)</Label>
               <div className="flex rounded-lg overflow-hidden border border-slate-700/80 bg-slate-900/90 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all">
                 <span className="inline-flex items-center px-2.5 bg-slate-800/90 text-slate-300 text-xs font-semibold border-r border-slate-700/80 select-none">
                   🇨🇷 +506

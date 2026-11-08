@@ -49,9 +49,8 @@ async function prepararYFirmar(facturaId) {
   const factura = await FacturaEmision.findById(facturaId).populate({ path: 'tenantId', select: SELECT_HACIENDA_CREDS });
   if (!factura) throw new Error('Factura no encontrada');
   if (factura.estado !== 'borrador') return factura;
+  if (['FEC', 'REP'].includes(factura.tipoDocumento)) throw new Error('Comprobante histórico de solo lectura');
   const cfg = validarConfigDocumento(factura.tenantId, factura);
-  if (factura.tipoDocumento === 'REP' && cfg.ambiente !== 'local') throw new Error('REP pendiente de validaci?n fiscal de pagos; solo simulaci?n disponible');
-  if (factura.tipoDocumento === 'REP') await require('./repReservations').verificar(factura);
   factura.codigoActividadEmisor ||= cfg.codigoActividad;
   factura.proveedorSistemas ||= cfg.proveedorSistemas;
   if (!/^\d{20}$/.test(factura.consecutivo || '')) throw new Error('Consecutivo inválido: cree un nuevo borrador');
@@ -98,7 +97,7 @@ async function enviarPendientes() {
   if (_running) return;
   _running = true;
   try {
-    const pendientes = await FacturaEmision.find({ estado: 'firmada' }, null, { skipTenant: true })
+    const pendientes = await FacturaEmision.find({ estado: 'firmada', tipoDocumento: { $nin: ['FEC', 'REP'] } }, null, { skipTenant: true })
       .select('+xmlFirmado').sort({ updatedAt: 1 }).limit(LIMITE);
     for (const factura of pendientes) {
       if (!factura.tenantId) continue;

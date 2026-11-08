@@ -11,7 +11,6 @@ import AlertasPanel from '../components/facturas/AlertasPanel';
 import EmailStatus from '../components/facturas/EmailStatus';
 import FacturasTable from '../components/facturas/FacturasTable';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import './FacturasPage.css';
 
 export default function FacturasPage() {
@@ -150,12 +149,9 @@ export default function FacturasPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="page-title text-2xl md:text-3xl font-bold font-heading text-white">Facturas Electrónicas</h1>
-            <Badge variant="outline" className="text-xs bg-slate-800/60 border-slate-700 text-slate-300">
-              Hacienda v4.4
-            </Badge>
           </div>
           <p className="page-subtitle text-slate-400 text-sm mt-1">
-            Recepción en tiempo real vía Cloudflare Email y WhatsApp, validadas con IA
+            Comprobantes recibidos por correo o cargados como XML
           </p>
         </div>
 

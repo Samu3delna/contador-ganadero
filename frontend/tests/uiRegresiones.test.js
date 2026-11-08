@@ -147,20 +147,6 @@ test('P-07: estado confirmado del plan actualiza AuthContext sin perder la finca
   assert.equal(session.usuario.tenant.plan,'pro');assert.equal(session.usuario.tenant.nombreFinca,'Conservada');
 });
 
-test('F-25: D150 invalida una respuesta tardia al cambiar el periodo',async()=>{
-  let resolve;
-  api.defaults.adapter=config=>new Promise(done=>{resolve=()=>done({data:{resultadoFinal:{debitoFiscal:0,creditoDeducible:0,ivaAPagar:0,saldoAFavor:0},prorrata:{porcentajeDeducible:100},detalleCompras:[]},status:200,headers:{},config});});
-  const Component=(await server.ssrLoadModule('/src/pages/D150Page.jsx')).default;
-  const view=testing.render(React.createElement(Component));
-  testing.fireEvent.click(view.getByRole('button',{name:'Calcular'}));
-  await testing.waitFor(()=>assert.equal(typeof resolve,'function'));
-  const month=view.getByRole('combobox');
-  testing.fireEvent.change(month,{target:{value:String(Number(month.value)===1?2:1)}});
-  await testing.act(async()=>resolve());
-  assert.equal(view.queryByRole('button',{name:'Exportar PDF'}),null);
-  assert.match(view.container.textContent,/Seleccion/);
-});
-
 test('L-01: LoginPage normaliza registro (cedula/telefono), maneja errores y RecuperarCuentaPage procesa enlaces',async()=>{
   const { MemoryRouter, Routes, Route } = await import('react-router-dom');
   const auth = await server.ssrLoadModule('/src/context/AuthContext.jsx');
@@ -204,7 +190,7 @@ test('L-01: LoginPage normaliza registro (cedula/telefono), maneja errores y Rec
   await testing.waitFor(() => assert.ok(view.getByLabelText('Nombre completo')));
   testing.fireEvent.change(view.getByLabelText('Nombre completo'), { target: { name: 'nombre', value: '  Productor REA  ' } });
   testing.fireEvent.change(view.getByLabelText(/Cédula física o jurídica/), { target: { name: 'cedula', value: '1-0999-0888' } });
-  testing.fireEvent.change(view.getByLabelText(/WhatsApp \/ Celular/), { target: { name: 'telefono', value: '8888-7777' } });
+  testing.fireEvent.change(view.getByLabelText(/Celular/), { target: { name: 'telefono', value: '8888-7777' } });
   testing.fireEvent.change(view.getByLabelText('Correo electrónico'), { target: { name: 'email', value: 'Productor@Finca.CR' } });
   testing.fireEvent.change(view.getByLabelText('Contraseña'), { target: { name: 'password', value: 'ClaveSegura2026!' } });
   testing.fireEvent.click(view.getByRole('checkbox'));

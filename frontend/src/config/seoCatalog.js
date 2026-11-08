@@ -47,7 +47,7 @@ export const SEO_ROUTES = Object.freeze({
   '/producto/impuestos': {
     title: 'Impuestos del Régimen Especial Agropecuario (REA) Costa Rica | ContadorGanadero',
     description:
-      'Organiza tu información financiera y consulta estimaciones de IVA cuatrimestral (D-135-1), Renta anual (D-101) y conciliación REA (D-150) en Costa Rica.',
+      'Organiza tu información financiera y consulta estimaciones de IVA cuatrimestral (D-135-1) y Renta anual (D-101) en Costa Rica.',
   },
   '/tutoriales': {
     title: 'Tutoriales Paso a Paso de Contabilidad Ganadera | ContadorGanadero',

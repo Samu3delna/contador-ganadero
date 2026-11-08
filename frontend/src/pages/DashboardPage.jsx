@@ -17,7 +17,7 @@ async function cargarData() {
   if (!Array.isArray(tend.data) || !Array.isArray(cat.data)) throw new Error('Datos no disponibles');
   return { resumen: res.data, tendencia: tend.data, categorias: cat.data };
 }
-const acciones = [{ to: '/ingresos', label: 'Registrar ingreso', Icon: Plus }, { to: '/facturas', label: 'Ver facturas', Icon: FileText }, { to: '/inventario', label: 'Consultar inventario', Icon: Warehouse }];
+const acciones = [{ to: '/ingresos', label: 'Registrar ingreso', Icon: Plus }, { to: '/facturacion', label: 'Facturación electrónica', Icon: FileText }, { to: '/inventario', label: 'Consultar inventario', Icon: Warehouse }];
 export default function DashboardPage() {
   const { usuario } = useAuth();
   const [data, setData] = useState(null);

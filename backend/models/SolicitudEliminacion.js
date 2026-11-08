@@ -12,7 +12,7 @@ const solicitudEliminacionSchema = new mongoose.Schema(
     origen: {
       type: String,
       enum: ['meta_callback', 'web_formulario', 'app_perfil', 'whatsapp_bot'],
-      default: 'meta_callback',
+      default: 'app_perfil',
     },
     metaUserId: {
       type: String,
@@ -56,7 +56,7 @@ const solicitudEliminacionSchema = new mongoose.Schema(
     justificacionLegal: {
       type: String,
       default:
-        'De conformidad con la Ley N° 8968 de Protección de la Persona frente al Tratamiento de sus Datos Personales de Costa Rica y las Condiciones de la Plataforma de Meta, todos los datos personales, credenciales, número de WhatsApp e historial operativo han sido eliminados de nuestros servidores activos. Nota fiscal: los comprobantes electrónicos previamente transmitidos a la Dirección General de Tributación (Ministerio de Hacienda) quedan sujetos al deber legal de conservación del contribuyente según el Art. 109 del Código de Normas y Procedimientos Tributarios (Ley N° 4755), sin que ContadorGanadero conserve copia activa vinculada a su identidad.',
+        'De conformidad con la Ley N° 8968 de Protección de la Persona frente al Tratamiento de sus Datos Personales de Costa Rica, los datos personales y credenciales han sido eliminados de nuestros servidores activos. Los comprobantes electrónicos transmitidos a Hacienda quedan sujetos al deber legal de conservación del contribuyente.',
     },
     ipSolicitante: {
       type: String,

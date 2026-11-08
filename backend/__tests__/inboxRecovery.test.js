@@ -1,4 +1,3 @@
-jest.mock('../services/whatsappService', () => ({ enviarMensajeWhatsApp: jest.fn().mockResolvedValue({}), descargarMediaMeta: jest.fn() }));
 const request = require('supertest');
 const express = require('express');
 const Event = require('../models/IngestionEvent');
@@ -43,12 +42,8 @@ test('S-04/F-38: IMAP global utiliza inbox sin usuario arbitrario y conserva des
   expect(spy).toHaveBeenCalledWith(expect.stringContaining('4'.repeat(50)),expect.objectContaining({emailDestino:'destino@example.test',canal:'imap'}));
   expect(spy.mock.calls[0][1].usuarioId).toBeUndefined();
 });
-test('P-04: foto no anuncia almacenamiento ni deduccion que no ocurrieron',async()=>{
-  const Tenant=require('../models/Tenant'),Usuario=require('../models/Usuario');
-  const tenant=await Tenant.create({nombreFinca:'Fotos'});
-  await Usuario.create({nombre:'Foto',email:'photo@example.test',password:'SyntheticPassword123!',tenantId:tenant._id,telefono:'50688881111'});
-  const servicio=require('../services/whatsappService');servicio.enviarMensajeWhatsApp.mockClear();
-  await require('../routes/whatsappWebhookRoutes').procesarMensaje({id:'foto-test',from:'50688881111',type:'image',image:{id:'media-foto'}});
-  expect(servicio.enviarMensajeWhatsApp.mock.calls[0][1]).toContain('no se guardó como gasto');
-  expect(servicio.descargarMediaMeta).not.toHaveBeenCalled();
+test('eventos pendientes del canal retirado quedan rechazados sin reintento', async () => {
+  const event = await inbox.recibir({ eventKey: 'canal-retirado', canal: 'whatsapp', payload: { message: { id: 'histórico' } } });
+  await inbox.procesar(event._id);
+  expect((await Event.findById(event._id)).estado).toBe('rechazado');
 });

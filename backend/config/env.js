@@ -191,9 +191,6 @@ function validarEntorno(arg1 = process.env, arg2 = {}) {
     errores.push('CLOUDFLARE_EMAIL_FROM debe ser un email válido si está configurado.');
   }
 
-  if (envObj.WHATSAPP_VERIFY_TOKEN && esPlaceholder(envObj.WHATSAPP_VERIFY_TOKEN)) {
-    errores.push('WHATSAPP_VERIFY_TOKEN no puede usar un valor por defecto débil.');
-  }
 
   if (errores.length > 0) {
     if (exitOnError) {

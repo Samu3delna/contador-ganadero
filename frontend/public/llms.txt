@@ -13,7 +13,7 @@
 - Registro de ingresos por venta de ganado (tipo, cantidad de cabezas, precio unitario, comprador).
 - Inventario multiespecie para bovinos, aves, peces y colmenas.
 - Consulta de costos de producción por unidad (kilogramo, litro, cartón) y factor de conversión alimenticia (FCA).
-- Organización documental y estimaciones para obligaciones del Régimen Especial Agropecuario (REA: D-135-1, D-101, D-150).
+- Organización documental y estimaciones para obligaciones del Régimen Especial Agropecuario (REA: D-135-1 y D-101).
 
 ## Rutas públicas principales
 

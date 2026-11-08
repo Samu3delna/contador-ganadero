@@ -83,7 +83,7 @@ export default function TerminosCondicionesPage() {
         <p>
           ContadorGanadero es una herramienta tecnológica de <strong>software como servicio (SaaS)</strong> diseñada para facilitar
           la organización contable, el seguimiento de inventarios productivos y la preparación de borradores de declaraciones tributarias
-          bajo el Régimen Especial Agropecuario (REA) de Costa Rica (Formularios D-135-1, D-101 y D-150).
+          bajo el Régimen Especial Agropecuario (REA) de Costa Rica (Formularios D-135-1 y D-101).
         </p>
         <div className="legal-alert legal-alert--warning">
           <ShieldAlert size={22} className="legal-alert-icon" />
@@ -140,7 +140,7 @@ export default function TerminosCondicionesPage() {
         <p>
           La plataforma se proporciona &quot;tal cual&quot; (<em>as is</em>) y &quot;según disponibilidad&quot;. Si bien implementamos las mejores prácticas
           de seguridad y alta disponibilidad, no garantizamos que el servicio sea ininterrumpido o esté 100% libre de errores ante caídas de
-          servicios externos (como la plataforma ATV de Hacienda, enrutamiento de correos de Cloudflare, mensajería de WhatsApp o pasarelas bancarias).
+          servicios externos (como la plataforma ATV de Hacienda, enrutamiento de correos de Cloudflare o pasarelas bancarias).
         </p>
         <p>
           En ningún caso ContadorGanadero responderá por lucro cesante, pérdidas indirectas, multas o recargos impuestos por la Dirección

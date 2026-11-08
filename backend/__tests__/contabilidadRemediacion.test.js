@@ -6,7 +6,6 @@ const Emision = require('../models/FacturaEmision');
 const Ingreso = require('../models/Ingreso');
 const { calcularIVACuatrimestral, calcularRentaAnual } = require('../services/impuestoService');
 const { generarDatosExportacion } = require('../services/declaracionService');
-const { generarConciliacion } = require('../services/d150Service');
 const { normalizarFactura } = require('../services/contabilidadService');
 let user, tenant;
 const fecha = new Date('2026-02-15T12:00:00Z');
@@ -40,8 +39,6 @@ test('F-11/F-12: compra USD y NC compensan base e IVA en reportes sin doble conv
   const norm=normalizarFactura(compra({moneda:'USD',tipoCambio:500})); expect(normalizarFactura(norm).resumenFactura.totalComprobante).toBe(56500);
   await Factura.collection.insertOne(compra({moneda:'USD',tipoCambio:500,tipoDocumento:'Nota de Crédito'}));
   iva=await calcularIVACuatrimestral(user._id,1,2026,tenant._id); expect(iva.ivaPagado).toBe(0);expect(iva.totalGastos).toBe(0);
-  const d150=await generarConciliacion({usuarioId:user._id,tenantId:tenant._id,mes:2,anio:2026});
-  expect(JSON.stringify(d150)).not.toContain('NaN');
   const datos=await generarDatosExportacion(user._id,2026,1,tenant._id); expect(datos.reduce((s,d)=>s+d.iva,0)).toBe(0);
 });
 test('F-13/F-14/F-35: base neta y cero explicito respetados; no deducible no genera credito IVA', async () => {
@@ -51,8 +48,6 @@ test('F-13/F-14/F-35: base neta y cero explicito respetados; no deducible no gen
   const renta=await calcularRentaAnual(user._id,2026,tenant._id); expect(renta.gastosDeducibles).toBe(800);
   const iva=await calcularIVACuatrimestral(user._id,1,2026,tenant._id); expect(iva.ivaPagado).toBe(0);
   const datos=await generarDatosExportacion(user._id,2026,1,tenant._id); expect(datos.find(d=>d.total===800).subtotal).toBe(800);
-  const d150=await generarConciliacion({usuarioId:user._id,tenantId:tenant._id,mes:2,anio:2026});
-  expect(d150.totales.comprasIVACredito).toBe(0);
   const cero=normalizarFactura(compra({resumenFactura:{totalVenta:100,totalVentaNeta:0,totalImpuesto:0,totalComprobante:0}}));
   expect(cero.resumenFactura.totalVentaNeta).toBe(0);
 });
@@ -65,7 +60,7 @@ test('F-33/S-12: contexto chat suma todos los registros de la finca y usa campos
   expect(ctx.ultimosIngresos[0].monto).toBe(101);
 });
 
-test('F-13/F-14: descuento total y exoneracion parcial coinciden en IVA, renta, D150 y exportacion', async () => {
+test('F-13/F-14: descuento total y exoneracion parcial coinciden en IVA, renta y exportacion', async () => {
   await Factura.collection.insertOne(compra({resumenFactura:{totalVenta:100,totalVentaNeta:0,totalDescuentos:100,totalImpuesto:0,totalComprobante:0}}));
   await Factura.collection.insertOne(compra({resumenFactura:{totalVenta:100,totalVentaNeta:100,totalImpuesto:5,totalComprobante:105},
     lineaDetalle:[{subtotal:100,impuesto:{tarifa:13,monto:13},exoneracion:{montoExoneracion:8},impuestoNeto:5,montoTotal:105}]}));
@@ -73,9 +68,6 @@ test('F-13/F-14: descuento total y exoneracion parcial coinciden en IVA, renta, 
   const iva=await calcularIVACuatrimestral(user._id,1,2026,tenant._id);
   expect(iva.ivaPagado).toBe(5);expect(iva.ivaCobrado).toBe(0);
   expect((await calcularRentaAnual(user._id,2026,tenant._id)).gastosDeducibles).toBe(100);
-  const d150=await generarConciliacion({usuarioId:user._id,tenantId:tenant._id,mes:2,anio:2026});
-  expect(d150.totales.comprasIVACredito).toBe(5);expect(d150.totales.ventasIVADebito).toBe(0);
   const exported=await generarDatosExportacion(user._id,2026,1,tenant._id);
   expect(exported.filter(d=>d.tipo==='GASTO').reduce((sum,d)=>sum+d.subtotal,0)).toBe(100);
-  expect(d150.documentos.find(d=>d.tipo==='COMPRA' && d.total===0).subtotal).toBe(0);
 });
