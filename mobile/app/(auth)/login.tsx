@@ -1,12 +1,14 @@
-import BrandLogo from "../../src/components/BrandLogo";
 import React, { useState } from "react";
-import { View } from "react-native";
+import { Text, View } from "react-native";
+import BrandLogo from "../../src/components/BrandLogo";
 import { Link, Redirect } from "expo-router";
 import { useAuth } from "../../src/auth/AuthContext";
 import { Screen, Field, Button, Label } from "../../src/components/ui";
 import { message } from "../../src/api/client";
+import { fonts, useTheme } from "../../src/theme";
 export default function Login() {
   const auth = useAuth();
+  const { colors: c } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [challenge, setChallenge] = useState("");
@@ -36,10 +38,61 @@ export default function Login() {
     }
   }
   return (
-    <Screen
-      title={challenge ? "Verificación en dos pasos" : "Bienvenido a tu finca"}
-    >
-      <BrandLogo width={90} height={90} style={{ alignSelf: "center" }} />
+    <Screen>
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 12,
+          alignItems: "center",
+          paddingVertical: 16,
+        }}
+      >
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            backgroundColor: "#FFFFFF",
+          }}
+        >
+          <BrandLogo width={48} height={48} />
+        </View>
+        <Text
+          style={{
+            fontFamily: fonts.heading,
+            fontSize: 21,
+            color: c.ink,
+            flexShrink: 1,
+          }}
+        >
+          ContadorGanadero
+        </Text>
+      </View>
+      <View
+        style={{
+          padding: 22,
+          borderRadius: 28,
+          backgroundColor: c.soft,
+          gap: 10,
+        }}
+      >
+        <Text
+          accessibilityRole="header"
+          style={{
+            fontFamily: fonts.heading,
+            fontSize: 34,
+            lineHeight: 40,
+            color: c.ink,
+          }}
+        >
+          {challenge ? "Un paso más de seguridad." : "Tu finca te espera."}
+        </Text>
+        <Label muted>
+          {challenge
+            ? "Verifica tu identidad para continuar."
+            : "La claridad empieza con tus cuentas al día."}
+        </Label>
+      </View>
       {challenge ? (
         <>
           <Field
@@ -107,7 +160,10 @@ export default function Login() {
           <Link href="/(auth)/registro" asChild>
             <Button title="Crear cuenta" secondary onPress={() => {}} />
           </Link>
-          <Link href="/(auth)/recuperar">
+          <Link
+            href="/(auth)/recuperar"
+            style={{ minHeight: 44, paddingVertical: 12 }}
+          >
             <Label>Olvidé mi contraseña</Label>
           </Link>
         </>
