@@ -2,7 +2,23 @@
 
 ## Estado de entrega
 
-Código nativo integrado con la API mediante contratos reales e integración backend probada localmente. No se desplegó el adaptador en Render ni se publicó en las tiendas. La aceptación completa de Android/iOS sigue pendiente de pruebas de dispositivo.
+APK Android release publicado y landing desplegada en Cloudflare. El adaptador móvil está activo en Render. No se publicó en las tiendas. La aceptación completa de Android/iOS sigue pendiente de pruebas de dispositivo.
+
+## Publicación verificada — 8 de noviembre, 23:42 Costa Rica
+
+- Código: `c51159964020814a0135eb90ae3ae9107d0ceefc`, publicado en `main`.
+- Render: deploy `dep-dbolplm8bjmc73bc4ae0`, estado `live` a las 05:42:24 UTC del 9 de noviembre.
+- Cloudflare: versión `ed7a1664-19a3-4522-8a7d-12886d845055`, https://contadorganadero.com .
+- Release inicial: https://github.com/Samu3delna/contador-ganadero/releases/tag/mobile-v0.1.0 .
+- APK release firmado: 39.040.525 bytes; Android 7+, arm64-v8a; firma v2/v3 y alineación 16 KB verificadas; sin flag debuggable; bundle Hermes y SQLCipher incluidos; URL productiva comprobada dentro del paquete.
+- Descarga pública verificada por HTTP y haciendo clic en la landing con Playwright. Ambos archivos coinciden con SHA-256 `fa7394e807e545d86cd074d2fee2369c1cc40786a3b1eab7fe85819aa2c4c114`.
+- API en vivo: health 200; login móvil sin datos 400 `INVALID_INPUT`; refresh móvil sin token 400 y `Cache-Control: no-store`; refresh web sin cookie 401. CORS conserva `https://contadorganadero.com`. No se crearon cuentas ni datos de prueba en producción.
+- Landing revisada a 390 × 844 y 1440 × 1000; botón de al menos 49 px y descarga desde la primera sección. El 401 de restauración web sin sesión es esperado.
+- Repetición final: backend 33 suites/256 pruebas; SDK 26; web 68; móvil 25. Lint web/móvil y TypeScript correctos; build web 2998 módulos y 13 páginas prerenderizadas.
+- Instalación npm simulada en directorio limpio: exit 0, sin `legacy-peer-deps`. La resolución sobre los enlaces existentes de Bun se interrumpió por lentitud; no se cambió la política de peers. Se observaron advertencias de engines de dependencias de pruebas con Node 24.13.
+- Una ejecución de tests concurrente con Gradle agotó el arranque de MongoMemoryServer y fue interrumpida. La ejecución completa posterior, sin Gradle concurrente, pasó; no se relajaron pruebas ni timeouts.
+
+La descarga está marcada como prerelease por tratarse de la primera distribución con aceptación en dispositivos aún pendiente. Ver `release-0.1.0.md` para requisitos y conservación de la firma.
 
 | Comando / comprobación | Resultado observado |
 | --- | --- |
@@ -49,12 +65,12 @@ SHA-256 del APK: `15f33f065b5e6558267b69c6d51825ad0d1c10a9e18d23d1e076f2891450c2
 
 ## Límites y tareas de aceptación pendientes
 
-1. Preparar staging con los cambios backend; la URL de producción predeterminada no implica que las nuevas rutas estén desplegadas.
+1. Mantener un entorno de staging para probar flujos con datos de prueba. El adaptador productivo ya está desplegado y sus rutas fueron verificadas.
 2. Instalar development builds en Android e iOS. Expo Go no incluye SQLCipher.
 3. Verificar login/MFA, reinicio, rotación, suspensión, tenant, logout global y carga de XML desde proveedores nativos contra staging.
 4. Verificar cifrado real, desbloqueo PIN/biometría, cancelación, segundo plano, reinicio, pérdida de red, siete días y borrado local.
 5. Revisar referencia visual 1, 390 × 844, modos claro/oscuro, fuentes ampliadas, teclado, TalkBack y VoiceOver. Las pruebas de labels no sustituyen esa revisión.
-6. Configurar cuenta/proyecto EAS, identificadores, firma y ficha de privacidad antes de publicar. No se emitieron builds firmados de distribución ni se ejecutó submit.
+6. Configurar cuenta/proyecto EAS y ficha de privacidad antes de publicar en tiendas. Ya existe firma propia para la distribución directa Android; reutilizarla en futuras actualizaciones. No se ejecutó submit.
 
 ## Seguridad offline
 
