@@ -36,7 +36,7 @@ Una primera ejecución de las pruebas nuevas coincidió con la exportación y ag
 
 Este entorno no tiene un teléfono Android conectado, AVD configurado ni Xcode. La exportación y compilación no prueban fidelidad visual en un teléfono. Revisar 390 × 844, texto al 200 %, teclado, TalkBack/VoiceOver, carga de fuentes, pulsaciones y transiciones antes de distribuir una nueva versión.
 
-Los cambios están en el proyecto. La descarga pública anterior no se actualiza automáticamente con esta implementación; se requiere generar y publicar una nueva versión para distribuir Terreno.
+Terreno está disponible en la [release Android 0.1.1](https://github.com/Samu3delna/contador-ganadero/releases/tag/mobile-v0.1.1), publicada con versionCode 2 y la misma firma de 0.1.0. La landing productiva apunta al APK nuevo. Su descarga real desde el botón se verificó mediante SHA-256. Ver `release-0.1.1.md`.
 
 ## Archivos de entrada
 

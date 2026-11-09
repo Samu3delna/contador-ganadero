@@ -93,4 +93,4 @@ Ver docs/auth-contract.md y docs/validation.md.
 
 ## Diseño Terreno
 
-La app usa la dirección Terreno seleccionada: Bricolage Grotesque / Source Sans 3 locales, paleta marfil y oliva, variantes clara/oscura y animaciones nativas con movimiento reducido. Ver [implementación y validación](docs/terreno-implementation.md). La descarga pública 0.1.0 antecede este rediseño; distribuirlo requiere una nueva versión.
+La app usa la dirección Terreno seleccionada: Bricolage Grotesque / Source Sans 3 locales, paleta marfil y oliva, variantes clara/oscura y animaciones nativas con movimiento reducido. Ver [implementación y validación](docs/terreno-implementation.md). La [versión Android 0.1.1](https://github.com/Samu3delna/contador-ganadero/releases/tag/mobile-v0.1.1) incluye este rediseño y está enlazada desde la landing productiva.
