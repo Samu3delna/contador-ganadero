@@ -25,6 +25,8 @@ Nueva versión del MVP móvil con el diseño Terreno: Bricolage Grotesque y Sour
 
 ## Validación y límites
 
+APK verificado: SHA-256 `b0d120c6161e18835ced058e290dc0eb77cecf320755d9432406d7158416fab6`. Firma APK v2/v3 y alineación de 16 KB correctas. Certificado SHA-256 `2ee0eea4b062e9c458e87908749512c35625d27453509a94d50af4ef33bfd04f`, igual al de la versión 0.1.0. El manifiesto confirma versionCode 2, Android API 24+ y arm64-v8a, sin modo debuggable. El paquete incluye el bundle y las tres fuentes Terreno.
+
 La implementación pasó TypeScript, ESLint, 29 pruebas móviles y exportación Android/iOS. La landing pasó ESLint, pruebas y build de producción. El paquete se verifica con `apksigner`, `zipalign` y comprobación del manifiesto antes de publicarse.
 
 La release continúa marcada como distribución inicial: la revisión visual, los gestos, accesibilidad y seguridad nativa en teléfonos físicos siguen pendientes. El entorno de construcción no tiene dispositivo Android ni emulador configurado. No es una publicación en Google Play o App Store.
