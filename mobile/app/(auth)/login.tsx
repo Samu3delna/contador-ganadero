@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Image, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import BrandLogo from "../../src/components/BrandLogo";
 import { Link, Redirect } from "expo-router";
 import { useAuth } from "../../src/auth/AuthContext";
 import { Screen, Field, Button, Label } from "../../src/components/ui";
@@ -46,16 +47,16 @@ export default function Login() {
           paddingVertical: 16,
         }}
       >
-        <Image
-          source={require("../../assets/logo.png")}
+        <View
           style={{
             width: 48,
             height: 48,
             borderRadius: 12,
             backgroundColor: "#FFFFFF",
           }}
-          accessibilityLabel="ContadorGanadero"
-        />
+        >
+          <BrandLogo width={48} height={48} />
+        </View>
         <Text
           style={{
             fontFamily: fonts.heading,

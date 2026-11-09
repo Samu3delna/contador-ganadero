@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -22,6 +21,7 @@ import { useRemote } from "../../src/hooks/useRemote";
 import { useAuth } from "../../src/auth/AuthContext";
 import { fonts, useTheme } from "../../src/theme";
 import type { Dashboard, Invoice, Page } from "../../src/types/api";
+import BrandLogo from "../../src/components/BrandLogo";
 
 export default function Home() {
   const { user, offline } = useAuth();
@@ -40,11 +40,9 @@ export default function Home() {
   return (
     <Screen>
       <View style={[styles.row, { alignItems: "center", flexWrap: "wrap" }]}>
-        <Image
-          source={require("../../assets/logo.png")}
-          style={home.logo}
-          accessibilityLabel="Logo de ContadorGanadero"
-        />
+        <View style={home.logo}>
+          <BrandLogo width={38} height={38} />
+        </View>
         <Text style={[home.brand, { color: c.ink, flex: 1 }]}>
           ContadorGanadero
         </Text>

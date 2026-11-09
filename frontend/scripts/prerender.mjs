@@ -1,5 +1,6 @@
-import { createServer } from 'vite';
-import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
+import { build } from 'vite';
+import { pathToFileURL } from 'node:url';
+import { readFile, writeFile, mkdir, readdir, mkdtemp, rm } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
 import path from 'node:path';
 import { resolvePageSeo, SITE_ORIGIN } from '../src/config/seoCatalog.js';
@@ -15,9 +16,19 @@ const routes = [
 ];
 const legalSitemapRoutes = ['/privacidad', '/terminos', '/condiciones-servicio', '/eliminacion-datos'];
 
-const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+// Bundle SSR dependencies together so Node cannot load a second React from
+// the mobile workspace through hoisted router packages.
+const renderDir = await mkdtemp(path.resolve('.prerender-'));
 try {
-  const { render } = await server.ssrLoadModule('/src/entry-public.jsx');
+  await build({
+    ssr: { noExternal: true },
+    build: {
+      ssr: 'src/entry-public.jsx',
+      outDir: renderDir,
+      rolldownOptions: { output: { entryFileNames: 'render.mjs' } },
+    },
+  });
+  const { render } = await import(pathToFileURL(path.join(renderDir, 'render.mjs')).href);
   const template = await readFile('dist/index.html', 'utf8');
   const publicCss = (await readdir('dist/assets')).filter(name => /^LandingPage-.*\.css$/.test(name));
   for (const route of routes) {
@@ -98,5 +109,5 @@ try {
   await writeFile('dist/sitemap.xml', sitemap);
   console.log(`Prerender: ${routes.length} public pages (${allSitemapRoutes.length} sitemap URLs).`);
 } finally {
-  await server.close();
+  await rm(renderDir, { recursive: true, force: true });
 }

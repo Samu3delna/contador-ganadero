@@ -10,6 +10,8 @@ export default defineConfig({
   envDir: path.resolve(__dirname, '..'),
   plugins: [react()],
   resolve: {
+    // Web and native workspaces can install different React copies.
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@assets': path.resolve(__dirname, './src/assets'),
