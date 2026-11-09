@@ -8,16 +8,17 @@ const apiUrl =
 const app: ExpoConfig = {
   name: "ContadorGanadero",
   slug: "contador-ganadero-mobile",
-  version: "0.1.0",
+  version: "0.1.1",
   scheme: "contadorganadero",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
   icon: "./assets/logo.png",
   ios: {
+    buildNumber: "2",
     supportsTablet: true,
     bundleIdentifier: "com.contadorganadero.mobile",
   },
-  android: { package: "com.contadorganadero.mobile", versionCode: 1 },
+  android: { package: "com.contadorganadero.mobile", versionCode: 2 },
   plugins: [
     "./plugins/withUnsignedRelease",
     "expo-router",

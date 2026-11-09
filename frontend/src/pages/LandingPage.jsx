@@ -46,9 +46,9 @@ export default function LandingPage() {
           <AndroidDownload describedBy="cg-android-download-note" />
         </div>
         <p className="cg-note" id="cg-android-download-note">
-          Versión 0.1.0 para Android 7 o posterior, de 64 bits. Al abrir el APK, Android puede pedirte
+          Versión 0.1.1 · Diseño Terreno. Para Android 7 o posterior, de 64 bits. Al abrir el APK, Android puede pedirte
           permiso para instalar desde tu navegador.{' '}
-          <a href="https://github.com/Samu3delna/contador-ganadero/releases/tag/mobile-v0.1.0">
+          <a href="https://github.com/Samu3delna/contador-ganadero/releases/tag/mobile-v0.1.1">
             Requisitos y detalles de la descarga
           </a>.
         </p>

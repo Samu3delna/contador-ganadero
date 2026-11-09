@@ -95,7 +95,7 @@
     },
     "mobile": {
       "name": "@contadorganadero/mobile",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@babel/runtime": "^8.1.0",
         "@expo-google-fonts/inter": "^0.4.2",
