@@ -7,6 +7,7 @@ import {
   Label,
   Status,
   money,
+  Feedback,
 } from "../../src/components/ui";
 import { useRemote } from "../../src/hooks/useRemote";
 import { useAuth } from "../../src/auth/AuthContext";
@@ -50,7 +51,7 @@ export default function Facturas() {
       <Label muted>
         Archivos XML de hasta 2 MB. Las fotografías no se procesan.
       </Label>
-      {!!result && <Label>{result}</Label>}
+      {!!result && <Feedback>{result}</Feedback>}
       <Button
         title={review ? "Mostrar todas" : "Mostrar en revisión"}
         secondary

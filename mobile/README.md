@@ -90,3 +90,7 @@ La versión inicial Android 0.1.0 se prepara con `scripts/release-android.ps1`: 
 La descarga se publica en GitHub Releases y se enlaza desde la landing. Este despliegue fue solicitado explícitamente por el propietario; no implica publicación en Google Play ni App Store.
 
 Ver docs/auth-contract.md y docs/validation.md.
+
+## Diseño Terreno
+
+La app usa la dirección Terreno seleccionada: Bricolage Grotesque / Source Sans 3 locales, paleta marfil y oliva, variantes clara/oscura y animaciones nativas con movimiento reducido. Ver [implementación y validación](docs/terreno-implementation.md). La descarga pública 0.1.0 antecede este rediseño; distribuirlo requiere una nueva versión.

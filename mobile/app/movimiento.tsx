@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { router } from "expo-router";
 import { SessionGate } from "../src/components/SessionGate";
-import { Screen, Label, Field, Button } from "../src/components/ui";
+import { Screen, Label, Field, Button, Feedback } from "../src/components/ui";
 import { useAuth } from "../src/auth/AuthContext";
 import { api, message } from "../src/api/client";
 import { amount, civilDate, today } from "../src/utils/forms";
@@ -115,7 +115,7 @@ function Movimiento() {
         </>
       )}
       <Label muted>El servidor calcula y valida los importes fiscales.</Label>
-      {!!result && <Label>{result}</Label>}
+      {!!result && <Feedback>{result}</Feedback>}
       <Button
         title={busy ? "Guardando…" : "Guardar movimiento"}
         disabled={busy || offline}

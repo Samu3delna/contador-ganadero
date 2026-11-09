@@ -3,17 +3,15 @@ import { Stack } from "expo-router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
-import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
-import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
-import { Outfit_600SemiBold } from "@expo-google-fonts/outfit/600SemiBold";
+import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from "../src/auth/AuthContext";
-import { ThemeProvider } from "../src/theme";
+import { ThemeProvider, useTheme } from "../src/theme";
 import { queryClient } from "../src/queries/client";
 export default function Root() {
   const [loaded, error] = useFonts({
-    Inter_400Regular,
-    Inter_600SemiBold,
-    Outfit_600SemiBold,
+    BricolageSemiBold: require("../assets/fonts/BricolageSemiBold.ttf"),
+    SourceSansRegular: require("../assets/fonts/SourceSansRegular.ttf"),
+    SourceSansSemiBold: require("../assets/fonts/SourceSansSemiBold.ttf"),
   });
   if (!loaded && !error) return null;
   return (
@@ -29,5 +27,24 @@ export default function Root() {
   );
 }
 function Navigation() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const { colors: c, isDark, reduceMotion } = useTheme();
+  return (
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: c.bg },
+        }}
+      >
+        <Stack.Screen
+          name="movimiento"
+          options={{
+            animation: reduceMotion ? "fade" : "slide_from_bottom",
+            animationDuration: 250,
+          }}
+        />
+      </Stack>
+    </>
+  );
 }

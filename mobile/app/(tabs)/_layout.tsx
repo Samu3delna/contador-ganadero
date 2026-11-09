@@ -2,7 +2,7 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { SessionGate } from "../../src/components/SessionGate";
-import { useTheme } from "../../src/theme";
+import { fonts, useTheme } from "../../src/theme";
 export default function Layout() {
   const { colors: c } = useTheme();
   return (
@@ -13,6 +13,10 @@ export default function Layout() {
           tabBarActiveTintColor: c.green,
           tabBarInactiveTintColor: c.muted,
           tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.border },
+          tabBarLabelStyle: { fontFamily: fonts.strong, fontSize: 12 },
+          tabBarItemStyle: { minHeight: 52, borderRadius: 18 },
+          tabBarActiveBackgroundColor: c.soft,
+          tabBarHideOnKeyboard: true,
           sceneStyle: { backgroundColor: c.bg },
         }}
       >
