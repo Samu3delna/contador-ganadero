@@ -17,6 +17,7 @@ const { JWT_ISSUER, JWT_AUDIENCE } = require('../middleware/authMiddleware');
 const { validarPoliticaPassword, verificarPasswordFiltradoHIBP } = require('../utils/pwnedPassword');
 const { generateTotpSecret, buildOtpAuthUrl, verifyTotpToken, generateBackupCodes } = require('../utils/totp');
 const { audit } = require('../utils/audit');
+const { refreshInput, sendSession } = require('../services/authTransport');
 
 const DUMMY_HASH = '$2a$12$e8Ov5y2ZJ7m6V3QvX7fX9.kX6f8oFzN0zJz5t1Z5V3m6V3QvX7fX9';
 
@@ -90,6 +91,7 @@ const emitirRefreshToken = async (usuario, tenantId, req, familyId = null, mfaVe
  * Setea cookie httpOnly con el refresh token
  */
 const setRefreshCookie = (res, token) => {
+  if (res.locals?.mobileAuth) { res.locals.mobileRefreshToken = token; return; }
   const isProd = process.env.NODE_ENV === 'production';
   res.cookie('refreshToken', token, {
     httpOnly: true,
@@ -101,6 +103,7 @@ const setRefreshCookie = (res, token) => {
 };
 
 const clearRefreshCookie = (res) => {
+  if (res.locals?.mobileAuth) return;
   const isProd = process.env.NODE_ENV === 'production';
   res.clearCookie('refreshToken', {
     httpOnly: true,
@@ -249,7 +252,8 @@ const registro = async (req, res, next) => {
       resultado: 'success',
     });
 
-    res.status(201).json({
+    res.status(201);
+    sendSession(res, {
       _id: usuario._id,
       nombre: usuario.nombre,
       email: usuario.email,
@@ -398,7 +402,7 @@ const login = async (req, res, next) => {
       resultado: 'success',
     });
 
-    res.json({
+    sendSession(res, {
       _id: usuario._id,
       nombre: usuario.nombre,
       email: usuario.email,
@@ -432,7 +436,7 @@ const login = async (req, res, next) => {
  */
 const refrescarToken = async (req, res, next) => {
   try {
-    const cookieToken = req.cookies?.refreshToken;
+    const cookieToken = refreshInput(req, res);
     if (!cookieToken) {
       res.status(401);
       throw new Error('No refresh token provided');
@@ -468,7 +472,11 @@ const refrescarToken = async (req, res, next) => {
       throw new Error('Sesión revocada');
     }
 
-    const tenant = await Tenant.findById(decoded.tenantId);
+    if (String(usuario.tenantId) !== String(decoded.tenantId)) {
+      res.status(401);
+      throw new Error('Sesión revocada: la finca del usuario cambió');
+    }
+    const tenant = await Tenant.findById(usuario.tenantId);
     if (!tenant || !tenant.estaActivo()) {
       res.status(403);
       throw new Error('Tenant inactivo o cancelado');
@@ -525,7 +533,7 @@ const refrescarToken = async (req, res, next) => {
     setRefreshCookie(res, nuevoRefresh.token);
     const accessToken = generarToken(usuario, tenant._id, decoded.mfaVerifiedAt);
 
-    res.json({ token: accessToken });
+    sendSession(res, { token: accessToken });
   } catch (error) {
     next(error);
   }
@@ -537,7 +545,7 @@ const refrescarToken = async (req, res, next) => {
  * @access  Público
  */
 const logout = async (req, res) => {
-  const cookieToken = req.cookies?.refreshToken;
+  const cookieToken = refreshInput(req, res);
   if (cookieToken && mongoose.connection.readyState === 1) {
     try {
       const decoded = jwt.verify(cookieToken, getJwtRefreshSecret(), { algorithms: ['HS256'], ignoreExpiration: true });

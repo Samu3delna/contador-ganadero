@@ -2,6 +2,7 @@ import BenefitsMarquee from '../components/public/BenefitsMarquee';
 import ScrollLandscape from '../components/public/ScrollLandscape';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, ReceiptText, Sprout, ChartNoAxesCombined, Play } from 'lucide-react';
+import AndroidDownload from '../components/public/AndroidDownload';
 import BrandLogo from '../components/public/BrandLogo';
 import ProductDemo from '../components/public/ProductDemo';
 import { CTASection, FAQSection, PricingCards } from '../components/public/PublicBlocks';
@@ -42,7 +43,15 @@ export default function LandingPage() {
             <Play size={16} aria-hidden="true" />
             Ver demostración
           </Link>
+          <AndroidDownload describedBy="cg-android-download-note" />
         </div>
+        <p className="cg-note" id="cg-android-download-note">
+          Versión 0.1.0 para Android 7 o posterior, de 64 bits. Al abrir el APK, Android puede pedirte
+          permiso para instalar desde tu navegador.{' '}
+          <a href="https://github.com/Samu3delna/contador-ganadero/releases/tag/mobile-v0.1.0">
+            Requisitos y detalles de la descarga
+          </a>.
+        </p>
         <p className="cg-note">Conoce el producto a tu ritmo. Empieza con el plan Gratis en contadorganadero.com.</p>
         <div className="cg-hero-caption">
           <span>Del registro a la decisión</span>

@@ -47,9 +47,9 @@ async function verificarDesafio(req, res, next) {
     const refresh = await emitirRefreshToken(usuario, tenant._id, req, null, verifiedAt);
     setRefreshCookie(res, refresh.token);
     const { maxAge, ...cookieOptions } = opcionesCookieMfa();
-    res.clearCookie('mfaChallenge', cookieOptions);
+    if (!res.locals?.mobileAuth) res.clearCookie('mfaChallenge', cookieOptions);
     await usuario.resetearIntentosLogin();
-    res.json({ _id: usuario._id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol,
+    require('./authTransport').sendSession(res, { _id: usuario._id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol,
       cedula: usuario.cedula, telefono: usuario.telefono, nombreFinca: usuario.nombreFinca,
       tenantId: tenant._id, tenant: tenant.toJSON(), plan: tenant.plan, esSuperAdmin: usuario.isSuperAdmin,
       token: generarToken(usuario, tenant._id, verifiedAt) });

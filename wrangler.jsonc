@@ -1,5 +1,9 @@
 {
   "name": "contador-ganadero",
+  "account_id": "d1e094b04cea0060919c49d61c0cef9e",
+  "workers_dev": true,
+  "preview_urls": true,
+  "routes": [{ "pattern": "contadorganadero.com", "custom_domain": true }],
   "compatibility_date": "2026-10-30",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {

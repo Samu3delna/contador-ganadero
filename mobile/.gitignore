@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+android/
+ios/
+coverage/
+.env*
+docs/source-changes.zip
+docs/source-code.zip
+docs/delivery-*.js
+*.apk
+*.idsig
+*.jks
+*.keystore

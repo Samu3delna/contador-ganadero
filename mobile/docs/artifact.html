@@ -1,0 +1,594 @@
+<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ContadorGanadero Mobile — Plan, Arquitectura y Prompt de Implementación</title>
+<style>
+:root{--ink:#102b50;--green:#215d3b;--muted:#566a70;--line:#d6e0db;--paper:#fafbf8;--soft:#edf3ee;--gold:#866013}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:var(--green);text-underline-offset:4px}button,.download{font:inherit;cursor:pointer;border:1px solid var(--green);color:var(--green);background:white;padding:9px 17px;border-radius:8px;min-height:44px;text-decoration:none}button.primary{background:var(--green);color:white}
+.toolbar{background:#fff;border-bottom:1px solid var(--line);padding:13px 4vw;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:3}.brand{font-size:14px;font-weight:750;letter-spacing:.04em}.actions{display:flex;gap:10px;align-items:center}.hint{font-size:12px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:190px minmax(0,1080px);max-width:1400px;margin:auto;gap:50px;padding:55px 40px}
+aside{position:sticky;top:100px;height:fit-content;font-size:14px}aside a{display:block;padding:8px 0;text-decoration:none;color:var(--muted)}aside a:hover{color:var(--green)}
+.eyebrow{font-size:12px;font-weight:750;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+h1{font-size:clamp(40px,5vw,66px);line-height:1.07;letter-spacing:-.045em;margin:15px 0 24px;font-weight:700}h2{font-size:30px;line-height:1.2;letter-spacing:-.025em;margin:0 0 22px}h3{font-size:19px;margin:14px 0 8px}p{margin:12px 0}.lead{font-size:21px;max-width:750px;color:var(--muted)}.subtitle{font-size:21px;font-weight:500;letter-spacing:-.02em}.meta{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0}.tag{padding:4px 10px;background:var(--soft);color:var(--green);font-size:12px;font-weight:700;border-radius:5px}
+.notice{border-left:4px solid #b08221;background:#f5efdf;padding:17px 22px;color:#5e491e;margin:27px 0}.notice strong{display:block}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:35px;padding:26px 0}.stat b{display:block;font-size:38px;font-weight:650;line-height:1.2;color:var(--green)}.stat span{font-size:13px;color:var(--muted)}
+section{padding:48px 0;border-bottom:1px solid var(--line);scroll-margin-top:100px}.section-num{display:block;color:var(--green);font-size:12px;letter-spacing:.1em;margin-bottom:12px;font-weight:750}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:32px}.design{display:grid;grid-template-columns:1fr 265px;gap:45px;align-items:start}.reference{width:100%;border:1px solid var(--line);border-radius:22px;box-shadow:0 16px 35px #102b5010}figcaption{font-size:12px;color:var(--muted);line-height:1.5;margin-top:12px}
+ul,ol{padding-left:24px}li{margin:8px 0}.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0}.node{padding:18px;border:1px solid var(--line);border-top:3px solid var(--green);background:#fff;line-height:1.45}.node small{display:block;color:var(--muted);font-size:12px;margin-top:9px}.node strong{font-size:15px}.branch{background:var(--soft);padding:20px 24px;margin:12px 0;font-size:14px;border-radius:8px}.route{display:grid;grid-template-columns:130px 1fr;border-bottom:1px solid var(--line);padding:12px 0;gap:15px}.route b{font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:20px 0}th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:var(--soft)}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}td:first-child{font-weight:600}
+.pass{color:var(--green);font-weight:700}.pending{color:var(--gold);font-weight:700}.timeline{counter-reset:phase}.phase{display:grid;grid-template-columns:40px 1fr;gap:16px;padding:18px 0;border-bottom:1px solid var(--line)}.phase:before{counter-increment:phase;content:"0" counter(phase);color:var(--green);font-weight:700;font-size:20px}.phase p{margin:5px 0}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:650px;overflow:auto;background:#edf2ef;padding:25px;font:13px/1.65 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:8px}code{font-size:.9em;background:var(--soft);padding:2px 5px;border-radius:3px}details{margin:15px 0}summary{cursor:pointer;min-height:44px;padding:10px 0;color:var(--green);font-weight:650}
+footer{padding:32px 0;color:var(--muted);font-size:13px}article[contenteditable=true]{outline:2px dashed #59946c;outline-offset:14px}article[contenteditable=true]:focus{outline-color:var(--green)}.tablewrap{overflow:auto}.buttonrow{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
+@media(max-width:1050px){.layout{grid-template-columns:1fr;padding:30px 25px;gap:20px}aside{position:static;display:flex;flex-wrap:wrap;gap:6px 18px}aside .eyebrow{display:none}.design{grid-template-columns:1fr 230px}.flow{grid-template-columns:1fr 1fr}.hint{display:none}}
+@media(max-width:650px){.toolbar{padding:10px 16px}.brand{max-width:135px;font-size:12px}.actions button{font-size:12px;padding:8px}.layout{padding:28px 20px}.grid,.design{grid-template-columns:1fr}.design figure{max-width:260px;margin:0 auto}.stats{gap:12px}.stat b{font-size:30px}.route{grid-template-columns:90px 1fr}h1{font-size:44px}.lead{font-size:18px}th,td{padding:10px 8px;min-width:110px}section{padding:35px 0}}
+@media print{.toolbar,aside,.buttonrow{display:none}.layout{display:block;padding:0}.notice{break-inside:avoid}section{break-inside:auto}pre{max-height:none}.reference{max-width:200px}}
+@media(max-width:650px){.toolbar{flex-wrap:wrap}.brand{max-width:none}.actions{width:100%}.actions button{flex:1}}
+</style></head><body>
+<header class="toolbar"><div class="brand">CONTADORGANADERO<br><span style="font-weight:400;color:#566a70">Mobile · Documento de entrega</span></div><div class="actions"><span class="hint" id="hint">Edita el texto y descarga una copia para conservar tus cambios.</span><button id="edit">Editar texto</button><button class="primary" id="save">Descargar HTML</button></div></header>
+<div class="layout"><aside aria-label="Índice"><div class="eyebrow">En este documento</div><a href="#producto">01 · Producto y decisiones</a><a href="#arquitectura">02 · Arquitectura</a><a href="#sesion">03 · Autenticación</a><a href="#pantallas">04 · Pantallas</a><a href="#roadmap">05 · Fases y roadmap</a><a href="#evidencia">06 · Evidencia</a><a href="#matrices">07 · Skills y herramientas</a><a href="#pendientes">08 · Próximos pasos</a><a href="#prompt">09 · Prompt completo</a><a href="#codigo">10 · Código y documentos</a></aside>
+<article id="document" contenteditable="false">
+<div class="eyebrow">Costa Rica · 08 de noviembre de 2026 · Entrega técnica 0.1</div>
+<h1>Tu finca.<br>Ahora, en el teléfono.</h1>
+<div class="subtitle">ContadorGanadero Mobile — Plan, Arquitectura y Prompt de Implementación</div>
+<p class="lead">Una aplicación nativa para consultar la contabilidad, registrar movimientos y cargar facturas XML. La misma finca, la misma API y una sesión diseñada para el teléfono.</p>
+<div class="meta"><span class="tag">Expo 58 + React Native</span><span class="tag">Android + iOS</span><span class="tag">TypeScript</span><span class="tag">Dirección visual 1</span></div>
+<div class="notice"><strong>Implementación disponible · aceptación en dispositivo pendiente</strong>El código usa endpoints reales y tiene pruebas de integración. No se desplegó producción. Los bundles exportados y las pruebas automatizadas no sustituyen la validación nativa de cifrado, biometría, navegación y accesibilidad.</div>
+<div class="stats"><div class="stat"><b>375</b><span>pruebas automatizadas distintas aprobadas</span></div><div class="stat"><b>20/20</b><span>comprobaciones de Expo Doctor</span></div><div class="stat"><b>7 días</b><span>máximo de lectura offline desde validación online</span></div></div>
+<section id="producto"><span class="section-num">01 / PRODUCTO Y DECISIONES</span><h2>Hecha para el trabajo de la finca.</h2>
+<div class="design"><div><p>El MVP reúne balance financiero, facturas, movimientos manuales, inventario y consulta tributaria. Los cálculos fiscales y las autorizaciones permanecen en el backend.</p>
+<h3>Decisiones confirmadas</h3><ul><li><code>mobile/</code> dentro del monorepo existente. Expo managed workflow y Expo Router.</li><li>Dirección visual <strong>1</strong>: balance como foco, verde bosque, azul de marca, tipografías Outfit e Inter y navegación de cuatro pestañas.</li><li>SQLCipher por usuario y tenant, con desbloqueo del dispositivo. Sin bloqueo seguro no se habilita persistencia offline.</li><li>Access token en memoria; refresh token exclusivamente en SecureStore. Sin cookies de navegador en móvil.</li><li>Escrituras con conexión. No hay cola de sincronización ni OCR de fotografías.</li></ul>
+<p>El balance usa el período fiscal que devuelve la API. Se evitó rotular un acumulado anual como si fuera un monto mensual.</p></div>
+<figure><div style="padding:28px;background:#edf3ee;border-radius:20px"><strong>Dirección visual 1</strong><p>Verde bosque<br>Azul de marca<br>Outfit + Inter</p><p>Balance como foco<br>Facturas recientes<br>Cuatro pestañas</p></div><figcaption>La referencia original permanece en mobile/docs/design-reference.png. Se omite del artifact por el límite de tamaño de Deska. Revisión visual nativa pendiente.</figcaption></figure></div></section>
+<section id="arquitectura"><span class="section-num">02 / ARQUITECTURA</span><h2>Una app nativa, un backend compartido.</h2>
+<div class="flow"><div class="node"><strong>Expo Router</strong><small>Componentes React Native, temas claro/oscuro y controles accesibles.</small></div><div class="node"><strong>Auth + Query + Axios</strong><small>Identidad separada de datos remotos. Bearer y refresh único.</small></div><div class="node"><strong>Express /api</strong><small>Adaptador móvil sobre las validaciones y controladores actuales.</small></div><div class="node"><strong>MongoDB</strong><small>Tenant y permisos derivados de sesión y base de datos.</small></div></div>
+<div class="branch"><strong>Lectura offline:</strong> TanStack Query → snapshots seleccionados → SQLCipher → clave aleatoria en SecureStore. El desbloqueo habilita lectura; el cierre de sesión destruye clave, base e identidad local.</div>
+<div class="grid"><div><h3>Organización del código</h3><p><code>app/</code> rutas y pantallas<br><code>src/api/</code> transporte y archivos<br><code>src/auth/</code> sesión<br><code>src/lib/</code> vault y política offline<br><code>src/hooks/</code> consulta online/offline<br><code>src/theme/</code> tokens<br><code>tests/</code> comportamiento móvil</p></div><div><h3>Compatibilidad y límites</h3><p>La web conserva cookies httpOnly y sus respuestas de autenticación. No se modificaron webhooks, CORS, reglas fiscales ni ONVO. La carga manual de XML queda fijada al tenant autenticado, incluso cuando el archivo identifica otro receptor.</p><p>AsyncStorage solo guarda el tema. El persister de AsyncStorage no se usa para información financiera.</p></div></div></section>
+<section id="sesion"><span class="section-num">03 / AUTENTICACIÓN Y CACHÉ</span><h2>La sesión viaja segura.</h2>
+<ol><li><strong>Ingreso:</strong> login o registro → MFA cuando aplica → access en memoria y refresh en SecureStore.</li><li><strong>Renovación:</strong> un 401 comparte una promesa de refresh con las solicitudes simultáneas; se guarda el token rotado y cada solicitud se reintenta como máximo una vez.</li><li><strong>Revocación:</strong> el servidor invalida el token anterior y detecta reúso de familia. Credenciales revocadas provocan limpieza local.</li><li><strong>Restauración online:</strong> desbloqueo local → refresh → perfil validado por API.</li><li><strong>Restauración offline:</strong> desbloqueo → identidad protegida → plazo de siete días → último dashboard y páginas de facturas descargadas.</li><li><strong>Salida:</strong> revocación remota si hay red → invalidación de respuestas pendientes → limpieza de Query, refresh, clave y base cifrada.</li></ol>
+<p>Las operaciones de credenciales y vault se serializan para evitar que una respuesta tardía restaure una sesión cerrada. Al pasar a segundo plano se bloquea la UI, se cancelan consultas y se cierra el vault.</p>
+<details><summary>Ver contrato completo de autenticación y rutas</summary><pre># Contrato móvil
+
+Base: /api/mobile/auth. JSON; Cache-Control: no-store; sin Set-Cookie.
+El cliente no acepta ni envía tenantId arbitrario.
+
+| POST | Solicitud | Resultado |
+|---|---|---|
+| /login | email, password; opcional totpCode o backupCode heredado | Sesión o desafío |
+| /registro | nombre, email, password, nombreFinca opcional, aceptaTerminos:true | 201 + sesión |
+| /mfa/verify | mfaToken y totpCode (6 dígitos) o backupCode | Sesión |
+| /refresh | refreshToken | Tokens nuevos |
+| /logout | refreshToken | mensaje |
+
+Sesión: {accessToken, refreshToken, expiresIn, user}.
+Desafío: {mfaRequired:true, mfaToken, mensaje}; no entrega access ni refresh.
+Refresh: {accessToken, refreshToken, expiresIn}; luego GET /api/auth/perfil para identidad actual.
+expiresIn expresa segundos restantes del access token firmado, no una constante desconectada de JWT_EXPIRE.
+
+Claims compartidos: id, tenantId, rol, tokenVersion, mfaVerifiedAt, iss y aud.
+Refresh agrega type:refresh, jti y familyId. La base guarda hash del jti.
+La familia se rota con compare-and-set; el token anterior deja de servir. El refresh rechaza cambios de tenant en la identidad de base de datos.
+Los límites generales y específicos de auth se conservan.
+
+Operaciones existentes con bearer:
+- GET /api/auth/perfil
+- POST /api/auth/logout-all
+- POST /api/auth/forgot-password (público, respuesta no enumerante)
+- GET /api/dashboard/resumen
+- GET /api/facturas?page=1&amp;limit=20&amp;estado=revision
+- GET /api/facturas/:id, /:id/xml, /:id/pdf
+- POST /api/facturas/upload, multipart campo archivoXML, máximo 2 MB
+- POST /api/facturas/manual
+- GET/POST /api/ingresos; DELETE /api/ingresos/:id
+- GET /api/inventario y /resumen; POST /bovinos, /aves, /peces, /colmenas
+- GET /api/impuestos/proyeccion
+- GET /api/declaraciones y /api/declaraciones/:id
+
+Errores conservan error/mensaje/codigo según middleware existente. El cliente normaliza el texto visible.
+400 entrada inválida; 401 credenciales/sesión; 402 tenant suspendido; 403 permiso/suspensión; 423 bloqueo temporal; 429 límite; 503 indisponibilidad.
+415 archivo no XML; el XML inválido devuelve 400. Carga manual: extensión .xml y MIME XML/octet-stream, límite de 2 MB y tenant derivado de la sesión incluso ante otro receptor dentro del XML.
+Los errores de transporte no se interpretan como revocación definitiva.
+
+Compatibilidad web: /api/auth conserva respuesta token y cookie httpOnly, path, sameSite y secure existentes.
+No se cambian webhooks, CORS, configuración Hacienda, ONVO ni cálculos fiscales.
+</pre></details></section>
+<section id="pantallas"><span class="section-num">04 / MAPA DE PANTALLAS</span><h2>Cuatro entradas. Flujos enfocados.</h2>
+<div class="route"><b>Acceso</b><span>Carga inicial → Login → MFA · Registro con consentimiento · Recuperación por correo · Sesión expirada y desbloqueo.</span></div>
+<div class="route"><b>Inicio</b><span>Balance del período, ingresos/gastos, facturas recientes, resumen de inventario, IVA proyectado, plan y actualización.</span></div>
+<div class="route"><b>Facturas</b><span>Lista paginada y filtro de revisión → detalle → categoría IA, deducibilidad y alertas de tarifa → XML/PDF → carga XML de hasta 2 MB.</span></div>
+<div class="route"><b>Inventario</b><span>Resumen → bovinos, aves, peces y abejas → altas simples con campos existentes en los modelos.</span></div>
+<div class="route"><b>Más</b><span>Gastos/ingresos manuales, lista de ingresos y eliminación confirmada, IVA/renta, declaraciones guardadas y detalle, perfil/plan/tema/legal/cierre global.</span></div>
+<p>Estados de carga, vacío, error, permisos y conexión. Botones de al menos 50 px. Las fotografías no se presentan como gastos procesados.</p></section>
+<section id="roadmap"><span class="section-num">05 / FASES Y ROADMAP</span><h2>Qué quedó implementado.</h2><div class="timeline">
+<div class="phase"><div><strong>Exploración y diseño · realizado</strong><p>Contrato real de rutas/modelos, skills, decisiones de seguridad, tres propuestas y selección de la opción 1.</p></div></div>
+<div class="phase"><div><strong>Sesión y aislamiento · implementado</strong><p>Adaptador Express, rotación compartida, MFA, almacenamiento seguro, vault y protección de tenant en XML.</p></div></div>
+<div class="phase"><div><strong>Flujos del MVP · implementado</strong><p>Pantallas conectadas a la API, documentos, movimientos, inventario, impuestos y perfil. Pruebas y exportación multiplataforma.</p></div></div>
+<div class="phase"><div><strong>Aceptación nativa · pendiente</strong><p>Development builds contra staging, smoke Android/iOS, seguridad real del dispositivo y comparación visual.</p></div></div>
+<div class="phase"><div><strong>Publicación · no iniciada</strong><p>Configuración del proyecto EAS, firma, privacidad y revisión de tiendas. OCR y sincronización de escrituras quedan fuera del MVP.</p></div></div></div></section>
+<section id="evidencia"><span class="section-num">06 / EVIDENCIA REAL</span><h2>Resultados comprobados.</h2><div class="tablewrap"><table><thead><tr><th>Validación</th><th>Resultado</th></tr></thead><tbody>
+<tr><td>Monorepo · npm test</td><td class="pass">256 backend + 26 SDK fiscal + 68 frontend</td></tr>
+<tr><td>Móvil · Jest Expo</td><td class="pass">25 pruebas · 6 suites</td></tr>
+<tr><td>Backend móvil e ingesta</td><td class="pass">20 pruebas específicas repetidas; incluidas en las 256</td></tr>
+<tr><td>Build web / lint web</td><td class="pass">Correctos · 2997 módulos · 13 páginas prerenderizadas</td></tr>
+<tr><td>TypeScript / lint móvil</td><td class="pass">Correctos · sin errores ni advertencias</td></tr>
+<tr><td>Expo Doctor</td><td class="pass">20/20</td></tr>
+<tr><td>Expo export Android / iOS</td><td class="pass">Bundles Hermes generados</td></tr>
+<tr><td>Prebuild Android</td><td class="pass">Correcto · SQLCipher configurado</td></tr>
+<tr><td>Compilación Gradle Android</td><td class="pass" id="gradle-result">Release arm64 firmado ? bundle Hermes y SQLCipher incluidos ? 10m 27s</td></tr>
+<tr><td>Smoke Android / iOS y QA visual</td><td class="pending">No ejecutados · no hay dispositivo/AVD ni Xcode</td></tr>
+</tbody></table></div><p>Se probaron rotación, reúso, MFA, errores, aislamiento de tenant, XML/duplicados, sesión offline, limpieza local y formularios. Las pruebas móviles usan mocks de módulos nativos; no certifican SQLCipher ni biometría en hardware.</p><p><a href="validation.md">Leer informe detallado de validación</a></p><p><a href="release-0.1.0.md">APK 0.1.0: instalaci?n, integridad y firma</a></p></section>
+<section id="matrices"><span class="section-num">07 / MATRICES DE TRABAJO</span><h2>Skills y herramientas aplicadas.</h2>
+<div class="tablewrap"><table><thead><tr><th>Skills</th><th>Aplicación</th></tr></thead><tbody>
+<tr><td>find-skills · vibe-coding-toolkit · grill-me</td><td>Descubrimiento, plan y aclaración de decisiones. El flujo grill-me se resolvió mediante la guía disponible, sin inventar una herramienta ausente.</td></tr>
+<tr><td>Product Design index / get-context / ideate / image-to-code</td><td>Contexto de marca, tres imágenes, elección 1 y traducción a componentes nativos. No se portó el template web como SPA.</td></tr>
+<tr><td>nodejs-backend-patterns</td><td>Adaptador de transporte Express con lógica compartida y errores consistentes.</td></tr>
+<tr><td>javascript-testing-patterns</td><td>Jest, Supertest, base efímera y pruebas de comportamiento móvil.</td></tr>
+<tr><td>vercel-react-best-practices · vercel-composition-patterns</td><td>Contexto de sesión, hooks, composición y estado remoto separado.</td></tr>
+<tr><td>multitenant-onvo-billing</td><td>Tenant, roles, free/pro y preservación de webhooks.</td></tr>
+<tr><td>mongodb-connection · mongodb-query-optimizer</td><td>Revisión de consultas y rotación; sin cambios de índices ni conexión.</td></tr>
+<tr><td>ingesta-facturas-agro-inventario · hacienda-cr-v44 · rea-impuestos-cr</td><td>Contratos reales de XML/inventario y lectura de cálculos fiscales existentes.</td></tr>
+<tr><td>frontend-design · web-design-guidelines · tailwind-design-system</td><td>Lectura de identidad y convenciones existentes. El móvil usa StyleSheet y tokens propios.</td></tr>
+<tr><td>vite · workers-best-practices</td><td>Compatibilidad del monorepo y validación del build web.</td></tr>
+<tr><td>Plugin Management</td><td>Descubrimiento de integraciones; sin instalaciones externas innecesarias.</td></tr>
+</tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>Herramientas</th><th>Uso real</th></tr></thead><tbody>
+<tr><td>Memorix MCP / CLI fallback</td><td>Recuperación inicial y continuación de contexto. Sin sesión activa propia que cerrar.</td></tr>
+<tr><td>rg · lectura de archivos · apply_patch</td><td>Exploración y edición del monorepo.</td></tr>
+<tr><td>Image generation · view_image</td><td>Tres direcciones visuales y revisión de la referencia elegida.</td></tr>
+<tr><td>Bun · npm · Expo CLI · Metro · TypeScript · ESLint</td><td>Instalación, diagnóstico, compilación y exportación.</td></tr>
+<tr><td>Jest · Supertest · Testing Library Native</td><td>Pruebas automatizadas de backend y móvil.</td></tr>
+<tr><td>Gradle · Android SDK · adb</td><td>Compilación Android verificada con CMake 3.31.6 / Ninja 1.12.1 y comprobación de dispositivos.</td></tr>
+<tr><td>EAS / Maestro</td><td>EAS: perfiles y checklist preparados, sin ejecución remota. Maestro: no ejecutado por ausencia de dispositivo.</td></tr>
+<tr><td>Deska artifacts</td><td>Documento editable persistente y paquete de archivos de entrega.</td></tr>
+</tbody></table></div></section>
+<section id="pendientes"><span class="section-num">08 / RIESGOS Y PRÓXIMOS PASOS</span><h2>Lo que falta para publicar.</h2>
+<ol><li>Preparar un backend de staging con el adaptador móvil. La URL de Render predeterminada no implica que este código esté desplegado.</li><li>Instalar development builds Android/iOS y probar los flujos contra staging: login, MFA, reinicio, revocación, XML, permisos y tenants.</li><li>Comprobar SQLCipher real, bloqueo PIN/biometría, caducidad, segundo plano, temporales de archivos y borrado local.</li><li>Revisar la UI nativa frente a la opción 1, fuentes ampliadas, teclado, contraste, TalkBack/VoiceOver y modo oscuro.</li><li>Vincular cuenta/proyecto EAS, validar identificadores, firma, privacidad y requisitos de publicación. No se despliega automáticamente.</li></ol>
+<p>Sin conexión no es posible conocer una revocación remota. El límite de siete días usa el reloj local y requiere endurecimiento adicional frente a manipulación deliberada. Un cierre offline elimina el acceso local, pero la revocación del servidor necesita red.</p>
+<p>Las operaciones avanzadas de inventario permanecen en la web. OCR, emisión Hacienda, D-150, ONVO Checkout, chat IA y escrituras offline están fuera de esta entrega.</p></section>
+<section id="prompt"><span class="section-num">09 / PROMPT DE IMPLEMENTACIÓN</span><h2>El encargo completo, conservado.</h2><p>Incluye el prompt maestro original, las decisiones confirmadas y las adaptaciones reales de implementación.</p><details><summary>Abrir prompt maestro completo</summary><pre># Prompt maestro original
+
+El siguiente bloque conserva el prompt maestro solicitado. Las decisiones posteriores están registradas al final y prevalecen cuando amplían el original.
+
+```text
+Actúa como arquitecto senior full-stack, desarrollador React Native/Expo y especialista UX móvil.
+
+Debes crear una app móvil de producción para ContadorGanadero, conectada al backend existente. Trabaja en español y respeta completamente AGENTS.md.
+
+IMPORTANTE:
+- Primero realiza únicamente análisis y exploración.
+- Después presenta un plan técnico completo.
+- No escribas ni modifiques archivos hasta que el plan haya sido aprobado.
+- Antes de construir la interfaz, usa Product Design para generar exactamente tres direcciones visuales móviles de 390 x 844 px.
+- Espera a que el usuario seleccione una dirección visual.
+- Solo después implementa.
+- Al final ejecuta todas las validaciones y crea el artifact final solicitado.
+
+CONTEXTO DEL PROYECTO
+
+El proyecto actual es un monorepo npm/bun:
+
+- backend/: Node.js, Express, Mongoose y JWT.
+- frontend/: React 19 + Vite.
+- package.json raíz con workspaces backend y frontend.
+- Node requerido: &gt;=22.12.0.
+- El frontend está desplegado en Cloudflare.
+- La API y el worker están desplegados en Render.
+- La API productiva es https://contador-ganadero.onrender.com.
+- El backend usa MongoDB.
+- Toda la información pertenece a un tenant.
+- Los planes válidos son únicamente free y pro.
+- Los textos visibles deben estar en español de Costa Rica.
+
+ANTES DE EMPEZAR
+
+Lee completamente:
+
+1. AGENTS.md.
+2. .agents/skills/nodejs-backend-patterns/SKILL.md.
+3. .agents/skills/javascript-testing-patterns/SKILL.md.
+4. .agents/skills/vercel-react-best-practices/SKILL.md.
+5. .agents/skills/vercel-composition-patterns/SKILL.md.
+
+Lee además, solo si la implementación toca esos dominios:
+
+- .agents/skills/mongodb-connection/SKILL.md
+- .agents/skills/mongodb-query-optimizer/SKILL.md
+- .agents/skills/hacienda-cr-v44/SKILL.md
+- .agents/skills/rea-impuestos-cr/SKILL.md
+- .agents/skills/multitenant-onvo-billing/SKILL.md
+- .agents/skills/ingesta-facturas-agro-inventario/SKILL.md
+
+Para diseño utiliza:
+
+- Product Design index.
+- Product Design get-context.
+- Product Design ideate.
+- Product Design image-to-code, cuando se haya elegido una dirección visual.
+
+Usa Memorix como primer paso de trabajo con memorix_project_context. Al terminar, utiliza memorix_session_end si existe una sesión activa.
+
+ESTRUCTURA DEL PROYECTO
+
+Agrega una carpeta:
+
+mobile/
+
+No crees un repositorio nuevo salvo que exista una limitación técnica demostrable.
+
+Actualiza el workspace raíz para incluir mobile como workspace, siempre que no rompa la instalación existente.
+
+La app debe ser privada y autocontenida:
+
+mobile/
+  app/
+    (auth)/
+    (tabs)/
+    facturas/
+    inventario/
+    perfil/
+  src/
+    api/
+    auth/
+    components/
+    config/
+    features/
+    hooks/
+    lib/
+    queries/
+    theme/
+    types/
+    utils/
+  assets/
+  tests/
+  app.config.ts
+  package.json
+  tsconfig.json
+
+Usa Expo managed workflow, Expo Router y TypeScript. No conviertas la app móvil en una SPA web responsiva.
+
+DEPENDENCIAS RECOMENDADAS
+
+Usa versiones compatibles entre sí verificadas mediante la documentación oficial de Expo:
+
+- expo.
+- expo-router.
+- expo-secure-store.
+- expo-document-picker.
+- expo-file-system.
+- axios.
+- @tanstack/react-query.
+- @tanstack/query-async-storage-persister.
+- @react-native-async-storage/async-storage.
+- @testing-library/react-native.
+- jest-expo.
+- una biblioteca de iconos compatible con React Native.
+
+Usa StyleSheet y tokens de diseño propios para el MVP. No portes automáticamente Tailwind, shadcn/ui ni componentes web al entorno nativo.
+
+ARQUITECTURA DE AUTENTICACIÓN
+
+El frontend web actual conserva su comportamiento sin cambios:
+
+- Access token en memoria.
+- Refresh token en cookie httpOnly.
+- Rutas web actuales sin regresiones.
+
+Agrega un adaptador móvil compatible:
+
+POST /api/mobile/auth/login
+POST /api/mobile/auth/mfa/verify
+POST /api/mobile/auth/refresh
+POST /api/mobile/auth/logout
+
+El adaptador móvil debe reutilizar la lógica existente de autenticación, rotación y revocación. No dupliques validaciones de contraseña, MFA, bloqueo, suspensión, tokenVersion ni detección de reúso.
+
+Contrato móvil esperado:
+
+- Login exitoso: accessToken, refreshToken, expiresIn y user.
+- Login con MFA pendiente: mfaRequired, mfaToken y mensaje.
+- Refresh exitoso: nuevo accessToken, nuevo refreshToken y expiresIn.
+- Logout: revoca el refresh token enviado.
+- El refresh token nunca se registra en logs.
+- El refresh token nunca se guarda en AsyncStorage, localStorage ni variables globales.
+- El access token permanece únicamente en memoria.
+- El refresh token se guarda exclusivamente con expo-secure-store.
+- La rotación debe invalidar el token anterior.
+- La reutilización de un token rotado debe revocar la familia completa.
+
+Los tokens deben conservar tenantId, rol, tokenVersion, issuer y audience compatibles con protegerRuta.
+
+La app nunca debe enviar tenantId arbitrario. El tenant siempre debe derivarse del token y de la base de datos.
+
+CLIENTE API MÓVIL
+
+Implementa un cliente Axios con:
+
+- Base URL configurable.
+- Header Authorization Bearer.
+- Timeout razonable.
+- Interceptor de respuesta 401.
+- Una sola promesa de refresh simultánea.
+- Reintento máximo de una solicitud.
+- Logout local si falla el refresh.
+- Mensajes de error en español.
+- No exposición de secretos en `EXPO_PUBLIC_*`.
+
+El endpoint de producción debe ser configurable sin crear un segundo archivo `.env` con secretos. Respeta la regla del proyecto de utilizar el `.env` raíz. Actualiza únicamente `.env.example` si se necesita documentar una variable pública.
+
+ESTADO Y CACHÉ
+
+Usa:
+
+- AuthContext únicamente para sesión e identidad.
+- TanStack Query para estado remoto.
+- AsyncStorage solo para caché no sensible.
+- SecureStore únicamente para refresh token y datos estrictamente sensibles.
+
+La caché debe:
+
+- Separarse por usuario y tenant.
+- Invalidarse al cerrar sesión.
+- Nunca mezclar datos de dos tenants.
+- Mostrar fecha de última sincronización.
+- Permitir consultar el último dashboard y listado descargado.
+- Exigir conexión para escrituras en el MVP.
+- Mostrar claramente “Sin conexión” y “Datos almacenados localmente”.
+
+PANTALLAS DEL MVP
+
+Autenticación:
+
+- Splash/loading.
+- Login.
+- Registro.
+- Verificación MFA.
+- Recuperación de contraseña.
+- Estado de sesión expirada.
+
+Navegación principal:
+
+- Inicio.
+- Facturas.
+- Inventario.
+- Más.
+
+Inicio:
+
+- Balance de ingresos y gastos.
+- Total de facturas recientes.
+- Resumen de inventario.
+- Proyección o resumen tributario disponible.
+- Estado del plan free/pro.
+- Estado de sincronización.
+
+Facturas:
+
+- Lista paginada.
+- Filtros básicos.
+- Detalle de factura.
+- Categoría IA.
+- Deducibilidad.
+- Tarifa agropecuaria.
+- Descarga o apertura de XML/PDF cuando la API lo permita.
+- Carga de XML mediante DocumentPicker.
+- Estados: cargando, procesada, duplicada, revisión, error y sin conexión.
+
+RESTRICCIÓN IMPORTANTE:
+El backend actual acepta XML en `/api/facturas/upload`. Las fotografías no se almacenan ni se procesan actualmente. No agregues una interfaz que afirme que una foto fue registrada como gasto. La cámara/OCR debe quedar documentada como fase futura, salvo que se diseñe y pruebe un servicio backend independiente.
+
+Gastos e ingresos:
+
+- Crear gasto manual.
+- Crear ingreso manual.
+- Validación de montos, fechas y campos obligatorios.
+- Confirmación antes de eliminar.
+- Manejo de cuotas del plan.
+
+Inventario:
+
+- Resumen multiespecie.
+- Acceso a bovinos, aves, peces y abejas.
+- Formularios simples para operaciones permitidas por la API.
+- No inventar campos que no existan en los modelos actuales.
+- Mostrar restricciones de plan cuando corresponda.
+
+Impuestos:
+
+- Resumen IVA.
+- Resumen renta.
+- Acceso a declaraciones disponibles.
+- Los cálculos permanecen exclusivamente en el backend.
+- La app nunca debe replicar reglas fiscales de forma independiente.
+
+Perfil:
+
+- Datos del usuario.
+- Datos de la finca.
+- Plan actual.
+- Cerrar sesión.
+- Cerrar todas las sesiones.
+- Preferencias básicas.
+- Enlaces legales.
+
+DISEÑO Y UX
+
+Antes de implementar:
+
+1. Lee los estilos y pantallas existentes del frontend.
+2. Identifica colores, tipografías, terminología, iconografía y patrones de interacción.
+3. Usa Product Design get-context.
+4. Usa Product Design ideate.
+5. Genera exactamente tres opciones visuales independientes en 390 x 844 px.
+6. No generes un inventario de funcionalidades en una sola pantalla.
+7. Cada opción debe mostrar una pantalla principal enfocada.
+8. Detén la implementación hasta que el usuario seleccione una opción.
+
+La UI elegida debe:
+
+- Estar completamente en español.
+- Usar lenguaje claro para productores agropecuarios.
+- Tener botones táctiles de al menos 44 px.
+- Ser accesible con lector de pantalla.
+- Tener contraste suficiente.
+- Soportar modo claro y oscuro.
+- Evitar exceso de tarjetas.
+- Usar jerarquía visual fuerte.
+- Mostrar estados de carga, vacío, error, conexión y permisos.
+- No usar emojis como iconos principales.
+- No copiar literalmente componentes web no compatibles con React Native.
+
+BACKEND
+
+Si hacen falta cambios backend:
+
+- Mantén compatibilidad con el frontend web.
+- No modifiques webhooks productivos.
+- No cambies el orden crítico de middlewares.
+- No rompas CORS, cookies ni refresh web.
+- Conserva `tenantId`.
+- Usa `req.filtrarPorTenant()` y `req.aplicarTenant()` cuando corresponda.
+- Reutiliza los guards existentes de autenticación, RBAC y cuotas.
+- Valida cuerpos y archivos.
+- Mantén límites de tamaño.
+- Devuelve errores consistentes.
+- Agrega pruebas de integración con Jest y Supertest.
+- No agregues índices ni cambios de conexión MongoDB sin justificarlo con la skill correspondiente.
+- Nunca expongas claves Hacienda, ONVO, IA, JWT ni certificados.
+
+API EXISTENTE A REUTILIZAR
+
+Inspecciona antes de implementar:
+
+- /api/auth
+- /api/dashboard
+- /api/facturas
+- /api/ingresos
+- /api/impuestos
+- /api/declaraciones
+- /api/inventario
+- /api/costos
+- /api/hacienda
+- /api/onvo
+
+Usa `frontend/src/services/api.js` como referencia del contrato actual, pero verifica cada endpoint contra sus rutas y controladores reales.
+
+PRUEBAS
+
+Backend:
+
+- Login móvil correcto.
+- Login con MFA.
+- Contraseña incorrecta.
+- Cuenta suspendida.
+- Usuario bloqueado.
+- Refresh válido.
+- Refresh expirado.
+- Refresh reutilizado.
+- Logout.
+- Logout global.
+- TokenVersion revocado.
+- Aislamiento entre tenants.
+- RBAC.
+- Cuotas free/pro.
+- Carga válida de XML.
+- Rechazo de imagen y archivo no XML.
+- Respuestas de error consistentes.
+- No regresión del login web.
+
+Mobile:
+
+- Renderizado de login.
+- Registro.
+- MFA.
+- Restauración de sesión.
+- Interceptor 401.
+- Refresh único ante solicitudes simultáneas.
+- Logout y limpieza de SecureStore.
+- Caché separada por tenant.
+- Estado offline.
+- Lista vacía.
+- Error de red.
+- Error de permisos.
+- Carga XML.
+- Formulario de gasto.
+- Accesibilidad básica.
+
+Ejecuta:
+
+- npm test.
+- npm run build.
+- npm run lint.
+- Pruebas específicas backend.
+- Tests móviles con jest-expo.
+- Expo export o equivalente.
+- Smoke test en Android.
+- Smoke test en iOS si el entorno está disponible.
+
+No despliegues producción automáticamente.
+
+ENTREGABLES
+
+Entrega:
+
+1. Código de `mobile/`.
+2. Cambios backend mínimos y compatibles.
+3. Tests.
+4. Documentación de arquitectura.
+5. Contrato de autenticación móvil.
+6. Variables de entorno documentadas.
+7. Instrucciones locales para Android/iOS.
+8. Checklist de publicación con EAS.
+9. Informe de pruebas.
+10. Artifact visual editable final.
+
+El artifact final debe incluir:
+
+- Resumen del producto.
+- Decisiones tomadas.
+- Arquitectura móvil/API.
+- Flujo de autenticación.
+- Mapa de pantallas.
+- Matriz de skills utilizadas.
+- Matriz de herramientas utilizadas.
+- Fases implementadas.
+- Pruebas ejecutadas.
+- Riesgos y pendientes.
+- Próximos pasos.
+- Enlace o referencia al código creado.
+
+No declares la tarea completa si la app solo tiene pantallas visuales sin conexión real a la API.
+```
+
+## Decisiones confirmadas después del prompt
+
+- Implementar en el monorepo, Android e iOS, Expo + React Native + TypeScript.
+- Lectura offline **cifrada y con desbloqueo del dispositivo**; sin bloqueo seguro no hay persistencia offline.
+- Caducidad máxima de siete días desde la última validación online; escrituras siempre online.
+- Dirección visual **1**, seleccionada por el usuario entre las tres propuestas.
+- Implementación autorizada con «hazlo», «1» y «continua y termina».
+- El artifact persistente es un Deska artifact, guardado con deska_artifact_save al final.
+
+## Adaptaciones de implementación
+
+- SQLCipher almacena snapshots seleccionados; no se usa el persister AsyncStorage recomendado porque los datos financieros son sensibles. AsyncStorage conserva únicamente la preferencia de tema.
+- Se agregó registro en /api/mobile/auth/registro; recuperación y logout global reutilizan sus rutas existentes.
+- Expo SDK 58 requiere Node &gt;=22.13 para mobile; se recomienda Node 24.13+ sin cambiar el mínimo histórico del frontend.
+- Carpetas vacías src/config y src/features no se añaden: configuración en app.config.ts y funciones agrupadas en src/api y app.
+- Fallos de refresh por credencial revocada cierran sesión; un fallo de conectividad puede conservar el vault vigente para lectura offline desbloqueada.
+- Las pruebas de dispositivo y revisión visual nativa se declaran pendientes si el entorno no permite ejecutarlas. El artifact documenta evidencia real, no una certificación de producción.
+</pre></details><a href="master-prompt.md" download="">Descargar prompt en Markdown</a></section>
+<section id="codigo"><span class="section-num">10 / CÓDIGO Y DOCUMENTACIÓN</span><h2>Continuar desde lo construido.</h2><p>El código está en <code>mobile/</code> del monorepo ContadorGanadero. Cambios backend: <code>routes/mobileAuthRoutes.js</code>, <code>services/authTransport.js</code>, controladores de autenticación, MFA, montaje de ruta y aislamiento/validación de carga XML.</p>
+<div class="buttonrow"><a class="download" href="https://github.com/Samu3delna/contador-ganadero/tree/mobile-v0.1.0/mobile" id="source-download">Consultar c?digo de la versi?n 0.1.0</a><a class="download" href="../README.md">Guía Android/iOS y EAS</a><a class="download" href="auth-contract.md">Contrato API</a><a class="download" href="validation.md">Informe de pruebas</a></div>
+<p>El ZIP contiene <code>mobile/</code> y los archivos modificados del monorepo, sin dependencias, builds, certificados ni <code>.env</code>. Se aplica al repositorio existente; no es un backend independiente.</p>
+<p>APK de desarrollo generado: <code>mobile/android/app/build/outputs/apk/debug/app-debug.apk</code> (arm64, 96,9 MB). Requiere Metro y backend de staging; no es una distribución de producción. La compilación Windows se corrigió con la herramienta recomendada en la <a href="https://docs.expo.dev/troubleshooting/windows-long-paths/">guía oficial de Expo</a>.</p>
+<pre>bun install --frozen-lockfile
+# Configurar EXPO_PUBLIC_API_URL en el único .env raíz
+cd mobile
+npm run android
+# En macOS con Xcode:
+npm run ios</pre><p>Usar Node 24.13+ recomendado. SQLCipher requiere una compilación de desarrollo: no funciona en Expo Go.</p></section>
+<footer>ContadorGanadero Mobile · Plan, Arquitectura y Prompt de Implementación<br>Documento basado en código y resultados reales. La referencia visual se identifica como diseño; los pendientes nativos permanecen explícitos.</footer>
+</article></div>
+<script>
+const article=document.getElementById('document'),edit=document.getElementById('edit');
+edit.addEventListener('click',()=>{const active=article.contentEditable!=='true';article.contentEditable=String(active);edit.textContent=active?'Terminar edición':'Editar texto';if(active)article.focus()});
+document.getElementById('save').addEventListener('click',()=>{article.contentEditable='false';edit.textContent='Editar texto';const blob=new Blob(['<!doctype html>\n'+document.documentElement.outerHTML],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='ContadorGanadero-Mobile.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+</script>
+</body></html>

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import AndroidDownload from './AndroidDownload';
 import './ScrollLandscape.css';
 
 export default function ScrollLandscape() {
@@ -58,7 +59,10 @@ export default function ScrollLandscape() {
         <div data-beat><p>Todo conectado</p><h2>De cada factura.<br />A una visión más clara.</h2><p>Ingresos, gastos e inventario en un mismo lugar.</p></div>
         <div data-beat><p>Más tiempo para producir</p><h2>Conocé tus números.<br />Cultivá lo que sigue.</h2><p>Herramientas pensadas para productores de Costa Rica.</p></div>
       </div>
-      <Link className="cg-button cg-landscape-cta" to="/registro">Comenzar gratis ↗</Link>
+      <div className="cg-landscape-actions">
+        <Link className="cg-button" to="/registro">Comenzar gratis ↗</Link>
+        <AndroidDownload />
+      </div>
       <div className="cg-landscape-progress" aria-hidden="true"><span /></div>
     </div>
   </section>;

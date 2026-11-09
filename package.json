@@ -4,7 +4,8 @@
   "description": "Aplicación MERN para contabilidad ganadera en Costa Rica",
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "mobile"
   ],
   "scripts": {
     "build": "cd frontend && npm run build",

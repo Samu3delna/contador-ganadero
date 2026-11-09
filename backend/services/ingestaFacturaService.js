@@ -26,8 +26,20 @@ function asegurarDirectorios() {
  * 3. Email alias del tenant (ej: finca-esperanza@contadorganandero.com)
  * 4. Número de teléfono (para WhatsApp)
  */
-async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, emailDestino, telefono }) {
+async function resolverDestinatario({ cedulaReceptor, usuarioId, tenantId, emailDestino, telefono, canal }) {
   const sinAsignar = { usuario: null, tenantId: null };
+  // Una carga autenticada nunca puede elegir su tenant mediante el contenido del XML.
+  // La resolución por receptor continúa aplicándose a los canales de correo/WhatsApp.
+  if (canal === 'subida-manual') {
+    const usuario = usuarioId && tenantId
+      ? await Usuario.findOne({ _id: usuarioId, tenantId }) : null;
+    if (!usuario) {
+      const error = new Error('La sesión no pertenece a la finca indicada.');
+      error.statusCode = 403;
+      throw error;
+    }
+    return { usuario, tenantId: usuario.tenantId };
+  }
   function identidadUnica(usuarios) {
     const fincas = new Set(usuarios.map(u => String(u.tenantId || '')));
     if (fincas.size !== 1 || fincas.has('') || usuarios.length >= 101) return sinAsignar;
@@ -114,10 +126,10 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
   // Parsear el XML (soporta FacturaElectronica, TiqueteElectronico, NotaCredito, y MensajeHacienda)
   let datosFactura;
   try { datosFactura = parsearFacturaXML(xmlString); }
-  catch (error) { error.code = 'XML_INVALIDO'; throw error; }
+  catch (error) { error.code = 'XML_INVALIDO'; error.statusCode = 400; throw error; }
   if (!datosFactura || !datosFactura.claveNumerica) {
     const error = new Error('El XML no contiene una factura electrónica válida con Clave de Hacienda.');
-    error.code = 'XML_INVALIDO'; throw error;
+    error.code = 'XML_INVALIDO'; error.statusCode = 400; throw error;
   }
 
   // Resolver destinatario
@@ -128,6 +140,7 @@ async function procesarFacturaXMLString(xmlContent, opciones = {}) {
     tenantId: opciones.tenantId,
     emailDestino: opciones.emailDestino,
     telefono: opciones.telefono,
+    canal: opciones.canal,
   });
 
   if (!usuario) {

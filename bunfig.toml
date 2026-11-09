@@ -1,0 +1,3 @@
+[install]
+# Expo native modules must resolve to one installation across the workspace.
+linker = "hoisted"

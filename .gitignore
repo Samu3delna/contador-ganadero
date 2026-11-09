@@ -38,6 +38,8 @@ dist/
 frontend/dist/
 build/
 frontend/build/
+.playwright-cli/
+output/playwright/
 
 # IDEs y OS
 .idea/

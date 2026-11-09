@@ -13,12 +13,15 @@ const upload = multer({
     const name = String(file.originalname || '').toLowerCase();
     const mime = String(file.mimetype || '').toLowerCase();
     const esXml =
-      name.endsWith('.xml') ||
+      name.endsWith('.xml') && (
+      mime === 'application/octet-stream' ||
       mime === 'application/xml' ||
       mime === 'text/xml' ||
-      mime.endsWith('+xml');
+      mime.endsWith('+xml'));
     if (!esXml) {
-      return cb(new Error('Solo se permiten archivos XML (.xml)'));
+      const error = new Error('Solo se permiten archivos XML (.xml)');
+      error.statusCode = 415;
+      return cb(error);
     }
     cb(null, true);
   },

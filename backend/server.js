@@ -207,6 +207,7 @@ app.post('/api/cron/sync-emails', async (req, res) => {
 
 // Registrar rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/mobile/auth', require('./routes/mobileAuthRoutes'));
 app.use('/api/ingresos', ingresoRoutes);
 app.use('/api/facturas', facturaRoutes);
 app.use('/api/impuestos', impuestoRoutes);
