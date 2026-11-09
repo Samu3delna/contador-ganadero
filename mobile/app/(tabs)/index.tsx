@@ -1,5 +1,6 @@
+import BrandLogo from "../../src/components/BrandLogo";
 import React from "react";
-import { Image, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   Screen,
@@ -24,10 +25,7 @@ export default function Home() {
   return (
     <Screen>
       <View style={[styles.row, { alignItems: "center" }]}>
-        <Image
-          source={require("../../assets/logo.png")}
-          style={{ width: 46, height: 46 }}
-        />
+        <BrandLogo width={46} height={46} />
         <Text
           style={{
             fontFamily: "Outfit_600SemiBold",

@@ -1,5 +1,6 @@
+import BrandLogo from "../../src/components/BrandLogo";
 import React, { useState } from "react";
-import { Image, View } from "react-native";
+import { View } from "react-native";
 import { Link, Redirect } from "expo-router";
 import { useAuth } from "../../src/auth/AuthContext";
 import { Screen, Field, Button, Label } from "../../src/components/ui";
@@ -38,11 +39,7 @@ export default function Login() {
     <Screen
       title={challenge ? "Verificación en dos pasos" : "Bienvenido a tu finca"}
     >
-      <Image
-        source={require("../../assets/logo.png")}
-        style={{ width: 90, height: 90, alignSelf: "center" }}
-        accessibilityLabel="ContadorGanadero"
-      />
+      <BrandLogo width={90} height={90} style={{ alignSelf: "center" }} />
       {challenge ? (
         <>
           <Field
