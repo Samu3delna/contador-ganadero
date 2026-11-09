@@ -4,6 +4,36 @@ const Usuario=require('../models/Usuario');
 const Tenant=require('../models/Tenant');
 const Notification=require('../models/AccountNotification');
 const {tick}=require('../services/accountNotifications');
+
+test('envía recuperación con credenciales sin exigir una bandera adicional', async () => {
+  const keys = ['CLOUDFLARE_EMAIL_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'ACCOUNT_EMAIL_DELIVERY_ENABLED'];
+  const previous = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  const fetchOriginal = global.fetch;
+  try {
+    process.env.CLOUDFLARE_EMAIL_API_TOKEN = 'synthetic-token';
+    process.env.CLOUDFLARE_ACCOUNT_ID = 'synthetic-account';
+    delete process.env.ACCOUNT_EMAIL_DELIVERY_ENABLED;
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, result: { id: 'synthetic-message' } }) });
+    const u = await Usuario.create({ nombre: 'Automatico', email: 'automatic@example.test', password: 'SyntheticPassword123!' });
+    await request(app).post('/api/auth/forgot-password').send({ email: u.email });
+    process.env.ACCOUNT_EMAIL_DELIVERY_ENABLED = 'false';
+    await tick();
+    expect(global.fetch).not.toHaveBeenCalled();
+    delete process.env.ACCOUNT_EMAIL_DELIVERY_ENABLED;
+    await tick();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(payload.to).toEqual([u.email]);
+    expect(payload.text).toMatch(/restablecer-password#token=[a-f0-9]{64}/);
+    expect((await Notification.findOne()).estado).toBe('enviada');
+  } finally {
+    global.fetch = fetchOriginal;
+    for (const key of keys) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
+  }
+});
 test('F-24: respuesta uniforme, notificacion cifrada durable y enlace de un solo uso',async()=>{
   const u=await Usuario.create({nombre:'Recuperar',email:'recover@example.test',password:'SyntheticPassword123!'});
   const t=await Tenant.crearParaUsuario({nombreFinca:'Recuperacion',owner:u._id});u.tenantId=t._id;await u.save();

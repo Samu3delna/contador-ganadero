@@ -253,6 +253,8 @@ if (require.main === module) {
       .then(async (conectado) => {
         if (!conectado) return;
 
+        require('./services/accountNotifications').iniciar();
+
         if (process.env.IMAP_USER && process.env.IMAP_PASSWORD && !process.env.IMAP_USER.includes('tu_')) {
           try {
             await iniciarListener();

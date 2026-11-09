@@ -13,7 +13,9 @@ async function encolar(usuario, raw, tipo) {
   return doc._id;
 }
 async function tick({ enviar } = {}) {
-  if (!enviar && process.env.ACCOUNT_EMAIL_DELIVERY_ENABLED !== 'true') return;
+  // Habilitar con las credenciales existentes; conservar el apagado explícito.
+  if (!enviar && (process.env.ACCOUNT_EMAIL_DELIVERY_ENABLED === 'false' ||
+    !process.env.CLOUDFLARE_EMAIL_API_TOKEN || !process.env.CLOUDFLARE_ACCOUNT_ID)) return;
   const send = enviar || require('../controllers/supportController').enviarEmailCloudflare;
   const pendientes = await Notification.find({ estado: 'pendiente', $or: [{ claimHasta: null }, { claimHasta: { $lte: new Date() } }] }).limit(20);
   for (const pending of pendientes) {
@@ -41,4 +43,19 @@ async function tick({ enviar } = {}) {
     }
   }
 }
-module.exports = { encolar, tick };
+function iniciar() {
+  if (process.env.ACCOUNT_EMAIL_DELIVERY_ENABLED === 'false') {
+    console.warn('Notificaciones de cuenta pausadas por ACCOUNT_EMAIL_DELIVERY_ENABLED');
+  } else if (!process.env.CLOUDFLARE_EMAIL_API_TOKEN || !process.env.CLOUDFLARE_ACCOUNT_ID) {
+    console.warn('Notificaciones de cuenta pendientes: faltan credenciales de Cloudflare Email');
+  } else {
+    console.log('Procesamiento de notificaciones de cuenta iniciado');
+  }
+  // También funciona cuando no hay un proceso worker independiente.
+  const ejecutar = () => tick().catch(() => console.warn('Notificaciones de cuenta pendientes'));
+  ejecutar();
+  const timer = setInterval(ejecutar, 30000);
+  timer.unref();
+  return timer;
+}
+module.exports = { encolar, tick, iniciar };
